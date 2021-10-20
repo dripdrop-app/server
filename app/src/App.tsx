@@ -2,7 +2,7 @@ import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 import { AppBar, Box, Button, Toolbar } from '@mui/material';
 
-import MP3Downloader from './pages/mp3_downloader';
+import MusicDownloader from './pages/music_downloader';
 import IncomeCalculator from './pages/income_calculator';
 
 const App = () => {
@@ -11,7 +11,7 @@ const App = () => {
 			<Box>
 				<AppBar position="sticky">
 					<Toolbar>
-						<Button color="inherit">MP3 Downloader</Button>
+						<Button color="inherit">Music Downloader</Button>
 						<Button color="inherit">Income Calculator</Button>
 						<Box sx={{ flexGrow: 1 }} />
 						<Button color="inherit">Login</Button>
@@ -20,8 +20,8 @@ const App = () => {
 			</Box>
 			<Switch>
 				<Route path="/calculator" render={() => <IncomeCalculator />} />
-				<Route path="/download" render={() => <MP3Downloader />} />
-				<Route path="/" render={() => <MP3Downloader />} />
+				<Route path="/download" render={() => <MusicDownloader />} />
+				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>
 		</React.Fragment>
 	);
