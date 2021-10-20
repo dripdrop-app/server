@@ -1,25 +1,19 @@
-import subprocess
-import mutagen
-import os
 import uuid
 import traceback
-import requests
 from typing import Union
 from starlette.background import BackgroundTask
 from starlette.datastructures import UploadFile
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.requests import Request
 from starlette.concurrency import run_in_threadpool
-from pydub import AudioSegment
-from yt_dlp.utils import sanitize_filename
-from server.utils.mp3dl import ytDownload, extractInfo
+from server.utils.mp3dl import extractInfo
 from server.utils.imgdl import downloadImage
 from server.db import database, music_jobs
+from server.tasks import downloadTask
 
 
 async def getGrouping(request: Request):
-    form = await request.form()
-    youtubeURL = form.get('youtubeURL')
+    youtubeURL = request.query_params.get('youtubeURL')
     try:
         uploader = await run_in_threadpool(extractInfo, youtubeURL)
         return JSONResponse({'grouping': uploader})
@@ -30,66 +24,26 @@ async def getGrouping(request: Request):
 
 async def completeJob(request: Request):
     transaction = await database.transaction()
-    form = await request.form()
-    jobID = form.get('jobID')
+    jobID = request.query_params.get('jobID')
     try:
         query = music_jobs.update().where(music_jobs.c.job_id ==
                                           jobID).values(completed=True)
         await database.execute(query)
         await transaction.commit()
-        return Response(None, 200)
+        return Response(None)
     except:
         await transaction.rollback()
         return Response(None, 400)
 
 
-def downloadTask(jobID: str, youtubeURL='', origFileName='', file: Union[str, bytes, None] = None, artworkURL='', title='', artist='', album='', grouping=''):
-    jobPath = os.path.join('jobs', jobID)
+async def getArtwork(request: Request):
+    artworkURL = request.query_params.get('artworkURL')
     try:
-        subprocess.run(['mkdir', 'jobs'])
-        subprocess.run(['mkdir', jobPath])
-        fileName = ''
-
-        if youtubeURL:
-            def updateProgress(d):
-                nonlocal fileName
-                if d['status'] == 'finished':
-                    fileName = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
-            ytDownload(youtubeURL, [updateProgress], jobPath)
-
-        elif file:
-            filepath = os.path.join(jobPath, origFileName)
-            with open(filepath) as f:
-                f.write(file)
-            newFileName = f'{os.path.splitext(filepath)[:-1]}.mp3'
-            AudioSegment.from_file(filepath).export(
-                newFileName, format='mp3', bitrate='320k')
-            fileName = newFileName
-
-        audioFile = mutagen.File(fileName)
-
-        if artworkURL:
-            imageData = downloadImage(artworkURL)
-            audioFile.tags.add(mutagen.id3.APIC(
-                mimetype='image/png', data=imageData))
-
-        audioFile.tags.add(mutagen.id3.TIT2(text=title))
-        audioFile.tags.add(mutagen.id3.TPE1(text=artist))
-        audioFile.tags.add(mutagen.id3.TALB(text=album))
-        audioFile.tags.add(mutagen.id3.TIT1(text=grouping))
-        audioFile.save()
-
-        newFileName = os.path.join(
-            jobPath, sanitize_filename(f'{title} {artist}') + '.mp3')
-        subprocess.run(['mv', '-f', fileName, newFileName])
-        response = requests.post(
-            f'http://localhost:{os.getenv("PORT")}/completeJob', data={'jobID': jobID})
-        if not response.ok:
-            raise RuntimeError('Failed to update job status')
-
+        artworkURL = await run_in_threadpool(downloadImage, artworkURL, False)
+        return JSONResponse({'artworkURL': artworkURL})
     except Exception as e:
-        subprocess.run(['rm', '-rf', jobPath])
         print(traceback.format_exc())
+        return Response(None, 400)
 
 
 async def download(request: Request):

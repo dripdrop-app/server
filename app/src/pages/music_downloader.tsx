@@ -1,9 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Container, Divider, Typography, TextField, Switch, Button, TextFieldProps, Stack } from '@mui/material';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+	Box,
+	Container,
+	Divider,
+	Typography,
+	TextField,
+	Switch,
+	Button,
+	TextFieldProps,
+	Stack,
+	CircularProgress,
+} from '@mui/material';
 import { YouTube } from '@mui/icons-material';
 import Image from '../images/blank_image.jpeg';
 import { FILE_TYPE } from '../utils/enums';
-import { debounce } from '../utils/helpers';
+import { useDebounce } from '../utils/helpers';
 
 const MusicDownloader = () => {
 	const [validForm, setValidForm] = useState(false);
@@ -11,10 +22,13 @@ const MusicDownloader = () => {
 	const [fileType, setFileType] = useState(FILE_TYPE.YOUTUBE);
 
 	const [youTubeURL, setYouTubeURL] = useState('');
+	const debouncedYouTubeURL = useDebounce(youTubeURL, 500);
 	const [fileName, setFileName] = useState('');
 	const [validYouTubeURL, setValidYouTubeURL] = useState(false);
 
+	const [fetchingArtwork, setFetchingArtwork] = useState(false);
 	const [artworkURL, setArtworkURL] = useState('');
+	const debouncedArtworkURL = useDebounce(artworkURL, 250);
 	const [validArtworkURL, setValidArtworkURL] = useState(false);
 
 	const [title, setTitle] = useState('');
@@ -72,22 +86,6 @@ const MusicDownloader = () => {
 		}
 	};
 
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	const getGrouping = useCallback(
-		debounce(async (youTubeURL) => {
-			if (youTubeURL) {
-				const formData = new FormData();
-				formData.append('youtubeURL', youTubeURL);
-				const response = await fetch('/grouping', { method: 'POST', body: formData });
-				if (response.status === 200) {
-					const json = await response.json();
-					setGrouping(json.grouping);
-				}
-			}
-		}, 500),
-		[]
-	);
-
 	const performOperation = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 		const formData = new FormData();
 		formData.append('youtubeURL', youTubeURL);
@@ -104,8 +102,8 @@ const MusicDownloader = () => {
 		formData.append('grouping', grouping);
 		const response = await fetch('/download', { method: 'POST', body: formData });
 		if (response.status === 200) {
-			const file = await response.blob();
-			console.log(file);
+			// const file = await response.blob();
+			// console.log(file);
 		}
 	};
 
@@ -151,13 +149,48 @@ const MusicDownloader = () => {
 	useEffect(() => {
 		const valid = RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youTubeURL);
 		setValidYouTubeURL(valid);
-		getGrouping(youTubeURL);
-	}, [youTubeURL, getGrouping]);
+	}, [youTubeURL]);
 
 	useEffect(() => {
-		const valid = RegExp(/^https:\/\/(www\.)?(soundcloud\.com\/.+|.+\.(jpg|jpeg|png))/).test(artworkURL);
+		const valid = RegExp(/^https:\/\/(www\.)?.+\.(jpg|jpeg|png)/).test(artworkURL);
 		setValidArtworkURL(valid);
 	}, [artworkURL]);
+
+	useEffect(() => {
+		const getGrouping = async (youTubeURL: string) => {
+			if (youTubeURL) {
+				const params = new URLSearchParams();
+				params.append('youtubeURL', youTubeURL);
+				const response = await fetch(`/grouping?${params}`);
+				if (response.status === 200) {
+					const json = await response.json();
+					setGrouping(json.grouping);
+				}
+			}
+		};
+		getGrouping(debouncedYouTubeURL);
+	}, [debouncedYouTubeURL]);
+
+	useEffect(() => {
+		const getArtwork = async (url: string) => {
+			if (url && !validArtworkURL) {
+				const params = new URLSearchParams();
+				params.append('artworkURL', url);
+				const response = await fetch(`/getArtwork?${params}`);
+				if (response.status === 200) {
+					const json = await response.json();
+					if (json.artworkURL !== url) {
+						setArtworkURL(json.artworkURL);
+					}
+				} else {
+					setArtworkURL(url);
+				}
+			}
+			setFetchingArtwork(false);
+		};
+		setFetchingArtwork(true);
+		getArtwork(debouncedArtworkURL);
+	}, [debouncedArtworkURL, validArtworkURL]);
 
 	const defaultTextFieldProps: TextFieldProps = {
 		sx: { mx: 3, flex: 1 },
@@ -211,13 +244,21 @@ const MusicDownloader = () => {
 						value={artworkURL}
 						onChange={(e) => setArtworkURL(e.target.value)}
 						error={artworkURL !== '' && !validArtworkURL}
-						helperText={artworkURL === '' || validArtworkURL ? '' : 'Must be a valid Soundcloud or image link.'}
+						helperText={
+							artworkURL === '' || validArtworkURL
+								? 'Supports soundcloud links to get cover art'
+								: 'Must be a valid image link.'
+						}
 					/>
-					<img
-						style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }}
-						src={artworkURL && validArtworkURL ? artworkURL : Image}
-						alt="Cover Art"
-					/>
+					{fetchingArtwork ? (
+						<CircularProgress />
+					) : (
+						<img
+							style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }}
+							src={artworkURL && validArtworkURL ? artworkURL : Image}
+							alt="Cover Art"
+						/>
+					)}
 				</Stack>
 				<Stack direction="row" alignItems="center" sx={{ my: 10 }}>
 					<TextField

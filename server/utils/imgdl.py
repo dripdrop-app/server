@@ -3,19 +3,22 @@ import os
 from urllib import parse
 
 
-def downloadImage(artwork):
+def downloadImage(artwork, returnContent=True):
     if not validURL(artwork):
         raise ValueError
 
     data = requests.get(artwork)
     if data.headers['Content-Type'].split('/')[0] == 'image':
-        return data
+        if returnContent:
+            return data
+        return artwork
 
     imgLinks = getImages(artwork)
     for imgLink in imgLinks:
         if 'artworks' in imgLink and '500x500' in imgLink:
-            content = requests.get(imgLink)
-            return content
+            if returnContent:
+                return requests.get(imgLink).content
+            return imgLink
     return None
 
 
