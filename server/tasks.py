@@ -10,22 +10,47 @@ from server.utils.imgdl import downloadImage
 from server.utils.mp3dl import ytDownload
 
 
-def downloadTask(jobID: str, youtubeURL='', origFileName='', file: Union[str, bytes, None] = None, artworkURL='', title='', artist='', album='', grouping=''):
-    jobPath = os.path.join('jobs', jobID)
+class Job:
+    def __init__(self, jobID='', filename='', youtubeURL='', artworkURL='', title='', artist='', album='', grouping=''):
+        self.jobID = jobID
+        self.filename = filename
+        self.youtubeURL = youtubeURL,
+        self.artworkURL = artworkURL
+        self.title = title
+        self.artist = artist
+        self.album = album
+        self.grouping = grouping
+
+    def __str__(self):
+        return {
+            'jobID': self.jobID,
+            'filename': self.filename,
+            'youtubeURL': self.youtubeURL,
+            'artworkURL': self.artworkURL,
+            'title': self.title,
+            'artist': self.artist,
+            'album': self.album,
+            'grouping': self.grouping
+        }
+        
+
+
+def downloadTask(job: Job, file: Union[str, bytes, None] = None):
+    jobPath = os.path.join('jobs', job.jobID)
     try:
         subprocess.run(['mkdir', 'jobs'])
         subprocess.run(['mkdir', jobPath])
         fileName = ''
 
-        if youtubeURL:
+        if job.youtubeURL:
             def updateProgress(d):
                 nonlocal fileName
                 if d['status'] == 'finished':
                     fileName = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
-            ytDownload(youtubeURL, [updateProgress], jobPath)
+            ytDownload(job.youtubeURL, [updateProgress], jobPath)
 
         elif file:
-            filepath = os.path.join(jobPath, origFileName)
+            filepath = os.path.join(jobPath, job.filename)
             with open(filepath) as f:
                 f.write(file)
             newFileName = f'{os.path.splitext(filepath)[:-1]}.mp3'
@@ -35,22 +60,22 @@ def downloadTask(jobID: str, youtubeURL='', origFileName='', file: Union[str, by
 
         audioFile = mutagen.File(fileName)
 
-        if artworkURL:
-            imageData = downloadImage(artworkURL)
+        if job.artworkURL:
+            imageData = downloadImage(job.artworkURL)
             audioFile.tags.add(mutagen.id3.APIC(
                 mimetype='image/png', data=imageData))
 
-        audioFile.tags.add(mutagen.id3.TIT2(text=title))
-        audioFile.tags.add(mutagen.id3.TPE1(text=artist))
-        audioFile.tags.add(mutagen.id3.TALB(text=album))
-        audioFile.tags.add(mutagen.id3.TIT1(text=grouping))
+        audioFile.tags.add(mutagen.id3.TIT2(text=job.title))
+        audioFile.tags.add(mutagen.id3.TPE1(text=job.artist))
+        audioFile.tags.add(mutagen.id3.TALB(text=job.album))
+        audioFile.tags.add(mutagen.id3.TIT1(text=job.grouping))
         audioFile.save()
 
         newFileName = os.path.join(
-            jobPath, sanitize_filename(f'{title} {artist}') + '.mp3')
+            jobPath, sanitize_filename(f'{job.title} {job.artist}') + '.mp3')
         subprocess.run(['mv', '-f', fileName, newFileName])
         response = requests.get(
-            f'http://localhost:{os.getenv("PORT")}/completeJob', params={'jobID': jobID})
+            f'http://localhost:{os.getenv("PORT")}/completeJob', params={'jobID': job.jobID})
         if not response.ok:
             raise RuntimeError('Failed to update job status')
 

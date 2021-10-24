@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from server.utils.mp3dl import extractInfo
 from server.utils.imgdl import downloadImage
 from server.db import database, music_jobs
-from server.tasks import downloadTask
+from server.tasks import downloadTask, Job
 
 
 async def getGrouping(request: Request):
@@ -26,7 +26,7 @@ async def completeJob(request: Request):
     transaction = await database.transaction()
     jobID = request.query_params.get('jobID')
     try:
-        query = music_jobs.update().where(music_jobs.c.job_id ==
+        query = music_jobs.update().where(music_jobs.c.jobID ==
                                           jobID).values(completed=True)
         await database.execute(query)
         await transaction.commit()
@@ -62,8 +62,29 @@ async def download(request: Request):
         if not youtubeURL and not file:
             return Response(None, 400)
 
+        job = Job(
+            jobID=jobID, 
+            filename=file.filename if file else None, 
+            youtubeURL=youtubeURL,
+            artworkURL=artworkURL, 
+            title=title, 
+            artist=artist, 
+            album=album, 
+            grouping=grouping
+        )
+
         try:
-            query = music_jobs.insert().values(job_id=jobID, completed=False)
+            query = music_jobs.insert().values(
+                jobID=job.jobID,
+                filename=job.filename,
+                youtubeURL=job.youtubeURL,
+                artworkURL=job.artworkURL,
+                title=job.title,
+                artist=job.artist,
+                album=job.album,
+                grouping=job.grouping,
+                completed=False
+            )
             await database.execute(query)
         except Exception as e:
             await transaction.rollback()
@@ -71,19 +92,12 @@ async def download(request: Request):
 
         task = BackgroundTask(
             downloadTask,
-            jobID,
-            youtubeURL=youtubeURL,
-            origFileName=file.filename if file else None,
+            job,
             file=await file.read() if file else None,
-            artworkURL=artworkURL,
-            title=title,
-            artist=artist,
-            album=album,
-            grouping=grouping
         )
 
         await transaction.commit()
-        return JSONResponse({'jobID': jobID}, background=task)
+        return JSONResponse({'job': job}, background=task)
 
     except Exception as e:
         print(traceback.format_exc())
