@@ -14,14 +14,15 @@ class Job:
     def __init__(self, jobID='', filename='', youtubeURL='', artworkURL='', title='', artist='', album='', grouping=''):
         self.jobID = jobID
         self.filename = filename
-        self.youtubeURL = youtubeURL,
+        self.youtubeURL = youtubeURL
         self.artworkURL = artworkURL
         self.title = title
         self.artist = artist
         self.album = album
         self.grouping = grouping
+        self.__dict__ = self._convertToDict()
 
-    def __str__(self):
+    def _convertToDict(self):
         return {
             'jobID': self.jobID,
             'filename': self.filename,
@@ -32,14 +33,19 @@ class Job:
             'album': self.album,
             'grouping': self.grouping
         }
-        
+
+    def __str__(self):
+        return str(self.__dict__)
 
 
 def downloadTask(job: Job, file: Union[str, bytes, None] = None):
     jobPath = os.path.join('jobs', job.jobID)
     try:
-        subprocess.run(['mkdir', 'jobs'])
-        subprocess.run(['mkdir', jobPath])
+        try:
+            os.mkdir('jobs')
+        except FileExistsError:
+            pass
+        os.mkdir(jobPath)
         fileName = ''
 
         if job.youtubeURL:
@@ -73,12 +79,12 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
 
         newFileName = os.path.join(
             jobPath, sanitize_filename(f'{job.title} {job.artist}') + '.mp3')
-        subprocess.run(['mv', '-f', fileName, newFileName])
+        os.rename(fileName, newFileName)
         response = requests.get(
             f'http://localhost:{os.getenv("PORT")}/completeJob', params={'jobID': job.jobID})
         if not response.ok:
             raise RuntimeError('Failed to update job status')
 
     except Exception as e:
-        subprocess.run(['rm', '-rf', jobPath])
+        os.rmdir(jobPath)
         print(traceback.format_exc())

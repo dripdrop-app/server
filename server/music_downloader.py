@@ -63,13 +63,13 @@ async def download(request: Request):
             return Response(None, 400)
 
         job = Job(
-            jobID=jobID, 
-            filename=file.filename if file else None, 
+            jobID=jobID,
+            filename=file.filename if file else None,
             youtubeURL=youtubeURL,
-            artworkURL=artworkURL, 
-            title=title, 
-            artist=artist, 
-            album=album, 
+            artworkURL=artworkURL,
+            title=title,
+            artist=artist,
+            album=album,
             grouping=grouping
         )
 
@@ -97,7 +97,7 @@ async def download(request: Request):
         )
 
         await transaction.commit()
-        return JSONResponse({'job': job}, background=task)
+        return JSONResponse({'job': job.__dict__}, background=task)
 
     except Exception as e:
         print(traceback.format_exc())

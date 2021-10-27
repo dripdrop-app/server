@@ -10,7 +10,7 @@ def downloadImage(artwork, returnContent=True):
     data = requests.get(artwork)
     if data.headers['Content-Type'].split('/')[0] == 'image':
         if returnContent:
-            return data
+            return data.content
         return artwork
 
     imgLinks = getImages(artwork)
