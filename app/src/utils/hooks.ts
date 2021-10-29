@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export const useDebounce = (value: any, timeout: number) => {
 	const [debounceValue, setDebouncedValue] = useState(value);
@@ -12,3 +12,8 @@ export const useDebounce = (value: any, timeout: number) => {
 
 	return debounceValue;
 };
+
+
+// export const useSmartContext = <T>(selector: () => {}) => {
+// 	const [partialContext, updatePartialContext] = useState(selector());
+// }

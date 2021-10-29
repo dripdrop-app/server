@@ -1,8 +1,11 @@
 import databases
 import sqlalchemy
-import os
+from starlette.config import Config
+from sqlalchemy.sql.expression import text
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+config = Config('env')
+
+DATABASE_URL = config.get('DATABASE_URL')
 database = databases.Database(DATABASE_URL)
 
 metadata = sqlalchemy.MetaData()
@@ -18,5 +21,8 @@ music_jobs = sqlalchemy.Table(
     sqlalchemy.Column("artist", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("album", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("grouping", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("completed", sqlalchemy.Boolean)
+    sqlalchemy.Column("completed", sqlalchemy.Boolean),
+    sqlalchemy.Column("failed", sqlalchemy.Boolean),
+    sqlalchemy.Column("started", sqlalchemy.dialects.postgresql.TIMESTAMP,
+                      server_default=text("NOW()"))
 )

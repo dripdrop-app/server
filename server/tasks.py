@@ -1,7 +1,7 @@
 import os
+import subprocess
 import traceback
 import mutagen
-import subprocess
 import requests
 from pydub import AudioSegment
 from typing import Union
@@ -57,9 +57,9 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
 
         elif file:
             filepath = os.path.join(jobPath, job.filename)
-            with open(filepath) as f:
+            with open(filepath, 'wb') as f:
                 f.write(file)
-            newFileName = f'{os.path.splitext(filepath)[:-1]}.mp3'
+            newFileName = f'{os.path.splitext(filepath)[0]}.mp3'
             AudioSegment.from_file(filepath).export(
                 newFileName, format='mp3', bitrate='320k')
             fileName = newFileName
@@ -81,10 +81,12 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
             jobPath, sanitize_filename(f'{job.title} {job.artist}') + '.mp3')
         os.rename(fileName, newFileName)
         response = requests.get(
-            f'http://localhost:{os.getenv("PORT")}/completeJob', params={'jobID': job.jobID})
+            f'http://localhost:{os.getenv("PORT")}/processJob', params={'jobID': job.jobID, 'completed': True})
         if not response.ok:
             raise RuntimeError('Failed to update job status')
 
-    except Exception as e:
-        os.rmdir(jobPath)
+    except:
+        subprocess.run(['rm', '-rf', jobPath])
         print(traceback.format_exc())
+        response = requests.get(
+            f'http://localhost:{os.getenv("PORT")}/processJob', params={'jobID': job.jobID, 'failed': True})

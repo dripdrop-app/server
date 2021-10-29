@@ -1,7 +1,7 @@
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { FILE_TYPE } from '../utils/enums';
 
-interface Job {
+interface BaseInputs {
 	youtubeURL: string | null;
 	filename: string | null;
 	artworkURL: string | null;
@@ -11,7 +11,13 @@ interface Job {
 	grouping: string | null;
 }
 
-interface FormInputs extends Job {
+export interface Job extends BaseInputs {
+	jobID: string;
+	completed: boolean;
+	failed: boolean;
+}
+
+interface FormInputs extends BaseInputs {
 	fileType: keyof typeof FILE_TYPE;
 }
 
@@ -20,10 +26,10 @@ interface MusicContextValue {
 	formInputs: FormInputs;
 	validForm: boolean;
 	resetForm: () => void;
-	addJob: (job: Job) => void;
 	updateFormInputs: (update: Partial<FormInputs>) => void;
 	performOperation: (file?: File) => void;
 	updatingForm: boolean;
+	removeJob: (jobID: string) => void;
 }
 
 const defaultFormData = {
@@ -44,21 +50,34 @@ export const MusicContext = createContext<MusicContextValue>({
 	validForm: false,
 	jobs: [],
 	resetForm: () => {},
-	addJob: () => {},
 	updateFormInputs: () => {},
 	performOperation: () => {},
 	updatingForm: false,
+	removeJob: () => {},
 });
 
 const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	const [formInputs, setFormInputs] = useState<FormInputs>({ ...defaultFormData });
 	const [validForm, setValidForm] = useState(false);
-	const [jobs, updateJobs] = useState<Job[]>([]);
+	const [jobs, setJobs] = useState<Job[]>([]);
 	const [updatingForm, setUpdatingForm] = useState(false);
+	const ws = useMemo(() => new WebSocket(`ws://localhost:5000/listenJobs`), []);
+
+	ws.onmessage = (event) => {
+		const json = JSON.parse(event.data);
+		const completedJobs = json.jobs.reduce((map: any, job: Job) => {
+			map[job.jobID] = job;
+			return map;
+		}, {});
+		jobs.forEach((job, index) => {
+			if (completedJobs[job.jobID]) {
+				jobs[index] = completedJobs[job.jobID];
+			}
+		});
+		setJobs([...jobs]);
+	};
 
 	const resetForm = () => setFormInputs({ ...defaultFormData });
-
-	const addJob = (job: Job) => updateJobs([...jobs, job]);
 
 	const getArtwork = async (url: string) => {
 		const valid = RegExp(/^https:\/\/(www\.)?.+\.(jpg|jpeg|png)/).test(url);
@@ -75,7 +94,8 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	};
 
 	const getGrouping = async (youTubeURL: string) => {
-		if (youTubeURL) {
+		const valid = RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youTubeURL);
+		if (youTubeURL && valid) {
 			const params = new URLSearchParams();
 			params.append('youtubeURL', youTubeURL);
 			const response = await fetch(`/grouping?${params}`);
@@ -102,7 +122,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 			} else if (update.filename?.endsWith('.wav')) {
 				update.fileType = FILE_TYPE.WAV_UPLOAD;
 			}
-			if (update.title) {
+			if (update.title && !update.album) {
 				const text = update.title;
 				update.album = '';
 
@@ -124,9 +144,12 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 					update.album = update.album ? `${update.album} - Single` : '';
 				}
 			}
-			update.artworkURL = update.artworkURL ? await getArtwork(update.artworkURL) : update.artworkURL;
-			update.grouping = update.youtubeURL ? await getGrouping(update.youtubeURL) : '';
-
+			if (update.artworkURL) {
+				update.artworkURL = await getArtwork(update.artworkURL);
+			}
+			if (update.youtubeURL && !update.grouping) {
+				update.grouping = await getGrouping(update.youtubeURL);
+			}
 			Object.keys(formInputs).forEach((key) => {
 				const dataKey = key as keyof FormInputs;
 				if (update[dataKey] === undefined || update[dataKey] === null) {
@@ -158,7 +181,26 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		if (response.status === 200) {
 			const json = await response.json();
 			const job = json.job;
-			console.log(job);
+			setJobs([job, ...jobs]);
+			resetForm();
+		}
+	};
+
+	const removeJob = async (deletedJobID: string) => {
+		const params = new URLSearchParams();
+		params.append('jobID', deletedJobID);
+		const response = await fetch(`/deleteJob?${params}`);
+		if (response.status === 200) {
+			setJobs([...jobs.filter((job) => deletedJobID !== job.jobID)]);
+		}
+	};
+
+	const getJobs = async () => {
+		const response = await fetch('/getJobs');
+		if (response.status === 200) {
+			const json = await response.json();
+			const jobs = json.jobs;
+			setJobs([...jobs]);
 		}
 	};
 
@@ -174,13 +216,21 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	}, [formInputs]);
 
 	useEffect(() => {
-		// GET JOBS
-		updateJobs([]);
-	}, []);
+		const jobIDs = jobs.filter((job) => !job.completed).map((job) => job.jobID);
+		if (ws.readyState === 1) {
+			ws.send(JSON.stringify({ jobIDs: jobIDs }));
+		}
+	}, [jobs, ws]);
+
+	useEffect(() => {
+		getJobs();
+
+		return () => ws.close();
+	}, [ws]);
 
 	return (
 		<MusicContext.Provider
-			value={{ formInputs, jobs, validForm, resetForm, addJob, updateFormInputs, performOperation, updatingForm }}
+			value={{ formInputs, jobs, validForm, resetForm, updateFormInputs, performOperation, updatingForm, removeJob }}
 		>
 			{props.children}
 		</MusicContext.Provider>

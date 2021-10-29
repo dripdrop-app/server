@@ -2,7 +2,7 @@ version: '2.4'
 services:
   mysql:
     image: postgres:14
-    container_name: postgres
+    container_name: scripts_postgres
     restart: always
     volumes:
       - ./setup:/docker-entrypoint-initdb.d
@@ -11,3 +11,10 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: password
+
+  redis:
+    image: redis
+    container_name: scripts_redis
+    restart: always
+    ports:
+      - '6379:6379'
