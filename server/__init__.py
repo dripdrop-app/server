@@ -3,7 +3,7 @@ from starlette.applications import Starlette
 from starlette.routing import Route, WebSocketRoute
 from starlette.responses import FileResponse, Response
 from starlette.requests import Request
-from server.music_downloader import deleteJob, getGrouping, download, processJob, getArtwork, listenJobs, getJobs
+from server.music_downloader import deleteJob, getGrouping, download, processJob, getArtwork, listenJobs, getJobs, downloadJob
 from server.db import database
 
 
@@ -22,6 +22,7 @@ routes = [
     Route('/grouping', endpoint=getGrouping, methods=['GET']),
     Route('/download', endpoint=download, methods=['POST']),
     Route('/deleteJob', endpoint=deleteJob, methods=['GET']),
+    Route('/downloadJob', endpoint=downloadJob, methods=['GET']),
     Route('/getJobs', endpoint=getJobs, methods=['GET']),
     WebSocketRoute('/listenJobs', endpoint=listenJobs),
     Route('/{path:path}', endpoint=index, methods=['GET'])

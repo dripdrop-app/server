@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useEffect, useState, useMemo } from 'react';
 import { FILE_TYPE } from '../utils/enums';
 
 interface BaseInputs {
@@ -216,8 +216,8 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	}, [formInputs]);
 
 	useEffect(() => {
-		const jobIDs = jobs.filter((job) => !job.completed).map((job) => job.jobID);
 		if (ws.readyState === 1) {
+			const jobIDs = jobs.filter((job) => !job.completed).map((job) => job.jobID);
 			ws.send(JSON.stringify({ jobIDs: jobIDs }));
 		}
 	}, [jobs, ws]);

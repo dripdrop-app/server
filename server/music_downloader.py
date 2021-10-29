@@ -2,6 +2,7 @@ import asyncio
 import uuid
 import traceback
 import datetime
+import os
 from typing import Union
 from sqlalchemy.sql.expression import desc
 from starlette.background import BackgroundTask
@@ -10,6 +11,7 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.requests import Request
 from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket, WebSocketDisconnect
+from yt_dlp.utils import sanitize_filename
 from server.utils.mp3dl import extractInfo
 from server.utils.imgdl import downloadImage
 from server.db import database, music_jobs
@@ -32,33 +34,6 @@ async def getArtwork(request: Request):
     return JSONResponse({'artworkURL': artworkURL})
 
 
-@endpointHandler()
-async def processJob(request: Request):
-    jobID = request.query_params.get('jobID')
-    completed = request.query_params.get('completed') == 'True'
-    failed = request.query_params.get('failed') == 'True'
-    async with database.transaction():
-        query = music_jobs.update().where(music_jobs.c.jobID ==
-                                          jobID).values(completed=completed, failed=failed)
-        await database.execute(query)
-    await redis.publish(JOB_CHANNEL, jobID)
-    return Response(None)
-
-
-@endpointHandler()
-async def getJobs(request: Request):
-    query = music_jobs.select().order_by(desc(music_jobs.c.started))
-    jobs = await database.fetch_all(query)
-    return JSONResponse({'jobs': [
-        {
-            key: value.__str__() if isinstance(
-                value, datetime.datetime) else value
-            for key, value in job.items()
-        }
-        for job in jobs
-    ]})
-
-
 async def listenJobs(websocket: WebSocket):
     try:
         await websocket.accept()
@@ -77,17 +52,14 @@ async def listenJobs(websocket: WebSocket):
                         if jobIDs.get(completedJobID, False):
                             del jobIDs[completedJobID]
                             query = music_jobs.select().where(music_jobs.c.jobID == completedJobID)
-                            jobs = await database.fetch_all(query)
-                            await websocket.send_json({'jobs': [
-                                {
-                                    key: value.__str__() if isinstance(
-                                        value, datetime.datetime) else value
-                                    for key, value in job.items()
-                                }
-                                for job in jobs
-                            ]})
-                            if len(jobIDs.keys()) == 0:
-                                return True
+                            job = await database.fetch_one(query)
+                            await websocket.send_json({'jobs': [{
+                                key: value.__str__() if isinstance(
+                                    value, datetime.datetime) else value
+                                for key, value in job.items()
+                            }]})
+                        if len(jobIDs.keys()) == 0:
+                            return True
                     return False
                 asyncio.create_task(subscribe(JOB_CHANNEL, onMessage))
 
@@ -141,6 +113,33 @@ async def download(request: Request):
 
 
 @endpointHandler()
+async def processJob(request: Request):
+    jobID = request.query_params.get('jobID')
+    completed = request.query_params.get('completed') == 'True'
+    failed = request.query_params.get('failed') == 'True'
+    async with database.transaction():
+        query = music_jobs.update().where(music_jobs.c.jobID ==
+                                          jobID).values(completed=completed, failed=failed)
+        await database.execute(query)
+    await redis.publish(JOB_CHANNEL, jobID)
+    return Response(None)
+
+
+@endpointHandler()
+async def getJobs(request: Request):
+    query = music_jobs.select().order_by(desc(music_jobs.c.started))
+    jobs = await database.fetch_all(query)
+    return JSONResponse({'jobs': [
+        {
+            key: value.__str__() if isinstance(
+                value, datetime.datetime) else value
+            for key, value in job.items()
+        }
+        for job in jobs
+    ]})
+
+
+@endpointHandler()
 @database.transaction()
 async def deleteJob(request: Request):
     jobID = request.query_params.get('jobID')
@@ -151,3 +150,12 @@ async def deleteJob(request: Request):
     except:
         pass
     return Response(None)
+
+
+@endpointHandler()
+async def downloadJob(request: Request):
+    jobID = request.query_params.get('jobID')
+    query = music_jobs.select().order_by(desc(music_jobs.c.started))
+    job = await database.fetch_one(query)
+    filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
+    return FileResponse(os.path.join('jobs', jobID, filename), filename=filename)
