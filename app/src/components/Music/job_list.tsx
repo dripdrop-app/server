@@ -29,8 +29,7 @@ const JobCard = (props: Job) => {
 		if (response.ok) {
 			const contentDisposition = response.headers.get('Content-Disposition') || '';
 			const groups = contentDisposition.match(/filename\*?=(?:utf-8''|")(.+)(?:"|;)?/);
-			const filename = groups && groups.length > 1 ? groups[1] : 'downloaded.mp3';
-			console.log(response.headers.get('Content-Disposition'), contentDisposition);
+			const filename = decodeURIComponent(groups && groups.length > 1 ? groups[1] : 'downloaded.mp3');
 			const url = URL.createObjectURL(await response.blob());
 			const a = document.createElement('a');
 			a.href = url;

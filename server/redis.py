@@ -1,4 +1,3 @@
-import asyncio
 import aioredis
 from starlette.config import Config
 
