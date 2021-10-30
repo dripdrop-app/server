@@ -3,7 +3,7 @@ import sqlalchemy
 from starlette.config import Config
 from sqlalchemy.sql.expression import text
 
-config = Config('env')
+config = Config('.env')
 
 DATABASE_URL = config.get('DATABASE_URL')
 database = databases.Database(DATABASE_URL)
