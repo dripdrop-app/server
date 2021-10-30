@@ -8,6 +8,10 @@ from typing import Union
 from yt_dlp.utils import sanitize_filename
 from server.utils.imgdl import downloadImage
 from server.utils.mp3dl import ytDownload
+from starlette.config import Config
+
+config = Config('.env')
+PORT = config.get('PORT')
 
 
 class Job:
@@ -81,7 +85,7 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
             jobPath, sanitize_filename(f'{job.title} {job.artist}') + '.mp3')
         os.rename(fileName, newFileName)
         response = requests.get(
-            f'http://localhost:{os.getenv("PORT")}/processJob', params={'jobID': job.jobID, 'completed': True})
+            f'http://localhost:{PORT}/processJob', params={'jobID': job.jobID, 'completed': True})
         if not response.ok:
             raise RuntimeError('Failed to update job status')
 
@@ -89,4 +93,4 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
         subprocess.run(['rm', '-rf', jobPath])
         print(traceback.format_exc())
         response = requests.get(
-            f'http://localhost:{os.getenv("PORT")}/processJob', params={'jobID': job.jobID, 'failed': True})
+            f'http://localhost:{PORT}/processJob', params={'jobID': job.jobID, 'failed': True})

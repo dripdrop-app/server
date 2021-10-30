@@ -1,5 +1,7 @@
 - Manual Web Server Setup
 
+- Create user account [https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-20-04]
+
 - Register a domain with a Domain Registrar
 
 - Digital Ocean Specific
@@ -17,9 +19,15 @@
 
 - Test by going to domain (nginx test site should show)
 
-- Add new nginx server block to /etc/sites-available/<-project->
+- Add new nginx server block to /etc/sites-available/<-project-> [https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-20-04]
 
 - Link server block to sites-enabled
+
+- Set up server and check it out
+
+- SSL, install certbot [https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-20-04]
+
+- Add upgrade protocols for http and connection [https://futurestud.io/tutorials/nginx-how-to-fix-unknown-connection_upgrade-variable]
 
 ```
 packages to install
