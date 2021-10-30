@@ -62,7 +62,10 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	const [validForm, setValidForm] = useState(false);
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [updatingForm, setUpdatingForm] = useState(false);
-	const ws = useMemo(() => new WebSocket(`ws://${server_domain}/ws/listenJobs`), []);
+	const ws = useMemo(
+		() => new WebSocket(`${process.env.NODE_ENV === 'production' ? 'wss' : 'ws'}://${server_domain}/ws/listenJobs`),
+		[]
+	);
 
 	ws.onmessage = (event) => {
 		const json = JSON.parse(event.data);
