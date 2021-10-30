@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useState, useMemo } from 'react';
 import { FILE_TYPE } from '../utils/enums';
+import { server_domain } from '../config';
 
 interface BaseInputs {
 	youtubeURL: string | null;
@@ -61,7 +62,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	const [validForm, setValidForm] = useState(false);
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [updatingForm, setUpdatingForm] = useState(false);
-	const ws = useMemo(() => new WebSocket(`ws://localhost:5000/listenJobs`), []);
+	const ws = useMemo(() => new WebSocket(`ws://${server_domain}/ws/listenJobs`), []);
 
 	ws.onmessage = (event) => {
 		const json = JSON.parse(event.data);

@@ -1,6 +1,6 @@
 import os
 from starlette.applications import Starlette
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import Route, WebSocketRoute, Mount
 from starlette.responses import FileResponse, Response
 from starlette.requests import Request
 from server.music_downloader import deleteJob, getGrouping, download, processJob, getArtwork, listenJobs, getJobs, downloadJob
@@ -24,7 +24,9 @@ routes = [
     Route('/deleteJob', endpoint=deleteJob, methods=['GET']),
     Route('/downloadJob', endpoint=downloadJob, methods=['GET']),
     Route('/getJobs', endpoint=getJobs, methods=['GET']),
-    WebSocketRoute('/listenJobs', endpoint=listenJobs),
+    Mount('/ws', routes=[
+        WebSocketRoute('/listenJobs', endpoint=listenJobs),
+    ]),
     Route('/{path:path}', endpoint=index, methods=['GET'])
 ]
 
