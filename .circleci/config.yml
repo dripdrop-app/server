@@ -4,6 +4,7 @@ jobs:
   pull-and-build:
     docker:
       - image: arvindr226/alpine-ssh
+    resource_class: small
     steps:
       - run: ssh -o StrictHostKeyChecking=no -v $USER@$IP "./deploy.sh"
 
