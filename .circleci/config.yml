@@ -1,0 +1,19 @@
+version: 2.1
+
+jobs:
+  pull-and-build:
+    docker:
+      - image: ubuntu:20.04
+    steps:
+      - checkout
+      - run: ssh -oStrictKeyChecking=no -v $USER:$IP "./deploy.sh"
+
+workflows:
+  version: 2
+  build-project:
+    jobs:
+      - pull-and-build:
+          filters:
+            branches:
+              only:
+                - main
