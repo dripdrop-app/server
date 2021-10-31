@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: arvindr226/alpine-ssh
     steps:
-      - run: ssh -oStrictKeyChecking=no -v $USER:$IP "./deploy.sh"
+      - run: ssh -o StrictKeyChecking=no -v $USER:$IP "./deploy.sh"
 
 workflows:
   version: 2
