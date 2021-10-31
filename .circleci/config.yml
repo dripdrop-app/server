@@ -5,7 +5,6 @@ jobs:
     docker:
       - image: ubuntu:20.04
     steps:
-      - checkout
       - run: ssh -oStrictKeyChecking=no -v $USER:$IP "./deploy.sh"
 
 workflows:
