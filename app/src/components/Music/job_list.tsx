@@ -8,7 +8,7 @@ import {
 	CircularProgress,
 	Button,
 	Stack,
-	Grid,
+	Box,
 	Container,
 	ButtonGroup,
 } from '@mui/material';
@@ -147,13 +147,13 @@ const JobList = () => {
 				<Stack textAlign="center" sx={{ my: 5 }}>
 					{jobs.length === 0 ? <Typography variant="body2">No Existing Jobs</Typography> : null}
 				</Stack>
-				<Grid container spacing={0.5} justifyContent="center">
+				<Stack spacing={1} alignSelf="center" justifyContent="center">
 					{jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((job) => (
-						<Grid item key={job.jobID}>
+						<Box key={job.jobID}>
 							<JobCard {...job} />
-						</Grid>
+						</Box>
 					))}
-				</Grid>
+				</Stack>
 			</Stack>
 		),
 		[PAGE_SIZE, jobs, nextPage, page, prevPage]
