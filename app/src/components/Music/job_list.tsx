@@ -40,7 +40,7 @@ const JobCard = (props: Job) => {
 
 	return useMemo(
 		() => (
-			<Card>
+			<Card sx={{ minWidth: '30em' }}>
 				<Container>
 					<Stack direction="row" alignItems="center">
 						<CardMedia component="img" height="150em" image={artworkURL || Image} alt="artwork" />

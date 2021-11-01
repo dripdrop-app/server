@@ -5,7 +5,7 @@ import JobList from '../components/Music/job_list';
 
 const MusicDownloader = () => {
 	return (
-		<Stack direction="row">
+		<Stack direction={{ xs: 'column', md: 'row' }}>
 			<Box sx={{ flex: 3 }}>
 				<Container>
 					<MusicForm />
