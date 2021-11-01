@@ -63,7 +63,7 @@ const MusicForm = () => {
 		() => (
 			<React.Fragment>
 				<Typography sx={{ my: 5 }} variant="h2">
-					MP3 Downloader / Convertor
+					MP3 Downloader / Converter
 				</Typography>
 				<Divider variant="middle" />
 				<Stack direction="row" alignItems="center" sx={{ my: 10 }}>
