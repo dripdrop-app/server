@@ -66,7 +66,7 @@ const MusicForm = () => {
 					MP3 Downloader / Converter
 				</Typography>
 				<Divider variant="middle" />
-				<Stack direction="row" alignItems="center" sx={{ my: 10 }}>
+				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={0.5} sx={{ my: 10 }}>
 					<YouTube
 						sx={{
 							color: fileType === FILE_TYPE.YOUTUBE ? 'red' : 'grey',
@@ -111,7 +111,7 @@ const MusicForm = () => {
 						Browse
 					</Button>
 				</Stack>
-				<Stack direction="row" alignItems="center" sx={{ my: 10 }}>
+				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={0.5} sx={{ my: 10 }}>
 					<TextField
 						{...defaultTextFieldProps}
 						label="Artwork URL"
@@ -121,7 +121,7 @@ const MusicForm = () => {
 					/>
 					<img style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }} src={artworkURL || Image} alt="Cover Art" />
 				</Stack>
-				<Stack direction="row" alignItems="center" sx={{ my: 10 }}>
+				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={0.5} sx={{ my: 10 }}>
 					<TextField
 						label="Title"
 						required

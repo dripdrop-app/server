@@ -21,10 +21,11 @@ async def onCompleteMessage(websocket: WebSocket, msg):
         completedJobID = msg.get('data').decode()
         query = music_jobs.select().where(music_jobs.c.jobID == completedJobID)
         job = await database.fetch_one(query)
-        await websocket.send_json({
-            'type': 'COMPLETED',
-            'jobs': [convertDBJob(job)]
-        })
+        if job:
+            await websocket.send_json({
+                'type': 'COMPLETED',
+                'jobs': [convertDBJob(job)]
+            })
 
 
 async def onStartedMessage(websocket: WebSocket, msg):
@@ -32,10 +33,11 @@ async def onStartedMessage(websocket: WebSocket, msg):
         startedJobID = msg.get('data').decode()
         query = music_jobs.select().where(music_jobs.c.jobID == startedJobID)
         job = await database.fetch_one(query)
-        await websocket.send_json({
-            'type': 'STARTED',
-            'jobs': [convertDBJob(job)]
-        })
+        if job:
+            await websocket.send_json({
+                'type': 'STARTED',
+                'jobs': [convertDBJob(job)]
+            })
 
 
 async def subscribe(channel: RedisChannels, websocket: WebSocket):

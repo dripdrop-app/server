@@ -10,6 +10,7 @@ import {
 	Stack,
 	Grid,
 	Container,
+	ButtonGroup,
 } from '@mui/material';
 import { FileDownload, CopyAll, Delete, Error, NavigateNext, NavigateBefore } from '@mui/icons-material';
 import { Job, MusicContext } from '../../context/music_context';
@@ -40,11 +41,11 @@ const JobCard = (props: Job) => {
 
 	return useMemo(
 		() => (
-			<Card sx={{ minWidth: '30em' }}>
-				<Container>
-					<Stack direction="row" alignItems="center">
-						<CardMedia component="img" height="150em" image={artworkURL || Image} alt="artwork" />
-						<CardContent>
+			<Card>
+				<Container sx={{ my: 1 }}>
+					<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center">
+						<CardMedia component="img" height="150" image={artworkURL || Image} alt="artwork" />
+						<CardContent sx={{ flex: 2 }}>
 							<Stack direction="row" spacing={1}>
 								<Typography variant="caption">ID:</Typography>
 								<Typography sx={typographyDefaultCSS} variant="caption">
@@ -82,19 +83,21 @@ const JobCard = (props: Job) => {
 								</Typography>
 							</Stack>
 							<CardActions>
-								{completed ? (
-									<Button color="success" onClick={downloadJob}>
-										<FileDownload color="success" />
-									</Button>
-								) : null}
-								{failed ? <Error color="error" /> : null}
 								{!completed && !failed ? <CircularProgress /> : null}
-								<Button onClick={() => updateFormInputs({ ...props, fileType: FILE_TYPE.YOUTUBE })}>
-									<CopyAll />
-								</Button>
-								<Button color="error" onClick={() => removeJob(jobID)}>
-									<Delete color="error" />
-								</Button>
+								<ButtonGroup variant="contained">
+									{completed ? (
+										<Button color="success" onClick={downloadJob}>
+											<FileDownload />
+										</Button>
+									) : null}
+									{failed ? <Error color="error" /> : null}
+									<Button onClick={() => updateFormInputs({ ...props, fileType: FILE_TYPE.YOUTUBE })}>
+										<CopyAll />
+									</Button>
+									<Button color="error" onClick={() => removeJob(jobID)}>
+										<Delete />
+									</Button>
+								</ButtonGroup>
 							</CardActions>
 						</CardContent>
 					</Stack>
