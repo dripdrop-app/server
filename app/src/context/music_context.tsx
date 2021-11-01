@@ -69,16 +69,23 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 
 	ws.onmessage = (event) => {
 		const json = JSON.parse(event.data);
-		const completedJobs = json.jobs.reduce((map: any, job: Job) => {
-			map[job.jobID] = job;
-			return map;
-		}, {});
-		jobs.forEach((job, index) => {
-			if (completedJobs[job.jobID]) {
-				jobs[index] = completedJobs[job.jobID];
-			}
-		});
-		setJobs([...jobs]);
+		const type = json.type;
+		if (type === 'ALL') {
+			setJobs([...json.jobs]);
+		} else if (type === 'STARTED') {
+			setJobs([...json.jobs, ...jobs]);
+		} else if (type === 'COMPLETED') {
+			const completedJobs = json.jobs.reduce((map: any, job: Job) => {
+				map[job.jobID] = job;
+				return map;
+			}, {});
+			jobs.forEach((job, index) => {
+				if (completedJobs[job.jobID]) {
+					jobs[index] = completedJobs[job.jobID];
+				}
+			});
+			setJobs([...jobs]);
+		}
 	};
 
 	const resetForm = () => setFormInputs({ ...defaultFormData });
@@ -183,9 +190,6 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		formData.append('grouping', formInputs.grouping || '');
 		const response = await fetch('/download', { method: 'POST', body: formData });
 		if (response.status === 200) {
-			const json = await response.json();
-			const job = json.job;
-			setJobs([job, ...jobs]);
 			resetForm();
 		}
 	};
@@ -199,15 +203,6 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		}
 	};
 
-	const getJobs = async () => {
-		const response = await fetch('/getJobs');
-		if (response.status === 200) {
-			const json = await response.json();
-			const jobs = json.jobs;
-			setJobs([...jobs]);
-		}
-	};
-
 	useEffect(() => {
 		if (
 			(formInputs.youtubeURL && RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(formInputs.youtubeURL)) ||
@@ -218,19 +213,6 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 			setValidForm(false);
 		}
 	}, [formInputs]);
-
-	useEffect(() => {
-		if (ws.readyState === 1) {
-			const jobIDs = jobs.filter((job) => !job.completed).map((job) => job.jobID);
-			ws.send(JSON.stringify({ jobIDs: jobIDs }));
-		}
-	}, [jobs, ws]);
-
-	useEffect(() => {
-		getJobs();
-
-		return () => ws.close();
-	}, [ws]);
 
 	return (
 		<MusicContext.Provider

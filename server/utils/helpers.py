@@ -1,4 +1,5 @@
 import traceback
+import datetime
 from inspect import iscoroutinefunction
 from starlette.requests import Request
 from starlette.responses import Response
@@ -17,3 +18,10 @@ def endpointHandler():
                 return Response(None, 400)
         return wrapper
     return decorator
+
+
+def convertDBJob(job):
+    return {
+        key: value.__str__() if isinstance(value, datetime.datetime) else value
+        for key, value in job.items()
+    }
