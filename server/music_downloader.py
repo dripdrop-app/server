@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.tasks import Task
 import uuid
 import traceback
 import os
@@ -34,6 +35,7 @@ async def getArtwork(request: Request):
 
 
 async def listenJobs(websocket: WebSocket):
+    tasks: list[Task] = []
     try:
         await websocket.accept()
         query = music_jobs.select().order_by(desc(music_jobs.c.started))
@@ -43,10 +45,12 @@ async def listenJobs(websocket: WebSocket):
             'jobs': [convertDBJob(job) for job in jobs]
         })
 
-        asyncio.create_task(
-            subscribe(RedisChannels.STARTED_JOB_CHANNEL, websocket))
-        asyncio.create_task(
-            subscribe(RedisChannels.COMPLETED_JOB_CHANNEL, websocket))
+        tasks.extend([
+            asyncio.create_task(
+                subscribe(RedisChannels.STARTED_JOB_CHANNEL, websocket)),
+            asyncio.create_task(
+                subscribe(RedisChannels.COMPLETED_JOB_CHANNEL, websocket))
+        ])
 
         while True:
             await websocket.send_json({})
@@ -55,6 +59,8 @@ async def listenJobs(websocket: WebSocket):
     except Exception as e:
         if not isinstance(e, WebSocketDisconnect):
             print(traceback.format_exc())
+        for task in tasks:
+            task.cancel()
         await websocket.close()
 
 
