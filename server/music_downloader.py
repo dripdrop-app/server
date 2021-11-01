@@ -139,4 +139,11 @@ async def downloadJob(request: Request):
     query = music_jobs.select().order_by(desc(music_jobs.c.started))
     job = await database.fetch_one(query)
     filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
+    filepath = os.path.join('jobs', jobID, filename)
+    if not os.path.exists(filepath):
+        async with database.transaction():
+            query = music_jobs.update().where(music_jobs.c.jobID == jobID).values(failed=True)
+            await database.execute(query)
+        await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, jobID)
+        return Response(None, 404)
     return FileResponse(os.path.join('jobs', jobID, filename), filename=filename)

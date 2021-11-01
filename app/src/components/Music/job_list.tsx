@@ -85,20 +85,23 @@ const JobCard = (props: Job) => {
 							<CardActions>
 								{!completed && !failed ? <CircularProgress /> : null}
 								<ButtonGroup variant="contained">
-									{completed ? (
-										<Button color="success" onClick={downloadJob}>
+									{completed && !failed ? (
+										<Button title="Download File" color="success" onClick={downloadJob}>
 											<FileDownload />
 										</Button>
 									) : null}
 									{failed ? (
-										<Button color="error">
+										<Button title="Job Failed / File Not Found" color="error">
 											<Error />
 										</Button>
 									) : null}
-									<Button onClick={() => updateFormInputs({ ...props, fileType: FILE_TYPE.YOUTUBE })}>
+									<Button
+										title="Copy to Form"
+										onClick={() => updateFormInputs({ ...props, fileType: FILE_TYPE.YOUTUBE })}
+									>
 										<CopyAll />
 									</Button>
-									<Button color="error" onClick={() => removeJob(jobID)}>
+									<Button title="Delete Job and File" color="error" onClick={() => removeJob(jobID)}>
 										<Delete />
 									</Button>
 								</ButtonGroup>
