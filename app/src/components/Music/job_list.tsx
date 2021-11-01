@@ -90,7 +90,11 @@ const JobCard = (props: Job) => {
 											<FileDownload />
 										</Button>
 									) : null}
-									{failed ? <Error color="error" /> : null}
+									{failed ? (
+										<Button color="error">
+											<Error />
+										</Button>
+									) : null}
 									<Button onClick={() => updateFormInputs({ ...props, fileType: FILE_TYPE.YOUTUBE })}>
 										<CopyAll />
 									</Button>
