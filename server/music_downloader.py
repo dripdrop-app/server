@@ -54,7 +54,7 @@ async def listenJobs(websocket: WebSocket):
 
         while True:
             await websocket.send_json({})
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
     except Exception as e:
         if not isinstance(e, WebSocketDisconnect):
