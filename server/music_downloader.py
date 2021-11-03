@@ -11,12 +11,13 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.requests import Request
 from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket, WebSocketDisconnect
+from websockets.exceptions import ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 from server.utils.mp3dl import extractInfo
 from server.utils.imgdl import downloadImage
 from server.db import database, music_jobs
 from server.redis import RedisChannels, subscribe, redis
-from server.tasks import downloadTask, Job
+from server.tasks import downloadTask, Job, readTags
 from server.utils.helpers import endpointHandler, convertDBJob
 
 
@@ -32,6 +33,18 @@ async def getArtwork(request: Request):
     artworkURL = request.query_params.get('artworkURL')
     artworkURL = await run_in_threadpool(downloadImage, artworkURL, False)
     return JSONResponse({'artworkURL': artworkURL})
+
+
+@endpointHandler()
+async def getTags(request: Request):
+    form = await request.form()
+    file: Union[UploadFile, None] = form.get('file')
+
+    if not file:
+        return Response(None, 400)
+
+    tags = await run_in_threadpool(readTags, await file.read(), file.filename)
+    return JSONResponse(tags)
 
 
 async def listenJobs(websocket: WebSocket):
@@ -57,7 +70,7 @@ async def listenJobs(websocket: WebSocket):
             await asyncio.sleep(5)
 
     except Exception as e:
-        if not isinstance(e, WebSocketDisconnect):
+        if not isinstance(e, WebSocketDisconnect) and not isinstance(e, ConnectionClosedOK):
             print(traceback.format_exc())
         for task in tasks:
             task.cancel()

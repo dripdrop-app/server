@@ -3,6 +3,10 @@ import subprocess
 import traceback
 import mutagen
 import requests
+import uuid
+import io
+import base64
+import re
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
@@ -71,9 +75,22 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
         audioFile = mutagen.File(fileName)
 
         if job.artworkURL:
-            imageData = downloadImage(job.artworkURL)
-            audioFile.tags.add(mutagen.id3.APIC(
-                mimetype='image/png', data=imageData))
+            isBase64 = re.search("^data:image/", job.artworkURL)
+            if isBase64:
+                dataString = ','.join(job.artworkURL.split(',')[1:])
+                data = dataString.encode()
+                data_bytes = base64.b64decode(data)
+                audioFile.tags.add(mutagen.id3.APIC(
+                    mimetype='image/png', data=data_bytes)
+                )
+            else:
+                try:
+                    imageData = downloadImage(job.artworkURL)
+                    audioFile.tags.add(mutagen.id3.APIC(
+                        mimetype='image/png', data=imageData)
+                    )
+                except:
+                    print(traceback.format_exc())
 
         audioFile.tags.add(mutagen.id3.TIT2(text=job.title))
         audioFile.tags.add(mutagen.id3.TPE1(text=job.artist))
@@ -94,3 +111,53 @@ def downloadTask(job: Job, file: Union[str, bytes, None] = None):
         print(traceback.format_exc())
         response = requests.get(
             f'http://localhost:{PORT}/processJob', params={'jobID': job.jobID, 'failed': True})
+
+
+def readTags(file: Union[str, bytes, None], filename):
+    folderID = str(uuid.uuid4())
+    tagPath = os.path.join('tags', folderID)
+
+    try:
+        try:
+            os.mkdir('tags')
+        except FileExistsError:
+            pass
+        os.mkdir(tagPath)
+
+        filepath = os.path.join(tagPath, filename)
+        with open(filepath, 'wb') as f:
+            f.write(file)
+        audioFile = mutagen.File(filepath)
+        title = audioFile.tags['TIT2'].text[0] if audioFile.tags.get(
+            'TIT2', None) else ''
+        artist = audioFile.tags['TPE1'].text[0] if audioFile.tags.get(
+            'TPE1', None) else ''
+        album = audioFile.tags['TALB'].text[0] if audioFile.tags.get(
+            'TALB', None) else ''
+        grouping = audioFile.tags['TIT1'].text[0] if audioFile.tags.get(
+            'TIT1', None) else ''
+        imageKeys = list(
+            filter(lambda key: key.find('APIC') != -1, audioFile.keys()))
+        buffer = None
+        mimeType = None
+        if imageKeys:
+            mimeType = audioFile[imageKeys[0]].mime
+            buffer = io.BytesIO(audioFile[imageKeys[0]].data)
+        subprocess.run(['rm', '-rf', tagPath])
+        return {
+            'title': title,
+            'artist': artist,
+            'album': album,
+            'grouping': grouping,
+            'artworkURL': f'data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}' if buffer else None
+        }
+    except:
+        subprocess.run(['rm', '-rf', tagPath])
+        print(traceback.format_exc())
+        return {
+            'title': None,
+            'artist': None,
+            'album': None,
+            'grouping': None,
+            'artworkURL': None
+        }

@@ -3,11 +3,19 @@ import { TextFieldProps, Typography, Divider, Stack, TextField, Button, Circular
 import React, { useCallback, useContext, useMemo, useRef } from 'react';
 import { MusicContext } from '../../context/music_context';
 import { FILE_TYPE } from '../../utils/enums';
-import Image from '../../images/blank_image.jpeg';
+import BlankImage from '../../images/blank_image.jpeg';
 
 const MusicForm = () => {
-	const { updateFormInputs, formInputs, performOperation, updatingForm, validForm, resetForm } =
-		useContext(MusicContext);
+	const {
+		updateFormInputs,
+		formInputs,
+		performOperation,
+		updatingForm,
+		validForm,
+		resetForm,
+		isValidArtwork,
+		isBase64,
+	} = useContext(MusicContext);
 	const { fileType, filename, youtubeURL, artworkURL, title, artist, album, grouping } = formInputs;
 	const fileInputRef: React.MutableRefObject<null | HTMLInputElement> = useRef(null);
 
@@ -25,15 +33,27 @@ const MusicForm = () => {
 		[updateFormInputs]
 	);
 
+	const getFileTags = useCallback(async (file: File) => {
+		const formData = new FormData();
+		formData.append('file', file);
+		const response = await fetch('/getTags', { method: 'POST', body: formData });
+		if (response.ok) {
+			const json = await response.json();
+			return json;
+		}
+		return {};
+	}, []);
+
 	const onFileChange = useCallback(
-		(event: React.ChangeEvent<HTMLInputElement>) => {
+		async (event: React.ChangeEvent<HTMLInputElement>) => {
 			const files = event.target.files;
 			if (files && files.length > 0) {
 				const file = files[0];
-				updateFormInputs({ filename: file.name });
+				const fileTags = await getFileTags(file);
+				updateFormInputs({ filename: file.name, ...fileTags });
 			}
 		},
-		[updateFormInputs]
+		[getFileTags, updateFormInputs]
 	);
 
 	const onBrowseClick = () => {
@@ -111,15 +131,29 @@ const MusicForm = () => {
 						Browse
 					</Button>
 				</Stack>
-				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={0.5} sx={{ my: 10 }}>
-					<TextField
-						{...defaultTextFieldProps}
-						label="Artwork URL"
-						value={artworkURL}
-						onChange={(e) => updateFormInputs({ artworkURL: e.target.value })}
-						helperText={'Supports soundcloud links to get cover art'}
+				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={1} sx={{ my: 10 }}>
+					<Stack direction="row" sx={{ flex: 1 }}>
+						<TextField
+							{...defaultTextFieldProps}
+							label="Artwork URL"
+							value={artworkURL}
+							disabled={artworkURL ? isBase64(artworkURL) : false}
+							onChange={(e) => updateFormInputs({ artworkURL: e.target.value })}
+							helperText={
+								artworkURL && isBase64(artworkURL)
+									? 'Warning: Base64 string may not render'
+									: 'Supports soundcloud links to get cover art and base64 strings'
+							}
+						/>
+						<Button variant="contained" sx={{ flex: 0 }} onClick={() => updateFormInputs({ artworkURL: '' })}>
+							Clear
+						</Button>
+					</Stack>
+					<img
+						style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }}
+						src={artworkURL && isValidArtwork(artworkURL) ? artworkURL : BlankImage}
+						alt="Cover Art"
 					/>
-					<img style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }} src={artworkURL || Image} alt="Cover Art" />
 				</Stack>
 				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={0.5} sx={{ my: 10 }}>
 					<TextField
@@ -176,6 +210,8 @@ const MusicForm = () => {
 			fileType,
 			filename,
 			grouping,
+			isBase64,
+			isValidArtwork,
 			onFileChange,
 			onFileSwitchChange,
 			resetForm,
