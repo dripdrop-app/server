@@ -68,7 +68,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [updatingForm, setUpdatingForm] = useState(false);
 	const ws = useMemo(
-		() => new WebSocket(`${process.env.NODE_ENV === 'production' ? 'wss' : 'ws'}://${server_domain}/ws/listenJobs`),
+		() => new WebSocket(`${process.env.NODE_ENV === 'production' ? 'wss' : 'ws'}://${server_domain}/music/listenJobs`),
 		[]
 	);
 
@@ -114,7 +114,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		if (url && valid && !isBase64) {
 			const params = new URLSearchParams();
 			params.append('artworkURL', url);
-			const response = await fetch(`/getArtwork?${params}`);
+			const response = await fetch(`/music/getArtwork?${params}`);
 			if (response.ok) {
 				const json = await response.json();
 				return json.artworkURL;
@@ -128,7 +128,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		if (youTubeURL && valid) {
 			const params = new URLSearchParams();
 			params.append('youtubeURL', youTubeURL);
-			const response = await fetch(`/grouping?${params}`);
+			const response = await fetch(`/music/grouping?${params}`);
 			if (response.ok) {
 				const json = await response.json();
 				return json.grouping;
@@ -229,7 +229,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 			formData.append('artist', formInputs.artist);
 			formData.append('album', formInputs.album);
 			formData.append('grouping', formInputs.grouping || '');
-			const response = await fetch('/download', { method: 'POST', body: formData });
+			const response = await fetch('/music/download', { method: 'POST', body: formData });
 			if (response.ok) {
 				resetForm();
 			}
@@ -241,7 +241,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		async (deletedJobID: string) => {
 			const params = new URLSearchParams();
 			params.append('jobID', deletedJobID);
-			const response = await fetch(`/deleteJob?${params}`);
+			const response = await fetch(`/music/deleteJob?${params}`);
 			if (response.ok) {
 				setJobs([...jobs.filter((job) => deletedJobID !== job.jobID)]);
 			}

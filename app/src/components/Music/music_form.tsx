@@ -36,7 +36,7 @@ const MusicForm = () => {
 	const getFileTags = useCallback(async (file: File) => {
 		const formData = new FormData();
 		formData.append('file', file);
-		const response = await fetch('/getTags', { method: 'POST', body: formData });
+		const response = await fetch('/music/getTags', { method: 'POST', body: formData });
 		if (response.ok) {
 			const json = await response.json();
 			return json;

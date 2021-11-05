@@ -1,8 +1,8 @@
 import asyncio
-from asyncio.tasks import Task
 import uuid
 import traceback
 import os
+from asyncio.tasks import Task
 from typing import Union
 from sqlalchemy.sql.expression import desc
 from starlette.background import BackgroundTask
@@ -117,7 +117,7 @@ async def download(request: Request):
         file=await file.read() if file else None,
     )
     await redis.publish(RedisChannels.STARTED_JOB_CHANNEL.value, job.jobID)
-    return JSONResponse({'job': job.__dict__}, background=task)
+    return JSONResponse({'job': job.__dict__}, status_code=202,  background=task)
 
 
 @endpointHandler()
