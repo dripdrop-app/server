@@ -1,7 +1,8 @@
-import React, { createContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import { FILE_TYPE } from '../utils/enums';
 import { server_domain } from '../config';
 import BlankImage from '../images/blank_image.jpeg';
+import { AuthContext } from './auth_context';
 
 interface BaseInputs {
 	youtubeURL: string | null;
@@ -28,8 +29,8 @@ interface MusicContextValue {
 	formInputs: FormInputs;
 	validForm: boolean;
 	resetForm: () => void;
-	updateFormInputs: (update: Partial<FormInputs>) => void;
-	performOperation: (file?: File) => void;
+	updateFormInputs: (update: Partial<FormInputs>) => Promise<void>;
+	performOperation: (file?: File) => Promise<void>;
 	updatingForm: boolean;
 	removeJob: (jobID: string) => void;
 	isValidArtwork: (url: string) => boolean;
@@ -54,15 +55,16 @@ export const MusicContext = createContext<MusicContextValue>({
 	validForm: false,
 	jobs: [],
 	resetForm: () => {},
-	updateFormInputs: () => {},
-	performOperation: () => {},
+	updateFormInputs: () => Promise.resolve(),
+	performOperation: () => Promise.resolve(),
 	updatingForm: false,
 	removeJob: () => {},
 	isValidArtwork: () => false,
 	isBase64: () => false,
 });
 
-const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
+const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
+	const { websocketToken } = useContext(AuthContext);
 	const [formInputs, setFormInputs] = useState<FormInputs>({ ...defaultFormData });
 	const [validForm, setValidForm] = useState(false);
 	const [jobs, setJobs] = useState<Job[]>([]);
@@ -75,13 +77,23 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	ws.onmessage = (event) => {
 		const json = JSON.parse(event.data);
 		const type = json.type;
+		if (json.jobs) {
+			json.jobs = json.jobs.map((job: any) => {
+				job.jobID = job.job_id;
+				job.artworkURL = job.artwork_url;
+				job.youtubeURL = job.youtube_url;
+				return job;
+			});
+		}
+
 		if (type === 'ALL') {
 			setJobs([...json.jobs]);
 		} else if (type === 'STARTED') {
 			setJobs([...json.jobs, ...jobs]);
 		} else if (type === 'COMPLETED') {
-			const completedJobs = json.jobs.reduce((map: any, job: Job) => {
-				map[job.jobID] = job;
+			const completedJobs = json.jobs.reduce((map: any, job: any, index: number) => {
+				map[job.job_id] = job;
+
 				return map;
 			}, {});
 			jobs.forEach((job, index) => {
@@ -113,7 +125,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		const isBase64 = RegExp(/^data:image/).test(url);
 		if (url && valid && !isBase64) {
 			const params = new URLSearchParams();
-			params.append('artworkURL', url);
+			params.append('artwork_url', url);
 			const response = await fetch(`/music/getArtwork?${params}`);
 			if (response.ok) {
 				const json = await response.json();
@@ -127,7 +139,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 		const valid = RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youTubeURL);
 		if (youTubeURL && valid) {
 			const params = new URLSearchParams();
-			params.append('youtubeURL', youTubeURL);
+			params.append('youtube_url', youTubeURL);
 			const response = await fetch(`/music/grouping?${params}`);
 			if (response.ok) {
 				const json = await response.json();
@@ -202,12 +214,12 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	const performOperation = useCallback(
 		async (file?: File) => {
 			const formData = new FormData();
-			formData.append('youtubeURL', formInputs.youtubeURL || '');
+			formData.append('youtube_url', formInputs.youtubeURL || '');
 			if (file) {
 				formData.append('file', file);
 			}
 			if (formInputs.artworkURL) {
-				formData.append('artworkURL', formInputs.artworkURL);
+				formData.append('artwork_url', formInputs.artworkURL);
 			} else {
 				const imageResponse = await fetch(BlankImage);
 				if (imageResponse.ok) {
@@ -221,7 +233,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 								reader.readAsDataURL(blob);
 							});
 						const url = (await readFilePromise()) as string;
-						formData.append('artworkURL', url);
+						formData.append('artwork_url', url);
 					} catch {}
 				}
 			}
@@ -240,7 +252,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 	const removeJob = useCallback(
 		async (deletedJobID: string) => {
 			const params = new URLSearchParams();
-			params.append('jobID', deletedJobID);
+			params.append('job_id', deletedJobID);
 			const response = await fetch(`/music/deleteJob?${params}`);
 			if (response.ok) {
 				setJobs([...jobs.filter((job) => deletedJobID !== job.jobID)]);
@@ -259,6 +271,12 @@ const MusicContextProvider = (props: React.PropsWithChildren<any>) => {
 			setValidForm(false);
 		}
 	}, [formInputs]);
+
+	useEffect(() => {
+		if (websocketToken && ws.readyState === 1) {
+			ws.send(websocketToken);
+		}
+	}, [ws, websocketToken]);
 
 	return (
 		<MusicContext.Provider

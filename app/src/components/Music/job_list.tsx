@@ -25,7 +25,7 @@ const JobCard = (props: Job) => {
 
 	const downloadJob = useCallback(async () => {
 		const params = new URLSearchParams();
-		params.append('jobID', jobID);
+		params.append('job_id', jobID);
 		const response = await fetch(`/music/downloadJob?${params}`);
 		if (response.ok) {
 			const contentDisposition = response.headers.get('Content-Disposition') || '';

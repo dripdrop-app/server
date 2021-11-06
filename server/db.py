@@ -1,11 +1,8 @@
 import databases
 import sqlalchemy
-from starlette.config import Config
 from sqlalchemy.sql.expression import text
+from server.config import DATABASE_URL
 
-config = Config('.env')
-
-DATABASE_URL = config.get('DATABASE_URL')
 database = databases.Database(DATABASE_URL)
 
 metadata = sqlalchemy.MetaData()
@@ -13,10 +10,10 @@ metadata = sqlalchemy.MetaData()
 music_jobs = sqlalchemy.Table(
     'music_jobs',
     metadata,
-    sqlalchemy.Column("jobID", sqlalchemy.String, primary_key=True),
+    sqlalchemy.Column("job_id", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("filename", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("youtubeURL", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("artworkURL", sqlalchemy.String, nullable=True),
+    sqlalchemy.Column("youtube_url", sqlalchemy.String, nullable=True),
+    sqlalchemy.Column("artwork_url", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("title", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("artist", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("album", sqlalchemy.String, nullable=False),
@@ -41,6 +38,13 @@ users = sqlalchemy.Table(
 
 sessions = sqlalchemy.Table(
     'sessions',
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
+    sqlalchemy.Column("username", sqlalchemy.ForeignKey(users.c.username))
+)
+
+websocket_tokens = sqlalchemy.Table(
+    'websocket_tokens',
     metadata,
     sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.ForeignKey(users.c.username))

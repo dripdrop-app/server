@@ -31,14 +31,14 @@ def ytdlOptions(progress_hooks, folder=''):
     }
 
 
-def extractInfo(link: str):
+def extract_info(link: str):
     ytdl_options = ytdlOptions([])
     ydl = yt_dlp.YoutubeDL(ytdl_options)
     info = ydl.extract_info(link, download=False)
     return info.get('uploader', None)
 
 
-def ytDownload(link: str, progress_hooks, folder=''):
+def yt_download(link: str, progress_hooks, folder=''):
     ytdl_options = ytdlOptions(progress_hooks, folder)
     ydl = yt_dlp.YoutubeDL(ytdl_options)
     return ydl.download([link])

@@ -13,49 +13,64 @@ from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket, WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
-from server.utils.mp3dl import extractInfo
-from server.utils.imgdl import downloadImage
-from server.db import database, music_jobs
+from server.utils.mp3dl import extract_info
+from server.utils.imgdl import download_image
+from server.db import database, music_jobs, websocket_tokens
 from server.redis import RedisChannels, subscribe, redis
-from server.tasks import downloadTask, Job, readTags
-from server.utils.helpers import endpointHandler, convertDBJob
+from server.tasks import download_task, Job, read_tags
+from server.middleware import authenticated_endpoint, endpoint_handler, api_key_protected_endpoint
+from server.utils.helpers import convert_db_response
+from server.config import API_KEY
 
 
-@endpointHandler()
-async def getGrouping(request: Request):
-    youtubeURL = request.query_params.get('youtubeURL')
-    uploader = await run_in_threadpool(extractInfo, youtubeURL)
+@endpoint_handler()
+@authenticated_endpoint()
+async def get_grouping(request: Request):
+    youtube_url = request.query_params.get('youtube_url')
+    uploader = await run_in_threadpool(extract_info, youtube_url)
     return JSONResponse({'grouping': uploader})
 
 
-@endpointHandler()
-async def getArtwork(request: Request):
-    artworkURL = request.query_params.get('artworkURL')
-    artworkURL = await run_in_threadpool(downloadImage, artworkURL, False)
-    return JSONResponse({'artworkURL': artworkURL})
+@endpoint_handler()
+@authenticated_endpoint()
+async def get_artwork(request: Request):
+    artwork_url = request.query_params.get('artwork_url')
+    artwork_url = await run_in_threadpool(download_image, artwork_url, False)
+    return JSONResponse({'artwork_url': artwork_url})
 
 
-@endpointHandler()
-async def getTags(request: Request):
+@endpoint_handler()
+@authenticated_endpoint()
+async def get_tags(request: Request):
     form = await request.form()
     file: Union[UploadFile, None] = form.get('file')
 
     if not file:
         return Response(None, 400)
 
-    tags = await run_in_threadpool(readTags, await file.read(), file.filename)
+    tags = await run_in_threadpool(read_tags, await file.read(), file.filename)
     return JSONResponse(tags)
 
 
-async def listenJobs(websocket: WebSocket):
+async def listen_jobs(websocket: WebSocket):
     tasks: list[Task] = []
     try:
         await websocket.accept()
+
+        token = await websocket.receive_text()
+        if token:
+            query = websocket_tokens.select().where(websocket_tokens.c.id == token)
+            found = await database.fetch_one(query)
+            if not found:
+                raise WebSocketDisconnect()
+        else:
+            raise WebSocketDisconnect()
+
         query = music_jobs.select().order_by(desc(music_jobs.c.started))
         jobs = await database.fetch_all(query)
         await websocket.send_json({
             'type': 'ALL',
-            'jobs': [convertDBJob(job) for job in jobs]
+            'jobs': [convert_db_response(job) for job in jobs]
         })
 
         tasks.extend([
@@ -77,26 +92,27 @@ async def listenJobs(websocket: WebSocket):
         await websocket.close()
 
 
-@endpointHandler()
+@endpoint_handler()
+@authenticated_endpoint()
 async def download(request: Request):
-    jobID = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
     form = await request.form()
-    youtubeURL = form.get('youtubeURL')
+    youtube_url = form.get('youtube_url')
     file: Union[UploadFile, None] = form.get('file')
-    artworkURL = form.get('artworkURL')
+    artwork_url = form.get('artwork_url')
     title = form.get('title')
     artist = form.get('artist')
     album = form.get('album')
     grouping = form.get('grouping')
 
-    if not youtubeURL and not file:
+    if not youtube_url and not file:
         return Response(None, 400)
 
     job = Job(
-        jobID=jobID,
+        job_id=job_id,
         filename=file.filename if file else None,
-        youtubeURL=youtubeURL,
-        artworkURL=artworkURL,
+        youtube_url=youtube_url,
+        artwork_url=artwork_url,
         title=title,
         artist=artist,
         album=album,
@@ -112,51 +128,54 @@ async def download(request: Request):
         await database.execute(query)
 
     task = BackgroundTask(
-        downloadTask,
+        download_task,
         job,
         file=await file.read() if file else None,
     )
-    await redis.publish(RedisChannels.STARTED_JOB_CHANNEL.value, job.jobID)
+    await redis.publish(RedisChannels.STARTED_JOB_CHANNEL.value, job.job_id)
     return JSONResponse({'job': job.__dict__}, status_code=202,  background=task)
 
 
-@endpointHandler()
-async def processJob(request: Request):
-    jobID = request.query_params.get('jobID')
+@endpoint_handler()
+@api_key_protected_endpoint()
+async def process_job(request: Request):
+    job_id = request.query_params.get('job_id')
     completed = request.query_params.get('completed') == 'True'
     failed = request.query_params.get('failed') == 'True'
     async with database.transaction():
-        query = music_jobs.update().where(music_jobs.c.jobID ==
-                                          jobID).values(completed=completed, failed=failed)
+        query = music_jobs.update().where(music_jobs.c.job_id ==
+                                          job_id).values(completed=completed, failed=failed)
         await database.execute(query)
-    await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, jobID)
+    await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, job_id)
     return Response(None)
 
 
-@endpointHandler()
+@endpoint_handler()
+@authenticated_endpoint()
 @database.transaction()
-async def deleteJob(request: Request):
-    jobID = request.query_params.get('jobID')
-    query = music_jobs.delete().where(music_jobs.c.jobID == jobID)
+async def delete_job(request: Request):
+    job_id = request.query_params.get('job_id')
+    query = music_jobs.delete().where(music_jobs.c.job_id == job_id)
     await database.execute(query)
     try:
-        await asyncio.create_subprocess_shell(f'rm -rf jobs/{jobID}')
+        await asyncio.create_subprocess_shell(f'rm -rf jobs/{job_id}')
     except:
         pass
     return Response(None)
 
 
-@endpointHandler()
-async def downloadJob(request: Request):
-    jobID = request.query_params.get('jobID')
+@endpoint_handler()
+@authenticated_endpoint()
+async def download_job(request: Request):
+    job_id = request.query_params.get('job_id')
     query = music_jobs.select().order_by(desc(music_jobs.c.started))
     job = await database.fetch_one(query)
     filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
-    filepath = os.path.join('jobs', jobID, filename)
-    if not os.path.exists(filepath):
+    file_path = os.path.join('jobs', job_id, filename)
+    if not os.path.exists(file_path):
         async with database.transaction():
-            query = music_jobs.update().where(music_jobs.c.jobID == jobID).values(failed=True)
+            query = music_jobs.update().where(music_jobs.c.job_id == job_id).values(failed=True)
             await database.execute(query)
-        await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, jobID)
+        await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, job_id)
         return Response(None, 404)
-    return FileResponse(os.path.join('jobs', jobID, filename), filename=filename)
+    return FileResponse(os.path.join('jobs', job_id, filename), filename=filename)
