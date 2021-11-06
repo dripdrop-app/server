@@ -15,12 +15,11 @@ from websockets.exceptions import ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 from server.utils.mp3dl import extract_info
 from server.utils.imgdl import download_image
-from server.db import database, music_jobs, websocket_tokens
+from server.db import database, music_jobs
 from server.redis import RedisChannels, subscribe, redis
 from server.tasks import download_task, Job, read_tags
-from server.middleware import authenticated_endpoint, endpoint_handler, api_key_protected_endpoint
+from server.middleware import authenticated_endpoint, endpoint_handler, api_key_protected_endpoint, autheticate_websocket
 from server.utils.helpers import convert_db_response
-from server.config import API_KEY
 
 
 @endpoint_handler()
@@ -53,18 +52,15 @@ async def get_tags(request: Request):
 
 
 async def listen_jobs(websocket: WebSocket):
+    print(websocket.session, 'OMG')
     tasks: list[Task] = []
     try:
-        await websocket.accept()
+        authenticated = autheticate_websocket(websocket)
 
-        token = await websocket.receive_text()
-        if token:
-            query = websocket_tokens.select().where(websocket_tokens.c.id == token)
-            found = await database.fetch_one(query)
-            if not found:
-                raise WebSocketDisconnect()
-        else:
+        if not authenticated:
             raise WebSocketDisconnect()
+
+        await websocket.accept()
 
         query = music_jobs.select().order_by(desc(music_jobs.c.started))
         jobs = await database.fetch_all(query)

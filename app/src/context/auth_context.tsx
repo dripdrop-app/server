@@ -10,7 +10,6 @@ interface AuthContextValue {
 	signup: (username: string, password: string) => Promise<void>;
 	loggingIn: boolean;
 	initialAuth: boolean;
-	websocketToken: string;
 	notice: string;
 }
 
@@ -24,7 +23,6 @@ export const AuthContext = createContext<AuthContextValue>({
 	signup: () => Promise.resolve(),
 	loggingIn: false,
 	initialAuth: true,
-	websocketToken: '',
 	notice: '',
 });
 
@@ -35,7 +33,6 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 	const [error, setError] = useState('');
 	const [loggingIn, setLoggingIn] = useState(false);
 	const [initialAuth, setInitialAuth] = useState(true);
-	const [websocketToken, setWebsocketToken] = useState('');
 	const [notice, setNotice] = useState('');
 
 	const handleAuth = useCallback(async (username: string, password: string, type: 'login' | 'signup') => {
@@ -58,7 +55,6 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 				setUsername(json.username);
 				setAdmin(json.admin);
 				setLoggedIn(true);
-				setWebsocketToken(json.websocket_token);
 			} else {
 				setNotice(
 					'Account successfully created. You can login once your account has been approved by the adminstrator.'
@@ -87,7 +83,6 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 			setUsername('');
 			setLoggedIn(false);
 			setAdmin(false);
-			setWebsocketToken('');
 		}
 	}, []);
 
@@ -99,7 +94,6 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 			setUsername(json.username);
 			setAdmin(json.admin);
 			setLoggedIn(true);
-			setWebsocketToken(json.websocket_token);
 		} else {
 			setUsername('');
 			setAdmin(false);
@@ -126,7 +120,6 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 				notice,
 				loggingIn,
 				initialAuth,
-				websocketToken,
 			}}
 		>
 			{props.children}

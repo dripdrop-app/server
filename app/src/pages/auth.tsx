@@ -60,7 +60,7 @@ const Auth = () => {
 				</Stack>
 			</Stack>
 		),
-		[defaultTextFieldProps, error, loggingIn, login, password, signup, username]
+		[defaultTextFieldProps, error, loggingIn, login, notice, password, signup, username]
 	);
 };
 

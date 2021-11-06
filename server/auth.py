@@ -4,10 +4,10 @@ from starlette.middleware import sessions
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
 from server.middleware import endpoint_handler, authenticated_endpoint
-from server.db import users, database, sessions, websocket_tokens
+from server.db import users, database, sessions
 
 
-async def createNewAccount(username: str, password: str):
+async def create_new_account(username: str, password: str):
     if not username or not password:
         raise ValueError('Username or Password not supplied.')
 
@@ -32,14 +32,12 @@ async def createNewAccount(username: str, password: str):
 
 @endpoint_handler()
 @authenticated_endpoint()
-async def checkSession(request: Request):
+async def check_session(request: Request):
     username = request.session.get('username')
     admin = request.session.get('admin')
-    websocket_token = request.session.get('websocket_token')
     return JSONResponse({
         'username': username,
         'admin': admin,
-        'websocket_token': websocket_token
     }, 200)
 
 
@@ -66,13 +64,8 @@ async def login(request: Request):
     query = sessions.insert().values(id=session_id, username=username)
     await database.execute(query)
 
-    websocket_token = str(uuid.uuid4())
-    query = websocket_tokens.insert().values(id=websocket_token, username=username)
-    await database.execute(query)
-
     request.session.update({
         'id': session_id,
-        'websocket_token': websocket_token,
         'username': username,
         'admin': account.get('admin')
     })
@@ -80,7 +73,6 @@ async def login(request: Request):
     return JSONResponse({
         'username': username,
         'admin': account.get('admin'),
-        'websocket_token': websocket_token
     })
 
 
@@ -94,13 +86,13 @@ async def logout(request: Request):
 
 @endpoint_handler()
 @database.transaction()
-async def createAccount(request: Request):
+async def create_account(request: Request):
     form = await request.json()
     username = form.get('username')
     password = form.get('password')
 
     try:
-        await createNewAccount(username, password)
+        await create_new_account(username, password)
     except ValueError as e:
         return JSONResponse({'error': e.__str__()}, 400)
 
@@ -110,13 +102,13 @@ async def createAccount(request: Request):
 @endpoint_handler()
 @authenticated_endpoint(admin=True)
 @database.transaction()
-async def adminCreateAccount(request: Request):
+async def admin_create_account(request: Request):
     form = await request.json()
     username = form.get('username')
     password = form.get('password')
 
     try:
-        await createNewAccount(username, password)
+        await create_new_account(username, password)
     except ValueError as e:
         return JSONResponse({'error': e.message}, 400)
 

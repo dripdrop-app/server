@@ -2,7 +2,8 @@ import traceback
 from inspect import iscoroutinefunction
 from starlette.requests import Request
 from starlette.responses import Response
-from server.db import database, sessions, users, websocket_tokens
+from starlette.websockets import WebSocket
+from server.db import database, sessions
 from server.config import API_KEY
 
 
@@ -54,3 +55,14 @@ def api_key_protected_endpoint():
                 return Response(None, 400)
         return wrapper
     return decorator
+
+
+async def autheticate_websocket(websocket: WebSocket):
+    session_id = websocket.session.get('id')
+    username = websocket.session.get('username')
+    if session_id and username:
+        query = sessions.select().where(sessions.c.id == session_id,
+                                        sessions.c.username == username)
+        session = await database.fetch_one(query)
+        return session
+    return None

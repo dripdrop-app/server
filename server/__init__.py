@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware import Middleware
 from server.music_downloader import delete_job, get_grouping, download, process_job, get_artwork, listen_jobs, download_job, get_tags
-from server.auth import login, createAccount, adminCreateAccount, checkSession, logout
+from server.auth import login, create_account, admin_create_account, check_session, logout
 from server.db import database
 from server.config import ENVIRONMENT
 
@@ -31,9 +31,10 @@ routes = [
     Route('/music/downloadJob', endpoint=download_job, methods=['GET']),
     WebSocketRoute('/music/listenJobs', endpoint=listen_jobs),
 
-    Route('/auth/create', endpoint=createAccount, methods=['POST']),
-    Route('/auth/admin/create', endpoint=adminCreateAccount, methods=['POST']),
-    Route('/auth/checkSession', endpoint=checkSession, methods=['GET']),
+    Route('/auth/create', endpoint=create_account, methods=['POST']),
+    Route('/auth/admin/create',
+          endpoint=admin_create_account, methods=['POST']),
+    Route('/auth/checkSession', endpoint=check_session, methods=['GET']),
     Route('/auth/logout', endpoint=logout, methods=['GET']),
     Route('/auth/login', endpoint=login, methods=['POST']),
 

@@ -1,8 +1,7 @@
-import React, { createContext, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { createContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { FILE_TYPE } from '../utils/enums';
 import { server_domain } from '../config';
 import BlankImage from '../images/blank_image.jpeg';
-import { AuthContext } from './auth_context';
 
 interface BaseInputs {
 	youtubeURL: string | null;
@@ -64,7 +63,6 @@ export const MusicContext = createContext<MusicContextValue>({
 });
 
 const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
-	const { websocketToken } = useContext(AuthContext);
 	const [formInputs, setFormInputs] = useState<FormInputs>({ ...defaultFormData });
 	const [validForm, setValidForm] = useState(false);
 	const [jobs, setJobs] = useState<Job[]>([]);
@@ -271,12 +269,6 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 			setValidForm(false);
 		}
 	}, [formInputs]);
-
-	useEffect(() => {
-		if (websocketToken && ws.readyState === 1) {
-			ws.send(websocketToken);
-		}
-	}, [ws, websocketToken]);
 
 	return (
 		<MusicContext.Provider

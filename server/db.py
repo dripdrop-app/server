@@ -42,10 +42,3 @@ sessions = sqlalchemy.Table(
     sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.ForeignKey(users.c.username))
 )
-
-websocket_tokens = sqlalchemy.Table(
-    'websocket_tokens',
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("username", sqlalchemy.ForeignKey(users.c.username))
-)
