@@ -11,6 +11,7 @@ interface AuthContextValue {
 	loggingIn: boolean;
 	initialAuth: boolean;
 	websocketToken: string;
+	notice: string;
 }
 
 export const AuthContext = createContext<AuthContextValue>({
@@ -24,6 +25,7 @@ export const AuthContext = createContext<AuthContextValue>({
 	loggingIn: false,
 	initialAuth: true,
 	websocketToken: '',
+	notice: '',
 });
 
 const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
@@ -34,9 +36,11 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 	const [loggingIn, setLoggingIn] = useState(false);
 	const [initialAuth, setInitialAuth] = useState(true);
 	const [websocketToken, setWebsocketToken] = useState('');
+	const [notice, setNotice] = useState('');
 
 	const handleAuth = useCallback(async (username: string, password: string, type: 'login' | 'signup') => {
 		setError('');
+		setNotice('');
 		setLoggingIn(true);
 		let endpoint = '';
 		if (type === 'signup') {
@@ -50,11 +54,15 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 		});
 		if (response.ok) {
 			const json = await response.json();
-			setUsername(json.username);
-			setAdmin(json.admin);
-			setLoggedIn(true);
 			if (type === 'login') {
+				setUsername(json.username);
+				setAdmin(json.admin);
+				setLoggedIn(true);
 				setWebsocketToken(json.websocket_token);
+			} else {
+				setNotice(
+					'Account successfully created. You can login once your account has been approved by the adminstrator.'
+				);
 			}
 		} else {
 			const json = await response.json();
@@ -107,7 +115,19 @@ const AuthContextProvider = (props: React.PropsWithChildren<{}>) => {
 
 	return (
 		<AuthContext.Provider
-			value={{ username, admin, loggedIn, error, login, logout, signup, loggingIn, initialAuth, websocketToken }}
+			value={{
+				username,
+				admin,
+				loggedIn,
+				error,
+				login,
+				logout,
+				signup,
+				notice,
+				loggingIn,
+				initialAuth,
+				websocketToken,
+			}}
 		>
 			{props.children}
 		</AuthContext.Provider>

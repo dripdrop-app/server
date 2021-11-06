@@ -5,7 +5,7 @@ import DripDrop from '../images/dripdrop.png';
 import { AuthContext } from '../context/auth_context';
 
 const Auth = () => {
-	const { login, loggingIn, error, signup } = useContext(AuthContext);
+	const { login, loggingIn, error, notice, signup } = useContext(AuthContext);
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 
@@ -25,6 +25,7 @@ const Auth = () => {
 					<Divider orientation="vertical" flexItem />
 					<Typography variant="h5"> Sign Up</Typography>
 				</Stack>
+				{notice ? <Alert severity="info">{notice}</Alert> : null}
 				{error ? <Alert severity="error">{error}</Alert> : null}
 				<TextField
 					{...defaultTextFieldProps}
