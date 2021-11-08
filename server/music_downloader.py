@@ -11,6 +11,7 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.requests import Request
 from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket, WebSocketDisconnect
+from starlette.authentication import requires
 from websockets.exceptions import ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 from server.utils.mp3dl import extract_info
@@ -18,28 +19,29 @@ from server.utils.imgdl import download_image
 from server.db import database, music_jobs
 from server.redis import RedisChannels, subscribe, redis
 from server.tasks import download_task, Job, read_tags
-from server.middleware import authenticated_endpoint, endpoint_handler, api_key_protected_endpoint, autheticate_websocket
+from server.utils.wrappers import endpoint_handler
 from server.utils.helpers import convert_db_response
+from server.utils.enums import AuthScopes
 
 
+@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
-@authenticated_endpoint()
 async def get_grouping(request: Request):
     youtube_url = request.query_params.get('youtube_url')
     uploader = await run_in_threadpool(extract_info, youtube_url)
     return JSONResponse({'grouping': uploader})
 
 
+@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
-@authenticated_endpoint()
 async def get_artwork(request: Request):
     artwork_url = request.query_params.get('artwork_url')
     artwork_url = await run_in_threadpool(download_image, artwork_url, False)
     return JSONResponse({'artwork_url': artwork_url})
 
 
+@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
-@authenticated_endpoint()
 async def get_tags(request: Request):
     form = await request.form()
     file: Union[UploadFile, None] = form.get('file')
@@ -51,17 +53,11 @@ async def get_tags(request: Request):
     return JSONResponse(tags)
 
 
+@requires([AuthScopes.AUTHENTICATED])
 async def listen_jobs(websocket: WebSocket):
-    print(websocket.session, 'OMG')
     tasks: list[Task] = []
     try:
-        authenticated = autheticate_websocket(websocket)
-
-        if not authenticated:
-            raise WebSocketDisconnect()
-
         await websocket.accept()
-
         query = music_jobs.select().order_by(desc(music_jobs.c.started))
         jobs = await database.fetch_all(query)
         await websocket.send_json({
@@ -88,8 +84,8 @@ async def listen_jobs(websocket: WebSocket):
         await websocket.close()
 
 
+@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
-@authenticated_endpoint()
 async def download(request: Request):
     job_id = str(uuid.uuid4())
     form = await request.form()
@@ -132,8 +128,8 @@ async def download(request: Request):
     return JSONResponse({'job': job.__dict__}, status_code=202,  background=task)
 
 
+@requires([AuthScopes.API_KEY])
 @endpoint_handler()
-@api_key_protected_endpoint()
 async def process_job(request: Request):
     job_id = request.query_params.get('job_id')
     completed = request.query_params.get('completed') == 'True'
@@ -146,8 +142,8 @@ async def process_job(request: Request):
     return Response(None)
 
 
+@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
-@authenticated_endpoint()
 @database.transaction()
 async def delete_job(request: Request):
     job_id = request.query_params.get('job_id')
@@ -160,8 +156,8 @@ async def delete_job(request: Request):
     return Response(None)
 
 
+@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
-@authenticated_endpoint()
 async def download_job(request: Request):
     job_id = request.query_params.get('job_id')
     query = music_jobs.select().order_by(desc(music_jobs.c.started))

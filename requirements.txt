@@ -13,6 +13,7 @@ cffi==1.15.0
 chardet==4.0.0
 charset-normalizer==2.0.7
 click==8.0.3
+cryptography==35.0.0
 databases==0.5.3
 graphene==2.1.9
 graphql-core==2.3.2

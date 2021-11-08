@@ -1,16 +1,11 @@
 import aioredis
-from enum import Enum
 from starlette.websockets import WebSocket
 from server.db import database, music_jobs
 from server.utils.helpers import convert_db_response
 from server.config import REDIS_URL
+from server.utils.enums import RedisChannels
 
 redis = aioredis.from_url(REDIS_URL)
-
-
-class RedisChannels(Enum):
-    COMPLETED_JOB_CHANNEL = 'completed_jobs'
-    STARTED_JOB_CHANNEL = 'started_jobs'
 
 
 async def on_complete_message(websocket: WebSocket, msg):
