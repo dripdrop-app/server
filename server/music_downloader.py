@@ -58,7 +58,8 @@ async def listen_jobs(websocket: WebSocket):
     tasks: list[Task] = []
     try:
         await websocket.accept()
-        query = music_jobs.select().order_by(desc(music_jobs.c.started))
+        query = music_jobs.select().where(music_jobs.c.username ==
+                                          websocket.user.display_name).order_by(desc(music_jobs.c.started))
         jobs = await database.fetch_all(query)
         await websocket.send_json({
             'type': 'ALL',
@@ -114,6 +115,7 @@ async def download(request: Request):
     async with database.transaction():
         query = music_jobs.insert().values(
             **job.__dict__,
+            username=request.user.display_name,
             completed=False,
             failed=False,
         )
@@ -147,7 +149,8 @@ async def process_job(request: Request):
 @database.transaction()
 async def delete_job(request: Request):
     job_id = request.query_params.get('job_id')
-    query = music_jobs.delete().where(music_jobs.c.job_id == job_id)
+    query = music_jobs.delete().where(music_jobs.c.username ==
+                                      request.user.display_name, music_jobs.c.job_id == job_id)
     await database.execute(query)
     try:
         await asyncio.create_subprocess_shell(f'rm -rf jobs/{job_id}')
@@ -166,7 +169,8 @@ async def download_job(request: Request):
     file_path = os.path.join('jobs', job_id, filename)
     if not os.path.exists(file_path):
         async with database.transaction():
-            query = music_jobs.update().where(music_jobs.c.job_id == job_id).values(failed=True)
+            query = music_jobs.update().where(music_jobs.c.username == request.user.display_name,
+                                              music_jobs.c.job_id == job_id).values(failed=True)
             await database.execute(query)
         await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, job_id)
         return Response(None, 404)

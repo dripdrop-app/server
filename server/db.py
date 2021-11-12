@@ -7,10 +7,23 @@ database = databases.Database(DATABASE_URL)
 
 metadata = sqlalchemy.MetaData()
 
+users = sqlalchemy.Table(
+    'users',
+    metadata,
+    sqlalchemy.Column("username", sqlalchemy.String, primary_key=True),
+    sqlalchemy.Column("password", sqlalchemy.String, nullable=False),
+    sqlalchemy.Column("admin", sqlalchemy.Boolean, nullable=False),
+    sqlalchemy.Column("approved", sqlalchemy.Boolean, nullable=False),
+    sqlalchemy.Column(
+        "createdAt", sqlalchemy.dialects.postgresql.TIMESTAMP, server_default=text("NOW()")),
+)
+
 music_jobs = sqlalchemy.Table(
     'music_jobs',
     metadata,
     sqlalchemy.Column("job_id", sqlalchemy.String, primary_key=True),
+    sqlalchemy.Column("username", sqlalchemy.ForeignKey(
+        users.c.username), nullable=False),
     sqlalchemy.Column("filename", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("youtube_url", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("artwork_url", sqlalchemy.String, nullable=True),
@@ -24,21 +37,11 @@ music_jobs = sqlalchemy.Table(
                       server_default=text("NOW()"))
 )
 
-users = sqlalchemy.Table(
-    'users',
-    metadata,
-    sqlalchemy.Column("username", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("password", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("admin", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column("approved", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column(
-        "createdAt", sqlalchemy.dialects.postgresql.TIMESTAMP, server_default=text("NOW()")),
-)
-
 
 sessions = sqlalchemy.Table(
     'sessions',
     metadata,
     sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("username", sqlalchemy.ForeignKey(users.c.username))
+    sqlalchemy.Column("username", sqlalchemy.ForeignKey(
+        users.c.username), nullable=False)
 )

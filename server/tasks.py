@@ -151,7 +151,7 @@ def read_tags(file: Union[str, bytes, None], filename):
             'artist': artist,
             'album': album,
             'grouping': grouping,
-            'artworkURL': f'data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}' if buffer else None
+            'artwork_url': f'data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}' if buffer else None
         }
     except:
         subprocess.run(['rm', '-rf', tag_path])
@@ -161,5 +161,5 @@ def read_tags(file: Union[str, bytes, None], filename):
             'artist': None,
             'album': None,
             'grouping': None,
-            'artworkURL': None
+            'artwork_url': None
         }

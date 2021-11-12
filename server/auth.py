@@ -139,7 +139,6 @@ async def logout(request: Request):
     return response
 
 
-@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
 @database.transaction()
 async def create_account(request: Request):

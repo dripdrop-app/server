@@ -11,7 +11,8 @@ redis = aioredis.from_url(REDIS_URL)
 async def on_complete_message(websocket: WebSocket, msg):
     if msg and msg.get('type') == 'message':
         completed_job_id = msg.get('data').decode()
-        query = music_jobs.select().where(music_jobs.c.job_id == completed_job_id)
+        query = music_jobs.select().where(music_jobs.c.username ==
+                                          websocket.user.display_name, music_jobs.c.job_id == completed_job_id)
         job = await database.fetch_one(query)
         if job:
             await websocket.send_json({
@@ -23,7 +24,8 @@ async def on_complete_message(websocket: WebSocket, msg):
 async def on_started_message(websocket: WebSocket, msg):
     if msg and msg.get('type') == 'message':
         started_job_id = msg.get('data').decode()
-        query = music_jobs.select().where(music_jobs.c.job_id == started_job_id)
+        query = music_jobs.select().where(music_jobs.c.username ==
+                                          websocket.user.display_name, music_jobs.c.job_id == started_job_id)
         job = await database.fetch_one(query)
         if job:
             await websocket.send_json({
