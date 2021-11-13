@@ -1,7 +1,7 @@
 import { YouTube } from '@mui/icons-material';
 import { TextFieldProps, Typography, Divider, Stack, TextField, Button, CircularProgress, Switch } from '@mui/material';
 import React, { useCallback, useContext, useMemo, useRef } from 'react';
-import { MusicContext } from '../../context/music_context';
+import { MusicContext } from '../../context/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
 

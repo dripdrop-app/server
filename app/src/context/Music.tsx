@@ -1,7 +1,7 @@
-import React, { createContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useEffect, useState, useCallback } from 'react';
 import { FILE_TYPE } from '../utils/enums';
-import { server_domain } from '../config';
 import BlankImage from '../images/blank_image.jpeg';
+import useWebsocket from '../hooks/useWebsocket';
 
 interface BaseInputs {
 	youtubeURL: string | null;
@@ -23,7 +23,7 @@ interface FormInputs extends BaseInputs {
 	fileType: keyof typeof FILE_TYPE;
 }
 
-interface MusicContextValue {
+export interface MusicContextValue {
 	jobs: Job[];
 	formInputs: FormInputs;
 	validForm: boolean;
@@ -67,41 +67,40 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 	const [validForm, setValidForm] = useState(false);
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [updatingForm, setUpdatingForm] = useState(false);
-	const ws = useMemo(
-		() => new WebSocket(`${process.env.NODE_ENV === 'production' ? 'wss' : 'ws'}://${server_domain}/music/listenJobs`),
-		[]
+
+	const socketHandler = useCallback(
+		(event) => {
+			const json = JSON.parse(event.data);
+			const type = json.type;
+			if (json.jobs) {
+				json.jobs = json.jobs.map((job: any) => {
+					job.jobID = job.job_id;
+					job.artworkURL = job.artwork_url;
+					job.youtubeURL = job.youtube_url;
+					return job;
+				});
+			}
+			if (type === 'ALL') {
+				setJobs([...json.jobs]);
+			} else if (type === 'STARTED') {
+				setJobs([...json.jobs, ...jobs]);
+			} else if (type === 'COMPLETED') {
+				const completedJobs = json.jobs.reduce((map: any, job: any, index: number) => {
+					map[job.job_id] = job;
+					return map;
+				}, {});
+				jobs.forEach((job, index) => {
+					if (completedJobs[job.jobID]) {
+						jobs[index] = completedJobs[job.jobID];
+					}
+				});
+				setJobs([...jobs]);
+			}
+		},
+		[jobs]
 	);
 
-	ws.onmessage = (event) => {
-		const json = JSON.parse(event.data);
-		const type = json.type;
-		if (json.jobs) {
-			json.jobs = json.jobs.map((job: any) => {
-				job.jobID = job.job_id;
-				job.artworkURL = job.artwork_url;
-				job.youtubeURL = job.youtube_url;
-				return job;
-			});
-		}
-
-		if (type === 'ALL') {
-			setJobs([...json.jobs]);
-		} else if (type === 'STARTED') {
-			setJobs([...json.jobs, ...jobs]);
-		} else if (type === 'COMPLETED') {
-			const completedJobs = json.jobs.reduce((map: any, job: any, index: number) => {
-				map[job.job_id] = job;
-
-				return map;
-			}, {});
-			jobs.forEach((job, index) => {
-				if (completedJobs[job.jobID]) {
-					jobs[index] = completedJobs[job.jobID];
-				}
-			});
-			setJobs([...jobs]);
-		}
-	};
+	useWebsocket('/music/listenJobs', socketHandler);
 
 	const resetForm = useCallback(() => setFormInputs({ ...defaultFormData }), [setFormInputs]);
 

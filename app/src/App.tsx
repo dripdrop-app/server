@@ -1,65 +1,80 @@
-import React, { Fragment, useContext, useMemo } from 'react';
+import React, { Fragment } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { AppBar, Box, Button, CircularProgress, Stack, Toolbar } from '@mui/material';
+import { AppBar, Box, Button, CircularProgress, Stack, Toolbar, Typography } from '@mui/material';
 
+import { AuthContext, AuthContextValue } from './context/Auth';
+import Auth from './pages/Auth';
 import DripDrop from './images/dripdrop.png';
-import MusicDownloader from './pages/music_downloader';
-import IncomeCalculator from './pages/income_calculator';
-import Auth from './pages/auth';
-import { AuthContext } from './context/auth_context';
+import MusicDownloader from './pages/MusicDownloader';
+import { ConsumerComponent } from './components/ConsumerComponent';
 
-const App = () => {
-	const { loggedIn, initialAuth, logout } = useContext(AuthContext);
+const Header = (props: Pick<AuthContextValue, 'logout' | 'user'>) => {
+	const { user, logout } = props;
+	if (user) {
+		return (
+			<Fragment>
+				<img height="40px" alt="DripDrop" src={DripDrop} />
+				<Button color="inherit">Music Downloader</Button>
+				<Box sx={{ flexGrow: 1 }} />
+				<Typography variant="h5">{user.username}</Typography>
+				<Button onClick={() => logout()} color="inherit">
+					Logout
+				</Button>
+			</Fragment>
+		);
+	}
+	return null;
+};
 
-	const headerContent = useMemo(() => {
-		if (loggedIn) {
-			return (
-				<Fragment>
-					<img height="40px" alt="DripDrop" src={DripDrop} />
-					<Button color="inherit">Music Downloader</Button>
-					{/* <Button color="inherit">Income Calculator</Button> */}
-					<Box sx={{ flexGrow: 1 }} />
-					<Button onClick={() => logout()} color="inherit">
-						Logout
-					</Button>
-				</Fragment>
-			);
-		}
-		return null;
-	}, [loggedIn, logout]);
-
-	const routes = useMemo(() => {
-		if (initialAuth) {
-			return (
-				<Stack alignItems="center" margin={10}>
-					<CircularProgress />
-				</Stack>
-			);
-		}
-		if (loggedIn) {
-			return (
-				<Switch>
-					{/* <Route path="/calculator" render={() => <IncomeCalculator />} /> */}
-					<Route path="/download" render={() => <MusicDownloader />} />
-					<Route path="/" render={() => <MusicDownloader />} />
-				</Switch>
-			);
-		}
+const Routes = (props: Pick<AuthContextValue, 'checkSessionStatus' | 'user'>) => {
+	const { checkSessionStatus, user } = props;
+	if (checkSessionStatus.isLoading || !checkSessionStatus.started) {
+		return (
+			<Stack alignItems="center" margin={10}>
+				<CircularProgress />
+			</Stack>
+		);
+	}
+	if (user) {
 		return (
 			<Switch>
-				<Route path="/" render={() => <Auth />} />
+				<Route path="/download" render={() => <MusicDownloader />} />
+				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>
 		);
-	}, [initialAuth, loggedIn]);
+	}
+	return (
+		<Switch>
+			<Route path="/" render={() => <Auth />} />
+		</Switch>
+	);
+};
 
+const App = () => {
 	return (
 		<React.Fragment>
 			<Box sx={{ flexGrow: 1 }}>
 				<AppBar position="sticky">
-					<Toolbar>{headerContent}</Toolbar>
+					<Toolbar>
+						<ConsumerComponent
+							context={AuthContext}
+							selector={(context: AuthContextValue) => ({
+								user: context.user,
+								logout: context.logout,
+							})}
+							render={(props) => <Header {...props} />}
+						/>
+					</Toolbar>
 				</AppBar>
 			</Box>
-			{routes}
+			<ConsumerComponent
+				context={AuthContext}
+				selector={(context: AuthContextValue) => ({
+					user: context.user,
+					checkSessionStatus: context.checkSessionStatus,
+				})}
+				render={(props) => <Routes {...props} />}
+			/>
 		</React.Fragment>
 	);
 };

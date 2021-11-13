@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
 	Card,
 	CardContent,
@@ -13,13 +13,20 @@ import {
 	ButtonGroup,
 } from '@mui/material';
 import { FileDownload, CopyAll, Delete, Error, NavigateNext, NavigateBefore } from '@mui/icons-material';
-import { Job, MusicContext } from '../../context/music_context';
+import { Job, MusicContext, MusicContextValue } from '../../context/Music';
 import Image from '../../images/blank_image.jpeg';
 import { SxProps } from '@mui/system';
 import { FILE_TYPE } from '../../utils/enums';
+import { ConsumerComponent } from '../ConsumerComponent';
 
-const JobCard = (props: Job) => {
-	const { removeJob, updateFormInputs } = useContext(MusicContext);
+interface JobListProps {
+	jobs: Job[];
+}
+
+type JobCardProps = Pick<MusicContextValue, 'removeJob' | 'updateFormInputs'> & Job;
+
+const JobCard = (props: JobCardProps) => {
+	const { removeJob, updateFormInputs } = props;
 	const typographyDefaultCSS = useMemo(() => ({ textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), []) as SxProps;
 	const { jobID, filename, youtubeURL, artworkURL, title, artist, album, grouping, completed, failed } = props;
 
@@ -131,9 +138,9 @@ const JobCard = (props: Job) => {
 	);
 };
 
-const JobList = () => {
+const JobList = (props: JobListProps) => {
 	const [page, setPage] = useState(0);
-	const { jobs } = useContext(MusicContext);
+	const { jobs } = props;
 	const PAGE_SIZE = useMemo(() => 5, []);
 
 	const prevPage = Math.max(page - 1, 0);
@@ -157,7 +164,14 @@ const JobList = () => {
 				<Stack spacing={1} alignSelf="center" justifyContent="center">
 					{jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((job) => (
 						<Box key={job.jobID}>
-							<JobCard {...job} />
+							<ConsumerComponent
+								context={MusicContext}
+								selector={(context: MusicContextValue) => ({
+									removeJob: context.removeJob,
+									updateFormInputs: context.updateFormInputs,
+								})}
+								render={(props) => <JobCard {...job} {...props} />}
+							/>
 						</Box>
 					))}
 				</Stack>

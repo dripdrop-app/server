@@ -2,8 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
-import MusicContextProvider from './context/music_context';
-import AuthContextProvider from './context/auth_context';
+import AuthContextProvider from './context/Auth';
 
 import './index.css';
 import '@fontsource/roboto/300.css';
@@ -17,9 +16,7 @@ ReactDOM.render(
 	<React.StrictMode>
 		<BrowserRouter>
 			<AuthContextProvider>
-				<MusicContextProvider>
-					<App />
-				</MusicContextProvider>
+				<App />
 			</AuthContextProvider>
 		</BrowserRouter>
 	</React.StrictMode>,

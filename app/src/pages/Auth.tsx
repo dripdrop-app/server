@@ -2,10 +2,10 @@ import React, { Fragment, useContext, useMemo, useState } from 'react';
 import { Alert, Button, CircularProgress, Divider, Stack, TextField, TextFieldProps, Typography } from '@mui/material';
 
 import DripDrop from '../images/dripdrop.png';
-import { AuthContext } from '../context/auth_context';
+import { AuthContext } from '../context/Auth';
 
 const Auth = () => {
-	const { login, loggingIn, error, notice, signup } = useContext(AuthContext);
+	const { login, signup, loginStatus, signupStatus } = useContext(AuthContext);
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 
@@ -16,6 +16,8 @@ const Auth = () => {
 		[]
 	);
 
+	const error = useMemo(() => loginStatus.error || signupStatus.error, [loginStatus.error, signupStatus.error]);
+
 	return useMemo(
 		() => (
 			<Stack marginY={20} direction="column" justifyContent="center" alignItems="center" spacing={5}>
@@ -23,9 +25,13 @@ const Auth = () => {
 				<Stack direction="row" spacing={1}>
 					<Typography variant="h5">Login</Typography>
 					<Divider orientation="vertical" flexItem />
-					<Typography variant="h5"> Sign Up</Typography>
+					<Typography variant="h6"> Sign Up</Typography>
 				</Stack>
-				{notice ? <Alert severity="info">{notice}</Alert> : null}
+				{signupStatus.isSuccess ? (
+					<Alert severity="info">
+						Account successfully created. You can login once your account has been approved by the adminstrator.
+					</Alert>
+				) : null}
 				{error ? <Alert severity="error">{error}</Alert> : null}
 				<TextField
 					{...defaultTextFieldProps}
@@ -45,7 +51,7 @@ const Auth = () => {
 					error={!!error}
 				/>
 				<Stack direction="row" spacing={3}>
-					{loggingIn ? (
+					{signupStatus.isLoading || loginStatus.isLoading ? (
 						<CircularProgress />
 					) : (
 						<Fragment>
@@ -60,7 +66,17 @@ const Auth = () => {
 				</Stack>
 			</Stack>
 		),
-		[defaultTextFieldProps, error, loggingIn, login, notice, password, signup, username]
+		[
+			defaultTextFieldProps,
+			error,
+			login,
+			loginStatus.isLoading,
+			password,
+			signup,
+			signupStatus.isLoading,
+			signupStatus.isSuccess,
+			username,
+		]
 	);
 };
 
