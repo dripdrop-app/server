@@ -1,12 +1,12 @@
-import React, { createContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useEffect, useState, useCallback, useReducer } from 'react';
 import { FILE_TYPE } from '../utils/enums';
 import BlankImage from '../images/blank_image.jpeg';
 import useWebsocket from '../hooks/useWebsocket';
 
 interface BaseInputs {
-	youtubeURL: string | null;
+	youtube_url: string | null;
 	filename: string | null;
-	artworkURL: string | null;
+	artwork_url: string | null;
 	title: string;
 	artist: string;
 	album: string;
@@ -14,84 +14,76 @@ interface BaseInputs {
 }
 
 export interface Job extends BaseInputs {
-	jobID: string;
+	job_id: string;
 	completed: boolean;
 	failed: boolean;
 }
 
-interface FormInputs extends BaseInputs {
+export interface FormInputs extends BaseInputs {
 	fileType: keyof typeof FILE_TYPE;
 }
 
-export interface MusicContextValue {
+interface MusicContextValue {
 	jobs: Job[];
 	formInputs: FormInputs;
 	validForm: boolean;
 	resetForm: () => void;
-	updateFormInputs: (update: Partial<FormInputs>) => Promise<void>;
+	updateFormInputs: (update: Partial<FormInputs>) => void;
 	performOperation: (file?: File) => Promise<void>;
-	updatingForm: boolean;
 	removeJob: (jobID: string) => void;
-	isValidArtwork: (url: string) => boolean;
-	isBase64: (url: string) => boolean;
 }
 
-const defaultFormData = {
+const initialFormState: FormInputs = {
 	fileType: FILE_TYPE.YOUTUBE,
-	youtubeURL: '',
+	youtube_url: '',
 	filename: '',
-	artworkURL: '',
+	artwork_url: '',
 	title: '',
 	artist: '',
 	album: '',
 	grouping: '',
 };
 
+type Action = { type: 'UPDATE'; payload: Partial<BaseInputs> };
+
+const reducer = (state = initialFormState, action: Action): FormInputs => {
+	if (action.type === 'UPDATE') {
+		return { ...state, ...action.payload };
+	}
+	return state;
+};
+
 export const MusicContext = createContext<MusicContextValue>({
-	formInputs: {
-		...defaultFormData,
-	},
+	formInputs: {} as FormInputs,
 	validForm: false,
 	jobs: [],
 	resetForm: () => {},
-	updateFormInputs: () => Promise.resolve(),
+	updateFormInputs: () => {},
 	performOperation: () => Promise.resolve(),
-	updatingForm: false,
 	removeJob: () => {},
-	isValidArtwork: () => false,
-	isBase64: () => false,
 });
 
 const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
-	const [formInputs, setFormInputs] = useState<FormInputs>({ ...defaultFormData });
+	const [formInputs, dispatch] = useReducer(reducer, initialFormState);
 	const [validForm, setValidForm] = useState(false);
 	const [jobs, setJobs] = useState<Job[]>([]);
-	const [updatingForm, setUpdatingForm] = useState(false);
 
 	const socketHandler = useCallback(
 		(event) => {
 			const json = JSON.parse(event.data);
 			const type = json.type;
-			if (json.jobs) {
-				json.jobs = json.jobs.map((job: any) => {
-					job.jobID = job.job_id;
-					job.artworkURL = job.artwork_url;
-					job.youtubeURL = job.youtube_url;
-					return job;
-				});
-			}
 			if (type === 'ALL') {
 				setJobs([...json.jobs]);
 			} else if (type === 'STARTED') {
 				setJobs([...json.jobs, ...jobs]);
 			} else if (type === 'COMPLETED') {
-				const completedJobs = json.jobs.reduce((map: any, job: any, index: number) => {
+				const completedJobs = json.jobs.reduce((map: any, job: any) => {
 					map[job.job_id] = job;
 					return map;
 				}, {});
 				jobs.forEach((job, index) => {
-					if (completedJobs[job.jobID]) {
-						jobs[index] = completedJobs[job.jobID];
+					if (completedJobs[job.job_id]) {
+						jobs[index] = completedJobs[job.job_id];
 					}
 				});
 				setJobs([...jobs]);
@@ -102,121 +94,22 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 
 	useWebsocket('/music/listenJobs', socketHandler);
 
-	const resetForm = useCallback(() => setFormInputs({ ...defaultFormData }), [setFormInputs]);
-
-	const isBase64 = useCallback((url: string) => {
-		const isBase64 = RegExp(/^data:image/).test(url);
-		return isBase64;
-	}, []);
-
-	const isValidArtwork = useCallback(
-		(url: string) => {
-			const valid = RegExp(/^https:\/\/(www\.)?.+\.(jpg|jpeg|png)/).test(url);
-			return valid || isBase64(url);
-		},
-		[isBase64]
-	);
-
-	const getArtwork = useCallback(async (url: string) => {
-		const valid = RegExp(/^https:\/\/(www\.)?.+\.(jpg|jpeg|png)/).test(url);
-		const isBase64 = RegExp(/^data:image/).test(url);
-		if (url && valid && !isBase64) {
-			const params = new URLSearchParams();
-			params.append('artwork_url', url);
-			const response = await fetch(`/music/getArtwork?${params}`);
-			if (response.ok) {
-				const json = await response.json();
-				return json.artworkURL;
-			}
-		}
-		return url;
-	}, []);
-
-	const getGrouping = useCallback(async (youTubeURL: string) => {
-		const valid = RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youTubeURL);
-		if (youTubeURL && valid) {
-			const params = new URLSearchParams();
-			params.append('youtube_url', youTubeURL);
-			const response = await fetch(`/music/grouping?${params}`);
-			if (response.ok) {
-				const json = await response.json();
-				return json.grouping;
-			}
-		}
-		return youTubeURL;
-	}, []);
+	const resetForm = useCallback(() => dispatch({ type: 'UPDATE', payload: initialFormState }), []);
 
 	const updateFormInputs = useCallback(
-		async (update: Partial<FormInputs>) => {
-			if (!updatingForm) {
-				setUpdatingForm(true);
-				if (update.fileType) {
-					if (update.fileType === FILE_TYPE.YOUTUBE) {
-						update.filename = '';
-					} else if (update.fileType === FILE_TYPE.MP3_UPLOAD || update.fileType === FILE_TYPE.WAV_UPLOAD) {
-						update.youtubeURL = '';
-					}
-				}
-				if (update.filename?.endsWith('.mp3')) {
-					update.fileType = FILE_TYPE.MP3_UPLOAD;
-				} else if (update.filename?.endsWith('.wav')) {
-					update.fileType = FILE_TYPE.WAV_UPLOAD;
-				}
-				if (update.title && !update.album) {
-					const text = update.title;
-					update.album = '';
-
-					const openPar = text.indexOf('(');
-					const closePar = text.indexOf(')');
-					const specialTitle = (openPar !== -1 || closePar !== -1) && openPar < closePar;
-
-					const songTitle = specialTitle ? text.substring(0, openPar).trim() : text.trim();
-					update.album = songTitle;
-					const songTitleWords = songTitle.split(' ');
-
-					if (songTitleWords.length > 2) {
-						update.album = songTitleWords.map((word) => word.charAt(0)).join('');
-					}
-					if (specialTitle) {
-						const specialWords = text.substring(openPar + 1, closePar).split(' ');
-						update.album = `${update.album} - ${specialWords[specialWords.length - 1]}`;
-					} else {
-						update.album = update.album ? `${update.album} - Single` : '';
-					}
-				}
-				if (update.artworkURL) {
-					update.artworkURL = await getArtwork(update.artworkURL);
-				}
-				if (update.youtubeURL && !update.grouping) {
-					update.grouping = await getGrouping(update.youtubeURL);
-				}
-				Object.keys(formInputs).forEach((key) => {
-					const dataKey = key as keyof FormInputs;
-					if (update[dataKey] === undefined || update[dataKey] === null) {
-						if (dataKey === 'fileType') {
-							update[dataKey] = formInputs.fileType;
-						} else {
-							update[dataKey] = formInputs[dataKey] || '';
-						}
-					}
-				});
-
-				setFormInputs({ ...(update as FormInputs) });
-				setUpdatingForm(false);
-			}
-		},
-		[formInputs, getArtwork, getGrouping, updatingForm]
+		(update: Partial<FormInputs>) => dispatch({ type: 'UPDATE', payload: update }),
+		[]
 	);
 
 	const performOperation = useCallback(
 		async (file?: File) => {
 			const formData = new FormData();
-			formData.append('youtube_url', formInputs.youtubeURL || '');
+			formData.append('youtube_url', formInputs.youtube_url || '');
 			if (file) {
 				formData.append('file', file);
 			}
-			if (formInputs.artworkURL) {
-				formData.append('artwork_url', formInputs.artworkURL);
+			if (formInputs.artwork_url) {
+				formData.append('artwork_url', formInputs.artwork_url);
 			} else {
 				const imageResponse = await fetch(BlankImage);
 				if (imageResponse.ok) {
@@ -252,7 +145,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 			params.append('job_id', deletedJobID);
 			const response = await fetch(`/music/deleteJob?${params}`);
 			if (response.ok) {
-				setJobs([...jobs.filter((job) => deletedJobID !== job.jobID)]);
+				setJobs([...jobs.filter((job) => deletedJobID !== job.job_id)]);
 			}
 		},
 		[jobs]
@@ -260,7 +153,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 
 	useEffect(() => {
 		if (
-			(formInputs.youtubeURL && RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(formInputs.youtubeURL)) ||
+			(formInputs.youtube_url && RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(formInputs.youtube_url)) ||
 			formInputs.filename
 		) {
 			setValidForm(!!formInputs.title && !!formInputs.artist && !!formInputs.album);
@@ -278,10 +171,7 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 				resetForm,
 				updateFormInputs,
 				performOperation,
-				updatingForm,
 				removeJob,
-				isValidArtwork,
-				isBase64,
 			}}
 		>
 			{props.children}

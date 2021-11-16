@@ -1,15 +1,14 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useContext } from 'react';
 import { Route, Switch } from 'react-router-dom';
 import { AppBar, Box, Button, CircularProgress, Stack, Toolbar, Typography } from '@mui/material';
 
-import { AuthContext, AuthContextValue } from './context/Auth';
+import { AuthContext } from './context/Auth';
 import Auth from './pages/Auth';
 import DripDrop from './images/dripdrop.png';
 import MusicDownloader from './pages/MusicDownloader';
-import { ConsumerComponent } from './components/ConsumerComponent';
 
-const Header = (props: Pick<AuthContextValue, 'logout' | 'user'>) => {
-	const { user, logout } = props;
+const Header = () => {
+	const { user, logout } = useContext(AuthContext);
 	if (user) {
 		return (
 			<Fragment>
@@ -26,8 +25,8 @@ const Header = (props: Pick<AuthContextValue, 'logout' | 'user'>) => {
 	return null;
 };
 
-const Routes = (props: Pick<AuthContextValue, 'checkSessionStatus' | 'user'>) => {
-	const { checkSessionStatus, user } = props;
+const Routes = () => {
+	const { checkSessionStatus, user } = useContext(AuthContext);
 	if (checkSessionStatus.isLoading || !checkSessionStatus.started) {
 		return (
 			<Stack alignItems="center" margin={10}>
@@ -56,25 +55,11 @@ const App = () => {
 			<Box sx={{ flexGrow: 1 }}>
 				<AppBar position="sticky">
 					<Toolbar>
-						<ConsumerComponent
-							context={AuthContext}
-							selector={(context: AuthContextValue) => ({
-								user: context.user,
-								logout: context.logout,
-							})}
-							render={(props) => <Header {...props} />}
-						/>
+						<Header />
 					</Toolbar>
 				</AppBar>
 			</Box>
-			<ConsumerComponent
-				context={AuthContext}
-				selector={(context: AuthContextValue) => ({
-					user: context.user,
-					checkSessionStatus: context.checkSessionStatus,
-				})}
-				render={(props) => <Routes {...props} />}
-			/>
+			<Routes />
 		</React.Fragment>
 	);
 };

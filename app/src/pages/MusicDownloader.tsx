@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Container, Stack, Box, Divider } from '@mui/material';
-import MusicContextProvider, { MusicContext, MusicContextValue } from '../context/Music';
+import MusicContextProvider from '../context/Music';
 import MusicForm from '../components/Music/MusicForm';
 import JobList from '../components/Music/JobList';
-import { ConsumerComponent } from '../components/ConsumerComponent';
 
 const MusicDownloader = () => {
-	return (
-		<MusicContextProvider>
+	const Page = useMemo(() => {
+		return (
 			<Stack direction={{ xs: 'column', md: 'row' }}>
 				<Box sx={{ flex: 2 }}>
 					<Container>
@@ -16,21 +15,15 @@ const MusicDownloader = () => {
 				</Box>
 				<Divider orientation="vertical" flexItem />
 				<Box sx={{ flex: 1 }}>
-					<ConsumerComponent
-						context={MusicContext}
-						selector={(context: MusicContextValue) => ({
-							jobs: context.jobs,
-						})}
-						render={(props) => (
-							<Container>
-								<JobList {...props} />
-							</Container>
-						)}
-					/>
+					<Container>
+						<JobList />
+					</Container>
 				</Box>
 			</Stack>
-		</MusicContextProvider>
-	);
+		);
+	}, []);
+
+	return <MusicContextProvider>{Page}</MusicContextProvider>;
 };
 
 export default MusicDownloader;

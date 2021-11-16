@@ -10,14 +10,17 @@ const useWebsocket = (socket_url: string, messageHandler: MessageHandler) => {
 	);
 
 	useEffect(() => {
+		ws.onmessage = messageHandler;
+	}, [messageHandler, ws]);
+
+	useEffect(() => {
 		const websocket = ws;
-		websocket.onmessage = messageHandler;
 		return () => {
 			if (websocket.readyState === 1) {
 				websocket.close();
 			}
 		};
-	}, [messageHandler, ws]);
+	}, [ws]);
 };
 
 export default useWebsocket;

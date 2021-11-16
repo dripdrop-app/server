@@ -16,7 +16,24 @@ const Auth = () => {
 		[]
 	);
 
-	const error = useMemo(() => loginStatus.error || signupStatus.error, [loginStatus.error, signupStatus.error]);
+	const error = useMemo(() => {
+		return signupStatus.error && signupStatus.timestamp > loginStatus.timestamp
+			? signupStatus.error
+			: loginStatus.error;
+	}, [loginStatus.error, loginStatus.timestamp, signupStatus.error, signupStatus.timestamp]);
+
+	const info = useMemo(() => {
+		if (signupStatus.isSuccess && signupStatus.timestamp > loginStatus.timestamp) {
+			return (
+				<Alert severity="info">
+					Account successfully created. You can login once your account has been approved by the adminstrator.
+				</Alert>
+			);
+		} else if (error) {
+			return <Alert severity="error">{error}</Alert>;
+		}
+		return null;
+	}, [error, loginStatus.timestamp, signupStatus.isSuccess, signupStatus.timestamp]);
 
 	return useMemo(
 		() => (
@@ -27,12 +44,7 @@ const Auth = () => {
 					<Divider orientation="vertical" flexItem />
 					<Typography variant="h6"> Sign Up</Typography>
 				</Stack>
-				{signupStatus.isSuccess ? (
-					<Alert severity="info">
-						Account successfully created. You can login once your account has been approved by the adminstrator.
-					</Alert>
-				) : null}
-				{error ? <Alert severity="error">{error}</Alert> : null}
+				{info}
 				<TextField
 					{...defaultTextFieldProps}
 					value={username}
@@ -69,12 +81,12 @@ const Auth = () => {
 		[
 			defaultTextFieldProps,
 			error,
+			info,
 			login,
 			loginStatus.isLoading,
 			password,
 			signup,
 			signupStatus.isLoading,
-			signupStatus.isSuccess,
 			username,
 		]
 	);

@@ -13,7 +13,7 @@ interface State {
 	checkSessionStatus: FetchState;
 }
 
-export interface AuthContextValue extends State {
+interface AuthContextValue extends State {
 	login: (username: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	signup: (username: string, password: string) => Promise<void>;
