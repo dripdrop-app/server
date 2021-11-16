@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { Stack, TextField, Button } from '@mui/material';
+import { Stack, TextField, Button, CircularProgress } from '@mui/material';
 import { defaultTextFieldProps } from '../../utils/helpers';
 import { MusicContext } from '../../context/Music';
 import BlankImage from '../../images/blank_image.jpeg';
@@ -66,14 +66,18 @@ const ArtworkInput = () => {
 						Clear
 					</Button>
 				</Stack>
-				<img
-					style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }}
-					src={artwork_url && isValidArtwork(artwork_url) ? artwork_url : BlankImage}
-					alt="Cover Art"
-				/>
+				{getArtworkStatus.isLoading ? (
+					<CircularProgress />
+				) : (
+					<img
+						style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }}
+						src={artwork_url && isValidArtwork(artwork_url) ? artwork_url : BlankImage}
+						alt="Cover Art"
+					/>
+				)}
 			</React.Fragment>
 		),
-		[artwork_url, isBase64, isValidArtwork, updateFormInputs]
+		[artwork_url, getArtworkStatus.isLoading, isBase64, isValidArtwork, updateFormInputs]
 	);
 };
 

@@ -50,7 +50,11 @@ const initialState: FetchState = {
 
 const reducer = (state = initialState, action: AsyncAction): FetchState => {
 	if (action.type === 'STARTED') {
-		return { ...state, started: true };
+		return {
+			...initialState,
+			started: true,
+			timestamp: new Date(Date.now()),
+		};
 	} else if (action.type === 'LOADING') {
 		return { ...state, isLoading: true };
 	} else if (action.type === 'ERROR') {

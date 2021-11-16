@@ -1,23 +1,59 @@
-import React, { useCallback, useContext, useMemo, useRef } from 'react';
-import { Typography, Divider, Stack } from '@mui/material';
+import React, { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { Typography, Divider, Stack, CircularProgress } from '@mui/material';
 import { MusicContext } from '../../context/Music';
 import FileSelector from './FileSelector';
 import ArtworkInput from './ArtworkInput';
 import TagInputs from './TagInputs';
 import FormActions from './FormActions';
+import useLazyFetch from '../../hooks/useLazyFetch';
+import BlankImage from '../../images/blank_image.jpeg';
 
 const MusicForm = () => {
-	const { performOperation } = useContext(MusicContext);
+	const { formInputs, resetForm } = useContext(MusicContext);
 	const fileInputRef: React.MutableRefObject<null | HTMLInputElement> = useRef(null);
 
-	const run = useCallback(() => {
+	const { youtube_url, artwork_url, title, artist, album, grouping } = formInputs;
+
+	const [performOperation, performOperationStatus] = useLazyFetch();
+
+	const run = useCallback(async () => {
+		const formData = new FormData();
 		if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files.length > 0) {
 			const file = fileInputRef.current.files[0];
-			performOperation(file);
-		} else {
-			performOperation();
+			formData.append('file', file);
 		}
-	}, [performOperation]);
+		formData.append('youtube_url', youtube_url || '');
+		if (artwork_url) {
+			formData.append('artwork_url', artwork_url);
+		} else {
+			const imageResponse = await fetch(BlankImage);
+			if (imageResponse.ok) {
+				const blob = await imageResponse.blob();
+				try {
+					const readFilePromise = () =>
+						new Promise((resolve, reject) => {
+							const reader = new FileReader();
+							reader.onloadend = () => resolve(reader.result);
+							reader.onerror = reject;
+							reader.readAsDataURL(blob);
+						});
+					const url = (await readFilePromise()) as string;
+					formData.append('artwork_url', url);
+				} catch {}
+			}
+		}
+		formData.append('title', title);
+		formData.append('artist', artist);
+		formData.append('album', album);
+		formData.append('grouping', grouping || '');
+		performOperation('/music/download', { method: 'POST', body: formData });
+	}, [album, artist, artwork_url, grouping, performOperation, title, youtube_url]);
+
+	useEffect(() => {
+		if (performOperationStatus.isSuccess) {
+			resetForm();
+		}
+	}, [performOperationStatus.isSuccess, resetForm]);
 
 	return useMemo(
 		() => (
@@ -36,11 +72,11 @@ const MusicForm = () => {
 					<TagInputs />
 				</Stack>
 				<Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ my: 10 }}>
-					<FormActions run={run} />
+					{performOperationStatus.isLoading ? <CircularProgress /> : <FormActions run={run} />}
 				</Stack>
 			</React.Fragment>
 		),
-		[run]
+		[performOperationStatus.isLoading, run]
 	);
 };
 
