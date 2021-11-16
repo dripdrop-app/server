@@ -1,5 +1,5 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
-import { Typography, Divider, Stack, CircularProgress } from '@mui/material';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Typography, Divider, Stack, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { MusicContext } from '../../context/Music';
 import FileSelector from './FileSelector';
 import ArtworkInput from './ArtworkInput';
@@ -11,6 +11,8 @@ import BlankImage from '../../images/blank_image.jpeg';
 const MusicForm = () => {
 	const { formInputs, resetForm } = useContext(MusicContext);
 	const fileInputRef: React.MutableRefObject<null | HTMLInputElement> = useRef(null);
+	const [openSuccess, setOpenSuccess] = useState(false);
+	const [openError, setOpenError] = useState(false);
 
 	const { youtube_url, artwork_url, title, artist, album, grouping } = formInputs;
 
@@ -51,13 +53,32 @@ const MusicForm = () => {
 
 	useEffect(() => {
 		if (performOperationStatus.isSuccess) {
+			setOpenSuccess(true);
 			resetForm();
+		} else if (performOperationStatus.isError) {
+			setOpenError(true);
 		}
-	}, [performOperationStatus.isSuccess, resetForm]);
+	}, [performOperationStatus.isError, performOperationStatus.isSuccess, resetForm]);
 
 	return useMemo(
 		() => (
 			<React.Fragment>
+				<Snackbar
+					open={openSuccess}
+					autoHideDuration={5000}
+					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+					onClose={() => setOpenSuccess(false)}
+				>
+					<Alert severity="success">Task started successfully.</Alert>
+				</Snackbar>
+				<Snackbar
+					open={openError}
+					autoHideDuration={5000}
+					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+					onClose={() => setOpenError(false)}
+				>
+					<Alert severity="error">Task failed to start.</Alert>
+				</Snackbar>
 				<Typography sx={{ my: 5 }} variant="h2">
 					MP3 Downloader / Converter
 				</Typography>
@@ -76,7 +97,7 @@ const MusicForm = () => {
 				</Stack>
 			</React.Fragment>
 		),
-		[performOperationStatus.isLoading, run]
+		[openError, openSuccess, performOperationStatus.isLoading, run]
 	);
 };
 
