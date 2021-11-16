@@ -1,6 +1,5 @@
 import React, { createContext, useEffect, useState, useCallback, useReducer } from 'react';
 import { FILE_TYPE } from '../utils/enums';
-import BlankImage from '../images/blank_image.jpeg';
 import useWebsocket from '../hooks/useWebsocket';
 
 interface BaseInputs {
@@ -29,7 +28,6 @@ interface MusicContextValue {
 	validForm: boolean;
 	resetForm: () => void;
 	updateFormInputs: (update: Partial<FormInputs>) => void;
-	performOperation: (file?: File) => Promise<void>;
 	removeJob: (jobID: string) => void;
 }
 
@@ -59,7 +57,6 @@ export const MusicContext = createContext<MusicContextValue>({
 	jobs: [],
 	resetForm: () => {},
 	updateFormInputs: () => {},
-	performOperation: () => Promise.resolve(),
 	removeJob: () => {},
 });
 
@@ -101,44 +98,6 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 		[]
 	);
 
-	const performOperation = useCallback(
-		async (file?: File) => {
-			const formData = new FormData();
-			formData.append('youtube_url', formInputs.youtube_url || '');
-			if (file) {
-				formData.append('file', file);
-			}
-			if (formInputs.artwork_url) {
-				formData.append('artwork_url', formInputs.artwork_url);
-			} else {
-				const imageResponse = await fetch(BlankImage);
-				if (imageResponse.ok) {
-					const blob = await imageResponse.blob();
-					try {
-						const readFilePromise = () =>
-							new Promise((resolve, reject) => {
-								const reader = new FileReader();
-								reader.onloadend = () => resolve(reader.result);
-								reader.onerror = reject;
-								reader.readAsDataURL(blob);
-							});
-						const url = (await readFilePromise()) as string;
-						formData.append('artwork_url', url);
-					} catch {}
-				}
-			}
-			formData.append('title', formInputs.title);
-			formData.append('artist', formInputs.artist);
-			formData.append('album', formInputs.album);
-			formData.append('grouping', formInputs.grouping || '');
-			const response = await fetch('/music/download', { method: 'POST', body: formData });
-			if (response.ok) {
-				resetForm();
-			}
-		},
-		[formInputs, resetForm]
-	);
-
 	const removeJob = useCallback(
 		async (deletedJobID: string) => {
 			const params = new URLSearchParams();
@@ -170,7 +129,6 @@ const MusicContextProvider = (props: React.PropsWithChildren<{}>) => {
 				validForm,
 				resetForm,
 				updateFormInputs,
-				performOperation,
 				removeJob,
 			}}
 		>
