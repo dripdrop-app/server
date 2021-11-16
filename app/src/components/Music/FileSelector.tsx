@@ -32,10 +32,12 @@ const FileSwitch = (props: FileSwitchProps) => {
 	);
 
 	const onBrowseClick = useCallback(() => {
-		if (fileInputRef.current) {
-			fileInputRef.current.click();
+		if (fileType !== FILE_TYPE.YOUTUBE) {
+			if (fileInputRef.current) {
+				fileInputRef.current.click();
+			}
 		}
-	}, [fileInputRef]);
+	}, [fileInputRef, fileType]);
 
 	const onFileChange = useCallback(
 		async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,16 +46,23 @@ const FileSwitch = (props: FileSwitchProps) => {
 				const file = files[0];
 				const formData = new FormData();
 				formData.append('file', file);
+				updateFormInputs({ filename: file.name });
 				getFileTags('/music/getTags', { method: 'POST', body: formData });
 			}
 		},
-		[getFileTags]
+		[getFileTags, updateFormInputs]
 	);
 
 	useEffect(() => {
 		if (getFileTagsStatus.isSuccess) {
 			const { title, artist, album, grouping, artwork_url } = getFileTagsStatus.data;
-			updateFormInputs({ title, artist, album, grouping, artwork_url });
+			updateFormInputs({
+				title: title || '',
+				artist: artist || '',
+				album: album || '',
+				grouping: grouping || '',
+				artwork_url: artwork_url || '',
+			});
 		}
 	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, updateFormInputs]);
 
