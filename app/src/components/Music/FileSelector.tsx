@@ -1,34 +1,42 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, Switch, TextField } from '@mui/material';
-import { MusicContext } from '../../context/Music';
+import {
+	albumSelector,
+	artistSelector,
+	artworkURLSelector,
+	filenameSelector,
+	fileTypeSelector,
+	groupingSelector,
+	titleSelector,
+} from '../../atoms/Music';
 import { FILE_TYPE } from '../../utils/enums';
-import { defaultTextFieldProps } from '../../utils/helpers';
+import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
 import YoutubeURLInput from './YoutubeURLInput';
 import useLazyFetch from '../../hooks/useLazyFetch';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 interface FileSwitchProps {
 	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
 }
 
 const FileSwitch = (props: FileSwitchProps) => {
-	const { updateFormInputs, formInputs } = useContext(MusicContext);
-	const { fileType, filename } = formInputs;
 	const { fileInputRef } = props;
+
+	const [filename, setFilename] = useRecoilState(filenameSelector);
+	const [fileType, setFileType] = useRecoilState(fileTypeSelector);
+	const setTitle = useSetRecoilState(titleSelector);
+	const setArtist = useSetRecoilState(artistSelector);
+	const setAlbum = useSetRecoilState(albumSelector);
+	const setGrouping = useSetRecoilState(groupingSelector);
+	const setArtworkURL = useSetRecoilState(artworkURLSelector);
 
 	const [getFileTags, getFileTagsStatus] = useLazyFetch();
 
 	const onFileSwitchChange = useCallback(
 		(event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-			if (checked) {
-				updateFormInputs({ fileType: FILE_TYPE.WAV_UPLOAD, filename: '', youtube_url: '' });
-			} else {
-				if (fileInputRef.current && fileInputRef.current.files) {
-					fileInputRef.current.files = null;
-				}
-				updateFormInputs({ fileType: FILE_TYPE.YOUTUBE, filename: '', youtube_url: '' });
-			}
+			setFileType(checked ? FILE_TYPE.WAV_UPLOAD : FILE_TYPE.YOUTUBE);
 		},
-		[fileInputRef, updateFormInputs]
+		[setFileType]
 	);
 
 	const onBrowseClick = useCallback(() => {
@@ -46,25 +54,23 @@ const FileSwitch = (props: FileSwitchProps) => {
 				const file = files[0];
 				const formData = new FormData();
 				formData.append('file', file);
-				updateFormInputs({ filename: file.name });
+				setFilename(file.name);
 				getFileTags('/music/getTags', { method: 'POST', body: formData });
 			}
 		},
-		[getFileTags, updateFormInputs]
+		[getFileTags, setFilename]
 	);
 
 	useEffect(() => {
 		if (getFileTagsStatus.isSuccess) {
 			const { title, artist, album, grouping, artwork_url } = getFileTagsStatus.data;
-			updateFormInputs({
-				title: title || '',
-				artist: artist || '',
-				album: album || '',
-				grouping: grouping || '',
-				artwork_url: artwork_url || '',
-			});
+			setTitle(title || '');
+			setArtist(artist || '');
+			setAlbum(album || resolveAlbumFromTitle(title) || '');
+			setGrouping(grouping || '');
+			setArtworkURL(artwork_url || '');
 		}
-	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, updateFormInputs]);
+	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, setAlbum, setArtist, setArtworkURL, setGrouping, setTitle]);
 
 	return useMemo(
 		() => (

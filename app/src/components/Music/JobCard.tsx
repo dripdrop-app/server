@@ -1,4 +1,5 @@
-import { useContext, useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
+import { useSetRecoilState } from 'recoil';
 import { FileDownload, CopyAll, Delete, Error } from '@mui/icons-material';
 import {
 	Card,
@@ -12,30 +13,88 @@ import {
 	ButtonGroup,
 	Button,
 } from '@mui/material';
-import { SxProps } from '@mui/system';
-import { MusicContext } from '../../context/Music';
+import {
+	albumSelector,
+	artistSelector,
+	artworkURLSelector,
+	filenameSelector,
+	fileTypeSelector,
+	groupingSelector,
+	jobsAtom,
+	titleSelector,
+	youtubeURLSelector,
+} from '../../atoms/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import Image from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
+import { typographyDefaultCSS } from '../../utils/helpers';
 
 interface JobCardProps {
-	index: number;
+	job: Job;
 }
 
 const JobCard = (props: JobCardProps) => {
-	const { removeJob, updateFormInputs, jobs } = useContext(MusicContext);
-	const typographyDefaultCSS = useMemo(() => ({ textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), []) as SxProps;
-	const { index } = props;
-	const job = useMemo(() => jobs[index], [index, jobs]);
-	const { job_id, filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = job;
+	const setJobs = useSetRecoilState(jobsAtom);
+	const setTitle = useSetRecoilState(titleSelector);
+	const setArtist = useSetRecoilState(artistSelector);
+	const setAlbum = useSetRecoilState(albumSelector);
+	const setGrouping = useSetRecoilState(groupingSelector);
+	const setArtworkURL = useSetRecoilState(artworkURLSelector);
+	const setYoutubeURL = useSetRecoilState(youtubeURLSelector);
+	const setFileType = useSetRecoilState(fileTypeSelector);
+	const setFilename = useSetRecoilState(filenameSelector);
+
+	const { job_id, filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = props.job;
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch();
+	const [removeJob, removeJobStatus] = useLazyFetch();
 
 	const tryDownloadJob = useCallback(() => {
 		const params = new URLSearchParams();
-		params.append('job_id', job_id);
+		params.append('job_id', job_id || '');
 		downloadJob(`/music/downloadJob?${params}`);
 	}, [downloadJob, job_id]);
+
+	const tryRemoveJob = useCallback(
+		async (deletedJobID: string) => {
+			const params = new URLSearchParams();
+			params.append('job_id', deletedJobID);
+			removeJob(`/music/deleteJob?${params}`);
+		},
+		[removeJob]
+	);
+
+	const copyJob = useCallback(() => {
+		setTitle(title);
+		setArtist(artist);
+		setAlbum(album);
+		setGrouping(grouping || '');
+		setFileType(FILE_TYPE.YOUTUBE);
+		setYoutubeURL(youtube_url || '');
+		setFilename('');
+		setArtworkURL(artwork_url || '');
+	}, [
+		album,
+		artist,
+		artwork_url,
+		grouping,
+		setAlbum,
+		setArtist,
+		setArtworkURL,
+		setFileType,
+		setFilename,
+		setGrouping,
+		setTitle,
+		setYoutubeURL,
+		title,
+		youtube_url,
+	]);
+
+	useEffect(() => {
+		if (removeJobStatus.isSuccess) {
+			setJobs((jobs) => jobs.filter((job) => job.job_id === job_id));
+		}
+	}, [job_id, removeJobStatus.isSuccess, setJobs]);
 
 	useEffect(() => {
 		if (downloadJobStatus.isSuccess) {
@@ -110,22 +169,10 @@ const JobCard = (props: JobCardProps) => {
 											<Error />
 										</Button>
 									) : null}
-									<Button
-										title="Copy to Form"
-										onClick={() =>
-											updateFormInputs({
-												...job,
-												fileType: FILE_TYPE.YOUTUBE,
-												youtube_url: youtube_url || '',
-												filename: '',
-												artwork_url: artwork_url || '',
-												grouping: grouping || '',
-											})
-										}
-									>
+									<Button title="Copy to Form" onClick={() => copyJob()}>
 										<CopyAll />
 									</Button>
-									<Button title="Delete Job and File" color="error" onClick={() => removeJob(job_id)}>
+									<Button title="Delete Job and File" color="error" onClick={() => tryRemoveJob(job_id)}>
 										<Delete />
 									</Button>
 								</ButtonGroup>
@@ -140,16 +187,14 @@ const JobCard = (props: JobCardProps) => {
 			artist,
 			artwork_url,
 			completed,
+			copyJob,
 			failed,
 			filename,
 			grouping,
-			job,
 			job_id,
-			removeJob,
 			title,
 			tryDownloadJob,
-			typographyDefaultCSS,
-			updateFormInputs,
+			tryRemoveJob,
 			youtube_url,
 		]
 	);

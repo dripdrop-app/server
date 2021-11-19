@@ -1,68 +1,49 @@
-import React, { useContext, useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { TextField } from '@mui/material';
-import { defaultTextFieldProps } from '../../utils/helpers';
-import { MusicContext } from '../../context/Music';
+import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
+import { albumSelector, artistSelector, groupingSelector, titleSelector } from '../../atoms/Music';
+import { useRecoilState } from 'recoil';
 
 const TagInputs = () => {
-	const { updateFormInputs, formInputs } = useContext(MusicContext);
-	const { title, artist, album, grouping } = formInputs;
+	const [title, setTitle] = useRecoilState(titleSelector);
+	const [artist, setArtist] = useRecoilState(artistSelector);
+	const [album, setAlbum] = useRecoilState(albumSelector);
+	const [grouping, setGrouping] = useRecoilState(groupingSelector);
 
 	useEffect(() => {
-		let album = '';
+		setAlbum(resolveAlbumFromTitle(title));
+	}, [setAlbum, title]);
 
-		const openPar = title.indexOf('(');
-		const closePar = title.indexOf(')');
-		const specialTitle = (openPar !== -1 || closePar !== -1) && openPar < closePar;
-
-		const songTitle = specialTitle ? title.substring(0, openPar).trim() : title.trim();
-		album = songTitle;
-		const songTitleWords = songTitle.split(' ');
-
-		if (songTitleWords.length > 2) {
-			album = songTitleWords.map((word) => word.charAt(0)).join('');
-		}
-		if (specialTitle) {
-			const specialWords = title.substring(openPar + 1, closePar).split(' ');
-			album = `${album} - ${specialWords[specialWords.length - 1]}`;
-		} else {
-			album = album ? `${album} - Single` : '';
-		}
-		updateFormInputs({ album });
-	}, [title, updateFormInputs]);
-
-	return useMemo(
-		() => (
-			<React.Fragment>
-				<TextField
-					label="Title"
-					required
-					{...defaultTextFieldProps}
-					value={title}
-					onChange={(e) => updateFormInputs({ title: e.target.value })}
-				/>
-				<TextField
-					label="Artist"
-					required
-					{...defaultTextFieldProps}
-					value={artist}
-					onChange={(e) => updateFormInputs({ artist: e.target.value })}
-				/>
-				<TextField
-					label="Album"
-					required
-					{...defaultTextFieldProps}
-					value={album}
-					onChange={(e) => updateFormInputs({ album: e.target.value })}
-				/>
-				<TextField
-					label="Grouping"
-					{...defaultTextFieldProps}
-					value={grouping}
-					onChange={(e) => updateFormInputs({ grouping: e.target.value })}
-				/>
-			</React.Fragment>
-		),
-		[album, artist, grouping, title, updateFormInputs]
+	return (
+		<React.Fragment>
+			<TextField
+				label="Title"
+				required
+				{...defaultTextFieldProps}
+				value={title}
+				onChange={(e) => setTitle(e.target.value)}
+			/>
+			<TextField
+				label="Artist"
+				required
+				{...defaultTextFieldProps}
+				value={artist}
+				onChange={(e) => setArtist(e.target.value)}
+			/>
+			<TextField
+				label="Album"
+				required
+				{...defaultTextFieldProps}
+				value={album}
+				onChange={(e) => setAlbum(e.target.value)}
+			/>
+			<TextField
+				label="Grouping"
+				{...defaultTextFieldProps}
+				value={grouping}
+				onChange={(e) => setGrouping(e.target.value)}
+			/>
+		</React.Fragment>
 	);
 };
 

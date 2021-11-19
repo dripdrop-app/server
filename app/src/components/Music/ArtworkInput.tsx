@@ -1,49 +1,32 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useRecoilState } from 'recoil';
 import { Stack, TextField, Button, CircularProgress } from '@mui/material';
-import { defaultTextFieldProps } from '../../utils/helpers';
-import { MusicContext } from '../../context/Music';
+import { defaultTextFieldProps, isBase64, isValidImage, isValidLink } from '../../utils/helpers';
+import { artworkURLSelector } from '../../atoms/Music';
 import BlankImage from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
 
 const ArtworkInput = () => {
-	const { formInputs, updateFormInputs } = useContext(MusicContext);
-	const { artwork_url } = formInputs;
-	const [getArtwork, getArtworkStatus] = useLazyFetch();
+	const [artworkURL, setArtworkURL] = useRecoilState(artworkURLSelector);
 
-	const isBase64 = useCallback((url: string | null) => {
-		if (!url) {
-			return false;
-		}
-		const isBase64 = RegExp(/^data:image/).test(url);
-		return isBase64;
-	}, []);
+	const [getArtworkURL, getArtworkURLStatus] = useLazyFetch();
 
-	const isValidArtwork = useCallback(
-		(url: string | null) => {
-			if (!url) {
-				return false;
-			}
-			const valid = RegExp(/^https:\/\/(www\.)?.+\.(jpg|jpeg|png)/).test(url);
-			return valid || isBase64(url);
-		},
-		[isBase64]
-	);
+	const valid = isBase64(artworkURL) || isValidImage(artworkURL);
 
 	useEffect(() => {
-		if (getArtworkStatus.isSuccess) {
-			const { artwork_url } = getArtworkStatus.data;
-			updateFormInputs({ artwork_url });
-		}
-	}, [getArtworkStatus, updateFormInputs]);
-
-	useEffect(() => {
-		const validLink = artwork_url ? RegExp(/^https:\/\/(www\.)?.*/).test(artwork_url) : false;
-		if (artwork_url && !isValidArtwork(artwork_url) && !isBase64(artwork_url) && validLink) {
+		if (artworkURL && !isValidImage(artworkURL) && !isBase64(artworkURL) && isValidLink(artworkURL)) {
 			const params = new URLSearchParams();
-			params.append('artwork_url', artwork_url);
-			getArtwork(`/music/getArtwork?${params}`);
+			params.append(' artworkURL', artworkURL);
+			getArtworkURL(`/music/getArtwork?${params}`);
 		}
-	}, [artwork_url, getArtwork, isBase64, isValidArtwork]);
+	}, [artworkURL, getArtworkURL]);
+
+	useEffect(() => {
+		if (getArtworkURLStatus.isSuccess) {
+			const new_artwork_url = getArtworkURLStatus.data.artworkURL;
+			setArtworkURL(new_artwork_url);
+		}
+	}, [artworkURL, getArtworkURLStatus, setArtworkURL]);
 
 	return useMemo(
 		() => (
@@ -52,32 +35,32 @@ const ArtworkInput = () => {
 					<TextField
 						{...defaultTextFieldProps}
 						label="Artwork URL"
-						value={artwork_url}
-						disabled={artwork_url ? isBase64(artwork_url) : false}
-						onChange={(e) => updateFormInputs({ artwork_url: e.target.value })}
+						value={artworkURL}
+						disabled={artworkURL ? isBase64(artworkURL) : false}
+						onChange={(e) => setArtworkURL(e.target.value)}
 						helperText={
-							artwork_url && isBase64(artwork_url)
+							artworkURL && isBase64(artworkURL)
 								? 'Warning: Base64 string may not render'
 								: 'Supports soundcloud links to get cover art and base64 strings'
 						}
-						error={!isValidArtwork(artwork_url)}
+						error={!valid}
 					/>
-					<Button variant="contained" sx={{ flex: 0 }} onClick={() => updateFormInputs({ artwork_url: '' })}>
+					<Button variant="contained" sx={{ flex: 0 }} onClick={() => setArtworkURL('')}>
 						Clear
 					</Button>
 				</Stack>
-				{getArtworkStatus.isLoading ? (
+				{getArtworkURLStatus.isLoading ? (
 					<CircularProgress />
 				) : (
 					<img
 						style={{ flex: 1, maxHeight: '40em', maxWidth: '50%' }}
-						src={artwork_url && isValidArtwork(artwork_url) ? artwork_url : BlankImage}
+						src={valid ? artworkURL : BlankImage}
 						alt="Cover Art"
 					/>
 				)}
 			</React.Fragment>
 		),
-		[artwork_url, getArtworkStatus.isLoading, isBase64, isValidArtwork, updateFormInputs]
+		[artworkURL, getArtworkURLStatus.isLoading, setArtworkURL, valid]
 	);
 };
 

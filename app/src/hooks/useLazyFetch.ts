@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect, useMemo, useReducer } from 'react';
+import { ContentTypes } from '../utils/enums';
 
 export interface FetchState {
 	error: string;
@@ -10,13 +11,6 @@ export interface FetchState {
 	started: boolean;
 	timestamp: Date;
 }
-
-enum ContentTypes {
-	JSON = 'application/json',
-	TEXT = 'text/plain',
-	MP3_FILE = 'audio/mpeg',
-}
-
 type LazyFetchFn = (input: RequestInfo, init?: RequestInit) => Promise<void>;
 
 type LazyFetch = () => [LazyFetchFn, FetchState];

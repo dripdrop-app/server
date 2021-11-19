@@ -1,12 +1,14 @@
-import { useContext, useMemo, useState } from 'react';
-import { Typography, Button, Stack, Box } from '@mui/material';
+import { useCallback, useMemo, useState } from 'react';
+import { useRecoilState } from 'recoil';
+import { Typography, Button, Stack, Box, CircularProgress } from '@mui/material';
 import { NavigateNext, NavigateBefore } from '@mui/icons-material';
-import { MusicContext } from '../../context/Music';
+import { jobsAtom } from '../../atoms/Music';
 import JobCard from './JobCard';
+import useWebsocket from '../../hooks/useWebsocket';
 
 const JobList = () => {
 	const [page, setPage] = useState(0);
-	const { jobs } = useContext(MusicContext);
+	const [jobs, setJobs] = useRecoilState(jobsAtom);
 	const jobs_length = useMemo(() => jobs.length, [jobs]);
 	const PAGE_SIZE = useMemo(() => 5, []);
 
@@ -21,6 +23,35 @@ const JobList = () => {
 		return arr;
 	}, [PAGE_SIZE, page]);
 
+	const socketHandler = useCallback(
+		(event) => {
+			const json = JSON.parse(event.data);
+			const type = json.type;
+			if (type === 'ALL') {
+				setJobs(() => json.jobs);
+			} else if (type === 'STARTED') {
+				setJobs((jobs) => [...json.jobs, ...jobs]);
+			} else if (type === 'COMPLETED') {
+				setJobs((jobs) => {
+					const newJobs = [...jobs];
+					const completedJobs = json.jobs.reduce((map: any, job: any) => {
+						map[job.job_id] = job;
+						return map;
+					}, {});
+					newJobs.forEach((job, index) => {
+						if (completedJobs[job.job_id]) {
+							newJobs[index] = completedJobs[job.job_id];
+						}
+					});
+					return [...newJobs];
+				});
+			}
+		},
+		[setJobs]
+	);
+
+	const loadingWS = useWebsocket('/music/listenJobs', socketHandler);
+
 	return useMemo(
 		() => (
 			<Stack sx={{ my: 5 }}>
@@ -33,21 +64,22 @@ const JobList = () => {
 						<NavigateNext />
 					</Button>
 				</Stack>
-				<Stack textAlign="center" sx={{ my: 5 }}>
-					{jobs_length === 0 ? <Typography variant="body2">No Existing Jobs</Typography> : null}
+				<Stack textAlign="center" alignItems="center" sx={{ my: 5 }}>
+					{jobs_length === 0 && !loadingWS ? <Typography variant="body2">No Existing Jobs</Typography> : null}
+					{loadingWS ? <CircularProgress /> : null}
 				</Stack>
 				<Stack spacing={1} alignSelf="center" justifyContent="center">
 					{indices.map((job_index) =>
 						jobs[job_index] ? (
 							<Box key={job_index}>
-								<JobCard index={job_index} />
+								<JobCard job={jobs[job_index]} />
 							</Box>
 						) : null
 					)}
 				</Stack>
 			</Stack>
 		),
-		[PAGE_SIZE, indices, jobs, jobs_length, nextPage, page, prevPage]
+		[PAGE_SIZE, indices, jobs, jobs_length, loadingWS, nextPage, page, prevPage]
 	);
 };
 

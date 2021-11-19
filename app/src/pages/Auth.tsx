@@ -1,19 +1,28 @@
-import React, { Fragment, useContext, useMemo, useState } from 'react';
-import { Alert, Button, CircularProgress, Divider, Stack, TextField, TextFieldProps, Typography } from '@mui/material';
-
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, CircularProgress, Divider, Stack, TextField, Typography } from '@mui/material';
+import { useSetRecoilState } from 'recoil';
 import DripDrop from '../images/dripdrop.png';
-import { AuthContext } from '../context/Auth';
+import { userAtom } from '../atoms/Auth';
+import useLazyFetch from '../hooks/useLazyFetch';
+import { defaultTextFieldProps } from '../utils/helpers';
 
 const Auth = () => {
-	const { login, signup, loginStatus, signupStatus } = useContext(AuthContext);
+	const setUser = useSetRecoilState(userAtom);
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 
-	const defaultTextFieldProps: TextFieldProps = useMemo(
-		() => ({
-			sx: { maxWidth: '30%', width: '35em', backgroundColor: 'white' },
-		}),
-		[]
+	const [loginFn, loginStatus] = useLazyFetch();
+	const [signupFn, signupStatus] = useLazyFetch();
+
+	const login = useCallback(
+		(username: string, password: string) =>
+			loginFn('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+		[loginFn]
+	);
+	const signup = useCallback(
+		(username: string, password: string) =>
+			signupFn('/auth/create', { method: 'POST', body: JSON.stringify({ username, password }) }),
+		[signupFn]
 	);
 
 	const error = useMemo(() => {
@@ -35,6 +44,13 @@ const Auth = () => {
 		return null;
 	}, [error, loginStatus.timestamp, signupStatus.isSuccess, signupStatus.timestamp]);
 
+	useEffect(() => {
+		if (loginStatus.isSuccess) {
+			const { data } = loginStatus;
+			setUser(() => data);
+		}
+	}, [loginStatus, setUser]);
+
 	return useMemo(
 		() => (
 			<Stack marginY={20} direction="column" justifyContent="center" alignItems="center" spacing={5}>
@@ -42,7 +58,7 @@ const Auth = () => {
 				<Stack direction="row" spacing={1}>
 					<Typography variant="h5">Login</Typography>
 					<Divider orientation="vertical" flexItem />
-					<Typography variant="h6"> Sign Up</Typography>
+					<Typography variant="h5"> Sign Up</Typography>
 				</Stack>
 				{info}
 				<TextField
@@ -78,17 +94,7 @@ const Auth = () => {
 				</Stack>
 			</Stack>
 		),
-		[
-			defaultTextFieldProps,
-			error,
-			info,
-			login,
-			loginStatus.isLoading,
-			password,
-			signup,
-			signupStatus.isLoading,
-			username,
-		]
+		[error, info, login, loginStatus.isLoading, password, signup, signupStatus.isLoading, username]
 	);
 };
 
