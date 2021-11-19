@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { FileDownload, CopyAll, Delete, Error } from '@mui/icons-material';
 import {
 	Card,
@@ -20,6 +20,7 @@ import {
 	filenameSelector,
 	fileTypeSelector,
 	groupingSelector,
+	jobAtom,
 	jobsAtom,
 	titleSelector,
 	youtubeURLSelector,
@@ -30,7 +31,7 @@ import useLazyFetch from '../../hooks/useLazyFetch';
 import { typographyDefaultCSS } from '../../utils/helpers';
 
 interface JobCardProps {
-	job: Job;
+	id: string;
 }
 
 const JobCard = (props: JobCardProps) => {
@@ -44,7 +45,10 @@ const JobCard = (props: JobCardProps) => {
 	const setFileType = useSetRecoilState(fileTypeSelector);
 	const setFilename = useSetRecoilState(filenameSelector);
 
-	const { job_id, filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = props.job;
+	const { id } = props;
+	const job = useRecoilValue(jobAtom(id));
+
+	const { job_id, filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = job;
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch();
 	const [removeJob, removeJobStatus] = useLazyFetch();
@@ -92,7 +96,7 @@ const JobCard = (props: JobCardProps) => {
 
 	useEffect(() => {
 		if (removeJobStatus.isSuccess) {
-			setJobs((jobs) => jobs.filter((job) => job.job_id === job_id));
+			setJobs((jobs) => jobs.filter((job) => job.job_id !== job_id));
 		}
 	}, [job_id, removeJobStatus.isSuccess, setJobs]);
 

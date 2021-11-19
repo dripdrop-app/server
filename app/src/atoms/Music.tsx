@@ -1,4 +1,4 @@
-import { atom, DefaultValue, selector } from 'recoil';
+import { atom, DefaultValue, selector, selectorFamily } from 'recoil';
 import { FILE_TYPE } from '../utils/enums';
 
 const initialFormState: MusicForm = {
@@ -20,6 +20,14 @@ export const musicFormAtom = atom<MusicForm>({
 export const jobsAtom = atom<Job[]>({
 	key: 'jobs',
 	default: [],
+});
+
+export const jobAtom = selectorFamily<Job, string>({
+	key: 'job',
+	get:
+		(param) =>
+		({ get }) =>
+			get(jobsAtom).find((job) => job.job_id === param) as Job,
 });
 
 const variableFormSelector = <T extends keyof MusicForm>(formKey: keyof MusicForm) =>

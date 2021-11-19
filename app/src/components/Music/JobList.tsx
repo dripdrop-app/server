@@ -15,13 +15,7 @@ const JobList = () => {
 	const prevPage = Math.max(page - 1, 0);
 	const nextPage = Math.min(page + 1, jobs_length / PAGE_SIZE) - Number(jobs_length % PAGE_SIZE === 0);
 
-	const indices = useMemo(() => {
-		const arr = [];
-		for (let i = 0; i < PAGE_SIZE; i++) {
-			arr.push(page * PAGE_SIZE + i);
-		}
-		return arr;
-	}, [PAGE_SIZE, page]);
+	const jobs_page = useMemo(() => jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [PAGE_SIZE, jobs, page]);
 
 	const socketHandler = useCallback(
 		(event) => {
@@ -69,17 +63,15 @@ const JobList = () => {
 					{loadingWS ? <CircularProgress /> : null}
 				</Stack>
 				<Stack spacing={1} alignSelf="center" justifyContent="center">
-					{indices.map((job_index) =>
-						jobs[job_index] ? (
-							<Box key={job_index}>
-								<JobCard job={jobs[job_index]} />
-							</Box>
-						) : null
-					)}
+					{jobs_page.map((job) => (
+						<Box key={job.job_id}>
+							<JobCard id={job.job_id} />
+						</Box>
+					))}
 				</Stack>
 			</Stack>
 		),
-		[PAGE_SIZE, indices, jobs, jobs_length, loadingWS, nextPage, page, prevPage]
+		[PAGE_SIZE, jobs_length, jobs_page, loadingWS, nextPage, page, prevPage]
 	);
 };
 
