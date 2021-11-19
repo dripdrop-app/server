@@ -1,14 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, Switch, TextField } from '@mui/material';
-import {
-	albumSelector,
-	artistSelector,
-	artworkURLSelector,
-	filenameSelector,
-	fileTypeSelector,
-	groupingSelector,
-	titleSelector,
-} from '../../atoms/Music';
+import { filenameSelector, fileTypeSelector, musicFormAtom } from '../../atoms/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
 import YoutubeURLInput from './YoutubeURLInput';
@@ -24,11 +16,7 @@ const FileSwitch = (props: FileSwitchProps) => {
 
 	const [filename, setFilename] = useRecoilState(filenameSelector);
 	const [fileType, setFileType] = useRecoilState(fileTypeSelector);
-	const setTitle = useSetRecoilState(titleSelector);
-	const setArtist = useSetRecoilState(artistSelector);
-	const setAlbum = useSetRecoilState(albumSelector);
-	const setGrouping = useSetRecoilState(groupingSelector);
-	const setArtworkURL = useSetRecoilState(artworkURLSelector);
+	const setMusicForm = useSetRecoilState(musicFormAtom);
 
 	const [getFileTags, getFileTagsStatus] = useLazyFetch();
 
@@ -64,13 +52,16 @@ const FileSwitch = (props: FileSwitchProps) => {
 	useEffect(() => {
 		if (getFileTagsStatus.isSuccess) {
 			const { title, artist, album, grouping, artwork_url } = getFileTagsStatus.data;
-			setTitle(title || '');
-			setArtist(artist || '');
-			setAlbum(album || resolveAlbumFromTitle(title) || '');
-			setGrouping(grouping || '');
-			setArtworkURL(artwork_url || '');
+			setMusicForm((form) => ({
+				...form,
+				title: title || '',
+				artist: artist || '',
+				album: album || resolveAlbumFromTitle(title) || '',
+				grouping: grouping || '',
+				artwork_url: artwork_url || '',
+			}));
 		}
-	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, setAlbum, setArtist, setArtworkURL, setGrouping, setTitle]);
+	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, setMusicForm]);
 
 	return useMemo(
 		() => (

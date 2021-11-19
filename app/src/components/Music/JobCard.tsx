@@ -13,18 +13,7 @@ import {
 	ButtonGroup,
 	Button,
 } from '@mui/material';
-import {
-	albumSelector,
-	artistSelector,
-	artworkURLSelector,
-	filenameSelector,
-	fileTypeSelector,
-	groupingSelector,
-	jobAtom,
-	jobsAtom,
-	titleSelector,
-	youtubeURLSelector,
-} from '../../atoms/Music';
+import { jobAtom, jobsAtom, musicFormAtom } from '../../atoms/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import Image from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
@@ -36,14 +25,7 @@ interface JobCardProps {
 
 const JobCard = (props: JobCardProps) => {
 	const setJobs = useSetRecoilState(jobsAtom);
-	const setTitle = useSetRecoilState(titleSelector);
-	const setArtist = useSetRecoilState(artistSelector);
-	const setAlbum = useSetRecoilState(albumSelector);
-	const setGrouping = useSetRecoilState(groupingSelector);
-	const setArtworkURL = useSetRecoilState(artworkURLSelector);
-	const setYoutubeURL = useSetRecoilState(youtubeURLSelector);
-	const setFileType = useSetRecoilState(fileTypeSelector);
-	const setFilename = useSetRecoilState(filenameSelector);
+	const setMusicForm = useSetRecoilState(musicFormAtom);
 
 	const { id } = props;
 	const job = useRecoilValue(jobAtom(id));
@@ -69,30 +51,17 @@ const JobCard = (props: JobCardProps) => {
 	);
 
 	const copyJob = useCallback(() => {
-		setTitle(title);
-		setArtist(artist);
-		setAlbum(album);
-		setGrouping(grouping || '');
-		setFileType(FILE_TYPE.YOUTUBE);
-		setYoutubeURL(youtube_url || '');
-		setFilename('');
-		setArtworkURL(artwork_url || '');
-	}, [
-		album,
-		artist,
-		artwork_url,
-		grouping,
-		setAlbum,
-		setArtist,
-		setArtworkURL,
-		setFileType,
-		setFilename,
-		setGrouping,
-		setTitle,
-		setYoutubeURL,
-		title,
-		youtube_url,
-	]);
+		setMusicForm({
+			title,
+			artist,
+			album,
+			grouping: grouping || '',
+			fileType: FILE_TYPE.YOUTUBE,
+			youtube_url: youtube_url || '',
+			filename: '',
+			artwork_url: artwork_url || '',
+		});
+	}, [album, artist, artwork_url, grouping, setMusicForm, title, youtube_url]);
 
 	useEffect(() => {
 		if (removeJobStatus.isSuccess) {

@@ -1,7 +1,7 @@
 import { atom, DefaultValue, selector, selectorFamily } from 'recoil';
 import { FILE_TYPE } from '../utils/enums';
 
-const initialFormState: MusicForm = {
+export const initialFormState: MusicForm = {
 	fileType: FILE_TYPE.YOUTUBE,
 	youtube_url: '',
 	filename: '',
