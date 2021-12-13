@@ -67,6 +67,7 @@ const Auth = () => {
 					onChange={(e) => setUsername(e.target.value)}
 					required
 					label="Username"
+					variant="outlined"
 					error={!!error}
 				/>
 				<TextField
@@ -75,6 +76,7 @@ const Auth = () => {
 					value={password}
 					onChange={(e) => setPassword(e.target.value)}
 					required
+					variant="outlined"
 					label="Password"
 					error={!!error}
 				/>

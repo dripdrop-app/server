@@ -77,7 +77,8 @@ const FileSwitch = (props: FileSwitchProps) => {
 					onClick={onBrowseClick}
 					value={filename}
 					label="File Upload"
-					disabled
+					InputProps={{ readOnly: true }}
+					disabled={fileType !== FILE_TYPE.MP3_UPLOAD && fileType !== FILE_TYPE.WAV_UPLOAD}
 					required
 					error={filename === '' && fileType !== FILE_TYPE.YOUTUBE}
 				/>

@@ -1,5 +1,5 @@
 import React, { Fragment, useCallback, useEffect } from 'react';
-import { Route, Switch } from 'react-router-dom';
+import { Link, Route, Switch } from 'react-router-dom';
 import { AppBar, Box, Button, CircularProgress, Stack, Toolbar, Typography } from '@mui/material';
 import { useRecoilValueLoadable, useSetRecoilState } from 'recoil';
 import { userAtom } from './atoms/Auth';
@@ -7,6 +7,19 @@ import Auth from './pages/Auth';
 import DripDrop from './images/dripdrop.png';
 import MusicDownloader from './pages/MusicDownloader';
 import useLazyFetch from './hooks/useLazyFetch';
+
+interface HeaderLinkProps {
+	text: string;
+	link: string;
+}
+
+const HeaderLink = (props: HeaderLinkProps) => {
+	return (
+		<Link style={{ color: 'white', textDecoration: 'none' }} to={props.link}>
+			<Button color="inherit">{props.text}</Button>
+		</Link>
+	);
+};
 
 const Header = () => {
 	const user = useRecoilValueLoadable(userAtom);
@@ -26,7 +39,7 @@ const Header = () => {
 		return (
 			<Fragment>
 				<img height="40px" alt="DripDrop" src={DripDrop} />
-				<Button color="inherit">Music Downloader</Button>
+				<HeaderLink link="/music-download" text="Music Downloader" />
 				<Box sx={{ flexGrow: 1 }} />
 				<Typography variant="h5">{user.contents.username}</Typography>
 				<Button onClick={() => logoutFn()} color="inherit">
@@ -51,7 +64,7 @@ const Routes = () => {
 	if (user.state === 'hasValue' && user.contents) {
 		return (
 			<Switch>
-				<Route path="/download" render={() => <MusicDownloader />} />
+				<Route path="/music-download" render={() => <MusicDownloader />} />
 				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>
 		);
