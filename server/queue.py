@@ -1,3 +1,3 @@
-from server.worker import AsyncioQueue
+from worker import AsyncioQueue
 
 queue = AsyncioQueue()
