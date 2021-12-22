@@ -8,9 +8,9 @@ import subprocess
 import traceback
 import uuid
 from pydub import AudioSegment
+from starlette.concurrency import run_in_threadpool
 from typing import Union
 from yt_dlp.utils import sanitize_filename
-from starlette.concurrency import run_in_threadpool
 from server.db import database, music_jobs
 from server.redis import redis
 from server.utils.imgdl import download_image
@@ -97,7 +97,6 @@ async def run_job(job_id: str):
                                                   job_id).values(failed=True)
                 await database.execute(query)
             await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
-            raise e
 
 
 def read_tags(file: Union[str, bytes, None], filename):

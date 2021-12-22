@@ -144,7 +144,7 @@ async def download(request: Request):
             f.close()
 
     await run_in_threadpool(create_job_path)
-    await queue.enqueue('server.api.music.tasks.run_job', job_id)
+    await queue.enqueue(f'music_jobs_{job_id}', 'server.api.music.tasks.run_job', job_id)
     await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
     return JSONResponse({'job': job_info}, status_code=202)
 
