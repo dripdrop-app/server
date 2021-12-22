@@ -29,12 +29,12 @@ const JobList = () => {
 				setJobs((jobs) => {
 					const newJobs = [...jobs];
 					const completedJobs = json.jobs.reduce((map: any, job: any) => {
-						map[job.job_id] = job;
+						map[job.id] = job;
 						return map;
 					}, {});
 					newJobs.forEach((job, index) => {
-						if (completedJobs[job.job_id]) {
-							newJobs[index] = completedJobs[job.job_id];
+						if (completedJobs[job.id]) {
+							newJobs[index] = completedJobs[job.id];
 						}
 					});
 					return [...newJobs];
@@ -64,8 +64,8 @@ const JobList = () => {
 				</Stack>
 				<Stack spacing={1} alignSelf="center" justifyContent="center">
 					{jobs_page.map((job) => (
-						<Box key={job.job_id}>
-							<JobCard id={job.job_id} />
+						<Box key={job.id}>
+							<JobCard id={job.id} />
 						</Box>
 					))}
 				</Stack>

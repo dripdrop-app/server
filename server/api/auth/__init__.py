@@ -30,7 +30,7 @@ routes = [
             methods=[RequestMethods.POST.value]
         ),
         Route(
-            '/google/oauth2',
+            '/googleoauth2',
             endpoint=google_oauth2,
             methods=[RequestMethods.GET.value]
         )

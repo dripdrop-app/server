@@ -30,21 +30,21 @@ const JobCard = (props: JobCardProps) => {
 	const { id } = props;
 	const job = useRecoilValue(jobAtom(id));
 
-	const { job_id, filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = job;
+	const { filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = job;
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch();
 	const [removeJob, removeJobStatus] = useLazyFetch();
 
 	const tryDownloadJob = useCallback(() => {
 		const params = new URLSearchParams();
-		params.append('job_id', job_id || '');
+		params.append('id', id || '');
 		downloadJob(`/music/downloadJob?${params}`);
-	}, [downloadJob, job_id]);
+	}, [downloadJob, id]);
 
 	const tryRemoveJob = useCallback(
 		async (deletedJobID: string) => {
 			const params = new URLSearchParams();
-			params.append('job_id', deletedJobID);
+			params.append('id', deletedJobID);
 			removeJob(`/music/deleteJob?${params}`);
 		},
 		[removeJob]
@@ -65,9 +65,9 @@ const JobCard = (props: JobCardProps) => {
 
 	useEffect(() => {
 		if (removeJobStatus.isSuccess) {
-			setJobs((jobs) => jobs.filter((job) => job.job_id !== job_id));
+			setJobs((jobs) => jobs.filter((job) => job.id !== id));
 		}
-	}, [job_id, removeJobStatus.isSuccess, setJobs]);
+	}, [id, removeJobStatus.isSuccess, setJobs]);
 
 	useEffect(() => {
 		if (downloadJobStatus.isSuccess) {
@@ -96,7 +96,7 @@ const JobCard = (props: JobCardProps) => {
 							<Stack direction="row" spacing={1}>
 								<Typography variant="caption">ID:</Typography>
 								<Typography sx={typographyDefaultCSS} variant="caption">
-									{job_id}
+									{id}
 								</Typography>
 							</Stack>
 							<Stack direction="row" spacing={1}>
@@ -145,7 +145,7 @@ const JobCard = (props: JobCardProps) => {
 									<Button title="Copy to Form" onClick={() => copyJob()}>
 										<CopyAll />
 									</Button>
-									<Button title="Delete Job and File" color="error" onClick={() => tryRemoveJob(job_id)}>
+									<Button title="Delete Job and File" color="error" onClick={() => tryRemoveJob(id)}>
 										<Delete />
 									</Button>
 								</ButtonGroup>
@@ -164,7 +164,7 @@ const JobCard = (props: JobCardProps) => {
 			failed,
 			filename,
 			grouping,
-			job_id,
+			id,
 			title,
 			tryDownloadJob,
 			tryRemoveJob,

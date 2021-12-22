@@ -22,16 +22,8 @@ class AsyncioWorker():
             while True:
                 new_tasks = []
                 for task in self._tasks:
-                    finished = False
-
-                    if isinstance(task, asyncio.Task):
-                        finished = task.done()
-                    elif isinstance(task, threading.Thread):
-                        finished = task.is_alive()
-
-                    if finished:
+                    if task.done():
                         new_tasks.append(task)
-
                 self._tasks = new_tasks
                 await asyncio.sleep(1)
         except Exception as e:

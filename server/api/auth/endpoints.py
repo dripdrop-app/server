@@ -1,5 +1,6 @@
 import bcrypt
 import uuid
+import re
 from sqlalchemy.sql.expression import true
 from starlette.authentication import requires
 from starlette.middleware import sessions
@@ -13,22 +14,27 @@ from server.utils.enums import AuthScopes
 from server.utils import google_api
 
 
-async def create_new_account(username: str, password: str):
-    if not username or not password:
-        raise ValueError('Username or Password not supplied.')
+async def create_new_account(email: str, password: str):
+    if not email or not password:
+        raise ValueError('Email or Password not supplied.')
+
+    email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+
+    if not re.match(email_regex, email):
+        raise ValueError('Email address in not valid')
 
     if len(password) < 8:
         raise ValueError('Password length is too short')
 
-    query = users.select().where(users.c.username == username)
+    query = users.select().where(users.c.email == email)
     account = await database.fetch_one(query)
 
     if account:
-        raise ValueError(f'Account with username `{username}` exists.')
+        raise ValueError(f'Account with email `{email}` exists.')
 
     hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     query = users.insert().values(
-        username=username,
+        email=email,
         password=hashed_pw.decode('utf-8'),
         admin=False,
         approved=False
@@ -39,10 +45,10 @@ async def create_new_account(username: str, password: str):
 @requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
 async def check_session(request: Request):
-    username = request.user.display_name
+    email = request.user.display_name
     admin = AuthScopes.ADMIN in request.auth.scopes
     return JSONResponse({
-        'username': username,
+        'email': email,
         'admin': admin,
     }, 200)
 
@@ -50,27 +56,27 @@ async def check_session(request: Request):
 @endpoint_handler()
 async def login(request: Request):
     form = await request.json()
-    username = form.get('username')
+    email = form.get('email')
     password = form.get('password')
 
-    query = users.select().where(users.c.username == username)
+    query = users.select().where(users.c.email == email)
     account = await database.fetch_one(query)
 
     if not account:
         return JSONResponse({'error': 'Account not found.'}, 400)
 
     if not bcrypt.checkpw(password.encode('utf-8'), account.get('password').encode('utf-8')):
-        return JSONResponse({'error': 'Username or Password is incorrect.'}, 400)
+        return JSONResponse({'error': 'email or Password is incorrect.'}, 400)
 
     if not account.get('approved'):
         return JSONResponse({'error': 'User has not been approved.'}, 401)
 
     session_id = str(uuid.uuid4())
-    query = sessions.insert().values(id=session_id, username=username)
+    query = sessions.insert().values(id=session_id, user_email=email)
     await database.execute(query)
 
     response = JSONResponse({
-        'username': username,
+        'email': email,
         'admin': account.get('admin'),
     })
 
@@ -101,15 +107,15 @@ async def logout(request: Request):
 @database.transaction()
 async def create_account(request: Request):
     form = await request.json()
-    username = form.get('username')
+    email = form.get('email')
     password = form.get('password')
 
     try:
-        await create_new_account(username, password)
+        await create_new_account(email, password)
     except ValueError as e:
         return JSONResponse({'error': e.__str__()}, 400)
 
-    return JSONResponse({'username': username, 'admin': False}, 201)
+    return JSONResponse({'email': email, 'admin': False}, 201)
 
 
 @requires([AuthScopes.ADMIN])
@@ -117,15 +123,15 @@ async def create_account(request: Request):
 @database.transaction()
 async def admin_create_account(request: Request):
     form = await request.json()
-    username = form.get('username')
+    email = form.get('email')
     password = form.get('password')
 
     try:
-        await create_new_account(username, password)
+        await create_new_account(email, password)
     except ValueError as e:
         return JSONResponse({'error': e.message}, 400)
 
-    return Response({'username': username, 'admin': False}, 201)
+    return Response({'email': email, 'admin': False}, 201)
 
 
 @requires([AuthScopes.AUTHENTICATED])
@@ -146,9 +152,9 @@ async def google_oauth2(request: Request):
     if not session:
         return RedirectResponse('/')
 
-    username = session.get('username')
+    email = session.get('email')
 
-    query = users.select().where(users.c.username == username)
+    query = users.select().where(users.c.email == email)
     user = await database.fetch_one(query)
 
     if not user:

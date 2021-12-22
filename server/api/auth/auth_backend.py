@@ -35,8 +35,8 @@ class AuthBackend(AuthenticationBackend):
             session = await database.fetch_one(query)
 
             if session:
-                username = session.get('username')
-                query = users.select().where(users.c.username == username)
+                email = session.get('user_email')
+                query = users.select().where(users.c.email == email)
                 account = await database.fetch_one(query)
 
                 if account:
@@ -44,7 +44,7 @@ class AuthBackend(AuthenticationBackend):
 
                     if account.get('admin'):
                         scopes.append(AuthScopes.ADMIN)
-                    return AuthCredentials(scopes), SimpleUser(username)
+                    return AuthCredentials(scopes), SimpleUser(email)
 
         if api_key == API_KEY:
             return AuthCredentials([AuthScopes.API_KEY]), SimpleUser('api')

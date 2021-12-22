@@ -8,20 +8,20 @@ import { defaultTextFieldProps } from '../utils/helpers';
 
 const Auth = () => {
 	const setUser = useSetRecoilState(userAtom);
-	const [username, setUsername] = useState('');
+	const [email, setemail] = useState('');
 	const [password, setPassword] = useState('');
 
 	const [loginFn, loginStatus] = useLazyFetch();
 	const [signupFn, signupStatus] = useLazyFetch();
 
 	const login = useCallback(
-		(username: string, password: string) =>
-			loginFn('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+		(email: string, password: string) =>
+			loginFn('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
 		[loginFn]
 	);
 	const signup = useCallback(
-		(username: string, password: string) =>
-			signupFn('/auth/create', { method: 'POST', body: JSON.stringify({ username, password }) }),
+		(email: string, password: string) =>
+			signupFn('/auth/create', { method: 'POST', body: JSON.stringify({ email, password }) }),
 		[signupFn]
 	);
 
@@ -63,10 +63,10 @@ const Auth = () => {
 				{info}
 				<TextField
 					{...defaultTextFieldProps}
-					value={username}
-					onChange={(e) => setUsername(e.target.value)}
+					value={email}
+					onChange={(e) => setemail(e.target.value)}
 					required
-					label="Username"
+					label="Email"
 					variant="outlined"
 					error={!!error}
 				/>
@@ -85,10 +85,10 @@ const Auth = () => {
 						<CircularProgress />
 					) : (
 						<Fragment>
-							<Button variant="contained" onClick={() => login(username, password)}>
+							<Button variant="contained" onClick={() => login(email, password)}>
 								Login
 							</Button>
-							<Button variant="contained" onClick={() => signup(username, password)}>
+							<Button variant="contained" onClick={() => signup(email, password)}>
 								Sign Up
 							</Button>
 						</Fragment>
@@ -96,7 +96,7 @@ const Auth = () => {
 				</Stack>
 			</Stack>
 		),
-		[error, info, login, loginStatus.isLoading, password, signup, signupStatus.isLoading, username]
+		[error, info, login, loginStatus.isLoading, password, signup, signupStatus.isLoading, email]
 	);
 };
 

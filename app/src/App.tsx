@@ -9,7 +9,7 @@ import MusicDownloader from './pages/MusicDownloader';
 import useLazyFetch from './hooks/useLazyFetch';
 
 interface HeaderLinkProps {
-	text: string;
+	text: string | JSX.Element;
 	link: string;
 }
 
@@ -38,10 +38,10 @@ const Header = () => {
 	if (user.state === 'hasValue' && user.contents) {
 		return (
 			<Fragment>
-				<img height="40px" alt="DripDrop" src={DripDrop} />
-				<HeaderLink link="/music-download" text="Music Downloader" />
+				<HeaderLink link="/" text={<img height="40px" alt="DripDrop" src={DripDrop} />} />
+				<HeaderLink link="/musicDownload" text="Music Downloader" />
 				<Box sx={{ flexGrow: 1 }} />
-				<Typography variant="h5">{user.contents.username}</Typography>
+				<Typography variant="h5">{user.contents.email}</Typography>
 				<Button onClick={() => logoutFn()} color="inherit">
 					Logout
 				</Button>
@@ -64,7 +64,7 @@ const Routes = () => {
 	if (user.state === 'hasValue' && user.contents) {
 		return (
 			<Switch>
-				<Route path="/music-download" render={() => <MusicDownloader />} />
+				<Route path="/musicDownload" render={() => <MusicDownloader />} />
 				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>
 		);

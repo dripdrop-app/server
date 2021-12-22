@@ -20,9 +20,11 @@ const YoutubeURLInput = () => {
 	useEffect(() => {
 		if (getGroupingStatus.isSuccess) {
 			const { grouping } = getGroupingStatus.data;
-			setGroupingSelector(grouping);
+			if (youtubeURL) {
+				setGroupingSelector(grouping);
+			}
 		}
-	}, [getGroupingStatus, setGroupingSelector]);
+	}, [getGroupingStatus, setGroupingSelector, youtubeURL]);
 
 	useEffect(() => {
 		if (youtubeURL && valid) {

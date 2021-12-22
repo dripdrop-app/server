@@ -1,28 +1,28 @@
 import asyncio
+import base64
+import io
+import mutagen
 import os
+import re
 import subprocess
 import traceback
-import mutagen
 import uuid
-import io
-import base64
-import re
-from typing import Union
 from pydub import AudioSegment
+from typing import Union
+from yt_dlp.utils import sanitize_filename
 from starlette.datastructures import UploadFile
 from starlette.concurrency import run_in_threadpool
-from yt_dlp.utils import sanitize_filename
 from server.db import database, music_jobs
+from server.redis import redis
 from server.utils.imgdl import download_image
 from server.utils.mp3dl import yt_download
 from server.utils.wrappers import exception_handler
-from server.redis import redis
 from server.utils.enums import RedisChannels
 
 
 @exception_handler()
 async def run_job(job_id: str, file: UploadFile):
-    query = music_jobs.select().where(music_jobs.c.job_id == job_id)
+    query = music_jobs.select().where(music_jobs.c.id == job_id)
     job = await database.fetch_one(query)
 
     try:
@@ -101,7 +101,7 @@ async def run_job(job_id: str, file: UploadFile):
             await run_in_threadpool(download_and_set_tags)
 
             async with database.transaction():
-                query = music_jobs.update().where(music_jobs.c.job_id ==
+                query = music_jobs.update().where(music_jobs.c.id ==
                                                   job_id).values(completed=True)
                 await database.execute(query)
             await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)

@@ -14,7 +14,7 @@ declare global {
 
 	interface Job
 		extends Pick<MusicForm, 'youtube_url' | 'filename' | 'artwork_url' | 'title' | 'artist' | 'album' | 'grouping'> {
-		job_id: string;
+		id: string;
 		completed: boolean;
 		failed: boolean;
 	}

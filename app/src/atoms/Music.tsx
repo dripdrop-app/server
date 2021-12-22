@@ -27,7 +27,7 @@ export const jobAtom = selectorFamily<Job, string>({
 	get:
 		(param) =>
 		({ get }) =>
-			get(jobsAtom).find((job) => job.job_id === param) as Job,
+			get(jobsAtom).find((job) => job.id === param) as Job,
 });
 
 const variableFormSelector = <T extends keyof MusicForm>(formKey: keyof MusicForm) =>

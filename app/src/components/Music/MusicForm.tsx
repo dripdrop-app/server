@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { Divider, Stack, Typography } from '@mui/material';
+import { Stack } from '@mui/material';
 import ArtworkInput from './ArtworkInput';
 import FileSelector from './FileSelector';
 import FormActions from './FormActions';
@@ -11,10 +11,6 @@ const MusicForm = () => {
 	return useMemo(
 		() => (
 			<React.Fragment>
-				<Typography sx={{ my: 5 }} variant="h2">
-					MP3 Downloader / Converter
-				</Typography>
-				<Divider variant="middle" />
 				<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" spacing={0.5} sx={{ my: 10 }}>
 					<FileSelector fileInputRef={fileInputRef} />
 				</Stack>
