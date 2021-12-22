@@ -1,58 +1,16 @@
 import bcrypt
 import uuid
-import base64
-import json
-from cryptography.fernet import Fernet
 from sqlalchemy.sql.expression import true
-from starlette.authentication import AuthCredentials, SimpleUser, UnauthenticatedUser, requires
+from starlette.authentication import requires
 from starlette.middleware import sessions
-from starlette.requests import HTTPConnection, Request
-from starlette.responses import Response, JSONResponse
-from starlette.middleware.authentication import AuthenticationBackend
+from starlette.requests import Request
+from starlette.responses import Response, JSONResponse, RedirectResponse
+from server.api.auth.auth_backend import SessionHandler
 from server.utils.wrappers import endpoint_handler
-from server.db import users, database, sessions
-from server.config import SECRET_KEY, API_KEY, ENVIRONMENT
+from server.db import users, database, sessions, google_accounts
+from server.config import ENVIRONMENT, SERVER_URL
 from server.utils.enums import AuthScopes
-
-
-class SessionHandler:
-    _signer = Fernet(key=base64.b64encode(SECRET_KEY.encode('utf-8')))
-
-    def encrypt(session={}):
-        serialized_session = json.dumps(session)
-        return SessionHandler._signer.encrypt(serialized_session.encode('utf-8')).decode('utf-8')
-
-    def decrypt(cookie=''):
-        try:
-            return json.loads(SessionHandler._signer.decrypt(cookie.encode('utf-8')).decode('utf-8'))
-        except:
-            return dict()
-
-
-class AuthBackend(AuthenticationBackend):
-    async def authenticate(self, conn: HTTPConnection):
-        cookies = conn.cookies
-        session = SessionHandler.decrypt(cookies.get('session'))
-        session_id = session.get('id')
-        api_key = conn.query_params.get('api_key')
-
-        if session_id:
-            query = sessions.select().where(sessions.c.id == session_id)
-            session = await database.fetch_one(query)
-            if session:
-                username = session.get('username')
-                query = users.select().where(users.c.username == username)
-                account = await database.fetch_one(query)
-                if account:
-                    scopes = [AuthScopes.AUTHENTICATED]
-                    if account.get('admin'):
-                        scopes.append(AuthScopes.ADMIN)
-                    return AuthCredentials(scopes), SimpleUser(username)
-
-        if api_key == API_KEY:
-            return AuthCredentials([AuthScopes.API_KEY]), SimpleUser('api')
-
-        return AuthCredentials([]), UnauthenticatedUser()
+from server.utils import google_api
 
 
 async def create_new_account(username: str, password: str):
@@ -168,3 +126,47 @@ async def admin_create_account(request: Request):
         return JSONResponse({'error': e.message}, 400)
 
     return Response({'username': username, 'admin': False}, 201)
+
+
+@requires([AuthScopes.AUTHENTICATED])
+@endpoint_handler()
+@database.transaction()
+async def google_oauth2(request: Request):
+    if request.query_params.get('error', None):
+        return RedirectResponse('/')
+
+    session_id = request.query_params.get('state', None)
+
+    if not session_id:
+        return RedirectResponse('/')
+
+    query = sessions.select().where(sessions.c.id == session_id)
+    session = await database.fetch_one(query)
+
+    if not session:
+        return RedirectResponse('/')
+
+    username = session.get('username')
+
+    query = users.select().where(users.c.username == username)
+    user = await database.fetch_one(query)
+
+    if not user:
+        return RedirectResponse('/')
+
+    code = request.query_params.get('code')
+    tokens = await google_api.get_oauth_tokens(f'{SERVER_URL}/google/oauth2', code)
+    email = await google_api.get_user_email(tokens.get('access_token'))
+
+    query = google_accounts.insert().values(
+        email=email,
+        access_token=tokens.get('access_token'),
+        refresh_token=tokens.get('refresh_token'),
+        expires=tokens.get('expires_in'),
+    )
+    await database.execute(query)
+
+    # START FIRST COLLECTION RUN
+    # (ADD INFO TO REDIS CHANNEL)
+
+    return RedirectResponse('/ytCollections')

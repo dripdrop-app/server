@@ -5,7 +5,6 @@ import os
 from asyncio.tasks import Task
 from typing import Union
 from sqlalchemy.sql.expression import desc
-from starlette.background import BackgroundTask
 from starlette.datastructures import UploadFile
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.requests import Request
@@ -18,10 +17,11 @@ from server.utils.mp3dl import extract_info
 from server.utils.imgdl import download_image
 from server.db import database, music_jobs
 from server.redis import RedisChannels, subscribe, redis
-from server.tasks import download_task, Job, read_tags
+from server.api.music.tasks import run_job, read_tags
 from server.utils.wrappers import endpoint_handler
 from server.utils.helpers import convert_db_response
 from server.utils.enums import AuthScopes
+from server.worker import Worker
 
 
 @requires([AuthScopes.AUTHENTICATED])
@@ -59,7 +59,7 @@ async def listen_jobs(websocket: WebSocket):
     try:
         await websocket.accept()
         query = music_jobs.select().where(music_jobs.c.username ==
-                                          websocket.user.display_name).order_by(desc(music_jobs.c.started))
+                                          websocket.user.display_name).order_by(desc(music_jobs.c.created_at))
         jobs = await database.fetch_all(query)
         await websocket.send_json({
             'type': 'ALL',
@@ -68,14 +68,16 @@ async def listen_jobs(websocket: WebSocket):
 
         tasks.extend([
             asyncio.create_task(
-                subscribe(RedisChannels.STARTED_JOB_CHANNEL, websocket)),
+                subscribe(RedisChannels.STARTED_MUSIC_JOB_CHANNEL, websocket)),
             asyncio.create_task(
-                subscribe(RedisChannels.COMPLETED_JOB_CHANNEL, websocket))
+                subscribe(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL, websocket)),
+            asyncio.create_task(
+                subscribe(RedisChannels.WORK_CHANNEL, websocket))
         ])
 
         while True:
             await websocket.send_json({})
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
 
     except Exception as e:
         if not isinstance(e, WebSocketDisconnect) and not isinstance(e, ConnectionClosedOK):
@@ -101,47 +103,31 @@ async def download(request: Request):
     if not youtube_url and not file:
         return Response(None, 400)
 
-    job = Job(
-        job_id=job_id,
-        filename=file.filename if file else None,
-        youtube_url=youtube_url,
-        artwork_url=artwork_url,
-        title=title,
-        artist=artist,
-        album=album,
-        grouping=grouping
-    )
+    filename = file.filename if file else None
+
+    job_info = {
+        'job_id': job_id,
+        'filename': filename,
+        'youtube_url': youtube_url,
+        'artwork_url': artwork_url,
+        'title': title,
+        'artist': artist,
+        'album': album,
+        'grouping': grouping
+    }
 
     async with database.transaction():
         query = music_jobs.insert().values(
-            **job.__dict__,
+            **job_info,
             username=request.user.display_name,
             completed=False,
             failed=False,
         )
         await database.execute(query)
 
-    task = BackgroundTask(
-        download_task,
-        job,
-        file=await file.read() if file else None,
-    )
-    await redis.publish(RedisChannels.STARTED_JOB_CHANNEL.value, job.job_id)
-    return JSONResponse({'job': job.__dict__}, status_code=202,  background=task)
-
-
-@requires([AuthScopes.API_KEY])
-@endpoint_handler()
-async def process_job(request: Request):
-    job_id = request.query_params.get('job_id')
-    completed = request.query_params.get('completed') == 'True'
-    failed = request.query_params.get('failed') == 'True'
-    async with database.transaction():
-        query = music_jobs.update().where(music_jobs.c.job_id ==
-                                          job_id).values(completed=completed, failed=failed)
-        await database.execute(query)
-    await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, job_id)
-    return Response(None)
+    await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
+    Worker.add_job(run_job, job_id, file)
+    return JSONResponse({'job': job_info}, status_code=202)
 
 
 @requires([AuthScopes.AUTHENTICATED])
@@ -153,7 +139,7 @@ async def delete_job(request: Request):
                                       request.user.display_name, music_jobs.c.job_id == job_id)
     await database.execute(query)
     try:
-        await asyncio.create_subprocess_shell(f'rm -rf jobs/{job_id}')
+        await asyncio.create_subprocess_shell(f'rm -rf music_jobs/{job_id}')
     except:
         pass
     return Response(None)
@@ -167,6 +153,7 @@ async def download_job(request: Request):
     job = await database.fetch_one(query)
     filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
     file_path = os.path.join('jobs', job_id, filename)
+
     if not os.path.exists(file_path):
         async with database.transaction():
             query = music_jobs.update().where(music_jobs.c.username == request.user.display_name,
@@ -174,4 +161,5 @@ async def download_job(request: Request):
             await database.execute(query)
         await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, job_id)
         return Response(None, 404)
+
     return FileResponse(os.path.join('jobs', job_id, filename), filename=filename)

@@ -1,3 +1,10 @@
+# NEW THINGS TO ADD
+
+- Get YT Collections working with music
+
+  - Create worker that pulls videos everyday from subscribed channels (keep last 30 days)
+  - Maybe set reminder to self if last seen is 10 days for yt collections
+
 - Manual Web Server Setup
 
 - Create user account [https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-20-04]
