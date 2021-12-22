@@ -5,7 +5,6 @@ import importlib
 import aioredis
 import os
 import anyio
-from starlette.concurrency import run_in_threadpool
 
 
 class AsyncioQueue():
@@ -89,12 +88,14 @@ if __name__ == '__main__':
     parser.add_argument('-p')
 
     args = parser.parse_args()
+    try:
+        if args.p:
+            pid = str(os.getpid())
+            with open(args.p, 'w') as f:
+                f.write(pid + '\n')
 
-    if args.p:
-        pid = str(os.getpid())
-        with open(args.p, 'w') as f:
-            f.write(pid + '\n')
-
-    worker = AsyncioWorker(worker_channel=args.channel,
-                           redis_url=args.redis_url)
-    asyncio.run(worker.work())
+        worker = AsyncioWorker(worker_channel=args.channel,
+                               redis_url=args.redis_url)
+        asyncio.run(worker.work())
+    except Exception as e:
+        os.remove(args.p)
