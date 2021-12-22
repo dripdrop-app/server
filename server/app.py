@@ -9,6 +9,7 @@ from starlette.middleware import Middleware
 from server.api import music, auth
 from server.api.auth.auth_backend import AuthBackend
 from server.db import database
+from server.queue import restart_jobs
 from server.request_client import client
 from server.utils.enums import RequestMethods
 
@@ -37,4 +38,4 @@ middleware = [
 ]
 
 app = Starlette(routes=routes, middleware=middleware, on_startup=[
-    database.connect], on_shutdown=[database.disconnect, client.close])
+    database.connect, restart_jobs], on_shutdown=[database.disconnect, client.close])

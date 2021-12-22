@@ -8,6 +8,8 @@ import json
 import os
 
 
+# ADD JOB REQUEUING WHEN WORKER RESTARTS
+
 class AsyncioQueue():
     def __init__(self, worker_channel: str, redis_url='redis://localhost:6379') -> None:
         self.worker_channel = worker_channel
