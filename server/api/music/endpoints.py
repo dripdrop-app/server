@@ -21,7 +21,7 @@ from server.api.music.tasks import run_job, read_tags, JOB_DIR
 from server.utils.wrappers import endpoint_handler
 from server.utils.helpers import convert_db_response
 from server.utils.enums import AuthScopes
-from server.worker import Worker
+from server.queue import queue
 
 
 @requires([AuthScopes.AUTHENTICATED])
@@ -123,10 +123,29 @@ async def download(request: Request):
             completed=False,
             failed=False,
         )
-        await database.execute(query)
 
+    await database.execute(query)
+
+    if file:
+        file = await file.read()
+
+    def create_job_path():
+        job_path = os.path.join(JOB_DIR, job_id)
+        try:
+            os.mkdir(JOB_DIR)
+        except FileExistsError:
+            pass
+        os.mkdir(job_path)
+
+        if file:
+            file_path = os.path.join(job_path, filename)
+            f = open(file_path, 'wb')
+            f.write(file)
+            f.close()
+
+    await run_in_threadpool(create_job_path)
+    await queue.enqueue(run_job, job_id)
     await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
-    Worker.add_job(run_job, job_id, file)
     return JSONResponse({'job': job_info}, status_code=202)
 
 
@@ -139,7 +158,7 @@ async def delete_job(request: Request):
                                       request.user.display_name, music_jobs.c.id == job_id)
     await database.execute(query)
     try:
-        await asyncio.create_subprocess_shell(f'rm -rf music_jobs/{job_id}')
+        await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
     except:
         pass
     return Response(None)

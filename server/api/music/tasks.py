@@ -10,54 +10,33 @@ import uuid
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
-from starlette.datastructures import UploadFile
 from starlette.concurrency import run_in_threadpool
 from server.db import database, music_jobs
 from server.redis import redis
 from server.utils.imgdl import download_image
 from server.utils.mp3dl import yt_download
-from server.utils.wrappers import exception_handler
 from server.utils.enums import RedisChannels
 
 
 JOB_DIR = 'music_jobs'
 
 
-@exception_handler()
-async def run_job(job_id: str, file: UploadFile):
+async def run_job(job_id: str):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
     job = await database.fetch_one(query)
 
     try:
         if job:
-            job_path = os.path.join(JOB_DIR, job_id)
-            youtube_url = job.get('youtube_url', None)
-            filename = job.get('filename', '')
-            artwork_url = job.get('artwork_url', None)
-            title = job.get('title')
-            artist = job.get('artist')
-            album = job.get('album')
-            grouping = job.get('grouping', None)
-            file = await file.read() if file else None
-            file_path = None
-
-            def create_job_path():
-                nonlocal file_path
-                try:
-                    os.mkdir(JOB_DIR)
-                except FileExistsError:
-                    pass
-                os.mkdir(job_path)
-
-                if file:
-                    file_path = os.path.join(job_path, filename)
-                    f = open(file_path, 'wb')
-                    f.write(file)
-                    f.close()
-
-            await run_in_threadpool(create_job_path)
-
             def download_and_set_tags():
+                job_path = os.path.join(JOB_DIR, job_id)
+                youtube_url = job.get('youtube_url', None)
+                filename = job.get('filename', '')
+                artwork_url = job.get('artwork_url', None)
+                title = job.get('title')
+                artist = job.get('artist')
+                album = job.get('album')
+                grouping = job.get('grouping', None)
+
                 if youtube_url:
                     def updateProgress(d):
                         nonlocal filename

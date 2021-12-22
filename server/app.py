@@ -1,6 +1,4 @@
-import asyncio
 import os
-import threading
 from starlette import middleware
 from starlette.applications import Starlette
 from starlette.routing import Route
@@ -12,7 +10,6 @@ from server.api import music, auth
 from server.api.auth.auth_backend import AuthBackend
 from server.db import database
 from server.utils.enums import RequestMethods
-from server.worker import Worker
 from server.request_client import client
 
 
@@ -40,4 +37,4 @@ middleware = [
 ]
 
 app = Starlette(routes=routes, middleware=middleware, on_startup=[
-    database.connect, Worker.run], on_shutdown=[database.disconnect, client.close, Worker.end])
+    database.connect], on_shutdown=[database.disconnect, client.close])
