@@ -1,10 +1,11 @@
+import aioredis
+import anyio
 import argparse
 import asyncio
-import json
+import functools
 import importlib
-import aioredis
+import json
 import os
-import anyio
 
 
 class AsyncioQueue():
@@ -33,7 +34,10 @@ class AsyncioWorker():
         if asyncio.iscoroutinefunction(func):
             task = asyncio.create_task(func(*args, **kwargs))
         else:
-            task = asyncio.create_task(anyio.to_thread.run_sync(func, *args))
+            if kwargs:
+                func = functools.partial(func, **kwargs)
+            task = asyncio.create_task(
+                anyio.to_thread.run_sync(func, *args, cancellable=True))
         self._tasks.append(task)
 
     async def _job_listener(self):
