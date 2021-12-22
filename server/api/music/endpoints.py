@@ -17,7 +17,7 @@ from server.utils.mp3dl import extract_info
 from server.utils.imgdl import download_image
 from server.db import database, music_jobs
 from server.redis import RedisChannels, subscribe, redis
-from server.api.music.tasks import run_job, read_tags
+from server.api.music.tasks import run_job, read_tags, JOB_DIR
 from server.utils.wrappers import endpoint_handler
 from server.utils.helpers import convert_db_response
 from server.utils.enums import AuthScopes
@@ -152,14 +152,14 @@ async def download_job(request: Request):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
     job = await database.fetch_one(query)
     filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
-    file_path = os.path.join('jobs', job_id, filename)
+    file_path = os.path.join(JOB_DIR, job_id, filename)
 
     if not os.path.exists(file_path):
         async with database.transaction():
             query = music_jobs.update().where(music_jobs.c.user_email == request.user.display_name,
                                               music_jobs.c.id == job_id).values(failed=True)
             await database.execute(query)
-        await redis.publish(RedisChannels.COMPLETED_JOB_CHANNEL.value, job_id)
+        await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
         return Response(None, 404)
 
-    return FileResponse(os.path.join('jobs', job_id, filename), filename=filename)
+    return FileResponse(os.path.join(JOB_DIR, job_id, filename), filename=filename)

@@ -20,6 +20,9 @@ from server.utils.wrappers import exception_handler
 from server.utils.enums import RedisChannels
 
 
+JOB_DIR = 'music_jobs'
+
+
 @exception_handler()
 async def run_job(job_id: str, file: UploadFile):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
@@ -27,7 +30,7 @@ async def run_job(job_id: str, file: UploadFile):
 
     try:
         if job:
-            job_path = os.path.join('music_jobs', job_id)
+            job_path = os.path.join(JOB_DIR, job_id)
             youtube_url = job.get('youtube_url', None)
             filename = job.get('filename', '')
             artwork_url = job.get('artwork_url', None)
@@ -41,7 +44,7 @@ async def run_job(job_id: str, file: UploadFile):
             def create_job_path():
                 nonlocal file_path
                 try:
-                    os.mkdir('music_jobs')
+                    os.mkdir(JOB_DIR)
                 except FileExistsError:
                     pass
                 os.mkdir(job_path)
@@ -111,7 +114,7 @@ async def run_job(job_id: str, file: UploadFile):
                 query = music_jobs.update().where(music_jobs.c.job_id ==
                                                   job_id).values(failed=True)
                 await database.execute(query)
-            await asyncio.create_subprocess_shell(f'rm -rf jobs/{job_id}')
+            await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
             raise e
 
 
