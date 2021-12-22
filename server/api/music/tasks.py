@@ -93,7 +93,7 @@ async def run_job(job_id: str):
     except Exception as e:
         if job:
             async with database.transaction():
-                query = music_jobs.update().where(music_jobs.c.job_id ==
+                query = music_jobs.update().where(music_jobs.c.id ==
                                                   job_id).values(failed=True)
                 await database.execute(query)
             await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')

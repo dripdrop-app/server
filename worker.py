@@ -93,7 +93,7 @@ if __name__ == '__main__':
     if args.p:
         pid = str(os.getpid())
         with open(args.p, 'w') as f:
-            f.write(pid)
+            f.write(pid + '\n')
 
     worker = AsyncioWorker(worker_channel=args.channel,
                            redis_url=args.redis_url)
