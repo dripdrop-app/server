@@ -9,8 +9,8 @@ from starlette.middleware import Middleware
 from server.api import music, auth
 from server.api.auth.auth_backend import AuthBackend
 from server.db import database
-from server.utils.enums import RequestMethods
 from server.request_client import client
+from server.utils.enums import RequestMethods
 
 
 async def index(request: Request):

@@ -1,14 +1,20 @@
+import argparse
 import asyncio
 import json
 import importlib
+import aioredis
+import os
+import anyio
 from starlette.concurrency import run_in_threadpool
-from server.redis import redis
-from server.utils.enums import RedisChannels
 
 
 class AsyncioQueue():
+    def __init__(self, worker_channel: str, redis_url='redis://localhost:6379') -> None:
+        self.worker_channel = worker_channel
+        self.redis = aioredis.from_url(redis_url)
+
     async def enqueue(self, function_path: str, *args, **kwargs):
-        await redis.publish(RedisChannels.WORK_CHANNEL.value, json.dumps({
+        await self.redis.publish(self.worker_channel, json.dumps({
             'module_path': '.'.join(function_path.split('.')[:-1]),
             'function_name': function_path.split('.')[-1],
             'args': args,
@@ -17,8 +23,10 @@ class AsyncioQueue():
 
 
 class AsyncioWorker():
-    def __init__(self) -> None:
+    def __init__(self, worker_channel: str, redis_url: str) -> None:
         self._tasks: list[asyncio.Task] = []
+        self.worker_channel = worker_channel
+        self.redis = aioredis.from_url(redis_url)
 
     def add_job(self, module_path, function_name, *args, **kwargs):
         module = importlib.import_module(module_path)
@@ -26,13 +34,12 @@ class AsyncioWorker():
         if asyncio.iscoroutinefunction(func):
             task = asyncio.create_task(func(*args, **kwargs))
         else:
-            task = asyncio.create_task(
-                run_in_threadpool(func, *args, **kwargs))
+            task = asyncio.create_task(anyio.to_thread.run_sync(func, *args))
         self._tasks.append(task)
 
     async def _job_listener(self):
-        pubsub = redis.pubsub()
-        await pubsub.subscribe(RedisChannels.WORK_CHANNEL.value)
+        pubsub = self.redis.pubsub()
+        await pubsub.subscribe(self.worker_channel)
         while True:
             try:
                 message = await pubsub.get_message(True)
@@ -75,8 +82,19 @@ class AsyncioWorker():
             raise Exception(e)
 
 
-Worker = AsyncioWorker()
-
 if __name__ == '__main__':
-    worker = AsyncioWorker()
+    parser = argparse.ArgumentParser(description='Asyncio worker')
+    parser.add_argument('--channel')
+    parser.add_argument('--redis-url', default='redis://localhost:6379')
+    parser.add_argument('-p')
+
+    args = parser.parse_args()
+
+    if args.p:
+        pid = str(os.getpid())
+        with open(args.p, 'w') as f:
+            f.write(pid)
+
+    worker = AsyncioWorker(worker_channel=args.channel,
+                           redis_url=args.redis_url)
     asyncio.run(worker.work())
