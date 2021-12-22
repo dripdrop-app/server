@@ -1,3 +1,4 @@
 from worker import AsyncioQueue
+from server.utils.enums import RedisChannels
 
-queue = AsyncioQueue()
+queue = AsyncioQueue(RedisChannels.WORK_CHANNEL.value)
