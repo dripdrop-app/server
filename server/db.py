@@ -24,7 +24,7 @@ sessions = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        users.c.email), nullable=False),
+        users.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column("created_at", sqlalchemy.dialects.postgresql.TIMESTAMP,
                       server_default=text("NOW()"))
 )
@@ -35,7 +35,7 @@ music_jobs = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        users.c.email), nullable=False),
+        users.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column("filename", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("youtube_url", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("artwork_url", sqlalchemy.String, nullable=True),
@@ -55,7 +55,7 @@ google_accounts = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("email", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        users.c.email), nullable=False),
+        users.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column("access_token", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("refresh_token", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("expires", sqlalchemy.Numeric, nullable=False),
@@ -69,7 +69,7 @@ youtube_jobs = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("job_id", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("email", sqlalchemy.ForeignKey(
-        google_accounts.c.email), nullable=False),
+        google_accounts.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column(
         "created_at", sqlalchemy.dialects.postgresql.TIMESTAMP, server_default=text("NOW()"))
 )
