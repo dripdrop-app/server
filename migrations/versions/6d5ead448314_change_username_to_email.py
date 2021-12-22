@@ -23,19 +23,8 @@ def upgrade():
         'user_email', sa.String(), nullable=False))
     op.create_foreign_key(None, 'google_accounts', 'users', [
                           'user_email'], ['email'])
-    op.add_column('music_jobs', sa.Column(
-        'user_email', sa.String(), nullable=False))
-    op.drop_constraint('music_jobs_username_fkey',
-                       'music_jobs', type_='foreignkey')
-    op.create_foreign_key(None, 'music_jobs', 'users',
-                          ['user_email'], ['email'])
-    op.drop_column('music_jobs', 'username')
-    op.add_column('sessions', sa.Column(
-        'user_email', sa.String(), nullable=False))
-    op.drop_constraint('sessions_username_fkey',
-                       'sessions', type_='foreignkey')
-    op.create_foreign_key(None, 'sessions', 'users', ['user_email'], ['email'])
-    op.drop_column('sessions', 'username')
+    op.alter_column('sessions', 'username', new_column_name='user_email')
+    op.alter_column('music_jobs', 'username', new_column_name='user_email')
     op.drop_column('youtube_jobs', 'completed')
     # ### end Alembic commands ###
 
@@ -45,18 +34,8 @@ def downgrade():
     op.add_column('youtube_jobs', sa.Column(
         'completed', sa.BOOLEAN(), autoincrement=False, nullable=False))
     op.alter_column('users', 'email', new_column_name='username')
-    op.add_column('sessions', sa.Column('username', sa.VARCHAR(),
-                  autoincrement=False, nullable=False))
-    op.drop_constraint(None, 'sessions', type_='foreignkey')
-    op.create_foreign_key('sessions_username_fkey', 'sessions', 'users', [
-                          'username'], ['username'])
-    op.drop_column('sessions', 'user_email')
-    op.add_column('music_jobs', sa.Column(
-        'username', sa.VARCHAR(), autoincrement=False, nullable=False))
-    op.drop_constraint(None, 'music_jobs', type_='foreignkey')
-    op.create_foreign_key('music_jobs_username_fkey',
-                          'music_jobs', 'users', ['username'], ['username'])
-    op.drop_column('music_jobs', 'user_email')
+    op.alter_column('sessions', 'user_email', new_column_name='username')
+    op.alter_column('music_jobs', 'user_email', new_column_name='username')
     op.drop_constraint(None, 'google_accounts', type_='foreignkey')
     op.drop_column('google_accounts', 'user_email')
     # ### end Alembic commands ###
