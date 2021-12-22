@@ -6,7 +6,7 @@ queue = AsyncioQueue(RedisChannels.WORK_CHANNEL.value)
 
 
 async def restart_jobs():
-    query = music_jobs.select(music_jobs.c.id).where(music_jobs.c.completed_at ==
+    query = music_jobs.select(music_jobs.c.id).where(music_jobs.c.completed ==
                                                      False, music_jobs.c.failed == False)
     async for hanging_job in database.iterate(query):
         job_id = hanging_job.get('id')
