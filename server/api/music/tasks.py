@@ -16,11 +16,14 @@ from server.redis import redis
 from server.utils.imgdl import download_image
 from server.utils.mp3dl import yt_download
 from server.utils.enums import RedisChannels
+from server.utils.wrappers import exception_handler, worker_task
 
 
 JOB_DIR = 'music_jobs'
 
 
+@exception_handler()
+@worker_task()
 async def run_job(job_id: str):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
     job = await database.fetch_one(query)

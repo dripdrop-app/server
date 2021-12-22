@@ -2,16 +2,15 @@ import asyncio
 import json
 import importlib
 from starlette.concurrency import run_in_threadpool
-from server.db import database
 from server.redis import redis
 from server.utils.enums import RedisChannels
 
 
 class AsyncioQueue():
-    async def enqueue(self, f, *args, **kwargs):
+    async def enqueue(self, function_path: str, *args, **kwargs):
         await redis.publish(RedisChannels.WORK_CHANNEL.value, json.dumps({
-            'module_path': f.__module__,
-            'function_name': f.__name__,
+            'module_path': '.'.join(function_path.split('.')[:-1]),
+            'function_name': function_path.split('.')[-1],
             'args': args,
             'kwargs': kwargs
         }))
@@ -52,7 +51,6 @@ class AsyncioWorker():
                 pass
 
     async def work(self):
-        await database.connect()
         try:
             listener = asyncio.create_task(self._job_listener())
             while True:

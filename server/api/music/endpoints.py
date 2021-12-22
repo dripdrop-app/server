@@ -17,7 +17,7 @@ from server.utils.mp3dl import extract_info
 from server.utils.imgdl import download_image
 from server.db import database, music_jobs
 from server.redis import RedisChannels, subscribe, redis
-from server.api.music.tasks import run_job, read_tags, JOB_DIR
+from server.api.music.tasks import read_tags, JOB_DIR
 from server.utils.wrappers import endpoint_handler
 from server.utils.helpers import convert_db_response
 from server.utils.enums import AuthScopes
@@ -144,7 +144,7 @@ async def download(request: Request):
             f.close()
 
     await run_in_threadpool(create_job_path)
-    await queue.enqueue(run_job, job_id)
+    await queue.enqueue('server.api.music.tasks.run_job', job_id)
     await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
     return JSONResponse({'job': job_info}, status_code=202)
 
