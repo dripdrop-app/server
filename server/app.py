@@ -1,5 +1,6 @@
 import asyncio
 import os
+import threading
 from starlette import middleware
 from starlette.applications import Starlette
 from starlette.routing import Route
@@ -38,7 +39,5 @@ middleware = [
     Middleware(AuthenticationMiddleware, backend=AuthBackend())
 ]
 
-worker_task = asyncio.create_task(Worker.work())
-
 app = Starlette(routes=routes, middleware=middleware, on_startup=[
-    database.connect], on_shutdown=[database.disconnect, worker_task.cancel, client.close])
+    database.connect, Worker.run], on_shutdown=[database.disconnect, client.close, Worker.end])

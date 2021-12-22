@@ -7,6 +7,8 @@ from starlette.concurrency import run_in_threadpool
 class AsyncioWorker():
     def __init__(self) -> None:
         self._tasks: list[Union[asyncio.Task, threading.Thread]] = []
+        self._main_thread = threading.Thread(
+            None, asyncio.run, args=[self.work()])
 
     def add_job(self, func, *args, **kwargs):
         if asyncio.iscoroutinefunction(func):
@@ -16,6 +18,12 @@ class AsyncioWorker():
                 run_in_threadpool(func, *args, **kwargs))
 
         self._tasks.append(task)
+
+    def run(self):
+        self._main_thread.start()
+
+    def end(self):
+        self._main_thread.join(30)
 
     async def work(self):
         try:
