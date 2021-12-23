@@ -21,7 +21,7 @@ from server.api.music.tasks import read_tags, JOB_DIR
 from server.utils.wrappers import endpoint_handler
 from server.utils.helpers import convert_db_response
 from server.utils.enums import AuthScopes
-from server.queue import queue
+from server.queue import q
 
 
 @requires([AuthScopes.AUTHENTICATED])
@@ -144,7 +144,7 @@ async def download(request: Request):
             f.close()
 
     await run_in_threadpool(create_job_path)
-    await queue.enqueue(f'music_jobs_{job_id}', 'server.api.music.tasks.run_job', job_id)
+    q.enqueue('server.api.music.tasks.run_job', job_id)
     await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
     return JSONResponse({'job': job_info}, status_code=202)
 

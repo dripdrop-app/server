@@ -16,13 +16,12 @@ from server.redis import redis
 from server.utils.imgdl import download_image
 from server.utils.mp3dl import yt_download
 from server.utils.enums import RedisChannels
-from server.utils.wrappers import exception_handler, worker_task
+from server.utils.wrappers import worker_task
 
 
 JOB_DIR = 'music_jobs'
 
 
-@exception_handler()
 @worker_task()
 async def run_job(job_id: str):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
@@ -83,7 +82,7 @@ async def run_job(job_id: str):
                     job_path, sanitize_filename(f'{title} {artist}') + '.mp3')
                 os.rename(filename, new_filename)
 
-            await run_in_threadpool(download_and_set_tags)
+            await run_in_threadpool(download_and_set_tags, cancellable=True)
 
             async with database.transaction():
                 query = music_jobs.update().where(music_jobs.c.id ==
@@ -97,6 +96,7 @@ async def run_job(job_id: str):
                                                   job_id).values(failed=True)
                 await database.execute(query)
             await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
+        raise e
 
 
 def read_tags(file: Union[str, bytes, None], filename):
