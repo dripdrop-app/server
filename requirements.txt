@@ -20,6 +20,7 @@ charset-normalizer==2.0.7
 click==8.0.3
 cryptography==35.0.0
 databases==0.5.3
+Deprecated==1.2.13
 frozenlist==1.2.0
 graphene==2.1.9
 graphql-core==2.3.2
@@ -46,7 +47,9 @@ pydub==0.25.1
 python-dotenv==0.19.1
 python-multipart==0.0.5
 PyYAML==6.0
+redis==4.0.2
 requests==2.26.0
+rq==1.10.1
 Rx==1.6.1
 six==1.16.0
 sniffio==1.2.0
@@ -57,6 +60,7 @@ typing-extensions==3.10.0.2
 urllib3==1.26.7
 uvicorn==0.15.0
 websockets==10.0
+wrapt==1.13.3
 yarl==1.7.0
 yt-dlp==2021.10.10
 zipp==3.6.0
