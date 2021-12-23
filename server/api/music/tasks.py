@@ -23,22 +23,38 @@ JOB_DIR = 'music_jobs'
 
 
 @worker_task()
-async def run_job(job_id: str):
+async def run_job(job_id: str, file):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
     job = await database.fetch_one(query)
-
     try:
         if job:
-            def download_and_set_tags():
-                job_path = os.path.join(JOB_DIR, job_id)
-                youtube_url = job.get('youtube_url', None)
-                filename = job.get('filename', '')
-                artwork_url = job.get('artwork_url', None)
-                title = job.get('title')
-                artist = job.get('artist')
-                album = job.get('album')
-                grouping = job.get('grouping', None)
+            job_path = os.path.join(JOB_DIR, job_id)
+            youtube_url = job.get('youtube_url', None)
+            filename = job.get('filename', '')
+            artwork_url = job.get('artwork_url', None)
+            title = job.get('title')
+            artist = job.get('artist')
+            album = job.get('album')
+            grouping = job.get('grouping', None)
 
+            def create_job_path():
+                job_path = os.path.join(JOB_DIR, job_id)
+                try:
+                    os.mkdir(JOB_DIR)
+                except FileExistsError:
+                    pass
+                os.mkdir(job_path)
+
+                if file:
+                    file_path = os.path.join(job_path, filename)
+                    f = open(file_path, 'wb')
+                    f.write(file)
+                    f.close()
+
+            await run_in_threadpool(create_job_path)
+
+            def download_and_set_tags():
+                nonlocal filename
                 if youtube_url:
                     def updateProgress(d):
                         nonlocal filename
@@ -82,7 +98,7 @@ async def run_job(job_id: str):
                     job_path, sanitize_filename(f'{title} {artist}') + '.mp3')
                 os.rename(filename, new_filename)
 
-            await run_in_threadpool(download_and_set_tags, cancellable=True)
+            await run_in_threadpool(download_and_set_tags)
 
             async with database.transaction():
                 query = music_jobs.update().where(music_jobs.c.id ==

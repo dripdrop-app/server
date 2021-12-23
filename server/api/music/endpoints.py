@@ -124,27 +124,11 @@ async def download(request: Request):
             failed=False,
         )
 
-    await database.execute(query)
-
     if file:
         file = await file.read()
 
-    def create_job_path():
-        job_path = os.path.join(JOB_DIR, job_id)
-        try:
-            os.mkdir(JOB_DIR)
-        except FileExistsError:
-            pass
-        os.mkdir(job_path)
-
-        if file:
-            file_path = os.path.join(job_path, filename)
-            f = open(file_path, 'wb')
-            f.write(file)
-            f.close()
-
-    await run_in_threadpool(create_job_path)
-    q.enqueue('server.api.music.tasks.run_job', job_id)
+    await database.execute(query)
+    q.enqueue('server.api.music.tasks.run_job', job_id, file)
     await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
     return JSONResponse({'job': job_info}, status_code=202)
 
