@@ -3,9 +3,8 @@ import { Link, Route, Switch } from 'react-router-dom';
 import { AppBar, Box, Button, CircularProgress, Stack, Toolbar, Typography } from '@mui/material';
 import { useRecoilValueLoadable, useSetRecoilState } from 'recoil';
 import { userAtom } from './atoms/Auth';
-import Auth from './pages/Auth';
+import { Auth, MusicDownloader, YoutubeCollections } from './pages';
 import DripDrop from './images/dripdrop.png';
-import MusicDownloader from './pages/MusicDownloader';
 import useLazyFetch from './hooks/useLazyFetch';
 
 interface HeaderLinkProps {
@@ -40,6 +39,7 @@ const Header = () => {
 			<Fragment>
 				<HeaderLink link="/" text={<img height="40px" alt="DripDrop" src={DripDrop} />} />
 				<HeaderLink link="/musicDownload" text="Music Downloader" />
+				<HeaderLink link="/youtubeCollections" text="Youtube Collections" />
 				<Box sx={{ flexGrow: 1 }} />
 				<Typography variant="h5">{user.contents.email}</Typography>
 				<Button onClick={() => logoutFn()} color="inherit">
@@ -64,6 +64,7 @@ const Routes = () => {
 	if (user.state === 'hasValue' && user.contents) {
 		return (
 			<Switch>
+				<Route path="/youtubeCollections" render={() => <YoutubeCollections />} />
 				<Route path="/musicDownload" render={() => <MusicDownloader />} />
 				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>

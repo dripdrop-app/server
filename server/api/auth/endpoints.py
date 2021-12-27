@@ -7,9 +7,11 @@ from starlette.middleware import sessions
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse, RedirectResponse
 from server.api.auth.auth_backend import SessionHandler
+from server.api.youtube.tasks import update_subscriptions_job
 from server.utils.wrappers import endpoint_handler
 from server.db import users, database, sessions, google_accounts
 from server.config import ENVIRONMENT, SERVER_URL
+from server.queue import q
 from server.utils.enums import AuthScopes
 from server.utils import google_api
 
@@ -134,7 +136,6 @@ async def admin_create_account(request: Request):
     return Response({'email': email, 'admin': False}, 201)
 
 
-@requires([AuthScopes.AUTHENTICATED])
 @endpoint_handler()
 @database.transaction()
 async def google_oauth2(request: Request):
@@ -166,12 +167,12 @@ async def google_oauth2(request: Request):
 
     query = google_accounts.insert().values(
         email=email,
-        access_token=tokens.get('access_token'),
-        refresh_token=tokens.get('refresh_token'),
-        expires=tokens.get('expires_in'),
+        access_token=tokens['access_token'],
+        refresh_token=tokens['refresh_token'],
+        expires=tokens['expires_in'],
     )
     await database.execute(query)
-
+    q.enqueue(update_subscriptions_job, email)
     # START FIRST COLLECTION RUN
     # (ADD INFO TO REDIS CHANNEL)
 
