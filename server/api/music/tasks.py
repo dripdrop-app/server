@@ -37,68 +37,61 @@ async def run_job(job_id: str, file):
             album = job.get('album')
             grouping = job.get('grouping', None)
 
-            def create_job_path():
-                job_path = os.path.join(JOB_DIR, job_id)
-                try:
-                    os.mkdir(JOB_DIR)
-                except FileExistsError:
-                    pass
-                os.mkdir(job_path)
+            job_path = os.path.join(JOB_DIR, job_id)
+            try:
+                os.mkdir(JOB_DIR)
+            except FileExistsError:
+                pass
+            os.mkdir(job_path)
 
-                if file:
-                    file_path = os.path.join(job_path, filename)
-                    f = open(file_path, 'wb')
-                    f.write(file)
-                    f.close()
+            if file:
+                file_path = os.path.join(job_path, filename)
+                f = open(file_path, 'wb')
+                f.write(file)
+                f.close()
 
-            await run_in_threadpool(create_job_path)
+            if youtube_url:
+                def updateProgress(d):
+                    nonlocal filename
+                    if d['status'] == 'finished':
+                        filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
+                yt_download(youtube_url, [updateProgress], job_path)
+            elif filename:
+                file_path = os.path.join(job_path, filename)
+                new_filename = f'{os.path.splitext(file_path)[0]}.mp3'
+                AudioSegment.from_file(file_path).export(
+                    new_filename, format='mp3', bitrate='320k')
+                filename = new_filename
 
-            def download_and_set_tags():
-                nonlocal filename
-                if youtube_url:
-                    def updateProgress(d):
-                        nonlocal filename
-                        if d['status'] == 'finished':
-                            filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
-                    yt_download(youtube_url, [updateProgress], job_path)
-                elif filename:
-                    file_path = os.path.join(job_path, filename)
-                    new_filename = f'{os.path.splitext(file_path)[0]}.mp3'
-                    AudioSegment.from_file(file_path).export(
-                        new_filename, format='mp3', bitrate='320k')
-                    filename = new_filename
+            audio_file = mutagen.File(filename)
 
-                audio_file = mutagen.File(filename)
-
-                if artwork_url:
-                    isBase64 = re.search("^data:image/", artwork_url)
-                    if isBase64:
-                        dataString = ','.join(artwork_url.split(',')[1:])
-                        data = dataString.encode()
-                        data_bytes = base64.b64decode(data)
+            if artwork_url:
+                isBase64 = re.search("^data:image/", artwork_url)
+                if isBase64:
+                    dataString = ','.join(artwork_url.split(',')[1:])
+                    data = dataString.encode()
+                    data_bytes = base64.b64decode(data)
+                    audio_file.tags.add(mutagen.id3.APIC(
+                        mimetype='image/png', data=data_bytes)
+                    )
+                else:
+                    try:
+                        imageData = download_image(artwork_url)
                         audio_file.tags.add(mutagen.id3.APIC(
-                            mimetype='image/png', data=data_bytes)
+                            mimetype='image/png', data=imageData)
                         )
-                    else:
-                        try:
-                            imageData = download_image(artwork_url)
-                            audio_file.tags.add(mutagen.id3.APIC(
-                                mimetype='image/png', data=imageData)
-                            )
-                        except:
-                            print(traceback.format_exc())
+                    except:
+                        print(traceback.format_exc())
 
-                audio_file.tags.add(mutagen.id3.TIT2(text=title))
-                audio_file.tags.add(mutagen.id3.TPE1(text=artist))
-                audio_file.tags.add(mutagen.id3.TALB(text=album))
-                audio_file.tags.add(mutagen.id3.TIT1(text=grouping))
-                audio_file.save()
+            audio_file.tags.add(mutagen.id3.TIT2(text=title))
+            audio_file.tags.add(mutagen.id3.TPE1(text=artist))
+            audio_file.tags.add(mutagen.id3.TALB(text=album))
+            audio_file.tags.add(mutagen.id3.TIT1(text=grouping))
+            audio_file.save()
 
-                new_filename = os.path.join(
-                    job_path, sanitize_filename(f'{title} {artist}') + '.mp3')
-                os.rename(filename, new_filename)
-
-            await run_in_threadpool(download_and_set_tags)
+            new_filename = os.path.join(
+                job_path, sanitize_filename(f'{title} {artist}') + '.mp3')
+            os.rename(filename, new_filename)
 
             async with database.transaction():
                 query = music_jobs.update().where(music_jobs.c.id ==
