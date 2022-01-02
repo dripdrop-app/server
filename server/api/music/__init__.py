@@ -1,47 +1,154 @@
-from starlette.routing import Mount, Route, WebSocketRoute
-from server.utils.enums import RequestMethods
-from server.api.music.endpoints import (
-    delete_job,
-    download_job,
-    get_artwork,
-    listen_jobs,
-    get_grouping,
-    get_tags,
-    download
-)
+import asyncio
+from typing import Optional
+import uuid
+import traceback
+import os
+from asyncio.tasks import Task
+from fastapi import FastAPI, Query, Response, UploadFile, WebSocket, WebSocketDisconnect, Depends, File, Form, HTTPException
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import FileResponse, JSONResponse
+from server.api.music.imgdl import download_image
+from server.api.music.mp3dl import extract_info
+from server.api.music.tasks import read_tags, JOB_DIR
+from server.database import MusicJobDB, db, music_jobs
+from server.dependencies import get_authenticated_user
+from server.models import JobInfo, MusicResponses, User, youtube_regex
+from server.redis import RedisChannels, subscribe, redis
+from server.queue import q
+from sqlalchemy.sql.expression import desc
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
+from yt_dlp.utils import sanitize_filename
 
-routes = [
-    Mount('/music', routes=[
-        Route(
-            '/getArtwork',
-            endpoint=get_artwork,
-            methods=[RequestMethods.GET.value]
-        ),
-        Route(
-            '/grouping',
-            endpoint=get_grouping,
-            methods=[RequestMethods.GET.value]
-        ),
-        Route(
-            '/getTags',
-            endpoint=get_tags,
-            methods=[RequestMethods.POST.value]
-        ),
-        Route(
-            '/download',
-            endpoint=download,
-            methods=[RequestMethods.POST.value]
-        ),
-        Route(
-            '/deleteJob',
-            endpoint=delete_job,
-            methods=[RequestMethods.GET.value]
-        ),
-        Route(
-            '/downloadJob',
-            endpoint=download_job,
-            methods=[RequestMethods.GET.value]
-        ),
-        WebSocketRoute('/listenJobs', endpoint=listen_jobs),
-    ])
-]
+
+app = FastAPI()
+
+
+@app.get('/grouping', response_model=MusicResponses.Grouping)
+async def get_grouping(youtube_url: str = Query(None, regex=youtube_regex)):
+    try:
+        loop = asyncio.get_event_loop()
+        uploader = await loop.run_in_executor(None, extract_info, youtube_url)
+        return JSONResponse({'grouping': uploader})
+    except:
+        raise HTTPException(400)
+
+
+@app.get('/getArtwork', response_model=MusicResponses.ArtworkURL)
+async def get_artwork(artwork_url: str = Query(None)):
+    try:
+        loop = asyncio.get_event_loop()
+        artwork_url = await loop.run_in_executor(None, download_image, artwork_url, False)
+        return JSONResponse({'artwork_url': artwork_url})
+    except:
+        raise HTTPException(400)
+
+
+@app.post('/getTags', response_model=MusicResponses.Tags)
+async def get_tags(file: UploadFile = File(None)):
+    if not file:
+        raise HTTPException(400)
+    loop = asyncio.get_event_loop()
+    tags = await loop.run_in_executor(None, read_tags, await file.read(), file.filename)
+    return JSONResponse(tags.dict())
+
+
+@app.websocket('/listenJobs')
+async def listen_jobs(websocket: WebSocket, user: User = Depends(get_authenticated_user)):
+    tasks: list[Task] = []
+    try:
+        await websocket.accept()
+        query = music_jobs.select().where(music_jobs.c.user_email ==
+                                          user.email).order_by(desc(music_jobs.c.created_at))
+        jobs = await db.fetch_all(query)
+        await websocket.send_json({
+            'type': 'ALL',
+            'jobs': [jsonable_encoder(job) for job in jobs]
+        })
+        tasks.extend([
+            asyncio.create_task(
+                subscribe(RedisChannels.STARTED_MUSIC_JOB_CHANNEL, websocket, user)),
+            asyncio.create_task(
+                subscribe(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL, websocket, user)),
+        ])
+
+        while True:
+            await websocket.send_json({})
+            await asyncio.sleep(1)
+
+    except Exception as e:
+        if not isinstance(e, WebSocketDisconnect) and not isinstance(e, ConnectionClosedError) and not isinstance(e, ConnectionClosedOK):
+            print(traceback.format_exc())
+        for task in tasks:
+            task.cancel()
+        if not isinstance(e, ConnectionClosedError):
+            await websocket.close()
+
+
+@app.post('/download', status_code=202, response_model=MusicResponses.Download)
+async def download(
+    youtube_url: Optional[str] = Form(None, regex=youtube_regex),
+    artwork_url: Optional[str] = Form(None),
+    title: str = Form(None),
+    artist: str = Form(None),
+    album: str = Form(None),
+    grouping: Optional[str] = Form(''),
+    file: UploadFile = File(None),
+    user: User = Depends(get_authenticated_user)
+):
+    job_id = str(uuid.uuid4())
+    if not youtube_url and not file:
+        return Response(None, 400)
+
+    filename = file.filename if file else None
+
+    job_info = JobInfo(id=job_id, youtube_url=youtube_url, artwork_url=artwork_url,
+                       title=title, artist=artist, album=album, grouping=grouping, filename=filename)
+
+    async with db.transaction():
+        query = music_jobs.insert().values(
+            **job_info.dict(),
+            user_email=user.email,
+            completed=False,
+            failed=False,
+        )
+
+    if file:
+        file = await file.read()
+
+    await db.execute(query)
+    q.enqueue('server.api.music.tasks.run_job', job_id, file)
+    await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
+    return JSONResponse({'job': jsonable_encoder(job_info)})
+
+
+@app.delete('/deleteJob')
+@db.transaction()
+async def delete_job(id: str = Query(None), user: User = Depends(get_authenticated_user)):
+    job_id = id
+    query = music_jobs.delete().where(music_jobs.c.user_email ==
+                                      user.email, music_jobs.c.id == job_id)
+    await db.execute(query)
+    try:
+        await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
+    except:
+        pass
+    return Response(None)
+
+
+@app.get('/downloadJob', status_code=200)
+async def download_job(id: str = Query(None), user: User = Depends(get_authenticated_user)):
+    job_id = id
+    query = music_jobs.select().where(music_jobs.c.id == job_id)
+    job = await db.fetch_one(query)
+    filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
+    file_path = os.path.join(JOB_DIR, job_id, filename)
+
+    if not os.path.exists(file_path):
+        async with db.transaction():
+            query = music_jobs.update().where(music_jobs.c.user_email == user.email,
+                                              music_jobs.c.id == job_id).values(failed=True)
+            await db.execute(query)
+        await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
+        raise HTTPException(404)
+
+    return FileResponse(os.path.join(JOB_DIR, job_id, filename), filename=filename)

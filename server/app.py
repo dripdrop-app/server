@@ -1,18 +1,27 @@
 import os
-from starlette import middleware
-from starlette.applications import Starlette
-from starlette.routing import Route
-from starlette.responses import FileResponse
-from starlette.requests import Request
-from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.middleware import Middleware
-from server.api import music, auth
-from server.api.auth.auth_backend import AuthBackend
-from server.db import database
-from server.request_client import client
-from server.utils.enums import RequestMethods
+from fastapi import FastAPI, Request, Depends
+from fastapi.responses import FileResponse
+from server.api import auth, music, youtube
+from server.database import db
+from server.dependencies import get_user
+from server.queue import q
 
 
+def boot_tasks():
+    # q.enqueue('server.api.youtube.tasks.update_youtube_video_categories')
+    return
+
+
+app = FastAPI(title='DripDrop', on_startup=[db.connect, boot_tasks],
+              on_shutdown=[db.disconnect], responses={400: {}}, dependencies=[Depends(get_user)])
+
+
+app.router.include_router(auth.app.router, prefix='/auth')
+app.router.include_router(music.app.router, prefix='/music')
+app.router.include_router(youtube.app.router, prefix='/youtube')
+
+
+@app.get('/{path:path}')
 async def index(request: Request):
     path = request.path_params.get('path')
 
@@ -25,16 +34,3 @@ async def index(request: Request):
         return FileResponse(filepath)
 
     return FileResponse(os.path.join(os.path.dirname(__file__), f'../app/build/index.html'))
-
-routes = [
-    *music.routes,
-    *auth.routes,
-    Route('/{path:path}', endpoint=index, methods=[RequestMethods.GET.value])
-]
-
-middleware = [
-    Middleware(AuthenticationMiddleware, backend=AuthBackend())
-]
-
-app = Starlette(routes=routes, middleware=middleware, on_startup=[
-    database.connect], on_shutdown=[database.disconnect, client.close])

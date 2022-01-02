@@ -8,34 +8,34 @@ import subprocess
 import traceback
 import uuid
 from pydub import AudioSegment
-from starlette.concurrency import run_in_threadpool
 from typing import Union
 from yt_dlp.utils import sanitize_filename
-from server.db import database, music_jobs
+from server.api.music.imgdl import download_image
+from server.api.music.mp3dl import yt_download
+from server.database import MusicJobDB, db, music_jobs
+from server.models import MusicResponses
 from server.redis import redis
-from server.utils.imgdl import download_image
-from server.utils.mp3dl import yt_download
 from server.utils.enums import RedisChannels
-from server.utils.wrappers import worker_task
+from server.decorators import worker_task
 
 
 JOB_DIR = 'music_jobs'
 
 
-@worker_task()
+@worker_task
 async def run_job(job_id: str, file):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
-    job = await database.fetch_one(query)
+    job = MusicJobDB.parse_obj(await db.fetch_one(query))
     try:
         if job:
             job_path = os.path.join(JOB_DIR, job_id)
-            youtube_url = job.get('youtube_url', None)
-            filename = job.get('filename', '')
-            artwork_url = job.get('artwork_url', None)
-            title = job.get('title')
-            artist = job.get('artist')
-            album = job.get('album')
-            grouping = job.get('grouping', None)
+            youtube_url = job.youtube_url
+            filename = job.filename
+            artwork_url = job.artwork_url
+            title = job.title
+            artist = job.artist
+            album = job.album
+            grouping = job.grouping
 
             job_path = os.path.join(JOB_DIR, job_id)
             try:
@@ -93,17 +93,15 @@ async def run_job(job_id: str, file):
                 job_path, sanitize_filename(f'{title} {artist}') + '.mp3')
             os.rename(filename, new_filename)
 
-            async with database.transaction():
-                query = music_jobs.update().where(music_jobs.c.id ==
-                                                  job_id).values(completed=True)
-                await database.execute(query)
+            query = music_jobs.update().where(music_jobs.c.id ==
+                                              job_id).values(completed=True)
+            await db.execute(query)
             await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
     except Exception as e:
         if job:
-            async with database.transaction():
-                query = music_jobs.update().where(music_jobs.c.id ==
-                                                  job_id).values(failed=True)
-                await database.execute(query)
+            query = music_jobs.update().where(music_jobs.c.id ==
+                                              job_id).values(failed=True)
+            await db.execute(query)
             await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
         raise e
 
@@ -139,20 +137,8 @@ def read_tags(file: Union[str, bytes, None], filename):
             mimeType = audio_file[imageKeys[0]].mime
             buffer = io.BytesIO(audio_file[imageKeys[0]].data)
         subprocess.run(['rm', '-rf', tag_path])
-        return {
-            'title': title,
-            'artist': artist,
-            'album': album,
-            'grouping': grouping,
-            'artwork_url': f'data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}' if buffer else None
-        }
+        return MusicResponses.Tags(title=title, artist=artist, album=album, grouping=grouping, artwork_url=f'data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}' if buffer else None)
     except:
         subprocess.run(['rm', '-rf', tag_path])
         print(traceback.format_exc())
-        return {
-            'title': None,
-            'artist': None,
-            'album': None,
-            'grouping': None,
-            'artwork_url': None
-        }
+        return MusicResponses.Tags(title=None, artist=None, album=None, grouping=None, artwork_url=None)

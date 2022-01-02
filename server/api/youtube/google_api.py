@@ -1,7 +1,8 @@
+import requests
 from typing import List
 from urllib import parse
-from server.config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_API_KEY
-from server.request_client import client
+from asgiref.sync import sync_to_async
+from server.config import config
 
 scopes = [
     'https://www.googleapis.com/auth/userinfo.email',
@@ -9,10 +10,14 @@ scopes = [
     'https://www.googleapis.com/auth/youtube.readonly'
 ]
 
+base_headers = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
+}
+
 
 def create_oauth_url(callback_url: str, user_id: str):
     params = {
-        'client_id': GOOGLE_CLIENT_ID,
+        'client_id': config.google_client_id,
         'redirect_uri': callback_url,
         'scope': ' '.join(scopes),
         'response_type': 'code',
@@ -26,55 +31,70 @@ def create_oauth_url(callback_url: str, user_id: str):
     }
 
 
-async def get_oauth_tokens(callback_url: str, code: str):
+@sync_to_async
+def get_oauth_tokens(callback_url: str, code: str):
     params = {
         'code': code,
-        'client_id': GOOGLE_CLIENT_ID,
-        'client_secret': GOOGLE_CLIENT_SECRET,
+        'client_id': config.google_client_id,
+        'client_secret': config.google_client_secret,
         'redirect_uri': callback_url,
         'grant_type': 'authorization_code'
     }
-    response = await client.post('https://oauth2.googleapis.com/token', data=params)
+    response = requests.post(
+        'https://oauth2.googleapis.com/token', data=params, headers=base_headers)
     if response.ok:
-        return await response.json()
+        return response.json()
     return None
 
 
-async def refresh_access_token(refresh_token: str):
+@sync_to_async
+def refresh_access_token(refresh_token: str):
     params = {
-        'client_id': GOOGLE_CLIENT_ID,
-        'client_secret': GOOGLE_CLIENT_SECRET,
+        'client_id': config.google_client_id,
+        'client_secret': config.google_client_secret,
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token
     }
-    response = await client.get('https://oauth2.googleapis.com/token', data=params)
+    response = requests.get(
+        'https://oauth2.googleapis.com/token', params=params, headers=base_headers)
     if response.ok:
-        return await response.json()
+        return response.json()
     return None
 
 
-async def get_user_email(access_token: str):
-    response = await client.get('https://www.googleapis.com/oauth2/v2/userinfo', headers={'Authorization': f'Bearer {access_token}'}, params={'fields': 'email'})
+@sync_to_async
+def get_user_email(access_token: str):
+    params = {
+        'fields': 'email'
+    }
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        **base_headers
+    }
+    response = requests.get(
+        'https://www.googleapis.com/oauth2/v2/userinfo', headers=headers, params=params)
     if response.ok:
-        json = await response.json()
+        json = response.json()
         return json.get('email')
     return None
 
 
-async def get_video_categories():
+@sync_to_async
+def get_video_categories():
     params = {
-        'key': GOOGLE_API_KEY,
+        'key': config.google_api_key,
         'part': 'snippet',
         'regionCode': 'US'
     }
-    response = await client.get('https://www.googleapis.com/youtube/v3/videoCategories', data=params)
+    response = requests.get(
+        'https://www.googleapis.com/youtube/v3/videoCategories', params=params, headers=base_headers)
     if response.ok:
-        json = await response.json()
-        return json.get('items')
+        json = response.json()
+        return json.get('items', [])
     return []
 
 
-async def get_user_subscriptions(access_token: str):
+def get_user_subscriptions(access_token: str):
     params = {
         'part': 'snippet',
         'mine': True,
@@ -82,12 +102,14 @@ async def get_user_subscriptions(access_token: str):
         'pageToken': '',
     }
     headers = {
-        'Authorization': f'Bearer {access_token}'
+        'Authorization': f'Bearer {access_token}',
+        **base_headers
     }
     while params.get('pageToken') != None:
-        response = await client.get('https://www.googleapis.com/youtube/v3/subscriptions', data=params, headers=headers)
+        response = requests.get(
+            'https://www.googleapis.com/youtube/v3/subscriptions', params=params, headers=headers)
         if response.ok:
-            json = await response.json()
+            json = response.json()
             yield json.get('items')
             params['pageToken'] = json.get('nextPageToken', None)
         else:
@@ -95,16 +117,54 @@ async def get_user_subscriptions(access_token: str):
             params['pageToken'] = None
 
 
-async def get_channels_info(channel_ids: List[str]):
+@sync_to_async
+def get_channels_info(channel_ids: List[str]):
     params = {
-        'key': GOOGLE_API_KEY,
+        'key': config.google_api_key,
         'part': 'snippet, contentDetails',
         'id': ','.join(channel_ids),
         'maxResults': 50,
+    }
+    response = requests.get(
+        'https://youtube.googleapis.com/youtube/v3/channels', params=params, headers=base_headers)
+    if response.ok:
+        json = response.json()
+        return json.get('items', [])
+    return []
+
+
+def get_playlist_videos(playlist_id: str):
+    params = {
+        'key': config.google_api_key,
+        'part': 'contentDetails',
+        'playlistId': playlist_id,
+        'maxResults': 50,
         'pageToken': ''
     }
-    response = await client.get('https://youtube.googleapis.com/youtube/v3/channels', data=params)
+    while params.get('pageToken') != None:
+        print('PAGING', playlist_id)
+        response = requests.get(
+            'https://www.googleapis.com/youtube/v3/playlistItems', params=params, headers=base_headers)
+        if response.ok:
+            json = response.json()
+            yield json.get('items', [])
+            params['pageToken'] = json.get('nextPageToken', None)
+        else:
+            yield []
+            params['pageToken'] = None
+
+
+@sync_to_async
+def get_videos_info(video_ids: str):
+    params = {
+        'key': config.google_api_key,
+        'part': 'snippet',
+        'id': ','.join(video_ids),
+        'maxResults': 50,
+    }
+    response = requests.get(
+        'https://www.googleapis.com/youtube/v3/videos', params=params)
     if response.ok:
-        json = await response.json()
-        return json.get('items')
+        json = response.json()
+        return json.get('items', [])
     return []

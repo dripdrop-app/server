@@ -1,7 +1,9 @@
 #!/bin/bash
 
-set -e
+trap "kill 0" EXIT
 
+source venv/bin/activate
+uvicorn server.app:app --reload --reload-dir server --port 5000 &
 rq worker &
-npm --prefix app start &
-uvicorn --reload --reload-dir=server server.app:app --port 5000
+
+wait
