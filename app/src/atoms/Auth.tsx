@@ -4,7 +4,7 @@ import { customFetch } from '../utils/helpers';
 export const userAtom = atom({
 	key: 'user',
 	default: (async () => {
-		const response = await customFetch<User | null>('/auth/checkSession');
+		const response = await customFetch<User, null>('/auth/checkSession');
 		if (response.success) {
 			return response.data;
 		}

@@ -15,13 +15,11 @@ const Auth = () => {
 	const [signupFn, signupStatus] = useLazyFetch();
 
 	const login = useCallback(
-		(email: string, password: string) =>
-			loginFn('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+		(email: string, password: string) => loginFn({ url: '/auth/login', method: 'POST', data: { email, password } }),
 		[loginFn]
 	);
 	const signup = useCallback(
-		(email: string, password: string) =>
-			signupFn('/auth/create', { method: 'POST', body: JSON.stringify({ email, password }) }),
+		(email: string, password: string) => signupFn({ url: '/auth/create', method: 'POST', data: { email, password } }),
 		[signupFn]
 	);
 

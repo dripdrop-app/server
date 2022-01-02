@@ -36,16 +36,12 @@ const JobCard = (props: JobCardProps) => {
 	const [removeJob, removeJobStatus] = useLazyFetch();
 
 	const tryDownloadJob = useCallback(() => {
-		const params = new URLSearchParams();
-		params.append('id', id || '');
-		downloadJob(`/music/downloadJob?${params}`);
+		downloadJob({ url: '/music/downloadJob', responseType: 'blob', params: { id } });
 	}, [downloadJob, id]);
 
 	const tryRemoveJob = useCallback(
 		async (deletedJobID: string) => {
-			const params = new URLSearchParams();
-			params.append('id', deletedJobID);
-			removeJob(`/music/deleteJob?${params}`);
+			removeJob({ url: '/music/deleteJob', method: 'DELETE', params: { id: deletedJobID } });
 		},
 		[removeJob]
 	);
@@ -74,7 +70,7 @@ const JobCard = (props: JobCardProps) => {
 			const response = downloadJobStatus.response;
 			const data = downloadJobStatus.data;
 			if (response) {
-				const contentDisposition = response.headers.get('Content-Disposition') || '';
+				const contentDisposition = response.headers['content-disposition'] || '';
 				const groups = contentDisposition.match(/filename\*?=(?:utf-8''|")(.+)(?:"|;)?/);
 				const filename = decodeURIComponent(groups && groups.length > 1 ? groups[1] : 'downloaded.mp3');
 				const url = URL.createObjectURL(data);

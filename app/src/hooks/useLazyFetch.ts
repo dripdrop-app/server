@@ -1,9 +1,9 @@
 import { useRef, useCallback, useEffect, useMemo, useReducer } from 'react';
-import { ContentTypes } from '../utils/enums';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export interface FetchState {
 	error: string;
-	response: Response | null;
+	response: AxiosResponse | null;
 	data: any;
 	isLoading: boolean;
 	isSuccess: boolean;
@@ -11,7 +11,8 @@ export interface FetchState {
 	started: boolean;
 	timestamp: Date;
 }
-type LazyFetchFn = (input: RequestInfo, init?: RequestInit) => Promise<void>;
+
+type LazyFetchFn = (config: AxiosRequestConfig) => Promise<void>;
 
 type LazyFetch = () => [LazyFetchFn, FetchState];
 
@@ -28,7 +29,7 @@ type AsyncAction =
 	  }
 	| {
 			type: `SUCCESS`;
-			payload: { response: Response; data: any };
+			payload: { response: AxiosResponse; data: any };
 	  };
 
 const initialState: FetchState = {
@@ -81,29 +82,25 @@ const useLazyFetch: LazyFetch = () => {
 	const [fetchState, dispatch] = useReducer(reducer, initialState);
 	const controller = useRef(new AbortController());
 
-	const triggerFetch = useCallback(async (input: RequestInfo, init?: RequestInit) => {
+	const triggerFetch = useCallback(async (config: AxiosRequestConfig) => {
 		dispatch({ type: 'STARTED' });
 		try {
 			dispatch({ type: 'LOADING' });
-			const response = await fetch(input, { ...init, signal: controller.current.signal });
-			const contentType = response.headers.get('Content-Type');
-			let data = null;
-			if (contentType) {
-				if (contentType.includes(ContentTypes.TEXT)) {
-					data = await response.text();
-				} else if (contentType.includes(ContentTypes.JSON)) {
-					data = await response.json();
-				} else if (contentType.includes(ContentTypes.MP3_FILE)) {
-					data = await response.blob();
-				}
-			}
-			if (response.ok) {
+			const response = await axios({ ...config, signal: controller.current.signal });
+			let data = response.data;
+			if (response.status) {
 				return dispatch({ type: 'SUCCESS', payload: { response, data } });
 			}
 			const error = data ? (data.error ? data.error : data) : '';
 			dispatch({ type: 'ERROR', payload: { error } });
-		} catch (err) {
-			dispatch({ type: 'ERROR', payload: { error: String(err) } });
+		} catch (error) {
+			const { response, request } = error as AxiosError;
+			if (response) {
+				dispatch({ type: 'ERROR', payload: { error: response.data.error || response.data } });
+			} else if (request) {
+				dispatch({ type: 'ERROR', payload: { error: 'No response' } });
+			}
+			dispatch({ type: 'ERROR', payload: { error: String(error) } });
 		}
 	}, []);
 

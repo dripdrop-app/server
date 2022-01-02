@@ -43,7 +43,7 @@ const FileSwitch = (props: FileSwitchProps) => {
 				const formData = new FormData();
 				formData.append('file', file);
 				setFilename(file.name);
-				getFileTags('/music/getTags', { method: 'POST', body: formData });
+				getFileTags({ url: '/music/getTags', method: 'POST', data: formData });
 			}
 		},
 		[getFileTags, setFilename]

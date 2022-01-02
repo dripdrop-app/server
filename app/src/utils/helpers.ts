@@ -9,10 +9,10 @@ export const defaultTextFieldProps: TextFieldProps = {
 
 export const typographyDefaultCSS: SxProps = { textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
-export const customFetch = async <Response>(
+export const customFetch = async <SuccessResponse, FailedResponse>(
 	input: RequestInfo,
 	init?: RequestInit
-): Promise<FetchResponse<Response>> => {
+): Promise<FetchResponse<SuccessResponse, FailedResponse>> => {
 	const response = await fetch(input, init);
 	const contentType = response.headers.get('Content-Type');
 	let data = null;

@@ -28,9 +28,7 @@ const YoutubeURLInput = () => {
 
 	useEffect(() => {
 		if (youtubeURL && valid) {
-			const params = new URLSearchParams();
-			params.append('youtube_url', youtubeURL);
-			getGrouping(`/music/grouping?${params}`);
+			getGrouping({ url: '/music/grouping', params: { youtube_url: youtubeURL } });
 		}
 	}, [getGrouping, valid, youtubeURL]);
 

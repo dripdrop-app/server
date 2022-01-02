@@ -26,7 +26,7 @@ const Header = () => {
 
 	const [logout, logoutStatus] = useLazyFetch();
 
-	const logoutFn = useCallback(() => logout('/auth/logout'), [logout]);
+	const logoutFn = useCallback(() => logout({ url: '/auth/logout' }), [logout]);
 
 	useEffect(() => {
 		if (logoutStatus.isSuccess) {

@@ -7,7 +7,6 @@ const MusicDownloader = () => {
 	return (
 		<Stack sx={{ m: 5 }}>
 			<Typography variant="h2">MP3 Downloader / Converter</Typography>
-			<Divider variant="middle" />
 			<Stack direction="row">
 				<Container sx={{ flex: 2 }}>
 					<MusicForm />
