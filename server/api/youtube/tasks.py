@@ -3,9 +3,6 @@ import dateutil.parser
 import uuid
 from asyncpg.exceptions import UniqueViolationError
 from datetime import datetime, timezone
-
-from rq import queue
-from sqlalchemy.sql.expression import select
 from server.api.youtube import google_api
 from server.database import (
     GoogleAccount,
@@ -20,6 +17,7 @@ from server.database import (
 )
 from server.queue import q
 from server.decorators import exception_handler, worker_task
+from sqlalchemy.sql.expression import select
 
 
 async def update_google_access_token(google_email: str):
@@ -167,11 +165,6 @@ async def update_user_youtube_subscriptions_job(user_email: str):
 @worker_task
 @exception_handler
 async def add_new_channel_videos_job(channel_id: str, days_limit: int):
-    query = youtube_video_categories.select()
-    categories = await db.fetch_all(query)
-    if len(categories) == 0:
-        await update_youtube_video_categories()
-
     query = youtube_channels.select().where(youtube_channels.c.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
     channel_upload_playist = youtube_channel.upload_playlist_id
