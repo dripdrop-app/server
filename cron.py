@@ -12,7 +12,7 @@ async def run_cron():
             q.enqueue('server.api.youtube.tasks.update_channels')
         if current_time.minute == 0 and current_time.hour == 5 and current_time.day == 7:
             q.enqueue('server.api.youtube.tasks.update_youtube_video_categories')
-        q.enqueue('server.api.youtube.tasks.update_subscriptions')
+            q.enqueue('server.api.youtube.tasks.update_subscriptions')
         await asyncio.sleep(60)
 
 if __name__ == '__main__':
