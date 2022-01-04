@@ -15,7 +15,7 @@ const YoutubeURLInput = () => {
 
 	const valid = isValidYTLink(youtubeURL);
 
-	const [getGrouping, getGroupingStatus] = useLazyFetch();
+	const [getGrouping, getGroupingStatus] = useLazyFetch<Pick<MusicForm, 'grouping'>>();
 
 	useEffect(() => {
 		if (getGroupingStatus.isSuccess) {

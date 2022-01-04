@@ -1,5 +1,4 @@
 import { TextFieldProps } from '@mui/material';
-import { ContentTypes } from './enums';
 import { SxProps } from '@mui/system';
 
 export const defaultTextFieldProps: TextFieldProps = {
@@ -8,29 +7,6 @@ export const defaultTextFieldProps: TextFieldProps = {
 };
 
 export const typographyDefaultCSS: SxProps = { textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
-
-export const customFetch = async <SuccessResponse, FailedResponse>(
-	input: RequestInfo,
-	init?: RequestInit
-): Promise<FetchResponse<SuccessResponse, FailedResponse>> => {
-	const response = await fetch(input, init);
-	const contentType = response.headers.get('Content-Type');
-	let data = null;
-	if (contentType) {
-		if (contentType.includes(ContentTypes.TEXT)) {
-			data = await response.text();
-		} else if (contentType.includes(ContentTypes.JSON)) {
-			data = await response.json();
-		} else if (contentType.includes(ContentTypes.MP3_FILE)) {
-			data = await response.blob();
-		}
-	}
-	if (response.ok) {
-		return { data, success: true, error: false };
-	}
-	const error = data ? (data.error ? data.error : data) : '';
-	return { data: error, success: false, error: true };
-};
 
 export const resolveAlbumFromTitle = (title: string) => {
 	let album = '';

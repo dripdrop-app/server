@@ -18,4 +18,12 @@ declare global {
 		completed: boolean;
 		failed: boolean;
 	}
+
+	interface TagsResponse {
+		artwork_url: string;
+		title: string;
+		artist: string;
+		album: string;
+		grouping: string;
+	}
 }

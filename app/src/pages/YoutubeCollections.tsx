@@ -1,25 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRecoilValueLoadable } from 'recoil';
-import { Button, CircularProgress, Stack, Typography } from '@mui/material';
-import { youtubeAuthAtom } from '../atoms/YoutubeCollections';
+import { Button, CircularProgress, Stack, Tab, Tabs, Typography, Box } from '@mui/material';
+import { authAtom } from '../atoms/YoutubeCollections';
 import useLazyFetch from '../hooks/useLazyFetch';
+import VideosView from '../components/YoutubeCollections/VideosView';
+import SubscriptionsView from '../components/YoutubeCollections/SubscriptionsView';
 
 const YoutubeCollections = () => {
-	const youtubeEmail = useRecoilValueLoadable(youtubeAuthAtom);
+	const youtubeEmail = useRecoilValueLoadable(authAtom);
+	const [tabIndex, setTabIndex] = useState(0);
 
-	const [getOAuthLink, getOAuthLinkStatus] = useLazyFetch();
+	const [getOAuthLink, getOAuthLinkStatus] = useLazyFetch<string>();
 
-	let pageDisplay = null;
+	useEffect(() => {
+		if (getOAuthLinkStatus.isSuccess) {
+			const oAuthURL = getOAuthLinkStatus.data;
+			window.location.href = oAuthURL;
+		}
+	}, [getOAuthLinkStatus]);
 
-	if (youtubeEmail.state === 'loading') {
-		pageDisplay = (
-			<Stack alignItems="center" margin={10}>
+	if (youtubeEmail.state === 'loading' || youtubeEmail.state === 'hasError') {
+		return (
+			<Stack direction="row" justifyContent="center" sx={{ m: 5 }}>
 				<CircularProgress />
 			</Stack>
 		);
-	} else if (youtubeEmail.state === 'hasValue') {
-		if (!youtubeEmail.getValue()) {
-			pageDisplay = (
+	}
+
+	const { email } = youtubeEmail.getValue();
+
+	return (
+		<Stack sx={{ m: 5 }}>
+			<Typography sx={{ my: 1 }} variant="h2">
+				Youtube Collections
+			</Typography>
+			{!email ? (
 				<Stack alignItems="center" margin={10}>
 					<Button
 						disabled={getOAuthLinkStatus.isLoading}
@@ -29,21 +44,18 @@ const YoutubeCollections = () => {
 						{getOAuthLinkStatus.isLoading ? <CircularProgress /> : 'Log in with Google'}
 					</Button>
 				</Stack>
-			);
-		}
-	}
-
-	useEffect(() => {
-		if (getOAuthLinkStatus.isSuccess) {
-			const oAuthURL = getOAuthLinkStatus.data;
-			window.location.href = oAuthURL;
-		}
-	}, [getOAuthLinkStatus]);
-
-	return (
-		<Stack sx={{ m: 5 }}>
-			<Typography variant="h2">Youtube Collections</Typography>
-			{pageDisplay}
+			) : (
+				<React.Fragment>
+					<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+						<Tabs value={tabIndex} onChange={(e, v) => setTabIndex(v)}>
+							<Tab value={0} label="videos" />
+							<Tab value={1} label="subscriptions" />
+						</Tabs>
+					</Box>
+					{tabIndex === 0 ? <VideosView channelID={null} /> : null}
+					{tabIndex === 1 ? <SubscriptionsView /> : null}
+				</React.Fragment>
+			)}
 		</Stack>
 	);
 };

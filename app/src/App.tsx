@@ -24,7 +24,7 @@ const Header = () => {
 	const user = useRecoilValueLoadable(userAtom);
 	const setUser = useSetRecoilState(userAtom);
 
-	const [logout, logoutStatus] = useLazyFetch();
+	const [logout, logoutStatus] = useLazyFetch<null>();
 
 	const logoutFn = useCallback(() => logout({ url: '/auth/logout' }), [logout]);
 

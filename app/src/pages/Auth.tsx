@@ -11,7 +11,7 @@ const Auth = () => {
 	const [email, setemail] = useState('');
 	const [password, setPassword] = useState('');
 
-	const [loginFn, loginStatus] = useLazyFetch();
+	const [loginFn, loginStatus] = useLazyFetch<User>();
 	const [signupFn, signupStatus] = useLazyFetch();
 
 	const login = useCallback(

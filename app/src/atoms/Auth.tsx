@@ -1,13 +1,13 @@
 import { atom } from 'recoil';
-import { customFetch } from '../utils/helpers';
+import axios, { AxiosResponse } from 'axios';
 
 export const userAtom = atom({
 	key: 'user',
 	default: (async () => {
-		const response = await customFetch<User, null>('/auth/checkSession');
-		if (response.success) {
+		try {
+			const response: AxiosResponse<User> = await axios.get('/auth/checkSession');
 			return response.data;
-		}
+		} catch {}
 		return null;
 	})(),
 });

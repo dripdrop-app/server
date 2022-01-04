@@ -9,7 +9,7 @@ import useLazyFetch from '../../hooks/useLazyFetch';
 const ArtworkInput = () => {
 	const [artworkURL, setArtworkURL] = useRecoilState(artworkURLSelector);
 
-	const [getArtworkURL, getArtworkURLStatus] = useLazyFetch();
+	const [getArtworkURL, getArtworkURLStatus] = useLazyFetch<{ artworkURL: string }>();
 
 	const valid = isBase64(artworkURL) || isValidImage(artworkURL);
 

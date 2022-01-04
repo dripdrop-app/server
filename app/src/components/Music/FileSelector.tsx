@@ -18,7 +18,7 @@ const FileSwitch = (props: FileSwitchProps) => {
 	const [fileType, setFileType] = useRecoilState(fileTypeSelector);
 	const setMusicForm = useSetRecoilState(musicFormAtom);
 
-	const [getFileTags, getFileTagsStatus] = useLazyFetch();
+	const [getFileTags, getFileTagsStatus] = useLazyFetch<TagsResponse>();
 
 	const onFileSwitchChange = useCallback(
 		(event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {

@@ -1,22 +1,63 @@
 import { useRef, useCallback, useEffect, useMemo, useReducer } from 'react';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-export interface FetchState {
-	error: string;
-	response: AxiosResponse | null;
-	data: any;
-	isLoading: boolean;
-	isSuccess: boolean;
-	isError: boolean;
-	started: boolean;
-	timestamp: Date;
-}
+type FetchState<T> =
+	| {
+			error: '';
+			response: AxiosResponse<T>;
+			data: T;
+			isLoading: false;
+			isSuccess: true;
+			isError: false;
+			started: true;
+			timestamp: Date;
+	  }
+	| {
+			error: string;
+			response: null;
+			data: null;
+			isLoading: false;
+			isSuccess: false;
+			isError: true;
+			started: true;
+			timestamp: Date;
+	  }
+	| {
+			error: '';
+			response: null;
+			data: null;
+			isLoading: true;
+			isSuccess: false;
+			isError: false;
+			started: true;
+			timestamp: Date;
+	  }
+	| {
+			error: '';
+			response: null;
+			data: null;
+			isLoading: false;
+			isSuccess: false;
+			isError: false;
+			started: true;
+			timestamp: Date;
+	  }
+	| {
+			error: '';
+			response: null;
+			data: null;
+			isLoading: false;
+			isSuccess: false;
+			isError: false;
+			started: false;
+			timestamp: Date;
+	  };
 
 type LazyFetchFn = (config: AxiosRequestConfig) => Promise<void>;
 
-type LazyFetch = () => [LazyFetchFn, FetchState];
+type LazyFetch<T> = [LazyFetchFn, FetchState<T>];
 
-type AsyncAction =
+type AsyncAction<T> =
 	| {
 			type: `STARTED`;
 	  }
@@ -29,10 +70,10 @@ type AsyncAction =
 	  }
 	| {
 			type: `SUCCESS`;
-			payload: { response: AxiosResponse; data: any };
+			payload: { response: AxiosResponse<T>; data: T };
 	  };
 
-const initialState: FetchState = {
+const initialState: FetchState<null> = {
 	error: '',
 	response: null,
 	data: null,
@@ -43,7 +84,7 @@ const initialState: FetchState = {
 	timestamp: new Date(Date.now()),
 };
 
-const reducer = (state = initialState, action: AsyncAction): FetchState => {
+const reducer = <T>(state: FetchState<T> = initialState, action: AsyncAction<T>): FetchState<T> => {
 	if (action.type === 'STARTED') {
 		return {
 			...initialState,
@@ -51,10 +92,10 @@ const reducer = (state = initialState, action: AsyncAction): FetchState => {
 			timestamp: new Date(Date.now()),
 		};
 	} else if (action.type === 'LOADING') {
-		return { ...state, isLoading: true };
+		return { ...initialState, started: true, isLoading: true };
 	} else if (action.type === 'ERROR') {
 		return {
-			...state,
+			started: true,
 			isLoading: false,
 			isSuccess: false,
 			isError: true,
@@ -65,7 +106,7 @@ const reducer = (state = initialState, action: AsyncAction): FetchState => {
 		};
 	} else if (action.type === 'SUCCESS') {
 		return {
-			...state,
+			started: true,
 			isLoading: false,
 			isSuccess: true,
 			isError: false,
@@ -78,29 +119,29 @@ const reducer = (state = initialState, action: AsyncAction): FetchState => {
 	return initialState;
 };
 
-const useLazyFetch: LazyFetch = () => {
+const useLazyFetch = <T>(): LazyFetch<T> => {
 	const [fetchState, dispatch] = useReducer(reducer, initialState);
 	const controller = useRef(new AbortController());
 
-	const triggerFetch = useCallback(async (config: AxiosRequestConfig) => {
+	const triggerFetch: LazyFetchFn = useCallback(async (config: AxiosRequestConfig) => {
 		dispatch({ type: 'STARTED' });
 		try {
 			dispatch({ type: 'LOADING' });
-			const response = await axios({ ...config, signal: controller.current.signal });
-			let data = response.data;
-			if (response.status) {
-				return dispatch({ type: 'SUCCESS', payload: { response, data } });
-			}
-			const error = data ? (data.error ? data.error : data) : '';
-			dispatch({ type: 'ERROR', payload: { error } });
+			const response: AxiosResponse<Response> = await axios({ ...config, signal: controller.current.signal });
+			return dispatch({ type: 'SUCCESS', payload: { response, data: response.data } });
 		} catch (error) {
+			console.log(error);
 			const { response, request } = error as AxiosError;
 			if (response) {
-				dispatch({ type: 'ERROR', payload: { error: response.data.error || response.data } });
+				dispatch({
+					type: 'ERROR',
+					payload: { error: response.data && response.data.detail ? response.data.detail : String(error) },
+				});
 			} else if (request) {
 				dispatch({ type: 'ERROR', payload: { error: 'No response' } });
+			} else {
+				dispatch({ type: 'ERROR', payload: { error: String(error) } });
 			}
-			dispatch({ type: 'ERROR', payload: { error: String(error) } });
 		}
 	}, []);
 
@@ -111,7 +152,7 @@ const useLazyFetch: LazyFetch = () => {
 		};
 	}, []);
 
-	return useMemo(() => [triggerFetch, fetchState], [fetchState, triggerFetch]);
+	return useMemo(() => [triggerFetch, fetchState as FetchState<T>], [fetchState, triggerFetch]);
 };
 
 export default useLazyFetch;
