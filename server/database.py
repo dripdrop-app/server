@@ -22,7 +22,7 @@ users = sqlalchemy.Table(
 )
 
 
-class UserDB(BaseModel):
+class User(BaseModel):
     email: str
     password: str
     admin: bool
@@ -41,7 +41,7 @@ sessions = sqlalchemy.Table(
 )
 
 
-class SessionDB(BaseModel):
+class Session(BaseModel):
     id: str
     user_email: str
     created_at: datetime
@@ -67,7 +67,7 @@ music_jobs = sqlalchemy.Table(
 )
 
 
-class MusicJobDB(BaseModel):
+class MusicJob(BaseModel):
     id: str
     user_email: str
     filename: Union[str, None] = ''
@@ -98,7 +98,7 @@ google_accounts = sqlalchemy.Table(
 )
 
 
-class GoogleAccountDB(BaseModel):
+class GoogleAccount(BaseModel):
     email: str
     user_email: str
     access_token: str
@@ -121,7 +121,7 @@ youtube_jobs = sqlalchemy.Table(
 )
 
 
-class YoutubeJobDB(BaseModel):
+class YoutubeJob(BaseModel):
     job_id: str
     email: str
     completed: bool
@@ -143,7 +143,7 @@ youtube_channels = sqlalchemy.Table(
 )
 
 
-class YoutubeChannelDB(BaseModel):
+class YoutubeChannel(BaseModel):
     id: str
     title: str
     thumbnail: Union[str, None]
@@ -161,28 +161,31 @@ youtube_subscriptions = sqlalchemy.Table(
     sqlalchemy.Column('email', sqlalchemy.ForeignKey(
         google_accounts.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column(
+        'published_at', sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True)),
+    sqlalchemy.Column(
         'created_at', sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text('NOW()')),
 )
 
 
-class YoutubeSubscriptionDB(BaseModel):
+class YoutubeSubscription(BaseModel):
     id: str
     channel_id: str
     email: str
+    published_at: datetime
     created_at: datetime
 
 
 youtube_video_categories = sqlalchemy.Table(
     'youtube_video_categories',
     metadata,
-    sqlalchemy.Column('id', sqlalchemy.Numeric, primary_key=True),
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column('name', sqlalchemy.String, nullable=False),
     sqlalchemy.Column(
         'created_at', sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text('NOW()')),
 )
 
 
-class YoutubeVideoCategoryDB(BaseModel):
+class YoutubeVideoCategory(BaseModel):
     id: int
     name: str
     created_at: datetime
@@ -204,7 +207,7 @@ youtube_videos = sqlalchemy.Table(
 )
 
 
-class YoutubeVideoDB:
+class YoutubeVideo:
     id: str
     title: str
     thumbnail: str

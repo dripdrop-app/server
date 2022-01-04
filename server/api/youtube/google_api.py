@@ -55,7 +55,7 @@ def refresh_access_token(refresh_token: str):
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token
     }
-    response = requests.get(
+    response = requests.post(
         'https://oauth2.googleapis.com/token', params=params, headers=base_headers)
     if response.ok:
         return response.json()
@@ -121,7 +121,7 @@ def get_user_subscriptions(access_token: str):
 def get_channels_info(channel_ids: List[str]):
     params = {
         'key': config.google_api_key,
-        'part': 'snippet, contentDetails',
+        'part': 'snippet,contentDetails',
         'id': ','.join(channel_ids),
         'maxResults': 50,
     }
@@ -142,7 +142,6 @@ def get_playlist_videos(playlist_id: str):
         'pageToken': ''
     }
     while params.get('pageToken') != None:
-        print('PAGING', playlist_id)
         response = requests.get(
             'https://www.googleapis.com/youtube/v3/playlistItems', params=params, headers=base_headers)
         if response.ok:

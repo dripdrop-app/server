@@ -7,12 +7,7 @@ from server.dependencies import get_user
 from server.queue import q
 
 
-def boot_tasks():
-    # q.enqueue('server.api.youtube.tasks.update_youtube_video_categories')
-    return
-
-
-app = FastAPI(title='DripDrop', on_startup=[db.connect, boot_tasks],
+app = FastAPI(title='DripDrop', on_startup=[db.connect],
               on_shutdown=[db.disconnect], responses={400: {}}, dependencies=[Depends(get_user)])
 
 

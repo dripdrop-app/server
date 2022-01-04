@@ -2,11 +2,13 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import List, Optional, Union
 
+from server.database import YoutubeSubscription, YoutubeVideoCategory
+
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 youtube_regex = r'^https:\/\/(www\.)?youtube\.com\/watch\?v=.+'
 
 
-class User(BaseModel):
+class SessionUser(BaseModel):
     email: str
     admin: bool
     authenticated: bool
@@ -75,4 +77,10 @@ class YoutubeResponses:
         email: str
 
     class Videos(BaseModel):
+        total_videos: int
+        categories: List[YoutubeVideoCategory]
         videos: List[YoutubeVideo]
+
+    class Subscriptions(BaseModel):
+        subscriptions: List[YoutubeSubscription]
+        total_subscriptions: int

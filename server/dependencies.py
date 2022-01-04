@@ -1,15 +1,12 @@
 import asyncio
 import base64
 import json
-from typing import Union
-from aioredis import connection
 from cryptography.fernet import Fernet
-from fastapi import Request, Response, HTTPException, WebSocket
+from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
-from pydantic.fields import Field
 from server.config import config
-from server.database import SessionDB, UserDB, users, db, sessions
-from server.models import User
+from server.database import Session, User, users, db, sessions
+from server.models import SessionUser
 
 
 class SessionHandler:
@@ -42,26 +39,28 @@ class GetUser:
         session_id = session.get('id')
         if session_id:
             query = sessions.select().where(sessions.c.id == session_id)
-            session = SessionDB.parse_obj(await db.fetch_one(query))
+            session = await db.fetch_one(query)
             if session:
+                session = Session.parse_obj(session)
                 email = session.user_email
                 query = users.select().where(users.c.email == email)
-                account = UserDB.parse_obj(await db.fetch_one(query))
+                account = await db.fetch_one(query)
                 if account:
-                    return User(email=email, admin=account.admin, authenticated=True)
-        return User(email='', admin=False, authenticated=False)
+                    account = User.parse_obj(account)
+                    return SessionUser(email=email, admin=account.admin, authenticated=True)
+        return SessionUser(email='', admin=False, authenticated=False)
 
 
 get_user = GetUser()
 
 
-def get_authenticated_user(user: User = Depends(get_user)):
+def get_authenticated_user(user: SessionUser = Depends(get_user)):
     if user.authenticated:
         return user
     raise HTTPException(401)
 
 
-def get_admin_user(user: User = Depends(get_user)):
+def get_admin_user(user: SessionUser = Depends(get_user)):
     if user.admin:
         return user
     raise HTTPException(401)

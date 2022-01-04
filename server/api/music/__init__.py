@@ -10,9 +10,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import extract_info
 from server.api.music.tasks import read_tags, JOB_DIR
-from server.database import MusicJobDB, db, music_jobs
+from server.database import db, music_jobs
 from server.dependencies import get_authenticated_user
-from server.models import JobInfo, MusicResponses, User, youtube_regex
+from server.models import JobInfo, MusicResponses, SessionUser, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
 from sqlalchemy.sql.expression import desc
@@ -20,7 +20,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 
 
-app = FastAPI()
+app = FastAPI(dependencies=[Depends(get_authenticated_user)])
 
 
 @app.get('/grouping', response_model=MusicResponses.Grouping)
@@ -53,7 +53,7 @@ async def get_tags(file: UploadFile = File(None)):
 
 
 @app.websocket('/listenJobs')
-async def listen_jobs(websocket: WebSocket, user: User = Depends(get_authenticated_user)):
+async def listen_jobs(websocket: WebSocket, user: SessionUser = Depends(get_authenticated_user)):
     tasks: list[Task] = []
     try:
         await websocket.accept()
@@ -62,7 +62,7 @@ async def listen_jobs(websocket: WebSocket, user: User = Depends(get_authenticat
         jobs = await db.fetch_all(query)
         await websocket.send_json({
             'type': 'ALL',
-            'jobs': [jsonable_encoder(job) for job in jobs]
+            'jobs': jsonable_encoder(jobs)
         })
         tasks.extend([
             asyncio.create_task(
@@ -93,7 +93,7 @@ async def download(
     album: str = Form(None),
     grouping: Optional[str] = Form(''),
     file: UploadFile = File(None),
-    user: User = Depends(get_authenticated_user)
+    user: SessionUser = Depends(get_authenticated_user)
 ):
     job_id = str(uuid.uuid4())
     if not youtube_url and not file:
@@ -104,26 +104,24 @@ async def download(
     job_info = JobInfo(id=job_id, youtube_url=youtube_url, artwork_url=artwork_url,
                        title=title, artist=artist, album=album, grouping=grouping, filename=filename)
 
-    async with db.transaction():
-        query = music_jobs.insert().values(
-            **job_info.dict(),
-            user_email=user.email,
-            completed=False,
-            failed=False,
-        )
+    query = music_jobs.insert().values(
+        **job_info.dict(),
+        user_email=user.email,
+        completed=False,
+        failed=False,
+    )
+    await db.execute(query)
 
     if file:
         file = await file.read()
 
-    await db.execute(query)
     q.enqueue('server.api.music.tasks.run_job', job_id, file)
     await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
     return JSONResponse({'job': jsonable_encoder(job_info)})
 
 
 @app.delete('/deleteJob')
-@db.transaction()
-async def delete_job(id: str = Query(None), user: User = Depends(get_authenticated_user)):
+async def delete_job(id: str = Query(None), user: SessionUser = Depends(get_authenticated_user)):
     job_id = id
     query = music_jobs.delete().where(music_jobs.c.user_email ==
                                       user.email, music_jobs.c.id == job_id)
@@ -136,7 +134,7 @@ async def delete_job(id: str = Query(None), user: User = Depends(get_authenticat
 
 
 @app.get('/downloadJob', status_code=200)
-async def download_job(id: str = Query(None), user: User = Depends(get_authenticated_user)):
+async def download_job(id: str = Query(None), user: SessionUser = Depends(get_authenticated_user)):
     job_id = id
     query = music_jobs.select().where(music_jobs.c.id == job_id)
     job = await db.fetch_one(query)
@@ -144,10 +142,9 @@ async def download_job(id: str = Query(None), user: User = Depends(get_authentic
     file_path = os.path.join(JOB_DIR, job_id, filename)
 
     if not os.path.exists(file_path):
-        async with db.transaction():
-            query = music_jobs.update().where(music_jobs.c.user_email == user.email,
-                                              music_jobs.c.id == job_id).values(failed=True)
-            await db.execute(query)
+        query = music_jobs.update().where(music_jobs.c.user_email == user.email,
+                                          music_jobs.c.id == job_id).values(failed=True)
+        await db.execute(query)
         await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
         raise HTTPException(404)
 

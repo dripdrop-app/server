@@ -12,7 +12,7 @@ from typing import Union
 from yt_dlp.utils import sanitize_filename
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import yt_download
-from server.database import MusicJobDB, db, music_jobs
+from server.database import MusicJob, db, music_jobs
 from server.models import MusicResponses
 from server.redis import redis
 from server.utils.enums import RedisChannels
@@ -25,7 +25,7 @@ JOB_DIR = 'music_jobs'
 @worker_task
 async def run_job(job_id: str, file):
     query = music_jobs.select().where(music_jobs.c.id == job_id)
-    job = MusicJobDB.parse_obj(await db.fetch_one(query))
+    job = MusicJob.parse_obj(await db.fetch_one(query))
     try:
         if job:
             job_path = os.path.join(JOB_DIR, job_id)
