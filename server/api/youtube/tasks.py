@@ -46,7 +46,7 @@ async def update_google_access_token(google_email: str):
 @exception_handler
 async def update_youtube_video_categories():
     async def update_youtube_video_category(category):
-        category_id = category['id']
+        category_id = int(category['id'])
         category_title = category['snippet']['title']
         try:
             query = youtube_video_categories.insert().values(
