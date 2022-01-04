@@ -6,8 +6,8 @@ from server.queue import q
 async def run_cron():
     while True:
         current_time = datetime.now(timezone(timedelta(hours=-5)))
-        if current_time.minute == 0:
-            print('CRON RUNNING')
+        if current_time.minute % 5 == 0:
+            print('CRON RUNNING ', current_time)
         if current_time.minute == 0 and current_time.hour == 1:
             q.enqueue('server.api.youtube.tasks.channel_cleanup')
         if current_time.minute == 0 and current_time.hour == 3:
