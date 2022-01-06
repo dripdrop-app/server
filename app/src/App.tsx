@@ -34,19 +34,22 @@ const Header = () => {
 		}
 	}, [logoutStatus.isSuccess, setUser]);
 
-	if (user.state === 'hasValue' && user.contents) {
-		return (
-			<Fragment>
-				<HeaderLink link="/" text={<img height="40px" alt="DripDrop" src={DripDrop} />} />
-				<HeaderLink link="/musicDownload" text="Music Downloader" />
-				<HeaderLink link="/youtubeCollections" text="Youtube Collections" />
-				<Box sx={{ flexGrow: 1 }} />
-				<Typography variant="h5">{user.contents.email}</Typography>
-				<Button onClick={() => logoutFn()} color="inherit">
-					Logout
-				</Button>
-			</Fragment>
-		);
+	if (user.state === 'hasValue') {
+		const email = user.getValue()?.email;
+		if (email) {
+			return (
+				<Fragment>
+					<HeaderLink link="/" text={<img height="40px" alt="DripDrop" src={DripDrop} />} />
+					<HeaderLink link="/musicDownload" text="Music Downloader" />
+					<HeaderLink link="/youtubeCollections" text="Youtube Collections" />
+					<Box sx={{ flexGrow: 1 }} />
+					<Typography variant="h5">{email}</Typography>
+					<Button onClick={() => logoutFn()} color="inherit">
+						Logout
+					</Button>
+				</Fragment>
+			);
+		}
 	}
 	return null;
 };
@@ -61,7 +64,7 @@ const Routes = () => {
 			</Stack>
 		);
 	}
-	if (user.state === 'hasValue' && user.contents) {
+	if (user.state === 'hasValue' && user.getValue()?.email) {
 		return (
 			<Switch>
 				<Route path="/youtubeCollections" render={() => <YoutubeCollections />} />
