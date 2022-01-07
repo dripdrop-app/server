@@ -3,6 +3,7 @@ export {};
 declare global {
 	interface YoutubeState {
 		email: string;
+		loaded: boolean;
 	}
 
 	interface YoutubeVideo {
@@ -51,6 +52,7 @@ declare global {
 
 	interface YoutubeVideosViewState extends YoutubeVideoResponse, FilterState, PageState {
 		channel_id: string | null;
+		loaded: bool;
 	}
 
 	interface YoutubeSubscriptionResponse {
@@ -60,5 +62,6 @@ declare global {
 	interface YoutubeSubscriptionsViewState extends PageState {
 		subscriptions: YoutubeSubscription[];
 		total_subscriptions: number;
+		loaded: bool;
 	}
 }

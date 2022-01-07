@@ -127,7 +127,7 @@ const useLazyFetch = <T>(): LazyFetch<T> => {
 		dispatch({ type: 'STARTED' });
 		try {
 			dispatch({ type: 'LOADING' });
-			const response: AxiosResponse<Response> = await axios({ ...config, signal: controller.current.signal });
+			const response: AxiosResponse<any> = await axios({ ...config, signal: controller.current.signal });
 			return dispatch({ type: 'SUCCESS', payload: { response, data: response.data } });
 		} catch (error) {
 			console.log(error);

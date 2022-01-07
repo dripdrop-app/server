@@ -11,7 +11,8 @@ async def run_cron():
         if current_time.minute == 0 and current_time.hour == 1:
             q.enqueue('server.api.youtube.tasks.channel_cleanup')
         if current_time.minute == 0 and current_time.hour == 3:
-            q.enqueue('server.api.youtube.tasks.update_youtube_video_categories')
+            q.enqueue(
+                'server.api.youtube.tasks.update_youtube_video_categories', True)
         if current_time.minute == 0 and current_time.hour == 5:
             q.enqueue('server.api.youtube.tasks.update_channels')
         if current_time.minute == 0 and current_time.hour == 5 and current_time.weekday == 6:

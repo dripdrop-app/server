@@ -4,7 +4,6 @@ from fastapi.responses import FileResponse
 from server.api import auth, music, youtube
 from server.database import db
 from server.dependencies import get_user
-from server.queue import q
 
 
 app = FastAPI(title='DripDrop', on_startup=[db.connect],

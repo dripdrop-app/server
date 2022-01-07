@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
 	Button,
 	Card,
@@ -13,43 +13,59 @@ import {
 	ToggleButtonGroup,
 	Typography,
 } from '@mui/material';
-import { useRecoilStateLoadable } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { subscriptionsAtom } from '../../atoms/YoutubeCollections';
+import useLazyFetch from '../../hooks/useLazyFetch';
 import CustomGrid from './CustomGrid';
 import _ from 'lodash';
-import useLazyFetch from '../../hooks/useLazyFetch';
 
 const SubscriptionsView = () => {
-	const [subscriptionsView, setSubscriptionsView] = useRecoilStateLoadable(subscriptionsAtom);
+	const [subscriptionsView, setSubscriptionsView] = useRecoilState(subscriptionsAtom);
 	const [getSubscriptions, getSubscriptionsState] = useLazyFetch<YoutubeSubscriptionResponse>();
+
+	const { subscriptions, per_page, page, total_subscriptions } = subscriptionsView;
+
+	const querySubscriptions = useCallback(
+		(params: Required<PageState>) => {
+			setSubscriptionsView((prev) => ({ ...prev, ...params }));
+			getSubscriptions({ url: `/youtube/subscriptions/${params.page}/${params.per_page}` });
+		},
+		[getSubscriptions, setSubscriptionsView]
+	);
+
+	const updateFilters = useCallback(
+		(opt: Partial<PageState>) => {
+			opt = {
+				per_page: opt.per_page ?? per_page,
+				page: opt.page ?? page,
+			};
+			if (!_.isEqual(opt, { per_page, page })) {
+				querySubscriptions(opt as Required<PageState>);
+			}
+		},
+		[page, per_page, querySubscriptions]
+	);
 
 	useEffect(() => {
 		if (getSubscriptionsState.isSuccess) {
 			const { subscriptions, total_subscriptions } = getSubscriptionsState.data;
-			setSubscriptionsView((prev) => ({ ...prev, subscriptions, total_subscriptions }));
+			setSubscriptionsView((prev) => ({ ...prev, subscriptions, total_subscriptions, loaded: true }));
 		}
 	}, [getSubscriptionsState.data, getSubscriptionsState.isSuccess, setSubscriptionsView]);
 
-	if (subscriptionsView.state === 'loading' || subscriptionsView.state === 'hasError') {
+	useEffect(() => {
+		if (!subscriptionsView.loaded && !getSubscriptionsState.started) {
+			querySubscriptions(subscriptionsView);
+		}
+	}, [getSubscriptionsState.started, querySubscriptions, subscriptionsView]);
+
+	if (getSubscriptionsState.isLoading || !subscriptionsView.loaded) {
 		return (
 			<Stack justifyContent="center" direction="row" sx={{ my: 5 }}>
 				<CircularProgress />
 			</Stack>
 		);
 	}
-
-	const { subscriptions, per_page, page, total_subscriptions } = subscriptionsView.getValue();
-
-	const updateFilters = (opt: Partial<PageState>) => {
-		opt = {
-			per_page: opt.per_page ?? per_page,
-			page: opt.page ?? page,
-		};
-		if (!_.isEqual(opt, { per_page, page })) {
-			setSubscriptionsView((prev) => ({ ...prev, ...opt }));
-			getSubscriptions({ url: `/youtube/subscriptions/${opt.page}/${opt.per_page}` });
-		}
-	};
 
 	return (
 		<React.Fragment>

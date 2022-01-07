@@ -112,15 +112,17 @@ async def google_oauth2(state: str, code: str, error: Optional[str] = None):
     tokens = await google_api.get_oauth_tokens(f'{config.server_url}/auth/googleoauth2', code)
     if tokens:
         google_email = await google_api.get_user_email(tokens.get('access_token'))
-        if google_email and tokens.get('refresh_token'):
+        if google_email:
             query = google_accounts.insert().values(
                 email=google_email,
                 user_email=email,
                 access_token=tokens['access_token'],
-                refresh_token=tokens['refresh_token'],
+                refresh_token=tokens.get('refresh_token', ''),
                 expires=tokens['expires_in'],
             )
             await db.execute(query)
-            q.enqueue(
-                'server.api.youtube.tasks.update_user_youtube_subscriptions_job', email)
+            update_categories_job = q.enqueue(
+                'server.api.youtube.tasks.update_youtube_video_categories', False)
+            q.enqueue_call('server.api.youtube.tasks.update_user_youtube_subscriptions_job', args=(
+                email,), depends_on=update_categories_job.id)
     return RedirectResponse('/youtubeCollections')

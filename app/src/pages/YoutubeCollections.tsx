@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useRecoilValueLoadable } from 'recoil';
+import { DefaultValue, useRecoilState } from 'recoil';
 import { Button, CircularProgress, Stack, Tab, Tabs, Typography, Box } from '@mui/material';
-import { authAtom } from '../atoms/YoutubeCollections';
 import useLazyFetch from '../hooks/useLazyFetch';
 import VideosView from '../components/YoutubeCollections/VideosView';
 import SubscriptionsView from '../components/YoutubeCollections/SubscriptionsView';
+import { authAtom } from '../atoms/YoutubeCollections';
 
 const YoutubeCollections = () => {
-	const youtubeEmail = useRecoilValueLoadable(authAtom);
+	const [youtubeAuth, setYoutubeAuth] = useRecoilState(authAtom);
 	const [tabIndex, setTabIndex] = useState(0);
 
 	const [getOAuthLink, getOAuthLinkStatus] = useLazyFetch<string>();
+	const [getYoutubeAccount, getYoutubeAccountStatus] = useLazyFetch<YoutubeState>();
 
 	useEffect(() => {
 		if (getOAuthLinkStatus.isSuccess) {
@@ -19,7 +20,20 @@ const YoutubeCollections = () => {
 		}
 	}, [getOAuthLinkStatus]);
 
-	if (youtubeEmail.state === 'loading' || youtubeEmail.state === 'hasError') {
+	useEffect(() => {
+		if (!youtubeAuth.loaded) {
+			getYoutubeAccount({ url: '/youtube/account' });
+		}
+	}, [getYoutubeAccount, youtubeAuth]);
+
+	useEffect(() => {
+		if (getYoutubeAccountStatus.isSuccess) {
+			const youtubeAccount = getYoutubeAccountStatus.data;
+			setYoutubeAuth((prev) => ({ ...youtubeAccount, loaded: true }));
+		}
+	}, [getYoutubeAccountStatus.data, getYoutubeAccountStatus.isSuccess, setYoutubeAuth]);
+
+	if (getYoutubeAccountStatus.isLoading) {
 		return (
 			<Stack direction="row" justifyContent="center" sx={{ m: 5 }}>
 				<CircularProgress />
@@ -27,14 +41,12 @@ const YoutubeCollections = () => {
 		);
 	}
 
-	const { email } = youtubeEmail.getValue();
-
 	return (
 		<Stack sx={{ m: 5 }}>
 			<Typography sx={{ my: 1 }} variant="h2">
 				Youtube Collections
 			</Typography>
-			{!email ? (
+			{youtubeAuth instanceof DefaultValue || !youtubeAuth.email ? (
 				<Stack alignItems="center" margin={10}>
 					<Button
 						disabled={getOAuthLinkStatus.isLoading}

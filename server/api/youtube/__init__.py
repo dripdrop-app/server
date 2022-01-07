@@ -1,5 +1,4 @@
-from pydantic.fields import Field
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Path
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse
 from server.api.youtube import google_api
@@ -44,7 +43,7 @@ async def create_oauth_link(user: SessionUser = Depends(get_authenticated_user))
 @app.get('/videos/{page}/{per_page}', response_model=YoutubeResponses.Videos)
 async def get_youtube_videos(
     page: int = 1,
-    per_page: int = Field(50, le=50),
+    per_page: int = Path(50, le=50),
     user: SessionUser = Depends(get_authenticated_user),
     video_categories: List[int] = Query([])
 ):
@@ -77,7 +76,7 @@ async def get_youtube_videos(
 
 
 @app.get('/subscriptions/{page}/{per_page}', response_model=YoutubeResponses.Subscriptions)
-async def get_youtube_subscriptions(page: int = 1, per_page: int = Field(50, le=50), user: SessionUser = Depends(get_authenticated_user)):
+async def get_youtube_subscriptions(page: int = 1, per_page: int = Path(50, le=50), user: SessionUser = Depends(get_authenticated_user)):
     google_account_subquery = google_accounts.select().where(
         google_accounts.c.user_email == user.email).alias('google_accounts_sub')
     joins = google_account_subquery.join(

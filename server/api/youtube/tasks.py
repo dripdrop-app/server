@@ -17,7 +17,7 @@ from server.database import (
 )
 from server.queue import q
 from server.decorators import exception_handler, worker_task
-from sqlalchemy.sql.expression import select
+from sqlalchemy.sql.expression import select, func
 
 
 async def update_google_access_token(google_email: str):
@@ -42,7 +42,7 @@ async def update_google_access_token(google_email: str):
 
 @worker_task
 @exception_handler
-async def update_youtube_video_categories():
+async def update_youtube_video_categories(cron: bool):
     async def update_youtube_video_category(category):
         category_id = int(category['id'])
         category_title = category['snippet']['title']
@@ -54,6 +54,12 @@ async def update_youtube_video_categories():
             query = youtube_video_categories.update().where(
                 youtube_video_categories.c.name == category_title)
 
+    if not cron:
+        query = select([func.count(youtube_video_categories.c.id)]
+                       ).select_from(youtube_video_categories.select())
+        count = await db.fetch_val(query)
+        if count > 0:
+            return
     video_categories = await google_api.get_video_categories()
     await asyncio.gather(*[update_youtube_video_category(category) for category in video_categories])
 

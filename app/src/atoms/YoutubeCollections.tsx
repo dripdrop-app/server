@@ -1,8 +1,8 @@
-import axios, { AxiosResponse } from 'axios';
 import { atom, atomFamily } from 'recoil';
 
 export const initialYoutubeAuthState: YoutubeState = {
 	email: '',
+	loaded: false,
 };
 
 export const initialYoutubeVideosView: YoutubeVideosViewState = {
@@ -13,6 +13,7 @@ export const initialYoutubeVideosView: YoutubeVideosViewState = {
 	categories: [],
 	selectedCategories: [],
 	channel_id: null,
+	loaded: false,
 };
 
 export const initialYoutubeSubscriptionsView: YoutubeSubscriptionsViewState = {
@@ -20,43 +21,20 @@ export const initialYoutubeSubscriptionsView: YoutubeSubscriptionsViewState = {
 	total_subscriptions: 0,
 	page: 1,
 	per_page: 50,
+	loaded: false,
 };
 
 export const authAtom = atom<YoutubeState>({
 	key: 'youtubeAuth',
-	default: (async () => {
-		try {
-			const response: AxiosResponse<YoutubeState> = await axios.get('/youtube/account');
-			return response.data;
-		} catch {}
-		return initialYoutubeAuthState;
-	})(),
+	default: initialYoutubeAuthState,
 });
 
 export const videosAtom = atomFamily<YoutubeVideosViewState, YoutubeVideo['channel_id'] | null>({
-	key: 'youtubeVideosAtom',
-	default: async (channel_id) =>
-		(async () => {
-			try {
-				const response: AxiosResponse<YoutubeVideoResponse> = await axios.get(
-					`/youtube/videos/${initialYoutubeVideosView.page}/${initialYoutubeVideosView.per_page}`,
-					{ params: channel_id ? { channel_id } : {} }
-				);
-				return { ...initialYoutubeVideosView, channel_id, ...response.data };
-			} catch {}
-			return initialYoutubeVideosView;
-		})(),
+	key: 'youtubeVideos',
+	default: initialYoutubeVideosView,
 });
 
 export const subscriptionsAtom = atom<YoutubeSubscriptionsViewState>({
-	key: 'youtubeSubscriptionsAtom',
-	default: (async () => {
-		try {
-			const response: AxiosResponse<YoutubeSubscriptionResponse> = await axios.get(
-				`/youtube/subscriptions/${initialYoutubeSubscriptionsView.page}/${initialYoutubeSubscriptionsView.per_page}`
-			);
-			return { ...initialYoutubeSubscriptionsView, ...response.data };
-		} catch {}
-		return initialYoutubeSubscriptionsView;
-	})(),
+	key: 'youtubeSubscriptions',
+	default: initialYoutubeSubscriptionsView,
 });

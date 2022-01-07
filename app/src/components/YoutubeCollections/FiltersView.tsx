@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
 	Stack,
 	Typography,
@@ -10,6 +10,7 @@ import {
 	ToggleButton,
 	Box,
 	Pagination,
+	CircularProgress,
 } from '@mui/material';
 import { SetterOrUpdater } from 'recoil';
 import useLazyFetch from '../../hooks/useLazyFetch';
@@ -23,13 +24,6 @@ const FiltersView = (props: {
 	const { state, updateState } = props;
 	const [getVideos, getVideosState] = useLazyFetch<YoutubeVideoResponse>();
 
-	useEffect(() => {
-		if (getVideosState.isSuccess) {
-			const { videos, total_videos } = getVideosState.data;
-			updateState((prev) => ({ ...prev, videos, total_videos }));
-		}
-	}, [getVideosState.data, getVideosState.isSuccess, updateState]);
-
 	const { categories, selectedCategories, per_page, page, total_videos } = state;
 
 	const resolveCategory = (id: number) => {
@@ -39,24 +33,55 @@ const FiltersView = (props: {
 		return categories.find((category: YoutubeVideoCategory) => category.id === id) as YoutubeVideoCategory;
 	};
 
-	const updateFilters = (opt: Options) => {
-		opt = {
-			per_page: opt.per_page ?? per_page,
-			page: opt.page ?? page,
-			selectedCategories: opt.selectedCategories ?? selectedCategories,
-		};
-		if (!_.isEqual(opt, { per_page, page, selectedCategories })) {
+	const queryVideos = useCallback(
+		(params: Required<Options>) => {
 			const query_categories =
-				opt.selectedCategories && opt.selectedCategories.length
-					? `?${opt.selectedCategories
+				params.selectedCategories && params.selectedCategories.length
+					? `?${params.selectedCategories
 							.filter((v) => v !== -1)
 							.map((v) => `video_categories=${v}`)
 							.join('&')}`
 					: '';
-			updateState((prev) => ({ ...prev, ...opt }));
-			getVideos({ url: `/youtube/videos/${opt.page}/${opt.per_page}${query_categories}` });
+			updateState((prev) => ({ ...prev, ...params }));
+			getVideos({ url: `/youtube/videos/${params.page}/${params.per_page}${query_categories}` });
+		},
+		[getVideos, updateState]
+	);
+
+	const updateFilters = useCallback(
+		(opt: Options) => {
+			opt = {
+				per_page: opt.per_page ?? per_page,
+				page: opt.page ?? page,
+				selectedCategories: opt.selectedCategories ?? selectedCategories,
+			};
+			if (!_.isEqual(opt, { per_page, page, selectedCategories })) {
+				queryVideos(opt as Required<Options>);
+			}
+		},
+		[page, per_page, queryVideos, selectedCategories]
+	);
+
+	useEffect(() => {
+		if (getVideosState.isSuccess) {
+			const { videos, total_videos } = getVideosState.data;
+			updateState((prev) => ({ ...prev, videos, total_videos, loaded: true }));
 		}
-	};
+	}, [getVideosState.data, getVideosState.isSuccess, updateState]);
+
+	useEffect(() => {
+		if (!state.loaded && !getVideosState.started) {
+			queryVideos(state);
+		}
+	}, [getVideosState.started, queryVideos, state]);
+
+	if (getVideosState.isLoading || !state.loaded) {
+		return (
+			<Stack justifyContent="center" direction="row" sx={{ my: 5 }}>
+				<CircularProgress />
+			</Stack>
+		);
+	}
 
 	return (
 		<React.Fragment>
