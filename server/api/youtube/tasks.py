@@ -2,7 +2,7 @@ import asyncio
 import dateutil.parser
 import uuid
 from asyncpg.exceptions import UniqueViolationError
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from server.api.youtube import google_api
 from server.database import (
     GoogleAccount,
@@ -94,8 +94,9 @@ async def add_youtube_channel(channel):
             upload_playlist_id=channel_upload_playlist_id
         )
         await db.execute(query)
+        date_limit = datetime.now(timezone.utc) - timedelta(days=30)
         q.enqueue(
-            'server.api.youtube.tasks.add_new_channel_videos_job', channel_id, 30)
+            'server.api.youtube.tasks.add_new_channel_videos_job', channel_id, date_limit)
     except UniqueViolationError:
         pass
 
@@ -170,7 +171,7 @@ async def update_user_youtube_subscriptions_job(user_email: str):
 
 @worker_task
 @exception_handler
-async def add_new_channel_videos_job(channel_id: str, days_limit: int):
+async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
     query = youtube_channels.select().where(youtube_channels.c.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
     channel_upload_playist = youtube_channel.upload_playlist_id
@@ -180,7 +181,7 @@ async def add_new_channel_videos_job(channel_id: str, days_limit: int):
             video_published_at = dateutil.parser.parse(
                 uploaded_playlist_video['contentDetails']['videoPublishedAt'])
             uploaded_playlist_video['contentDetails']['videoPublishedAt'] = video_published_at
-            if (datetime.now(timezone.utc) - video_published_at).days < days_limit:
+            if video_published_at > last_updated:
                 recent_uploaded_playlist_videos.append(uploaded_playlist_video)
 
         recent_uploaded_playlist_video_ids = [recent_uploaded_video['contentDetails']
@@ -208,11 +209,8 @@ async def update_channels():
     channels = []
     async for channel in db.iterate(query):
         channel = YoutubeChannel.parse_obj(channel)
-        days_since_last_update = (datetime.now(
-            timezone.utc) - channel.last_updated).days
-        if days_since_last_update > 0:
-            q.enqueue(
-                'server.api.youtube.tasks.add_new_channel_videos_job', channel.id, days_since_last_update)
+        q.enqueue(
+            'server.api.youtube.tasks.add_new_channel_videos_job', channel.id, channel.last_updated)
         channels.append(channel)
         if len(channels) == 50:
             # GET CHANNEL INFO AND UPDATE
@@ -233,7 +231,7 @@ async def update_subscriptions():
             timezone.utc) - google_account.last_updated).days
         if days_since_last_update >= 7:
             q.enqueue(
-                'server.api.youtube.tasks.add_new_channel_videos_job', google_account.user_email)
+                'server.api.youtube.tasks.update_user_youtube_subscriptions_job', google_account.user_email)
 
 
 @worker_task
