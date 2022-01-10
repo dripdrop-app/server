@@ -64,8 +64,8 @@ const FiltersView = (props: {
 
 	useEffect(() => {
 		if (getVideosState.isSuccess) {
-			const { videos, total_videos } = getVideosState.data;
-			updateState((prev) => ({ ...prev, videos, total_videos, loaded: true }));
+			const { videos, total_videos, categories } = getVideosState.data;
+			updateState((prev) => ({ ...prev, videos, total_videos, categories, loaded: true }));
 		}
 	}, [getVideosState.data, getVideosState.isSuccess, updateState]);
 
