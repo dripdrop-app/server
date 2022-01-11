@@ -207,7 +207,7 @@ youtube_videos = sqlalchemy.Table(
 )
 
 
-class YoutubeVideo:
+class YoutubeVideo(BaseModel):
     id: str
     title: str
     thumbnail: str
