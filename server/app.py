@@ -4,11 +4,23 @@ from fastapi.responses import FileResponse
 from server.api import auth, music, youtube
 from server.database import db
 from server.dependencies import get_user
+from server.queue import q
+from server.cron import Cron
 
+cron = Cron()
 
-app = FastAPI(title='DripDrop', on_startup=[db.connect],
-              on_shutdown=[db.disconnect], responses={400: {}}, dependencies=[Depends(get_user)])
+cron.add_cron('*/5 * * * *', print, args=('CRON RUNNING',))
+cron.add_cron('0 1 * * *', q.enqueue,
+              args=('server.api.youtube.tasks.channel_cleanup',))
+cron.add_cron('0 3 * * *', q.enqueue,
+              args=('server.api.youtube.tasks.update_youtube_video_categories', True))
+cron.add_cron('0 5 * * *', q.enqueue,
+              args=('server.api.youtube.tasks.update_channels',))
+cron.add_cron('0 5 * * sun', q.enqueue,
+              args=('server.api.youtube.tasks.update_subscriptions',))
 
+app = FastAPI(title='DripDrop', on_startup=[db.connect, cron.run],
+              on_shutdown=[cron.end, db.disconnect], responses={400: {}}, dependencies=[Depends(get_user)])
 
 app.router.include_router(auth.app.router, prefix='/auth')
 app.router.include_router(music.app.router, prefix='/music')
