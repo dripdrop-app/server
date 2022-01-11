@@ -46,8 +46,6 @@ class Cron:
         cron.get_next()
         while not stop():
             current_time = datetime.now(est).replace(microsecond=0)
-            print(func.__name__, args, cron.get_current(),
-                  current_time.timestamp())
             if cron.get_current() == current_time.timestamp():
                 if asyncio.iscoroutinefunction(func):
                     loop = asyncio.new_event_loop()
