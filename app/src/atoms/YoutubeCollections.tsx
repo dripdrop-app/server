@@ -31,7 +31,7 @@ export const authAtom = atom<YoutubeState>({
 
 export const videosAtom = atomFamily<YoutubeVideosViewState, YoutubeVideo['channel_id'] | null>({
 	key: 'youtubeVideos',
-	default: initialYoutubeVideosView,
+	default: (channel_id) => ({ ...initialYoutubeVideosView, channel_id }),
 });
 
 export const subscriptionsAtom = atom<YoutubeSubscriptionsViewState>({

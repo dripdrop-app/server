@@ -35,17 +35,21 @@ const FiltersView = (props: {
 
 	const queryVideos = useCallback(
 		(params: Required<Options>) => {
-			const query_categories =
-				params.selectedCategories && params.selectedCategories.length
-					? `?${params.selectedCategories
-							.filter((v) => v !== -1)
-							.map((v) => `video_categories=${v}`)
-							.join('&')}`
-					: '';
+			const queryParams = [];
+			if (params.selectedCategories) {
+				params.selectedCategories.forEach((category) => {
+					if (category !== -1) {
+						queryParams.push(`video_categories=${category}`);
+					}
+				});
+			}
+			if (state.channel_id) {
+				queryParams.push(`channel_id=${state.channel_id}`);
+			}
 			updateState((prev) => ({ ...prev, ...params }));
-			getVideos({ url: `/youtube/videos/${params.page}/${params.per_page}${query_categories}` });
+			getVideos({ url: `/youtube/videos/${params.page}/${params.per_page}?${queryParams.join('&')}` });
 		},
-		[getVideos, updateState]
+		[getVideos, state.channel_id, updateState]
 	);
 
 	const updateFilters = useCallback(

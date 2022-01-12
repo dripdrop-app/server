@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
 	Button,
 	Card,
@@ -6,6 +6,10 @@ import {
 	CardMedia,
 	CircularProgress,
 	Container,
+	Dialog,
+	DialogContent,
+	DialogTitle,
+	IconButton,
 	Link,
 	Pagination,
 	Stack,
@@ -13,15 +17,20 @@ import {
 	ToggleButtonGroup,
 	Typography,
 } from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { subscriptionsAtom } from '../../atoms/YoutubeCollections';
 import useLazyFetch from '../../hooks/useLazyFetch';
 import CustomGrid from './CustomGrid';
 import _ from 'lodash';
+import VideosView from './VideosView';
+import { Variant } from '@mui/material/styles/createTypography';
 
 const SubscriptionsView = () => {
 	const [subscriptionsView, setSubscriptionsView] = useRecoilState(subscriptionsAtom);
 	const [getSubscriptions, getSubscriptionsState] = useLazyFetch<YoutubeSubscriptionResponse>();
+	const [showModal, setShowModal] = useState(false);
+	const [selectedSubscription, setSelectedSubscription] = useState<null | YoutubeSubscription>(null);
 
 	const { subscriptions, per_page, page, total_subscriptions } = subscriptionsView;
 
@@ -46,6 +55,25 @@ const SubscriptionsView = () => {
 		[page, per_page, querySubscriptions]
 	);
 
+	const showChannelVideos = useCallback((subscription: YoutubeSubscription) => {
+		setSelectedSubscription(subscription);
+		setShowModal(true);
+	}, []);
+
+	const ChannelLink = (variant: Variant, subscription: YoutubeSubscription) => {
+		return (
+			<Typography variant={variant}>
+				<Link
+					sx={{ textDecoration: 'none' }}
+					target="_blank"
+					href={`https://youtube.com/channel/${subscription.channel_id}`}
+				>
+					{subscription.channel_title}
+				</Link>
+			</Typography>
+		);
+	};
+
 	useEffect(() => {
 		if (getSubscriptionsState.isSuccess) {
 			const { subscriptions, total_subscriptions } = getSubscriptionsState.data;
@@ -69,6 +97,23 @@ const SubscriptionsView = () => {
 
 	return (
 		<React.Fragment>
+			<Dialog maxWidth="lg" fullWidth open={showModal} onClose={() => setShowModal(false)}>
+				{selectedSubscription ? (
+					<React.Fragment>
+						<DialogTitle>
+							<Stack direction="row" justifyContent="space-between">
+								{ChannelLink('h3', selectedSubscription)}
+								<IconButton onClick={() => setShowModal(false)}>
+									<Close />
+								</IconButton>
+							</Stack>
+						</DialogTitle>
+						<DialogContent dividers>
+							<VideosView channelID={selectedSubscription.channel_id} />
+						</DialogContent>
+					</React.Fragment>
+				) : null}
+			</Dialog>
 			<Container sx={{ my: 5 }}>
 				<Stack sx={{ my: 2 }} direction="row" justifyContent="flex-end">
 					<ToggleButtonGroup exclusive value={per_page} onChange={(e, v) => updateFilters({ per_page: v })}>
@@ -88,20 +133,12 @@ const SubscriptionsView = () => {
 								<Link sx={{ flex: 2 }} target="_blank" href={`https://youtube.com/channel/${subscription.channel_id}`}>
 									<CardMedia component="img" image={subscription.channel_thumbnail} />
 								</Link>
-								<CardContent sx={{ flex: 1 }}>
-									<Typography variant="subtitle1">
-										<Link
-											sx={{ textDecoration: 'none' }}
-											target="_blank"
-											href={`https://youtube.com/channel/${subscription.channel_id}`}
-										>
-											{subscription.channel_title}
-										</Link>
-									</Typography>
-								</CardContent>
+								<CardContent sx={{ flex: 1 }}>{ChannelLink('subtitle1', subscription)}</CardContent>
 								<CardContent>
 									<Stack>
-										<Button variant="contained">show videos</Button>
+										<Button variant="contained" onClick={() => showChannelVideos(subscription)}>
+											show videos
+										</Button>
 									</Stack>
 								</CardContent>
 								<CardContent>

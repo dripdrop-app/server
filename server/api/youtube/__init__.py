@@ -45,14 +45,23 @@ async def get_youtube_videos(
     page: int = 1,
     per_page: int = Path(50, le=50),
     user: SessionUser = Depends(get_authenticated_user),
-    video_categories: List[int] = Query([])
+    video_categories: List[int] = Query([]),
+    channel_id: str = Query(None),
 ):
     google_account_subquery = google_accounts.select().where(
         google_accounts.c.user_email == user.email).alias('google_accounts_sub')
 
     youtube_videos_all_query = youtube_videos
+    if channel_id:
+        youtube_videos_all_query = youtube_videos.select().where(
+            youtube_videos.c.channel_id == channel_id).alias('youtube_videos_all')
+
     youtube_videos_sub_query = youtube_videos.select().where(
-        youtube_videos.c.category_id.in_(video_categories)).alias('youtube_videos_sub')
+        youtube_videos.c.category_id.in_(video_categories))
+    if channel_id:
+        youtube_videos_sub_query.where(youtube_videos.c.id == channel_id)
+    youtube_videos_sub_query = youtube_videos_sub_query.alias(
+        'youtube_videos_sub')
 
     joins = google_account_subquery.join(
         youtube_subscriptions, google_account_subquery.c.email == youtube_subscriptions.c.email)

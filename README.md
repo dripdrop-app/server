@@ -52,3 +52,10 @@ Nginx Full
 
 PORT 5000 (TEST)
 ```
+
+TO DO
+
+- Move Youtube Links to separate component files
+- Add better urls for navigating youtube collections
+- Add iframe youtube videos to play on site
+- Use a new button to go navigate to content on youtube
