@@ -12,7 +12,6 @@ from server.database import (
     youtube_subscriptions,
     youtube_channels,
     youtube_video_categories,
-    youtube_jobs,
     youtube_videos
 )
 from server.queue import q
@@ -36,7 +35,7 @@ async def update_google_access_token(google_email: str):
             await db.execute(query)
             return new_access_token['access_token']
         else:
-            return None
+            return ''
     return access_token
 
 
@@ -132,15 +131,14 @@ async def update_user_youtube_subscriptions_job(user_email: str):
         return
 
     google_account = GoogleAccount.parse_obj(google_account)
-    youtube_job_id = str(uuid.uuid4())
     google_email = google_account.email
-    query = youtube_jobs.select().where(youtube_jobs.c.email == google_email)
-    job = await db.fetch_one(query)
-    if job:
-        return
+    # query = youtube_jobs.select().where(youtube_jobs.c.email == google_email)
+    # job = await db.fetch_one(query)
+    # if job:
+    #     return
 
-    query = youtube_jobs.insert().values(job_id=youtube_job_id,
-                                         email=google_email, completed=False, failed=False)
+    # query = youtube_jobs.insert().values(job_id=youtube_job_id,
+    #                                      email=google_email, completed=False, failed=False)
     await db.execute(query)
     access_token = await update_google_access_token(google_email)
     if not access_token:

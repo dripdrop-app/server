@@ -3,6 +3,7 @@ export {};
 declare global {
 	interface YoutubeState {
 		email: string;
+		refresh: boolean;
 		loaded: boolean;
 	}
 

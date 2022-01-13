@@ -2,6 +2,7 @@ import { atom, atomFamily } from 'recoil';
 
 export const initialYoutubeAuthState: YoutubeState = {
 	email: '',
+	refresh: false,
 	loaded: false,
 };
 

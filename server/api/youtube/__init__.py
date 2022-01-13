@@ -1,14 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, Path
+import asyncio
+import traceback
+from asyncio.tasks import Task
+from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse
 from server.api.youtube import google_api
 from server.api.youtube.tasks import update_google_access_token
 from server.config import config
-from server.database import GoogleAccount, YoutubeVideo, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
+from server.database import GoogleAccount, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
 from server.dependencies import get_authenticated_user
 from server.models import SessionUser, YoutubeResponses
 from sqlalchemy.sql.expression import desc, func, select, distinct
-from typing import List
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
+
+from server.redis import subscribe
+from server.utils.enums import RedisChannels
 
 app = FastAPI(dependencies=[Depends(get_authenticated_user)])
 
@@ -21,16 +27,39 @@ async def get_youtube_account(user: SessionUser = Depends(get_authenticated_user
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
         access_token = await update_google_access_token(google_account.email)
-        if access_token:
-            google_email = await google_api.get_user_email(access_token)
-            if google_email:
-                return JSONResponse({
-                    'email': google_email
-                })
-        query = google_accounts.delete().where(
-            google_accounts.c.user_email == user.email)
-        await db.execute(query)
+        if access_token != google_account.access_token:
+            query = google_accounts.update().values(access_token=access_token).where(
+                google_accounts.c.user_email == user.email)
+            await db.execute(query)
+        return JSONResponse({
+            'email': google_account.email,
+            'refresh': not bool(access_token),
+        })
     raise HTTPException(404)
+
+
+@app.websocket('/listenSubscriptionJob')
+async def listen_subscription_job(websocket: WebSocket, user: SessionUser = Depends(get_authenticated_user)):
+    tasks: list[Task] = []
+    try:
+        await websocket.accept()
+        tasks.append(asyncio.create_task(subscribe(
+            RedisChannels.COMPLETED_YOUTUBE_SUBSCRIPTION_JOB_CHANNEL, websocket, user)))
+
+        while True:
+            await websocket.send_json({})
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        await websocket.close()
+    except ConnectionClosedError:
+        pass
+    except ConnectionClosedOK:
+        await websocket.close()
+    except Exception:
+        print(traceback.format_exc())
+    finally:
+        for task in tasks:
+            task.cancel()
 
 
 @app.get('/oauth', response_class=PlainTextResponse)
@@ -45,7 +74,7 @@ async def get_youtube_videos(
     page: int = 1,
     per_page: int = Path(50, le=50),
     user: SessionUser = Depends(get_authenticated_user),
-    video_categories: List[int] = Query([]),
+    video_categories: list[int] = Query([]),
     channel_id: str = Query(None),
 ):
     google_account_subquery = google_accounts.select().where(

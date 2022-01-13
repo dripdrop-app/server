@@ -74,14 +74,17 @@ async def listen_jobs(websocket: WebSocket, user: SessionUser = Depends(get_auth
         while True:
             await websocket.send_json({})
             await asyncio.sleep(1)
-
-    except Exception as e:
-        if not isinstance(e, WebSocketDisconnect) and not isinstance(e, ConnectionClosedError) and not isinstance(e, ConnectionClosedOK):
-            print(traceback.format_exc())
+    except WebSocketDisconnect:
+        await websocket.close()
+    except ConnectionClosedError:
+        pass
+    except ConnectionClosedOK:
+        await websocket.close()
+    except Exception:
+        print(traceback.format_exc())
+    finally:
         for task in tasks:
             task.cancel()
-        if not isinstance(e, ConnectionClosedError):
-            await websocket.close()
 
 
 @app.post('/download', status_code=202, response_model=MusicResponses.Download)

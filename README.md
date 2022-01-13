@@ -59,3 +59,5 @@ TO DO
 - Add better urls for navigating youtube collections
 - Add iframe youtube videos to play on site
 - Use a new button to go navigate to content on youtube
+- Add new table for youtube subscription jobs
+- Create additonal logic to wait on channel update jobs and then mark subscription job as completed

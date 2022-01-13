@@ -46,14 +46,20 @@ const YoutubeCollections = () => {
 			<Typography sx={{ my: 1 }} variant="h2">
 				Youtube Collections
 			</Typography>
-			{youtubeAuth instanceof DefaultValue || !youtubeAuth.email ? (
+			{youtubeAuth instanceof DefaultValue || !youtubeAuth.email || youtubeAuth.refresh ? (
 				<Stack alignItems="center" margin={10}>
 					<Button
 						disabled={getOAuthLinkStatus.isLoading}
 						variant="contained"
 						onClick={() => getOAuthLink({ url: '/youtube/oauth' })}
 					>
-						{getOAuthLinkStatus.isLoading ? <CircularProgress /> : 'Log in with Google'}
+						{getOAuthLinkStatus.isLoading ? (
+							<CircularProgress />
+						) : youtubeAuth.refresh ? (
+							'Reconnect Google Account'
+						) : (
+							'Log in with Google'
+						)}
 					</Button>
 				</Stack>
 			) : (

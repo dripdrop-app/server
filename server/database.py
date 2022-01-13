@@ -91,10 +91,12 @@ google_accounts = sqlalchemy.Table(
     sqlalchemy.Column("access_token", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("refresh_token", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("expires", sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column("subscriptions_loading",
+                      sqlalchemy.Boolean, nullable=False, server_default='0'),
     sqlalchemy.Column(
         "created_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()")),
     sqlalchemy.Column(
-        "last_updated", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()"), server_onupdate=text("NOW()"))
+        "last_updated", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()"))
 )
 
 
@@ -104,29 +106,9 @@ class GoogleAccount(BaseModel):
     access_token: str
     refresh_token: str
     expires: int
+    subscriptions_loading: bool
     created_at: datetime
     last_updated: datetime
-
-
-youtube_jobs = sqlalchemy.Table(
-    'youtube_jobs',
-    metadata,
-    sqlalchemy.Column("job_id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("email", sqlalchemy.ForeignKey(
-        google_accounts.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
-    sqlalchemy.Column("completed", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column("failed", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column(
-        "created_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()"))
-)
-
-
-class YoutubeJob(BaseModel):
-    job_id: str
-    email: str
-    completed: bool
-    failed: bool
-    created_at: datetime
 
 
 youtube_channels = sqlalchemy.Table(
