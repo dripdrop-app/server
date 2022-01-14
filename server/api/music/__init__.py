@@ -16,6 +16,7 @@ from server.models import JobInfo, MusicResponses, SessionUser, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
 from sqlalchemy.sql.expression import desc
+from typing import List
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 
@@ -54,7 +55,7 @@ async def get_tags(file: UploadFile = File(None)):
 
 @app.websocket('/listenJobs')
 async def listen_jobs(websocket: WebSocket, user: SessionUser = Depends(get_authenticated_user)):
-    tasks: list[Task] = []
+    tasks: List[Task] = []
     try:
         await websocket.accept()
         query = music_jobs.select().where(music_jobs.c.user_email ==

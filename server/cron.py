@@ -3,12 +3,13 @@ import time
 from croniter import croniter
 from datetime import datetime, timedelta, timezone
 from threading import Thread
+from typing import List
 
 
 class Cron:
     def __init__(self) -> None:
         self.crons = []
-        self.cron_threads: list[Thread] = []
+        self.cron_threads: List[Thread] = []
         self.terminate = False
 
     def stop_thread(self):

@@ -10,11 +10,12 @@ from server.config import config
 from server.database import GoogleAccount, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
 from server.dependencies import get_authenticated_user
 from server.models import SessionUser, YoutubeResponses
-from sqlalchemy.sql.expression import desc, func, select, distinct
-from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
-
 from server.redis import subscribe
 from server.utils.enums import RedisChannels
+from sqlalchemy.sql.expression import desc, func, select, distinct
+from typing import List
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
+
 
 app = FastAPI(dependencies=[Depends(get_authenticated_user)])
 
@@ -40,7 +41,7 @@ async def get_youtube_account(user: SessionUser = Depends(get_authenticated_user
 
 @app.websocket('/listenSubscriptionJob')
 async def listen_subscription_job(websocket: WebSocket, user: SessionUser = Depends(get_authenticated_user)):
-    tasks: list[Task] = []
+    tasks: List[Task] = []
     try:
         await websocket.accept()
         tasks.append(asyncio.create_task(subscribe(
@@ -74,7 +75,7 @@ async def get_youtube_videos(
     page: int = 1,
     per_page: int = Path(50, le=50),
     user: SessionUser = Depends(get_authenticated_user),
-    video_categories: list[int] = Query([]),
+    video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
 ):
     google_account_subquery = google_accounts.select().where(
