@@ -2,8 +2,7 @@ import aioredis
 from fastapi import WebSocket
 from fastapi.encoders import jsonable_encoder
 from server.config import config
-from server.database import GoogleAccount, MusicJob, db, music_jobs, google_accounts
-from server.models import SessionUser
+from server.models import GoogleAccount, MusicJob, db, music_jobs, google_accounts, SessionUser
 from server.utils.enums import RedisChannels
 
 redis = aioredis.from_url(config.redis_url)

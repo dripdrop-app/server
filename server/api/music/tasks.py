@@ -12,11 +12,10 @@ from typing import Union
 from yt_dlp.utils import sanitize_filename
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import yt_download
-from server.database import MusicJob, db, music_jobs
-from server.models import MusicResponses
+from server.models import MusicJob, db, music_jobs, MusicResponses
 from server.redis import redis
+from server.utils.decorators import worker_task
 from server.utils.enums import RedisChannels
-from server.decorators import worker_task
 
 
 JOB_DIR = 'music_jobs'

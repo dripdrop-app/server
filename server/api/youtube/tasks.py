@@ -1,10 +1,9 @@
 import asyncio
 import dateutil.parser
-import uuid
 from asyncpg.exceptions import UniqueViolationError
 from datetime import datetime, timedelta, timezone
 from server.api.youtube import google_api
-from server.database import (
+from server.models import (
     GoogleAccount,
     YoutubeChannel,
     db,
@@ -15,7 +14,7 @@ from server.database import (
     youtube_videos
 )
 from server.queue import q
-from server.decorators import exception_handler, worker_task
+from server.utils.decorators import exception_handler, worker_task
 from sqlalchemy.sql.expression import select, func
 
 
@@ -163,7 +162,7 @@ async def update_user_youtube_subscriptions_job(user_email: str):
     query = youtube_subscriptions.delete().where(
         youtube_subscriptions.c.id.notin_(current_subscriptions))
     await db.execute(query)
-    query = youtube_jobs.delete().where(youtube_jobs.c.email == google_email)
+    # query = youtube_jobs.delete().where(youtube_jobs.c.email == google_email)
     await db.execute(query)
 
 

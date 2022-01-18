@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     google_client_secret: str
     google_api_key: str
     server_url: str
+    # elasticsearch_url: str
 
     class Config:
         env_file = '.env'

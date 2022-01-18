@@ -10,9 +10,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import extract_info
 from server.api.music.tasks import read_tags, JOB_DIR
-from server.database import db, music_jobs
 from server.dependencies import get_authenticated_user
-from server.models import JobInfo, MusicResponses, SessionUser, youtube_regex
+from server.models import db, music_jobs, JobInfo, MusicResponses, SessionUser, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
 from sqlalchemy.sql.expression import desc

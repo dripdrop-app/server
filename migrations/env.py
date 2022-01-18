@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-from server.database import metadata, DATABASE_URL
+from server.models import metadata, DATABASE_URL
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 

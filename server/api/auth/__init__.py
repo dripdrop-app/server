@@ -8,7 +8,7 @@ from server.api.youtube import google_api
 from server.dependencies import SessionHandler, get_authenticated_user
 from server.models import AuthRequests, AuthResponses, SessionUser
 from server.config import config
-from server.database import db, google_accounts, users, sessions, User
+from server.models import db, google_accounts, users, sessions, User
 from server.queue import q
 from typing import Optional
 

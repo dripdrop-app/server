@@ -1,11 +1,13 @@
 version: '2.4'
 services:
-  mysql:
+  postgres:
     image: postgres:14
     container_name: scripts_postgres
     restart: always
     ports:
       - '5432:5432'
+    volumes:
+      - ./setup:/docker-entrypoint-initdb.d
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: password

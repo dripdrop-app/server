@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from server.api.youtube import google_api
 from server.api.youtube.tasks import update_google_access_token
 from server.config import config
-from server.database import GoogleAccount, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
+from server.models import GoogleAccount, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
 from server.dependencies import get_authenticated_user
 from server.models import SessionUser, YoutubeResponses
 from server.redis import subscribe
@@ -27,11 +27,14 @@ async def get_youtube_account(user: SessionUser = Depends(get_authenticated_user
     google_account = await db.fetch_one(query)
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
-        access_token = await update_google_access_token(google_account.email)
-        if access_token != google_account.access_token:
-            query = google_accounts.update().values(access_token=access_token).where(
-                google_accounts.c.user_email == user.email)
-            await db.execute(query)
+        if config.environment == 'production':
+            access_token = await update_google_access_token(google_account.email)
+            if access_token != google_account.access_token:
+                query = google_accounts.update().values(access_token=access_token).where(
+                    google_accounts.c.user_email == user.email)
+                await db.execute(query)
+        else:
+            access_token = google_account.access_token
         return JSONResponse({
             'email': google_account.email,
             'refresh': not bool(access_token),

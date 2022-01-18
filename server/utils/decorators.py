@@ -1,7 +1,7 @@
 import traceback
 from asgiref.sync import sync_to_async
 from inspect import iscoroutinefunction
-from server.database import db
+from server.models import db
 
 
 def exception_handler(function):

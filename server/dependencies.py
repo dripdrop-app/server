@@ -5,8 +5,7 @@ from cryptography.fernet import Fernet
 from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
 from server.config import config
-from server.database import Session, User, users, db, sessions
-from server.models import SessionUser
+from server.models import Session, User, users, db, sessions, SessionUser
 
 
 class SessionHandler:
