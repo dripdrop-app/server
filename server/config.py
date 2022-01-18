@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    environment: str = None
+    env: str
     database_url: str
     redis_url: str
     port: int

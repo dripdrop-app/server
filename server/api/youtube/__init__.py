@@ -9,7 +9,8 @@ from server.api.youtube.tasks import update_google_access_token
 from server.config import config
 from server.models import GoogleAccount, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
 from server.dependencies import get_authenticated_user
-from server.models import SessionUser, YoutubeResponses
+from server.models import SessionUser
+from server.models.api import YoutubeResponses
 from server.redis import subscribe
 from server.utils.enums import RedisChannels
 from sqlalchemy.sql.expression import desc, func, select, distinct
@@ -27,7 +28,7 @@ async def get_youtube_account(user: SessionUser = Depends(get_authenticated_user
     google_account = await db.fetch_one(query)
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
-        if config.environment == 'production':
+        if config.env == 'production':
             access_token = await update_google_access_token(google_account.email)
             if access_token != google_account.access_token:
                 query = google_accounts.update().values(access_token=access_token).where(

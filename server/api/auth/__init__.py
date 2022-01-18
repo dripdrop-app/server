@@ -6,10 +6,12 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.sql.expression import true
 from server.api.youtube import google_api
 from server.dependencies import SessionHandler, get_authenticated_user
-from server.models import AuthRequests, AuthResponses, SessionUser
+from server.models import SessionUser
+from server.models.api import AuthRequests, AuthResponses
 from server.config import config
-from server.models import db, google_accounts, users, sessions, User
+from server.models import db, google_accounts, Users, Sessions, User
 from server.queue import q
+from sqlalchemy import select, insert
 from typing import Optional
 
 app = FastAPI()
@@ -25,7 +27,7 @@ async def login(body: AuthRequests.Login):
     email = body.email
     password = body.password
 
-    query = users.select().where(users.c.email == email)
+    query = select(Users).where(Users.email == email)
     account = await db.fetch_one(query)
     if not account:
         raise HTTPException(404, 'Account not found.')
@@ -38,7 +40,7 @@ async def login(body: AuthRequests.Login):
         raise HTTPException(401, 'User has not been approved.')
 
     session_id = str(uuid.uuid4())
-    query = sessions.insert().values(id=session_id, user_email=email)
+    query = insert(Sessions).values(id=session_id, user_email=email)
     await db.execute(query)
 
     response = JSONResponse({
@@ -66,13 +68,13 @@ async def logout():
 
 
 async def create_new_account(email: str, password: str):
-    query = users.select().where(users.c.email == email)
+    query = select(Users).where(Users.email == email)
     account = await db.fetch_one(query)
     if account:
         raise HTTPException(400, f'Account with email `{email}` exists.')
 
     hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-    query = users.insert().values(
+    query = insert(Users).values(
         email=email,
         password=hashed_pw.decode('utf-8'),
         admin=False,
@@ -105,7 +107,7 @@ async def google_oauth2(state: str, code: str, error: Optional[str] = None):
         raise HTTPException(400)
 
     email = state
-    query = users.select().where(users.c.email == email)
+    query = select(Users).where(Users.email == email)
     user = await db.fetch_one(query)
     if not user:
         return RedirectResponse('/')

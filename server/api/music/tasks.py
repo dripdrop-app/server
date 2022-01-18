@@ -12,18 +12,19 @@ from typing import Union
 from yt_dlp.utils import sanitize_filename
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import yt_download
-from server.models import MusicJob, db, music_jobs, MusicResponses
+from server.models import MusicJob, db, MusicJobs
+from server.models.api import MusicResponses
 from server.redis import redis
 from server.utils.decorators import worker_task
 from server.utils.enums import RedisChannels
-
+from sqlalchemy import select, update
 
 JOB_DIR = 'music_jobs'
 
 
 @worker_task
 async def run_job(job_id: str, file):
-    query = music_jobs.select().where(music_jobs.c.id == job_id)
+    query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = MusicJob.parse_obj(await db.fetch_one(query))
     try:
         if job:
@@ -92,14 +93,14 @@ async def run_job(job_id: str, file):
                 job_path, sanitize_filename(f'{title} {artist}') + '.mp3')
             os.rename(filename, new_filename)
 
-            query = music_jobs.update().where(music_jobs.c.id ==
-                                              job_id).values(completed=True)
+            query = update(MusicJobs).where(
+                MusicJobs.id == job_id).values(completed=True)
             await db.execute(query)
             await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
     except Exception as e:
         if job:
-            query = music_jobs.update().where(music_jobs.c.id ==
-                                              job_id).values(failed=True)
+            query = update(MusicJobs).where(
+                MusicJobs.id == job_id).values(failed=True)
             await db.execute(query)
             await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
         raise e

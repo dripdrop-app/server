@@ -5,7 +5,8 @@ from cryptography.fernet import Fernet
 from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
 from server.config import config
-from server.models import Session, User, users, db, sessions, SessionUser
+from server.models import Session, User, Users, db, Sessions, SessionUser
+from sqlalchemy import select
 
 
 class SessionHandler:
@@ -37,12 +38,12 @@ class GetUser:
         session = await SessionHandler.decrypt(connection.cookies)
         session_id = session.get('id')
         if session_id:
-            query = sessions.select().where(sessions.c.id == session_id)
+            query = select(Sessions).where(Sessions.id == session_id)
             session = await db.fetch_one(query)
             if session:
                 session = Session.parse_obj(session)
                 email = session.user_email
-                query = users.select().where(users.c.email == email)
+                query = select(Users).where(Users.email == email)
                 account = await db.fetch_one(query)
                 if account:
                     account = User.parse_obj(account)

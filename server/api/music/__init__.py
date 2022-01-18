@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 import uuid
 import traceback
 import os
@@ -11,11 +10,12 @@ from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import extract_info
 from server.api.music.tasks import read_tags, JOB_DIR
 from server.dependencies import get_authenticated_user
-from server.models import db, music_jobs, JobInfo, MusicResponses, SessionUser, youtube_regex
+from server.models import db, MusicJobs, SessionUser
+from server.models.api import JobInfo, MusicResponses, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
-from sqlalchemy.sql.expression import desc
-from typing import List
+from sqlalchemy import desc, select, insert, delete, update
+from typing import List, Optional
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 
@@ -57,8 +57,8 @@ async def listen_jobs(websocket: WebSocket, user: SessionUser = Depends(get_auth
     tasks: List[Task] = []
     try:
         await websocket.accept()
-        query = music_jobs.select().where(music_jobs.c.user_email ==
-                                          user.email).order_by(desc(music_jobs.c.created_at))
+        query = select(MusicJobs).where(MusicJobs.user_email ==
+                                        user.email).order_by(desc(MusicJobs.created_at))
         jobs = await db.fetch_all(query)
         await websocket.send_json({
             'type': 'ALL',
@@ -107,7 +107,7 @@ async def download(
     job_info = JobInfo(id=job_id, youtube_url=youtube_url, artwork_url=artwork_url,
                        title=title, artist=artist, album=album, grouping=grouping, filename=filename)
 
-    query = music_jobs.insert().values(
+    query = insert(MusicJobs).values(
         **job_info.dict(),
         user_email=user.email,
         completed=False,
@@ -126,8 +126,8 @@ async def download(
 @app.delete('/deleteJob')
 async def delete_job(id: str = Query(None), user: SessionUser = Depends(get_authenticated_user)):
     job_id = id
-    query = music_jobs.delete().where(music_jobs.c.user_email ==
-                                      user.email, music_jobs.c.id == job_id)
+    query = delete(MusicJobs).where(MusicJobs.user_email ==
+                                    user.email, MusicJobs.id == job_id)
     await db.execute(query)
     try:
         await asyncio.create_subprocess_shell(f'rm -rf {JOB_DIR}/{job_id}')
@@ -139,14 +139,14 @@ async def delete_job(id: str = Query(None), user: SessionUser = Depends(get_auth
 @app.get('/downloadJob', status_code=200)
 async def download_job(id: str = Query(None), user: SessionUser = Depends(get_authenticated_user)):
     job_id = id
-    query = music_jobs.select().where(music_jobs.c.id == job_id)
+    query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = await db.fetch_one(query)
     filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')
     file_path = os.path.join(JOB_DIR, job_id, filename)
 
     if not os.path.exists(file_path):
-        query = music_jobs.update().where(music_jobs.c.user_email == user.email,
-                                          music_jobs.c.id == job_id).values(failed=True)
+        query = update(MusicJobs).where(MusicJobs.user_email ==
+                                        user.email, MusicJobs.id == job_id).values(failed=True)
         await db.execute(query)
         await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
         raise HTTPException(404)

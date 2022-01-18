@@ -2,8 +2,9 @@ import aioredis
 from fastapi import WebSocket
 from fastapi.encoders import jsonable_encoder
 from server.config import config
-from server.models import GoogleAccount, MusicJob, db, music_jobs, google_accounts, SessionUser
+from server.models import GoogleAccount, MusicJob, db, MusicJobs, google_accounts, SessionUser
 from server.utils.enums import RedisChannels
+from sqlalchemy import select
 
 redis = aioredis.from_url(config.redis_url)
 
@@ -29,8 +30,8 @@ def on_music_job(user: SessionUser, type: str):
     async def handler(websocket: WebSocket, msg):
         if msg and msg.get('type') == 'message':
             started_job_id = msg.get('data').decode()
-            query = music_jobs.select().where(music_jobs.c.user_email ==
-                                              user.email, music_jobs.c.id == started_job_id)
+            query = select(MusicJobs).where(MusicJobs.user_email ==
+                                            user.email, MusicJobs.id == started_job_id)
             job = await db.fetch_one(query)
             if job:
                 job = MusicJob.parse_obj(job)

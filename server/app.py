@@ -10,7 +10,7 @@ from server.cron import Cron
 
 cron = Cron()
 
-if config.environment == 'production':
+if config.env == 'production':
     cron.add_cron('0 1 * * *', q.enqueue,
                   args=('server.api.youtube.tasks.channel_cleanup',))
     cron.add_cron('0 3 * * *', q.enqueue,

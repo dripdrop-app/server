@@ -1,25 +1,26 @@
 import databases
 import sqlalchemy
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.sql.expression import text
+from sqlalchemy.ext.declarative import declarative_base
 from server.config import config
-from typing import List, Optional, Union
+from typing import Union
 
 DATABASE_URL = config.database_url
 db = databases.Database(DATABASE_URL)
 metadata = sqlalchemy.MetaData()
+Base = declarative_base(metadata=metadata)
 
-users = sqlalchemy.Table(
-    'users',
-    metadata,
-    sqlalchemy.Column("email", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("password", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("admin", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column("approved", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column(
-        "created_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()")),
-)
+
+class Users(Base):
+    __tablename__ = 'users'
+    email = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    admin = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
+    approved = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
+    created_at = sqlalchemy.Column(sqlalchemy.dialects.postgresql.TIMESTAMP(
+        timezone=True), server_default=text("NOW()"))
 
 
 class User(BaseModel):
@@ -30,15 +31,13 @@ class User(BaseModel):
     created_at: datetime
 
 
-sessions = sqlalchemy.Table(
-    'sessions',
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        users.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
-    sqlalchemy.Column("created_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-                      server_default=text("NOW()"))
-)
+class Sessions(Base):
+    __tablename__ = 'sessions'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    user_email = sqlalchemy.Column(sqlalchemy.ForeignKey(
+        Users.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
+    created_at = sqlalchemy.Column(sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
+                                   server_default=text("NOW()"))
 
 
 class Session(BaseModel):
@@ -47,24 +46,28 @@ class Session(BaseModel):
     created_at: datetime
 
 
-music_jobs = sqlalchemy.Table(
-    'music_jobs',
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        users.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
-    sqlalchemy.Column("filename", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("youtube_url", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("artwork_url", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("title", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("artist", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("album", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("grouping", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("completed", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column("failed", sqlalchemy.Boolean, nullable=False),
-    sqlalchemy.Column("created_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-                      server_default=text("NOW()"))
-)
+class SessionUser(BaseModel):
+    email: str
+    admin: bool
+    authenticated: bool
+
+
+class MusicJobs(Base):
+    __tablename__ = 'music_jobs'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    user_email = sqlalchemy.Column(sqlalchemy.ForeignKey(
+        Users.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
+    filename = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    youtube_url = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    artwork_url = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    title = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    artist = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    album = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    grouping = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    completed = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
+    failed = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
+    created_at = sqlalchemy.Column(sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
+                                   server_default=text("NOW()"))
 
 
 class MusicJob(BaseModel):
@@ -87,7 +90,7 @@ google_accounts = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("email", sqlalchemy.String, primary_key=True),
     sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        users.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
+        Users.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column("access_token", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("refresh_token", sqlalchemy.String, nullable=False),
     sqlalchemy.Column("expires", sqlalchemy.Integer, nullable=False),
@@ -197,85 +200,3 @@ class YoutubeVideo(BaseModel):
     published_at: datetime
     category_id: int
     created_at: datetime
-
-
-email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-youtube_regex = r'^https:\/\/(www\.)?youtube\.com\/watch\?v=.+'
-
-
-class SessionUser(BaseModel):
-    email: str
-    admin: bool
-    authenticated: bool
-
-
-class JobInfo(BaseModel):
-    id: str
-    filename: Optional[str]
-    youtube_url: Optional[str] = Field(None, regex=youtube_regex)
-    artwork_url: Optional[str]
-    title: str
-    artist: str
-    album: str
-    grouping: Optional[str]
-
-
-class AuthRequests:
-    class Login(BaseModel):
-        email: str
-        password: str
-
-    class CreateAccount(BaseModel):
-        email: str = Field(None, regex=email_regex)
-        password: str = Field(None, min_length=8)
-
-
-class AuthResponses:
-    class User(BaseModel):
-        email: str
-        admin: bool
-
-    class ValidError(BaseModel):
-        error: str
-
-
-class MusicResponses:
-    class Grouping(BaseModel):
-        grouping: str
-
-    class ArtworkURL(BaseModel):
-        artwork_url: str
-
-    class Tags(BaseModel):
-        title: Union[str, None]
-        artist: Union[str, None]
-        album: Union[str, None]
-        grouping: Union[str, None]
-        artwork_url: Union[str, None]
-
-    class Download(JobInfo):
-        pass
-
-
-class YoutubeVideo(BaseModel):
-    id: str
-    title: str
-    thumbnail: str
-    channel_id: str
-    published_at: datetime
-    category_id: int
-    created_at: datetime
-
-
-class YoutubeResponses:
-    class Account(BaseModel):
-        email: str
-
-    class Videos(BaseModel):
-        total_videos: int
-        categories: List[YoutubeVideoCategory]
-        videos: List[YoutubeVideo]
-
-    class Subscriptions(BaseModel):
-        subscriptions: List[YoutubeSubscription]
-        total_subscriptions: int
