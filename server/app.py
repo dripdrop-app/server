@@ -12,10 +12,10 @@ cron = Cron()
 
 if config.env == "production":
     cron.add_cron(
-        "0 1 * * *", q.enqueue, args=("server.api.youtube.tasks.channel_cleanup",)
+        "0 1 * * sun", q.enqueue, args=("server.api.youtube.tasks.channel_cleanup",)
     )
     cron.add_cron(
-        "0 3 * * *",
+        "0 2 * * *",
         q.enqueue,
         args=("server.api.youtube.tasks.update_youtube_video_categories", True),
     )
@@ -23,7 +23,7 @@ if config.env == "production":
         "0 5 * * *", q.enqueue, args=("server.api.youtube.tasks.update_channels",)
     )
     cron.add_cron(
-        "0 5 * * sun",
+        "0 3 * * sun",
         q.enqueue,
         args=("server.api.youtube.tasks.update_subscriptions",),
     )
