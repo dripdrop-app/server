@@ -1,14 +1,21 @@
 import React, { useEffect } from 'react';
-import { TextField } from '@mui/material';
+import { CircularProgress, TextField } from '@mui/material';
 import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
-import { albumSelector, artistSelector, groupingSelector, titleSelector } from '../../atoms/Music';
-import { useRecoilState } from 'recoil';
+import {
+	albumSelector,
+	artistSelector,
+	groupingLoadingSelector,
+	groupingSelector,
+	titleSelector,
+} from '../../atoms/Music';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 const TagInputs = () => {
 	const [title, setTitle] = useRecoilState(titleSelector);
 	const [artist, setArtist] = useRecoilState(artistSelector);
 	const [album, setAlbum] = useRecoilState(albumSelector);
 	const [grouping, setGrouping] = useRecoilState(groupingSelector);
+	const groupingLoading = useRecoilValue(groupingLoadingSelector);
 
 	useEffect(() => {
 		setAlbum(resolveAlbumFromTitle(title));
@@ -37,12 +44,16 @@ const TagInputs = () => {
 				value={album}
 				onChange={(e) => setAlbum(e.target.value)}
 			/>
-			<TextField
-				label="Grouping"
-				{...defaultTextFieldProps}
-				value={grouping}
-				onChange={(e) => setGrouping(e.target.value)}
-			/>
+			{groupingLoading ? (
+				<CircularProgress />
+			) : (
+				<TextField
+					label="Grouping"
+					{...defaultTextFieldProps}
+					value={grouping}
+					onChange={(e) => setGrouping(e.target.value)}
+				/>
+			)}
 		</React.Fragment>
 	);
 };

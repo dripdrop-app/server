@@ -32,7 +32,7 @@ const JobCard = (props: JobCardProps) => {
 
 	const { filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = job;
 
-	const [downloadJob, downloadJobStatus] = useLazyFetch();
+	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
 	const [removeJob, removeJobStatus] = useLazyFetch();
 
 	const tryDownloadJob = useCallback(() => {
@@ -56,6 +56,8 @@ const JobCard = (props: JobCardProps) => {
 			youtube_url: youtube_url || '',
 			filename: '',
 			artwork_url: artwork_url || '',
+			groupingLoading: false,
+			tagsLoading: false,
 		});
 	}, [album, artist, artwork_url, grouping, setMusicForm, title, youtube_url]);
 

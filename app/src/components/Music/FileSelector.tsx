@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, Switch, TextField } from '@mui/material';
-import { filenameSelector, fileTypeSelector, musicFormAtom } from '../../atoms/Music';
+import { filenameSelector, fileTypeSelector, musicFormAtom, tagsLoadingSelector } from '../../atoms/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
 import YoutubeURLInput from './YoutubeURLInput';
@@ -17,6 +17,7 @@ const FileSwitch = (props: FileSwitchProps) => {
 	const [filename, setFilename] = useRecoilState(filenameSelector);
 	const [fileType, setFileType] = useRecoilState(fileTypeSelector);
 	const setMusicForm = useSetRecoilState(musicFormAtom);
+	const setTagsLoading = useSetRecoilState(tagsLoadingSelector);
 
 	const [getFileTags, getFileTagsStatus] = useLazyFetch<TagsResponse>();
 
@@ -48,6 +49,10 @@ const FileSwitch = (props: FileSwitchProps) => {
 		},
 		[getFileTags, setFilename]
 	);
+
+	useEffect(() => {
+		setTagsLoading(getFileTagsStatus.isLoading);
+	}, [getFileTagsStatus, setTagsLoading]);
 
 	useEffect(() => {
 		if (getFileTagsStatus.isSuccess) {

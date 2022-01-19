@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { YouTube } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { fileTypeSelector, groupingSelector, youtubeURLSelector } from '../../atoms/Music';
+import { fileTypeSelector, groupingLoadingSelector, groupingSelector, youtubeURLSelector } from '../../atoms/Music';
 import useLazyFetch from '../../hooks/useLazyFetch';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, isValidYTLink } from '../../utils/helpers';
@@ -10,12 +10,16 @@ import { defaultTextFieldProps, isValidYTLink } from '../../utils/helpers';
 const YoutubeURLInput = () => {
 	const [youtubeURL, setYoutubeURL] = useRecoilState(youtubeURLSelector);
 	const fileType = useRecoilValue(fileTypeSelector);
-
+	const setGroupingLoading = useSetRecoilState(groupingLoadingSelector);
 	const setGroupingSelector = useSetRecoilState(groupingSelector);
 
 	const valid = isValidYTLink(youtubeURL);
 
 	const [getGrouping, getGroupingStatus] = useLazyFetch<Pick<MusicForm, 'grouping'>>();
+
+	useEffect(() => {
+		setGroupingLoading(getGroupingStatus.isLoading);
+	}, [getGroupingStatus.isLoading, setGroupingLoading]);
 
 	useEffect(() => {
 		if (getGroupingStatus.isSuccess) {

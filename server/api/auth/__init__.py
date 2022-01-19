@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.sql.expression import true
 from server.api.youtube import google_api
 from server.dependencies import SessionHandler, get_authenticated_user
-from server.models import SessionUser
+from server.models import AuthenticatedUser
 from server.models.api import AuthRequests, AuthResponses
 from server.config import config
 from server.models import db, google_accounts, Users, Sessions, User
@@ -18,7 +18,7 @@ app = FastAPI()
 
 
 @app.get('/checkSession', response_model=AuthResponses.User)
-async def check_session(user: SessionUser = Depends(get_authenticated_user)):
+async def check_session(user: AuthenticatedUser = Depends(get_authenticated_user)):
     return JSONResponse({'email': user.email, 'admin': user.admin}, 200)
 
 
@@ -33,7 +33,7 @@ async def login(body: AuthRequests.Login):
         raise HTTPException(404, 'Account not found.')
 
     account = User.parse_obj(account)
-    if not bcrypt.checkpw(password.encode('utf-8'), account.password.encode('utf-8')):
+    if not bcrypt.checkpw(password.encode('utf-8'), account.password.get_secret_value().encode('utf-8')):
         raise HTTPException(400, 'Email or Password is incorrect.')
 
     if not account.approved:
@@ -55,7 +55,7 @@ async def login(body: AuthRequests.Login):
         max_age=TWO_WEEKS_EXPIRATION,
         expires=TWO_WEEKS_EXPIRATION,
         httponly=true,
-        secure=config.environment == 'production'
+        secure=config.env == 'production'
     )
     return response
 

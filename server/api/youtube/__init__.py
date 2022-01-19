@@ -9,7 +9,7 @@ from server.api.youtube.tasks import update_google_access_token
 from server.config import config
 from server.models import GoogleAccount, db, google_accounts, youtube_subscriptions, youtube_channels, youtube_videos, youtube_video_categories
 from server.dependencies import get_authenticated_user
-from server.models import SessionUser
+from server.models import AuthenticatedUser
 from server.models.api import YoutubeResponses
 from server.redis import subscribe
 from server.utils.enums import RedisChannels
@@ -22,7 +22,7 @@ app = FastAPI(dependencies=[Depends(get_authenticated_user)])
 
 
 @app.get('/account', response_model=YoutubeResponses.Account)
-async def get_youtube_account(user: SessionUser = Depends(get_authenticated_user)):
+async def get_youtube_account(user: AuthenticatedUser = Depends(get_authenticated_user)):
     query = google_accounts.select().where(
         google_accounts.c.user_email == user.email)
     google_account = await db.fetch_one(query)
@@ -44,7 +44,7 @@ async def get_youtube_account(user: SessionUser = Depends(get_authenticated_user
 
 
 @app.websocket('/listenSubscriptionJob')
-async def listen_subscription_job(websocket: WebSocket, user: SessionUser = Depends(get_authenticated_user)):
+async def listen_subscription_job(websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)):
     tasks: List[Task] = []
     try:
         await websocket.accept()
@@ -68,7 +68,7 @@ async def listen_subscription_job(websocket: WebSocket, user: SessionUser = Depe
 
 
 @app.get('/oauth', response_class=PlainTextResponse)
-async def create_oauth_link(user: SessionUser = Depends(get_authenticated_user)):
+async def create_oauth_link(user: AuthenticatedUser = Depends(get_authenticated_user)):
     oauth = google_api.create_oauth_url(
         f'{config.server_url}/auth/googleoauth2', user.email)
     return PlainTextResponse(oauth['url'])
@@ -78,7 +78,7 @@ async def create_oauth_link(user: SessionUser = Depends(get_authenticated_user))
 async def get_youtube_videos(
     page: int = 1,
     per_page: int = Path(50, le=50),
-    user: SessionUser = Depends(get_authenticated_user),
+    user: AuthenticatedUser = Depends(get_authenticated_user),
     video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
 ):
@@ -133,7 +133,7 @@ async def get_youtube_videos(
 
 
 @app.get('/subscriptions/{page}/{per_page}', response_model=YoutubeResponses.Subscriptions)
-async def get_youtube_subscriptions(page: int = 1, per_page: int = Path(50, le=50), user: SessionUser = Depends(get_authenticated_user)):
+async def get_youtube_subscriptions(page: int = 1, per_page: int = Path(50, le=50), user: AuthenticatedUser = Depends(get_authenticated_user)):
     google_account_subquery = google_accounts.select().where(
         google_accounts.c.user_email == user.email).alias('google_accounts_sub')
     joins = google_account_subquery.join(

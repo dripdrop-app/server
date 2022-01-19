@@ -10,6 +10,8 @@ declare global {
 		artist: string;
 		album: string;
 		grouping: string;
+		groupingLoading: boolean;
+		tagsLoading: boolean;
 	}
 
 	interface Job

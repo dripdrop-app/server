@@ -1,7 +1,7 @@
 import databases
 import sqlalchemy
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, SecretStr
 from sqlalchemy.sql.expression import text
 from sqlalchemy.ext.declarative import declarative_base
 from server.config import config
@@ -25,10 +25,21 @@ class Users(Base):
 
 class User(BaseModel):
     email: str
-    password: str
+    password: SecretStr
     admin: bool
     approved: bool
     created_at: datetime
+
+
+SessionUser = Union[None, User]
+
+
+class AuthenticatedUser(User):
+    authenticated: bool
+
+
+class AdminUser(AuthenticatedUser):
+    admin: bool
 
 
 class Sessions(Base):
@@ -44,12 +55,6 @@ class Session(BaseModel):
     id: str
     user_email: str
     created_at: datetime
-
-
-class SessionUser(BaseModel):
-    email: str
-    admin: bool
-    authenticated: bool
 
 
 class MusicJobs(Base):

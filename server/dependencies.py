@@ -4,9 +4,11 @@ import json
 from cryptography.fernet import Fernet
 from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
+from server.api import auth
 from server.config import config
-from server.models import Session, User, Users, db, Sessions, SessionUser
+from server.models import AuthenticatedUser, Session, User, Users, db, Sessions, SessionUser, AdminUser
 from sqlalchemy import select
+from typing import Union
 
 
 class SessionHandler:
@@ -35,32 +37,32 @@ class GetUser:
 
     async def __call__(self, request: Request = None, websocket: WebSocket = None):
         connection = request if request else websocket
-        session = await SessionHandler.decrypt(connection.cookies)
-        session_id = session.get('id')
-        if session_id:
-            query = select(Sessions).where(Sessions.id == session_id)
-            session = await db.fetch_one(query)
-            if session:
-                session = Session.parse_obj(session)
-                email = session.user_email
-                query = select(Users).where(Users.email == email)
-                account = await db.fetch_one(query)
-                if account:
-                    account = User.parse_obj(account)
-                    return SessionUser(email=email, admin=account.admin, authenticated=True)
-        return SessionUser(email='', admin=False, authenticated=False)
+        if connection:
+            session = await SessionHandler.decrypt(connection.cookies)
+            session_id = session.get('id')
+            if session_id:
+                query = select(Sessions).where(Sessions.id == session_id)
+                session = await db.fetch_one(query)
+                if session:
+                    session = Session.parse_obj(session)
+                    email = session.user_email
+                    query = select(Users).where(Users.email == email)
+                    account = await db.fetch_one(query)
+                    if account:
+                        return User.parse_obj(account)
+        return None
 
 
 get_user = GetUser()
 
 
 def get_authenticated_user(user: SessionUser = Depends(get_user)):
-    if user.authenticated:
-        return user
+    if user:
+        return AuthenticatedUser(**user.dict(), authenticated=True)
     raise HTTPException(401)
 
 
 def get_admin_user(user: SessionUser = Depends(get_user)):
-    if user.admin:
-        return user
+    if user and user.admin:
+        return AdminUser(**user.dict(), admin=True, authenticated=True)
     raise HTTPException(401)

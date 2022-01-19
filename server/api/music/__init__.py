@@ -10,7 +10,7 @@ from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import extract_info
 from server.api.music.tasks import read_tags, JOB_DIR
 from server.dependencies import get_authenticated_user
-from server.models import db, MusicJobs, SessionUser
+from server.models import db, MusicJobs, AuthenticatedUser
 from server.models.api import JobInfo, MusicResponses, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
@@ -53,7 +53,7 @@ async def get_tags(file: UploadFile = File(None)):
 
 
 @app.websocket('/listenJobs')
-async def listen_jobs(websocket: WebSocket, user: SessionUser = Depends(get_authenticated_user)):
+async def listen_jobs(websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)):
     tasks: List[Task] = []
     try:
         await websocket.accept()
@@ -96,7 +96,7 @@ async def download(
     album: str = Form(None),
     grouping: Optional[str] = Form(''),
     file: UploadFile = File(None),
-    user: SessionUser = Depends(get_authenticated_user)
+    user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
     job_id = str(uuid.uuid4())
     if not youtube_url and not file:
@@ -124,7 +124,7 @@ async def download(
 
 
 @app.delete('/deleteJob')
-async def delete_job(id: str = Query(None), user: SessionUser = Depends(get_authenticated_user)):
+async def delete_job(id: str = Query(None), user: AuthenticatedUser = Depends(get_authenticated_user)):
     job_id = id
     query = delete(MusicJobs).where(MusicJobs.user_email ==
                                     user.email, MusicJobs.id == job_id)
@@ -137,7 +137,7 @@ async def delete_job(id: str = Query(None), user: SessionUser = Depends(get_auth
 
 
 @app.get('/downloadJob', status_code=200)
-async def download_job(id: str = Query(None), user: SessionUser = Depends(get_authenticated_user)):
+async def download_job(id: str = Query(None), user: AuthenticatedUser = Depends(get_authenticated_user)):
     job_id = id
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = await db.fetch_one(query)

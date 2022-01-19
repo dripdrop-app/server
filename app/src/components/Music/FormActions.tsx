@@ -17,7 +17,8 @@ const FormActions = (props: FormActionProps) => {
 	const [openError, setOpenError] = useState(false);
 	const [musicForm, setMusicForm] = useRecoilState(musicFormAtom);
 
-	const { title, artist, album, grouping, artwork_url, filename, fileType, youtube_url } = musicForm;
+	const { title, artist, album, grouping, artwork_url, filename, fileType, youtube_url, groupingLoading, tagsLoading } =
+		musicForm;
 
 	const resetForm = useCallback(() => {
 		setMusicForm(initialFormState);
@@ -107,7 +108,7 @@ const FormActions = (props: FormActionProps) => {
 				>
 					<Alert severity="error">Task failed to start.</Alert>
 				</Snackbar>
-				{!performOperationStatus.isLoading ? (
+				{!performOperationStatus.isLoading && !groupingLoading && !tagsLoading ? (
 					<React.Fragment>
 						<Button variant="contained" disabled={!validForm} onClick={run}>
 							{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
@@ -123,7 +124,17 @@ const FormActions = (props: FormActionProps) => {
 				)}
 			</React.Fragment>
 		),
-		[fileType, openError, openSuccess, performOperationStatus.isLoading, resetForm, run, validForm]
+		[
+			fileType,
+			groupingLoading,
+			openError,
+			openSuccess,
+			performOperationStatus.isLoading,
+			resetForm,
+			run,
+			tagsLoading,
+			validForm,
+		]
 	);
 };
 

@@ -10,6 +10,8 @@ export const initialFormState: MusicForm = {
 	artist: '',
 	album: '',
 	grouping: '',
+	groupingLoading: false,
+	tagsLoading: false,
 };
 
 export const musicFormAtom = atom<MusicForm>({
@@ -57,3 +59,7 @@ export const artistSelector = variableFormSelector<'artist'>('artist');
 export const albumSelector = variableFormSelector<'album'>('album');
 
 export const groupingSelector = variableFormSelector<'grouping'>('grouping');
+
+export const groupingLoadingSelector = variableFormSelector<'groupingLoading'>('groupingLoading');
+
+export const tagsLoadingSelector = variableFormSelector<'tagsLoading'>('tagsLoading');
