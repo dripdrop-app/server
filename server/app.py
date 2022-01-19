@@ -35,9 +35,9 @@ async def index(request: Request):
     if path == '':
         path = 'index.html'
 
-    filepath = os.path.join(os.path.dirname(__file__), f'../app/build/{path}')
+    filepath = os.path.join(os.path.dirname(__file__), f'../build/{path}')
 
     if os.path.exists(filepath):
         return FileResponse(filepath)
 
-    return FileResponse(os.path.join(os.path.dirname(__file__), f'../app/build/index.html'))
+    return FileResponse(os.path.join(os.path.dirname(__file__), f'../build/index.html'))
