@@ -18,21 +18,19 @@ class Cron:
     def add_cron(self, cron: str, func, args=(), kwargs={}):
         if not croniter.is_valid(cron):
             raise ValueError(f'Not a valid cron "{cron}"')
-        self.crons.append({
-            'func': func,
-            'args': args,
-            'kwargs': kwargs,
-            'cron': cron
-        })
+        self.crons.append({"func": func, "args": args, "kwargs": kwargs, "cron": cron})
 
     def run(self):
         for cron in self.crons:
-            func = cron.get('func')
-            args = cron.get('args')
-            kwargs = cron.get('kwargs')
-            cron_time = cron.get('cron')
-            thread = Thread(None, target=self.run_cron,
-                            args=(func, args, kwargs, cron_time, self.stop_thread))
+            func = cron.get("func")
+            args = cron.get("args")
+            kwargs = cron.get("kwargs")
+            cron_time = cron.get("cron")
+            thread = Thread(
+                None,
+                target=self.run_cron,
+                args=(func, args, kwargs, cron_time, self.stop_thread),
+            )
             thread.start()
             self.cron_threads.append(thread)
 

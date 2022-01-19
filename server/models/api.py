@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 from server.models import YoutubeVideoCategory, YoutubeSubscription, YoutubeVideo
 from typing import Optional, List
 
-email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-youtube_regex = r'^https:\/\/(www\.)?youtube\.com\/watch\?v=.+'
+email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
 
 
 class JobInfo(BaseModel):

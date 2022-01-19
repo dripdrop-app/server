@@ -11,9 +11,10 @@ def exception_handler(function):
             if not iscoroutinefunction(function):
                 function = sync_to_async(function)
             return await function(*args, **kwargs)
-        except:
+        except Exception:
             print(traceback.format_exc())
             return None
+
     return wrapper
 
 
@@ -24,7 +25,7 @@ def worker_task(function):
             result = await function(*args, **kwargs)
             await db.disconnect()
             return result
-        else:
-            func = sync_to_async(function)
-            return await func(*args, **kwargs)
+        func = sync_to_async(function)
+        return await func(*args, **kwargs)
+
     return wrapper

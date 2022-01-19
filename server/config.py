@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # elasticsearch_url: str
 
     class Config:
-        env_file = '.env'
+        env_file = ".env"
 
 
 config = Settings()

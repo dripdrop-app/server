@@ -11,7 +11,7 @@ from server.models import (
     youtube_subscriptions,
     youtube_channels,
     youtube_video_categories,
-    youtube_videos
+    youtube_videos,
 )
 from server.queue import q
 from server.utils.decorators import exception_handler, worker_task
@@ -23,18 +23,26 @@ async def update_google_access_token(google_email: str):
     google_account = GoogleAccount.parse_obj(await db.fetch_one(query))
     access_token = google_account.access_token
 
-    if (datetime.now(timezone.utc) - google_account.last_updated).seconds >= google_account.expires:
-        new_access_token = await google_api.refresh_access_token(google_account.refresh_token)
+    if (
+        datetime.now(timezone.utc) - google_account.last_updated
+    ).seconds >= google_account.expires:
+        new_access_token = await google_api.refresh_access_token(
+            google_account.refresh_token
+        )
         if new_access_token:
-            query = update(GoogleAccounts).values(
-                access_token=new_access_token['access_token'],
-                expires=new_access_token['expires_in'],
-                last_updated=datetime.now(timezone.utc)
-            ).where(GoogleAccounts.email == google_email)
+            query = (
+                update(GoogleAccounts)
+                .values(
+                    access_token=new_access_token["access_token"],
+                    expires=new_access_token["expires_in"],
+                    last_updated=datetime.now(timezone.utc),
+                )
+                .where(GoogleAccounts.email == google_email)
+            )
             await db.execute(query)
-            return new_access_token['access_token']
+            return new_access_token["access_token"]
         else:
-            return ''
+            return ""
     return access_token
 
 
@@ -42,37 +50,43 @@ async def update_google_access_token(google_email: str):
 @exception_handler
 async def update_youtube_video_categories(cron: bool):
     async def update_youtube_video_category(category):
-        category_id = int(category['id'])
-        category_title = category['snippet']['title']
+        category_id = int(category["id"])
+        category_title = category["snippet"]["title"]
         try:
             query = youtube_video_categories.insert().values(
-                id=category_id, name=category_title)
+                id=category_id, name=category_title
+            )
             await db.execute(query)
         except UniqueViolationError:
             query = youtube_video_categories.update().where(
-                youtube_video_categories.c.name == category_title)
+                youtube_video_categories.c.name == category_title
+            )
 
     if not cron:
-        query = select([func.count(youtube_video_categories.c.id)]
-                       ).select_from(youtube_video_categories.select())
+        query = select([func.count(youtube_video_categories.c.id)]).select_from(
+            youtube_video_categories.select()
+        )
         count = await db.fetch_val(query)
         if count > 0:
             return
     video_categories = await google_api.get_video_categories()
-    await asyncio.gather(*[update_youtube_video_category(category) for category in video_categories])
+    await asyncio.gather(
+        *[update_youtube_video_category(category) for category in video_categories]
+    )
 
 
 async def add_youtube_subscription(google_email: str, subscription):
-    subscription_id = subscription['id']
-    subscription_channel_id = subscription['snippet']['resourceId']['channelId']
+    subscription_id = subscription["id"]
+    subscription_channel_id = subscription["snippet"]["resourceId"]["channelId"]
     subscription_published_at = dateutil.parser.parse(
-        subscription['snippet']['publishedAt'])
+        subscription["snippet"]["publishedAt"]
+    )
     try:
         query = youtube_subscriptions.insert().values(
             id=subscription_id,
             channel_id=subscription_channel_id,
             email=google_email,
-            published_at=subscription_published_at
+            published_at=subscription_published_at,
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -80,32 +94,37 @@ async def add_youtube_subscription(google_email: str, subscription):
 
 
 async def add_youtube_channel(channel):
-    channel_id = channel['id']
-    channel_title = channel['snippet']['title']
-    channel_upload_playlist_id = channel['contentDetails']['relatedPlaylists']['uploads']
-    channel_thumbnail = channel['snippet']['thumbnails']['high']['url']
+    channel_id = channel["id"]
+    channel_title = channel["snippet"]["title"]
+    channel_upload_playlist_id = channel["contentDetails"]["relatedPlaylists"][
+        "uploads"
+    ]
+    channel_thumbnail = channel["snippet"]["thumbnails"]["high"]["url"]
     try:
         query = youtube_channels.insert().values(
             id=channel_id,
             title=channel_title,
             thumbnail=channel_thumbnail,
-            upload_playlist_id=channel_upload_playlist_id
+            upload_playlist_id=channel_upload_playlist_id,
         )
         await db.execute(query)
         date_limit = datetime.now(timezone.utc) - timedelta(days=30)
         q.enqueue(
-            'server.api.youtube.tasks.add_new_channel_videos_job', channel_id, date_limit)
+            "server.api.youtube.tasks.add_new_channel_videos_job",
+            channel_id,
+            date_limit,
+        )
     except UniqueViolationError:
         pass
 
 
 async def add_youtube_video(video):
-    video_id = video['id']
-    video_title = video['snippet']['title']
-    video_thumbnail = video['snippet']['thumbnails']['high']['url']
-    video_channel_id = video['snippet']['channelId']
-    video_published_at = dateutil.parser.parse(video['snippet']['publishedAt'])
-    video_category_id = int(video['snippet']['categoryId'])
+    video_id = video["id"]
+    video_title = video["snippet"]["title"]
+    video_thumbnail = video["snippet"]["thumbnails"]["high"]["url"]
+    video_channel_id = video["snippet"]["channelId"]
+    video_published_at = dateutil.parser.parse(video["snippet"]["publishedAt"])
+    video_category_id = int(video["snippet"]["categoryId"])
     try:
         query = youtube_videos.insert().values(
             id=video_id,
@@ -113,7 +132,7 @@ async def add_youtube_video(video):
             thumbnail=video_thumbnail,
             channel_id=video_channel_id,
             published_at=video_published_at,
-            category_id=video_category_id
+            category_id=video_category_id,
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -123,8 +142,7 @@ async def add_youtube_video(video):
 @worker_task
 @exception_handler
 async def update_user_youtube_subscriptions_job(user_email: str):
-    query = select(GoogleAccounts).where(
-        GoogleAccounts.user_email == user_email)
+    query = select(GoogleAccounts).where(GoogleAccounts.user_email == user_email)
     google_account = await db.fetch_one(query)
     if not google_account:
         return
@@ -137,7 +155,7 @@ async def update_user_youtube_subscriptions_job(user_email: str):
     #     return
 
     # query = youtube_jobs.insert().values(job_id=youtube_job_id,
-    #                                      email=google_email, completed=False, failed=False)
+    #               email=google_email, completed=False, failed=False)
     await db.execute(query)
     access_token = await update_google_access_token(google_email)
     if not access_token:
@@ -146,21 +164,35 @@ async def update_user_youtube_subscriptions_job(user_email: str):
     current_subscriptions = []
     for subscriptions in google_api.get_user_subscriptions(access_token):
         youtube_subscription_channels = [
-            subscription['snippet']['resourceId']['channelId'] for subscription in subscriptions]
+            subscription["snippet"]["resourceId"]["channelId"]
+            for subscription in subscriptions
+        ]
         query = youtube_channels.select().where(
-            youtube_channels.c.id.in_(youtube_subscription_channels))
+            youtube_channels.c.id.in_(youtube_subscription_channels)
+        )
         existing_channels = await db.fetch_all(query)
 
         if len(existing_channels) != len(youtube_subscription_channels):
-            channels_info = await google_api.get_channels_info(youtube_subscription_channels)
-            await asyncio.gather(*[add_youtube_channel(channel) for channel in channels_info])
+            channels_info = await google_api.get_channels_info(
+                youtube_subscription_channels
+            )
+            await asyncio.gather(
+                *[add_youtube_channel(channel) for channel in channels_info]
+            )
 
-        await asyncio.gather(*[add_youtube_subscription(google_email, subscription) for subscription in subscriptions])
+        await asyncio.gather(
+            *[
+                add_youtube_subscription(google_email, subscription)
+                for subscription in subscriptions
+            ]
+        )
         current_subscriptions.extend(
-            [subscription['id'] for subscription in subscriptions])
+            [subscription["id"] for subscription in subscriptions]
+        )
 
     query = youtube_subscriptions.delete().where(
-        youtube_subscriptions.c.id.notin_(current_subscriptions))
+        youtube_subscriptions.c.id.notin_(current_subscriptions)
+    )
     await db.execute(query)
     # query = youtube_jobs.delete().where(youtube_jobs.c.email == google_email)
     await db.execute(query)
@@ -172,30 +204,39 @@ async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
     query = youtube_channels.select().where(youtube_channels.c.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
     channel_upload_playist = youtube_channel.upload_playlist_id
-    for uploaded_playlist_videos in google_api.get_playlist_videos(channel_upload_playist):
+    for uploaded_playlist_videos in google_api.get_playlist_videos(
+        channel_upload_playist
+    ):
         recent_uploaded_playlist_videos = []
         for uploaded_playlist_video in uploaded_playlist_videos:
             video_published_at = dateutil.parser.parse(
-                uploaded_playlist_video['contentDetails']['videoPublishedAt'])
-            uploaded_playlist_video['contentDetails']['videoPublishedAt'] = video_published_at
+                uploaded_playlist_video["contentDetails"]["videoPublishedAt"]
+            )
+            uploaded_playlist_video["contentDetails"][
+                "videoPublishedAt"
+            ] = video_published_at
             if video_published_at > last_updated:
                 recent_uploaded_playlist_videos.append(uploaded_playlist_video)
 
-        recent_uploaded_playlist_video_ids = [recent_uploaded_video['contentDetails']
-                                              ['videoId'] for recent_uploaded_video in recent_uploaded_playlist_videos]
+        recent_uploaded_playlist_video_ids = [
+            recent_uploaded_video["contentDetails"]["videoId"]
+            for recent_uploaded_video in recent_uploaded_playlist_videos
+        ]
         query = youtube_videos.select().where(
-            youtube_videos.c.id.in_(recent_uploaded_playlist_video_ids))
+            youtube_videos.c.id.in_(recent_uploaded_playlist_video_ids)
+        )
         existing_videos = await db.fetch_all(query)
 
         if len(existing_videos) < len(recent_uploaded_playlist_videos):
-            videos_info = await google_api.get_videos_info(recent_uploaded_playlist_video_ids)
+            videos_info = await google_api.get_videos_info(
+                recent_uploaded_playlist_video_ids
+            )
             await asyncio.gather(*[add_youtube_video(video) for video in videos_info])
 
         if len(recent_uploaded_playlist_videos) < len(uploaded_playlist_videos):
             break
 
-    query = youtube_channels.update().values(
-        last_updated=datetime.now(timezone.utc))
+    query = youtube_channels.update().values(last_updated=datetime.now(timezone.utc))
     await db.execute(query)
 
 
@@ -207,7 +248,10 @@ async def update_channels():
     async for channel in db.iterate(query):
         channel = YoutubeChannel.parse_obj(channel)
         q.enqueue(
-            'server.api.youtube.tasks.add_new_channel_videos_job', channel.id, channel.last_updated)
+            "server.api.youtube.tasks.add_new_channel_videos_job",
+            channel.id,
+            channel.last_updated,
+        )
         channels.append(channel)
         if len(channels) == 50:
             # GET CHANNEL INFO AND UPDATE
@@ -224,22 +268,30 @@ async def update_subscriptions():
     query = select(GoogleAccounts)
     async for google_account in db.iterate(query):
         google_account = GoogleAccount.parse_obj(google_account)
-        days_since_last_update = (datetime.now(
-            timezone.utc) - google_account.last_updated).days
+        days_since_last_update = (
+            datetime.now(timezone.utc) - google_account.last_updated
+        ).days
         if days_since_last_update >= 7:
             q.enqueue(
-                'server.api.youtube.tasks.update_user_youtube_subscriptions_job', google_account.user_email)
+                "server.api.youtube.tasks.update_user_youtube_subscriptions_job",
+                google_account.user_email,
+            )
 
 
 @worker_task
 @exception_handler
 async def channel_cleanup():
     query = youtube_channels.join(
-        youtube_subscriptions, youtube_subscriptions.c.channel_id == youtube_channels.c.id, isouter=True)
-    query = select(youtube_channels.c.id).select_from(
-        query).where(youtube_subscriptions.c.id == None)
-    hanging_channels = [row.get('id') for row in await db.fetch_all(query)]
+        youtube_subscriptions,
+        youtube_subscriptions.c.channel_id == youtube_channels.c.id,
+        isouter=True,
+    )
+    query = (
+        select(youtube_channels.c.id)
+        .select_from(query)
+        .where(youtube_subscriptions.c.id.isnot(None))
+    )
+    hanging_channels = [row.get("id") for row in await db.fetch_all(query)]
 
-    query = youtube_channels.delete().where(
-        youtube_channels.c.id.in_(hanging_channels))
+    query = youtube_channels.delete().where(youtube_channels.c.id.in_(hanging_channels))
     await db.execute(query)
