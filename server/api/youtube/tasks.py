@@ -7,7 +7,7 @@ from server.models import (
     GoogleAccount,
     YoutubeChannel,
     db,
-    google_accounts,
+    GoogleAccounts,
     youtube_subscriptions,
     youtube_channels,
     youtube_video_categories,
@@ -15,22 +15,22 @@ from server.models import (
 )
 from server.queue import q
 from server.utils.decorators import exception_handler, worker_task
-from sqlalchemy.sql.expression import select, func
+from sqlalchemy import select, func, update
 
 
 async def update_google_access_token(google_email: str):
-    query = google_accounts.select().where(google_accounts.c.email == google_email)
+    query = select(GoogleAccounts).where(GoogleAccounts.email == google_email)
     google_account = GoogleAccount.parse_obj(await db.fetch_one(query))
     access_token = google_account.access_token
 
     if (datetime.now(timezone.utc) - google_account.last_updated).seconds >= google_account.expires:
         new_access_token = await google_api.refresh_access_token(google_account.refresh_token)
         if new_access_token:
-            query = google_accounts.update().values(
+            query = update(GoogleAccounts).values(
                 access_token=new_access_token['access_token'],
                 expires=new_access_token['expires_in'],
                 last_updated=datetime.now(timezone.utc)
-            ).where(google_accounts.c.email == google_email)
+            ).where(GoogleAccounts.email == google_email)
             await db.execute(query)
             return new_access_token['access_token']
         else:
@@ -123,8 +123,8 @@ async def add_youtube_video(video):
 @worker_task
 @exception_handler
 async def update_user_youtube_subscriptions_job(user_email: str):
-    query = google_accounts.select().where(
-        google_accounts.c.user_email == user_email)
+    query = select(GoogleAccounts).where(
+        GoogleAccounts.user_email == user_email)
     google_account = await db.fetch_one(query)
     if not google_account:
         return
@@ -221,7 +221,7 @@ async def update_channels():
 @worker_task
 @exception_handler
 async def update_subscriptions():
-    query = google_accounts.select()
+    query = select(GoogleAccounts)
     async for google_account in db.iterate(query):
         google_account = GoogleAccount.parse_obj(google_account)
         days_since_last_update = (datetime.now(

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, SecretStr
 from sqlalchemy.sql.expression import text
 from sqlalchemy.ext.declarative import declarative_base
 from server.config import config
-from typing import Union
+from typing import Optional
 
 DATABASE_URL = config.database_url
 db = databases.Database(DATABASE_URL)
@@ -31,7 +31,7 @@ class User(BaseModel):
     created_at: datetime
 
 
-SessionUser = Union[None, User]
+SessionUser = Optional[User]
 
 
 class AuthenticatedUser(User):
@@ -78,34 +78,32 @@ class MusicJobs(Base):
 class MusicJob(BaseModel):
     id: str
     user_email: str
-    filename: Union[str, None] = ''
-    youtube_url: Union[str, None]
-    artwork_url: Union[str, None]
+    filename:  Optional[str] = ''
+    youtube_url: Optional[str]
+    artwork_url: Optional[str]
     title: str
     artist: str
     album: str
-    grouping: Union[str, None]
+    grouping: Optional[str]
     completed: bool
     failed: bool
     created_at: datetime
 
 
-google_accounts = sqlalchemy.Table(
-    'google_accounts',
-    metadata,
-    sqlalchemy.Column("email", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("user_email", sqlalchemy.ForeignKey(
-        Users.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
-    sqlalchemy.Column("access_token", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("refresh_token", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("expires", sqlalchemy.Integer, nullable=False),
-    sqlalchemy.Column("subscriptions_loading",
-                      sqlalchemy.Boolean, nullable=False, server_default='0'),
-    sqlalchemy.Column(
-        "created_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()")),
-    sqlalchemy.Column(
-        "last_updated", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True), server_default=text("NOW()"))
-)
+class GoogleAccounts(Base):
+    __tablename__ = 'google_accounts'
+    email = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    user_email = sqlalchemy.Column(sqlalchemy.ForeignKey(
+        Users.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
+    access_token = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    refresh_token = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    expires = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
+    subscriptions_loading = sqlalchemy.Column(
+        sqlalchemy.Boolean, nullable=False, server_default='0')
+    created_at = sqlalchemy.Column(sqlalchemy.dialects.postgresql.TIMESTAMP(
+        timezone=True), server_default=text("NOW()"))
+    last_updated = sqlalchemy.Column(sqlalchemy.dialects.postgresql.TIMESTAMP(
+        timezone=True), server_default=text("NOW()"))
 
 
 class GoogleAccount(BaseModel):
@@ -136,8 +134,8 @@ youtube_channels = sqlalchemy.Table(
 class YoutubeChannel(BaseModel):
     id: str
     title: str
-    thumbnail: Union[str, None]
-    upload_playlist_id: Union[str, None]
+    thumbnail: Optional[str]
+    upload_playlist_id: Optional[str]
     created_at: datetime
     last_updated: datetime
 
@@ -149,7 +147,7 @@ youtube_subscriptions = sqlalchemy.Table(
     sqlalchemy.Column('channel_id', sqlalchemy.ForeignKey(
         youtube_channels.c.id, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column('email', sqlalchemy.ForeignKey(
-        google_accounts.c.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
+        GoogleAccounts.email, onupdate='CASCADE', ondelete='CASCADE'), nullable=False),
     sqlalchemy.Column(
         'published_at', sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True)),
     sqlalchemy.Column(

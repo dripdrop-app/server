@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from server.models import YoutubeVideoCategory, YoutubeSubscription, YoutubeVideo
-from typing import Optional, Union, List
+from typing import Optional, List
 
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 youtube_regex = r'^https:\/\/(www\.)?youtube\.com\/watch\?v=.+'
@@ -44,11 +44,11 @@ class MusicResponses:
         artwork_url: str
 
     class Tags(BaseModel):
-        title: Union[str, None]
-        artist: Union[str, None]
-        album: Union[str, None]
-        grouping: Union[str, None]
-        artwork_url: Union[str, None]
+        title: Optional[str]
+        artist: Optional[str]
+        album: Optional[str]
+        grouping: Optional[str]
+        artwork_url: Optional[str]
 
     class Download(JobInfo):
         pass

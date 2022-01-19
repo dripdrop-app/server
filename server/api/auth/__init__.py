@@ -9,9 +9,9 @@ from server.dependencies import SessionHandler, get_authenticated_user
 from server.models import AuthenticatedUser
 from server.models.api import AuthRequests, AuthResponses
 from server.config import config
-from server.models import db, google_accounts, Users, Sessions, User
+from server.models import db, GoogleAccounts, Users, Sessions, User
 from server.queue import q
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 from typing import Optional
 
 app = FastAPI()
@@ -117,7 +117,7 @@ async def google_oauth2(state: str, code: str, error: Optional[str] = None):
         google_email = await google_api.get_user_email(tokens.get('access_token'))
         if google_email:
             try:
-                query = google_accounts.insert().values(
+                query = insert(GoogleAccounts).values(
                     email=google_email,
                     user_email=email,
                     access_token=tokens['access_token'],
@@ -126,11 +126,11 @@ async def google_oauth2(state: str, code: str, error: Optional[str] = None):
                 )
                 await db.execute(query)
             except UniqueViolationError:
-                query = google_accounts.update().values(
+                query = update(GoogleAccounts).values(
                     access_token=tokens['access_token'],
                     refresh_token=tokens['refresh_token'],
                     expires=tokens['expires_in'],
-                ).where(google_accounts.c.email == google_email)
+                ).where(GoogleAccounts.email == google_email)
                 await db.execute(query)
             except Exception:
                 return RedirectResponse('/youtubeCollections')

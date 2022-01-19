@@ -4,11 +4,9 @@ import json
 from cryptography.fernet import Fernet
 from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
-from server.api import auth
 from server.config import config
 from server.models import AuthenticatedUser, Session, User, Users, db, Sessions, SessionUser, AdminUser
 from sqlalchemy import select
-from typing import Union
 
 
 class SessionHandler:

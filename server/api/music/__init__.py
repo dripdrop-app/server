@@ -10,7 +10,7 @@ from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import extract_info
 from server.api.music.tasks import read_tags, JOB_DIR
 from server.dependencies import get_authenticated_user
-from server.models import db, MusicJobs, AuthenticatedUser
+from server.models import db, MusicJobs, AuthenticatedUser, MusicJob
 from server.models.api import JobInfo, MusicResponses, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
@@ -54,6 +54,19 @@ async def get_tags(file: UploadFile = File(None)):
 
 @app.websocket('/listenJobs')
 async def listen_jobs(websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)):
+    def on_music_job(type: str):
+        async def handler(msg):
+            started_job_id = msg.get('data').decode()
+            query = select(MusicJobs).where(MusicJobs.user_email ==
+                                            user.email, MusicJobs.id == started_job_id)
+            job = await db.fetch_one(query)
+            if job:
+                job = MusicJob.parse_obj(job)
+                await websocket.send_json({
+                    'type': type,
+                    'jobs': [jsonable_encoder(job)]
+                })
+        return handler
     tasks: List[Task] = []
     try:
         await websocket.accept()
@@ -66,9 +79,9 @@ async def listen_jobs(websocket: WebSocket, user: AuthenticatedUser = Depends(ge
         })
         tasks.extend([
             asyncio.create_task(
-                subscribe(RedisChannels.STARTED_MUSIC_JOB_CHANNEL, websocket, user)),
+                subscribe(RedisChannels.STARTED_MUSIC_JOB_CHANNEL, on_music_job('STARTED'))),
             asyncio.create_task(
-                subscribe(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL, websocket, user)),
+                subscribe(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL, on_music_job('COMPLETED'))),
         ])
 
         while True:
@@ -79,7 +92,7 @@ async def listen_jobs(websocket: WebSocket, user: AuthenticatedUser = Depends(ge
     except ConnectionClosedError:
         pass
     except ConnectionClosedOK:
-        await websocket.close()
+        pass
     except Exception:
         print(traceback.format_exc())
     finally:
