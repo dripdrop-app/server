@@ -16,13 +16,13 @@ from server.api.youtube import google_api
 from server.api.youtube.tasks import update_google_access_token
 from server.config import config
 from server.models import (
-    GoogleAccount,
     db,
+    GoogleAccount,
     GoogleAccounts,
-    youtube_subscriptions,
-    youtube_channels,
-    youtube_videos,
-    youtube_video_categories,
+    YoutubeSubscriptions,
+    YoutubeChannels,
+    YoutubeVideos,
+    YoutubeVideoCategories,
 )
 from server.dependencies import get_authenticated_user
 from server.models import AuthenticatedUser
@@ -135,36 +135,35 @@ async def get_youtube_videos(
         .alias("google_accounts_sub")
     )
 
-    youtube_videos_all_query = youtube_videos
+    youtube_videos_all_query = select(YoutubeVideos)
     if channel_id:
-        youtube_videos_all_query = (
-            youtube_videos.select()
-            .where(youtube_videos.c.channel_id == channel_id)
-            .alias("youtube_videos_all")
+        youtube_videos_all_query = youtube_videos_all_query.where(
+            YoutubeVideos.channel_id == channel_id
         )
+    youtube_videos_all_query = youtube_videos_all_query.alias("youtube_videos_all")
 
-    youtube_videos_sub_query = youtube_videos.select().where(
-        youtube_videos.c.category_id.in_(video_categories)
+    youtube_videos_sub_query = select(YoutubeVideos).where(
+        YoutubeVideos.category_id.in_(video_categories)
     )
     if channel_id:
-        youtube_videos_sub_query.where(youtube_videos.c.id == channel_id)
+        youtube_videos_sub_query.where(YoutubeVideos.id == channel_id)
     youtube_videos_sub_query = youtube_videos_sub_query.alias("youtube_videos_sub")
 
     joins = google_account_subquery.join(
-        youtube_subscriptions,
-        google_account_subquery.c.email == youtube_subscriptions.c.email,
+        YoutubeSubscriptions,
+        google_account_subquery.c.email == YoutubeSubscriptions.email,
     )
     joins = joins.join(
-        youtube_channels, youtube_subscriptions.c.channel_id == youtube_channels.c.id
+        YoutubeChannels, YoutubeSubscriptions.channel_id == YoutubeChannels.id
     )
 
     all_joins = joins.join(
         youtube_videos_all_query,
-        youtube_channels.c.id == youtube_videos_all_query.c.channel_id,
+        YoutubeChannels.id == youtube_videos_all_query.c.channel_id,
     )
     sub_joins = joins.join(
         youtube_videos_sub_query,
-        youtube_channels.c.id == youtube_videos_sub_query.c.channel_id,
+        YoutubeChannels.id == youtube_videos_sub_query.c.channel_id,
     )
 
     if len(video_categories) == 0:
@@ -182,13 +181,13 @@ async def get_youtube_videos(
     )
     category_ids = [row.get("category_id") for row in await db.fetch_all(query)]
 
-    query = youtube_video_categories.select().where(
-        youtube_video_categories.c.id.in_(category_ids)
+    query = select(YoutubeVideoCategories).where(
+        YoutubeVideoCategories.id.in_(category_ids)
     )
     categories = await db.fetch_all(query)
 
     query = (
-        select(youtube_videos_query, youtube_channels.c.title.label("channel_title"))
+        select(youtube_videos_query, YoutubeChannels.title.label("channel_title"))
         .select_from(joins)
         .order_by(desc(youtube_videos_query.c.published_at))
         .offset((page - 1) * per_page)
@@ -218,24 +217,24 @@ async def get_youtube_subscriptions(
         .alias("google_accounts_sub")
     )
     joins = google_account_subquery.join(
-        youtube_subscriptions,
-        google_account_subquery.c.email == youtube_subscriptions.c.email,
+        YoutubeSubscriptions,
+        google_account_subquery.c.email == YoutubeSubscriptions.email,
     )
     joins = joins.join(
-        youtube_channels, youtube_subscriptions.c.channel_id == youtube_channels.c.id
+        YoutubeChannels, YoutubeSubscriptions.channel_id == YoutubeChannels.id
     )
 
-    query = select([func.count(youtube_subscriptions.c.id)]).select_from(joins)
+    query = select([func.count(YoutubeSubscriptions.id)]).select_from(joins)
     count = await db.fetch_val(query)
 
     query = (
         select(
-            youtube_subscriptions,
-            youtube_channels.c.title.label("channel_title"),
-            youtube_channels.c.thumbnail.label("channel_thumbnail"),
+            YoutubeSubscriptions,
+            YoutubeChannels.title.label("channel_title"),
+            YoutubeChannels.thumbnail.label("channel_thumbnail"),
         )
         .select_from(joins)
-        .order_by(youtube_channels.c.title)
+        .order_by(YoutubeChannels.title)
         .offset((page - 1) * per_page)
         .limit(per_page)
     )

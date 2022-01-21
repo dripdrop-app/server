@@ -48,7 +48,12 @@ class Sessions(Base):
     __tablename__ = "sessions"
     id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     user_email = sqlalchemy.Column(
-        sqlalchemy.ForeignKey(Users.email, onupdate="CASCADE", ondelete="CASCADE"),
+        sqlalchemy.ForeignKey(
+            Users.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="sessions_user_email_fkey",
+        ),
         nullable=False,
     )
     created_at = sqlalchemy.Column(
@@ -67,7 +72,12 @@ class MusicJobs(Base):
     __tablename__ = "music_jobs"
     id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     user_email = sqlalchemy.Column(
-        sqlalchemy.ForeignKey(Users.email, onupdate="CASCADE", ondelete="CASCADE"),
+        sqlalchemy.ForeignKey(
+            Users.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="music_jobs_user_email_fkey",
+        ),
         nullable=False,
     )
     filename = sqlalchemy.Column(sqlalchemy.String, nullable=True)
@@ -104,7 +114,12 @@ class GoogleAccounts(Base):
     __tablename__ = "google_accounts"
     email = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     user_email = sqlalchemy.Column(
-        sqlalchemy.ForeignKey(Users.email, onupdate="CASCADE", ondelete="CASCADE"),
+        sqlalchemy.ForeignKey(
+            Users.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="google_accounts_user_email_fkey",
+        ),
         nullable=False,
     )
     access_token = sqlalchemy.Column(sqlalchemy.String, nullable=False)
@@ -134,25 +149,21 @@ class GoogleAccount(BaseModel):
     last_updated: datetime
 
 
-youtube_channels = sqlalchemy.Table(
-    "youtube_channels",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("title", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("thumbnail", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column("upload_playlist_id", sqlalchemy.String, nullable=True),
-    sqlalchemy.Column(
-        "created_at",
+class YoutubeChannels(Base):
+    __tablename__ = "youtube_channels"
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    title = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    thumbnail = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    upload_playlist_id = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
-    ),
-    sqlalchemy.Column(
-        "last_updated",
+    )
+    last_updated = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
         server_onupdate=text("NOW()"),
-    ),
-)
+    )
 
 
 class YoutubeChannel(BaseModel):
@@ -164,33 +175,34 @@ class YoutubeChannel(BaseModel):
     last_updated: datetime
 
 
-youtube_subscriptions = sqlalchemy.Table(
-    "youtube_subscriptions",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column(
-        "channel_id",
+class YoutubeSubscriptions(Base):
+    __tablename__ = "youtube_subscriptions"
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    channel_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey(
-            youtube_channels.c.id, onupdate="CASCADE", ondelete="CASCADE"
+            YoutubeChannels.id,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_subscriptions_channel_id_fkey",
         ),
         nullable=False,
-    ),
-    sqlalchemy.Column(
-        "email",
+    )
+    email = sqlalchemy.Column(
         sqlalchemy.ForeignKey(
-            GoogleAccounts.email, onupdate="CASCADE", ondelete="CASCADE"
+            GoogleAccounts.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_subscriptions_email_fkey",
         ),
         nullable=False,
-    ),
-    sqlalchemy.Column(
-        "published_at", sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True)
-    ),
-    sqlalchemy.Column(
-        "created_at",
+    )
+    published_at = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True)
+    )
+    created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
-    ),
-)
+    )
 
 
 class YoutubeSubscription(BaseModel):
@@ -201,17 +213,14 @@ class YoutubeSubscription(BaseModel):
     created_at: datetime
 
 
-youtube_video_categories = sqlalchemy.Table(
-    "youtube_video_categories",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("name", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column(
-        "created_at",
+class YoutubeVideoCategories(Base):
+    __tablename__ = "youtube_video_categories"
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
-    ),
-)
+    )
 
 
 class YoutubeVideoCategory(BaseModel):
@@ -220,33 +229,34 @@ class YoutubeVideoCategory(BaseModel):
     created_at: datetime
 
 
-youtube_videos = sqlalchemy.Table(
-    "youtube_videos",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.String, primary_key=True),
-    sqlalchemy.Column("title", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("thumbnail", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column(
-        "channel_id",
+class YoutubeVideos(Base):
+    __tablename__ = "youtube_videos"
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    title = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    thumbnail = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    channel_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey(
-            youtube_channels.c.id, onupdate="CASCADE", ondelete="CASCADE"
+            YoutubeChannels.id,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_videos_channel_id_fkey",
         ),
         nullable=False,
-    ),
-    sqlalchemy.Column("published_at", sqlalchemy.TIMESTAMP(timezone=True)),
-    sqlalchemy.Column(
-        "category_id",
+    )
+    published_at = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=True))
+    category_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey(
-            youtube_video_categories.c.id, onupdate="CASCADE", ondelete="CASCADE"
+            YoutubeVideoCategories.id,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_videos_category_id_fkey",
         ),
         nullable=False,
-    ),
-    sqlalchemy.Column(
-        "created_at",
+    )
+    created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
-    ),
-)
+    )
 
 
 class YoutubeVideo(BaseModel):

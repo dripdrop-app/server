@@ -4,18 +4,18 @@ from asyncpg.exceptions import UniqueViolationError
 from datetime import datetime, timedelta, timezone
 from server.api.youtube import google_api
 from server.models import (
+    db,
     GoogleAccount,
     YoutubeChannel,
-    db,
     GoogleAccounts,
-    youtube_subscriptions,
-    youtube_channels,
-    youtube_video_categories,
-    youtube_videos,
+    YoutubeSubscriptions,
+    YoutubeChannels,
+    YoutubeVideoCategories,
+    YoutubeVideos,
 )
 from server.queue import q
 from server.utils.decorators import exception_handler, worker_task
-from sqlalchemy import select, func, update
+from sqlalchemy import delete, select, func, update, insert
 
 
 async def update_google_access_token(google_email: str):
@@ -53,18 +53,18 @@ async def update_youtube_video_categories(cron: bool):
         category_id = int(category["id"])
         category_title = category["snippet"]["title"]
         try:
-            query = youtube_video_categories.insert().values(
+            query = insert(YoutubeVideoCategories).values(
                 id=category_id, name=category_title
             )
             await db.execute(query)
         except UniqueViolationError:
-            query = youtube_video_categories.update().where(
-                youtube_video_categories.c.name == category_title
+            query = update(YoutubeVideoCategories).where(
+                YoutubeVideoCategories.name == category_title
             )
 
     if not cron:
-        query = select([func.count(youtube_video_categories.c.id)]).select_from(
-            youtube_video_categories.select()
+        query = select([func.count(YoutubeVideoCategories.id)]).select_from(
+            select(YoutubeVideoCategories)
         )
         count = await db.fetch_val(query)
         if count > 0:
@@ -82,7 +82,7 @@ async def add_youtube_subscription(google_email: str, subscription):
         subscription["snippet"]["publishedAt"]
     )
     try:
-        query = youtube_subscriptions.insert().values(
+        query = insert(YoutubeSubscriptions).values(
             id=subscription_id,
             channel_id=subscription_channel_id,
             email=google_email,
@@ -101,7 +101,7 @@ async def add_youtube_channel(channel):
     ]
     channel_thumbnail = channel["snippet"]["thumbnails"]["high"]["url"]
     try:
-        query = youtube_channels.insert().values(
+        query = insert(YoutubeChannels).values(
             id=channel_id,
             title=channel_title,
             thumbnail=channel_thumbnail,
@@ -126,7 +126,7 @@ async def add_youtube_video(video):
     video_published_at = dateutil.parser.parse(video["snippet"]["publishedAt"])
     video_category_id = int(video["snippet"]["categoryId"])
     try:
-        query = youtube_videos.insert().values(
+        query = insert(YoutubeVideos).values(
             id=video_id,
             title=video_title,
             thumbnail=video_thumbnail,
@@ -167,8 +167,8 @@ async def update_user_youtube_subscriptions_job(user_email: str):
             subscription["snippet"]["resourceId"]["channelId"]
             for subscription in subscriptions
         ]
-        query = youtube_channels.select().where(
-            youtube_channels.c.id.in_(youtube_subscription_channels)
+        query = select(YoutubeChannels).where(
+            YoutubeChannels.id.in_(youtube_subscription_channels)
         )
         existing_channels = await db.fetch_all(query)
 
@@ -190,8 +190,8 @@ async def update_user_youtube_subscriptions_job(user_email: str):
             [subscription["id"] for subscription in subscriptions]
         )
 
-    query = youtube_subscriptions.delete().where(
-        youtube_subscriptions.c.id.notin_(current_subscriptions)
+    query = delete(YoutubeSubscriptions).where(
+        YoutubeSubscriptions.id.notin_(current_subscriptions)
     )
     await db.execute(query)
     # query = youtube_jobs.delete().where(youtube_jobs.c.email == google_email)
@@ -201,7 +201,7 @@ async def update_user_youtube_subscriptions_job(user_email: str):
 @worker_task
 @exception_handler
 async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
-    query = youtube_channels.select().where(youtube_channels.c.id == channel_id)
+    query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
     channel_upload_playist = youtube_channel.upload_playlist_id
     for uploaded_playlist_videos in google_api.get_playlist_videos(
@@ -222,8 +222,8 @@ async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
             recent_uploaded_video["contentDetails"]["videoId"]
             for recent_uploaded_video in recent_uploaded_playlist_videos
         ]
-        query = youtube_videos.select().where(
-            youtube_videos.c.id.in_(recent_uploaded_playlist_video_ids)
+        query = select(YoutubeVideos).where(
+            YoutubeVideos.id.in_(recent_uploaded_playlist_video_ids)
         )
         existing_videos = await db.fetch_all(query)
 
@@ -236,14 +236,14 @@ async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
         if len(recent_uploaded_playlist_videos) < len(uploaded_playlist_videos):
             break
 
-    query = youtube_channels.update().values(last_updated=datetime.now(timezone.utc))
+    query = update(YoutubeChannels).values(last_updated=datetime.now(timezone.utc))
     await db.execute(query)
 
 
 @worker_task
 @exception_handler
 async def update_channels():
-    query = youtube_channels.select()
+    query = select(YoutubeChannels)
     channels = []
     async for channel in db.iterate(query):
         channel = YoutubeChannel.parse_obj(channel)
@@ -281,17 +281,17 @@ async def update_subscriptions():
 @worker_task
 @exception_handler
 async def channel_cleanup():
-    query = youtube_channels.join(
-        youtube_subscriptions,
-        youtube_subscriptions.c.channel_id == youtube_channels.c.id,
+    query = select(YoutubeChannels).join(
+        YoutubeSubscriptions,
+        YoutubeSubscriptions.channel_id == YoutubeChannels.id,
         isouter=True,
     )
     query = (
-        select(youtube_channels.c.id)
+        select(YoutubeChannels.id)
         .select_from(query)
-        .where(youtube_subscriptions.c.id.isnot(None))
+        .where(YoutubeSubscriptions.id.isnot(None))
     )
     hanging_channels = [row.get("id") for row in await db.fetch_all(query)]
 
-    query = youtube_channels.delete().where(youtube_channels.c.id.in_(hanging_channels))
+    query = delete(YoutubeChannels).where(YoutubeChannels.id.in_(hanging_channels))
     await db.execute(query)
