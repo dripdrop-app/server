@@ -11,6 +11,10 @@ export const typographyDefaultCSS: SxProps = { textOverflow: 'ellipsis', whiteSp
 export const resolveAlbumFromTitle = (title: string) => {
 	let album = '';
 
+	if (!title) {
+		return album;
+	}
+
 	const openPar = title.indexOf('(');
 	const closePar = title.indexOf(')');
 	const specialTitle = (openPar !== -1 || closePar !== -1) && openPar < closePar;
