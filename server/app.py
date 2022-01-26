@@ -1,12 +1,12 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import FileResponse
-from server.api import youtube, auth, music
+from server.api import youtube, auth, music, elasticsearch
 from server.config import config
-from server.models import db
-from server.dependencies import get_user
-from server.queue import q
 from server.cron import Cron
+from server.dependencies import get_user
+from server.models import db
+from server.queue import q
 
 cron = Cron()
 
@@ -37,6 +37,7 @@ app = FastAPI(
 )
 
 app.router.include_router(auth.app.router, prefix="/auth")
+app.router.include_router(elasticsearch.app.router, prefix="/elasticsearch")
 app.router.include_router(music.app.router, prefix="/music")
 app.router.include_router(youtube.app.router, prefix="/youtube")
 

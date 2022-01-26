@@ -77,5 +77,5 @@ def get_authenticated_user(user: SessionUser = Depends(get_user)):
 
 def get_admin_user(user: SessionUser = Depends(get_user)):
     if user and user.admin:
-        return AdminUser(**user.dict(), admin=True, authenticated=True)
+        return AdminUser(**user.dict(), authenticated=True)
     raise HTTPException(401)

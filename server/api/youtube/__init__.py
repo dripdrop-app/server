@@ -34,7 +34,7 @@ from typing import List
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 
-app = FastAPI(dependencies=[Depends(get_authenticated_user)])
+app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
 
 
 @app.get("/account", response_model=YoutubeResponses.Account)
@@ -65,7 +65,7 @@ async def get_youtube_account(
     raise HTTPException(404)
 
 
-@app.websocket("/listenSubscriptionJob")
+@app.websocket("/listen_subscription_job")
 async def listen_subscription_job(
     websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)
 ):

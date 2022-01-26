@@ -55,6 +55,7 @@ PORT 5000 (TEST)
 
 TO DO
 
+- Use elasticsearch for fetching information from db for youtube
 - Move Youtube Links to separate component files
 - Add better urls for navigating youtube collections
 - Add iframe youtube videos to play on site

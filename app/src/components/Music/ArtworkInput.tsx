@@ -15,7 +15,7 @@ const ArtworkInput = () => {
 
 	useEffect(() => {
 		if (artworkURL && !isValidImage(artworkURL) && !isBase64(artworkURL) && isValidLink(artworkURL)) {
-			getArtworkURL({ url: `/music/getArtwork`, params: { artworkURL: artworkURL } });
+			getArtworkURL({ url: `/music/get_artwork`, params: { artworkURL: artworkURL } });
 		}
 	}, [artworkURL, getArtworkURL]);
 

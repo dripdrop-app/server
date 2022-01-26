@@ -17,12 +17,12 @@ from typing import Optional
 app = FastAPI()
 
 
-@app.get("/checkSession", response_model=AuthResponses.User)
+@app.get("/check_session", response_model=AuthResponses.User, responses={401: {}})
 async def check_session(user: AuthenticatedUser = Depends(get_authenticated_user)):
     return JSONResponse({"email": user.email, "admin": user.admin}, 200)
 
 
-@app.post("/login", response_model=AuthResponses.User)
+@app.post("/login", response_model=AuthResponses.User, responses={401: {}, 404: {}})
 async def login(body: AuthRequests.Login):
     email = body.email
     password = body.password
@@ -64,7 +64,7 @@ async def login(body: AuthRequests.Login):
     return response
 
 
-@app.get("/logout")
+@app.get("/logout", dependencies=[Depends(get_authenticated_user)], responses={401: {}})
 async def logout():
     response = Response(None, 200)
     response.set_cookie("session", max_age=-1, expires=-1)
@@ -102,7 +102,9 @@ async def create_account(body: AuthRequests.CreateAccount):
 #     return Response({'email': email, 'admin': False}, 201)
 
 
-@app.get("/googleoauth2")
+@app.get(
+    "/googleoauth2", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
+)
 async def google_oauth2(state: str, code: str, error: Optional[str] = None):
     if error:
         raise HTTPException(400)

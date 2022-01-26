@@ -36,12 +36,12 @@ const JobCard = (props: JobCardProps) => {
 	const [removeJob, removeJobStatus] = useLazyFetch();
 
 	const tryDownloadJob = useCallback(() => {
-		downloadJob({ url: '/music/downloadJob', responseType: 'blob', params: { id } });
+		downloadJob({ url: '/music/download_job', responseType: 'blob', params: { id } });
 	}, [downloadJob, id]);
 
 	const tryRemoveJob = useCallback(
 		async (deletedJobID: string) => {
-			removeJob({ url: '/music/deleteJob', method: 'DELETE', params: { id: deletedJobID } });
+			removeJob({ url: '/music/delete_job', method: 'DELETE', params: { id: deletedJobID } });
 		},
 		[removeJob]
 	);

@@ -31,7 +31,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 
 
-app = FastAPI(dependencies=[Depends(get_authenticated_user)])
+app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
 
 
 @app.get("/grouping", response_model=MusicResponses.Grouping)
@@ -44,7 +44,7 @@ async def get_grouping(youtube_url: str = Query(None, regex=youtube_regex)):
         raise HTTPException(400)
 
 
-@app.get("/getArtwork", response_model=MusicResponses.ArtworkURL)
+@app.get("/get_artwork", response_model=MusicResponses.ArtworkURL)
 async def get_artwork(artwork_url: str = Query(None)):
     try:
         loop = asyncio.get_event_loop()
@@ -56,7 +56,7 @@ async def get_artwork(artwork_url: str = Query(None)):
         raise HTTPException(400)
 
 
-@app.post("/getTags", response_model=MusicResponses.Tags)
+@app.post("/get_tags", response_model=MusicResponses.Tags)
 async def get_tags(file: UploadFile = File(None)):
     if not file:
         raise HTTPException(400)
@@ -65,7 +65,7 @@ async def get_tags(file: UploadFile = File(None)):
     return JSONResponse(tags.dict())
 
 
-@app.websocket("/listenJobs")
+@app.websocket("/listen_jobs")
 async def listen_jobs(
     websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
@@ -170,7 +170,7 @@ async def download(
     return JSONResponse({"job": jsonable_encoder(job_info)})
 
 
-@app.delete("/deleteJob")
+@app.delete("/delete_job")
 async def delete_job(
     id: str = Query(None), user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
@@ -186,7 +186,7 @@ async def delete_job(
     return Response(None)
 
 
-@app.get("/downloadJob", status_code=200)
+@app.get("/download_job", status_code=200)
 async def download_job(
     id: str = Query(None), user: AuthenticatedUser = Depends(get_authenticated_user)
 ):

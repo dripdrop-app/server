@@ -2,8 +2,7 @@ version: '2.4'
 services:
   postgres:
     image: postgres:14
-    container_name: scripts_postgres
-    restart: always
+    container_name: postgres
     ports:
       - '5432:5432'
     volumes:
@@ -14,7 +13,28 @@ services:
 
   redis:
     image: redis
-    container_name: scripts_redis
-    restart: always
+    container_name: redis
     ports:
       - '6379:6379'
+
+  elasticsearch:
+    image: elasticsearch:7.16.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - http.port=9200
+      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358
+      - http.cors.enabled=true
+      - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
+      - http.cors.allow-credentials=true
+      - logger.org.elasticsearch.discovery=DEBUG
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+
+  dejavu:
+    image: appbaseio/dejavu
+    container_name: dejavu
+    ports:
+      - '1358:1358'
