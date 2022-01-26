@@ -9,19 +9,19 @@ import useLazyFetch from '../../hooks/useLazyFetch';
 const ArtworkInput = () => {
 	const [artworkURL, setArtworkURL] = useRecoilState(artworkURLSelector);
 
-	const [getArtworkURL, getArtworkURLStatus] = useLazyFetch<{ artworkURL: string }>();
+	const [getArtworkURL, getArtworkURLStatus] = useLazyFetch<{ artwork_url: string }>();
 
 	const valid = isBase64(artworkURL) || isValidImage(artworkURL);
 
 	useEffect(() => {
 		if (artworkURL && !isValidImage(artworkURL) && !isBase64(artworkURL) && isValidLink(artworkURL)) {
-			getArtworkURL({ url: `/music/getArtwork`, params: { artworkURL: artworkURL } });
+			getArtworkURL({ url: `/music/getArtwork`, params: { artwork_url: artworkURL } });
 		}
 	}, [artworkURL, getArtworkURL]);
 
 	useEffect(() => {
 		if (getArtworkURLStatus.isSuccess) {
-			const new_artwork_url = getArtworkURLStatus.data.artworkURL;
+			const new_artwork_url = getArtworkURLStatus.data.artwork_url;
 			setArtworkURL(new_artwork_url);
 		}
 	}, [artworkURL, getArtworkURLStatus, setArtworkURL]);
