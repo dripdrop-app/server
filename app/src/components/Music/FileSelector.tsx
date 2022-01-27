@@ -61,7 +61,7 @@ const FileSwitch = (props: FileSwitchProps) => {
 				...form,
 				title: title || '',
 				artist: artist || '',
-				album: album || resolveAlbumFromTitle(title) || '',
+				album: album || resolveAlbumFromTitle(title),
 				grouping: grouping || '',
 				artwork_url: artwork_url || '',
 			}));

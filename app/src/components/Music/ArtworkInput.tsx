@@ -24,7 +24,7 @@ const ArtworkInput = () => {
 			const new_artwork_url = getArtworkURLStatus.data.artwork_url;
 			setArtworkURL(new_artwork_url);
 		}
-	}, [artworkURL, getArtworkURLStatus, setArtworkURL]);
+	}, [getArtworkURLStatus, setArtworkURL]);
 
 	return useMemo(
 		() => (
