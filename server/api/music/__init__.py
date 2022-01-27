@@ -2,6 +2,7 @@ import asyncio
 import uuid
 import traceback
 import os
+import json
 from asyncio.tasks import Task
 from fastapi import (
     FastAPI,
@@ -26,7 +27,7 @@ from server.models.api import JobInfo, MusicResponses, youtube_regex
 from server.redis import RedisChannels, subscribe, redis
 from server.queue import q
 from sqlalchemy import desc, select, insert, delete, update
-from typing import List, Optional
+from typing import Optional
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from yt_dlp.utils import sanitize_filename
 
@@ -69,22 +70,20 @@ async def get_tags(file: UploadFile = File(None)):
 async def listen_jobs(
     websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
-    def on_music_job(type: str):
-        async def handler(msg):
-            started_job_id = msg.get("data").decode()
-            query = select(MusicJobs).where(
-                MusicJobs.user_email == user.email, MusicJobs.id == started_job_id
-            )
-            job = await db.fetch_one(query)
-            if job:
-                job = MusicJob.parse_obj(job)
-                await websocket.send_json(
-                    {"type": type, "jobs": [jsonable_encoder(job)]}
-                )
+    async def handler(msg):
+        message = json.loads(msg.get("data").decode())
+        job_id = message.get("job_id")
+        type = message.get("type")
+        query = select(MusicJobs).where(
+            MusicJobs.user_email == user.email, MusicJobs.id == job_id
+        )
+        job = await db.fetch_one(query)
+        if job:
+            job = MusicJob.parse_obj(job)
+            await websocket.send_json({"type": type, "jobs": [jsonable_encoder(job)]})
+        return
 
-        return handler
-
-    tasks: List[Task] = []
+    task: Task = None
     try:
         await websocket.accept()
         query = (
@@ -94,22 +93,7 @@ async def listen_jobs(
         )
         jobs = await db.fetch_all(query)
         await websocket.send_json({"type": "ALL", "jobs": jsonable_encoder(jobs)})
-        tasks.extend(
-            [
-                asyncio.create_task(
-                    subscribe(
-                        RedisChannels.STARTED_MUSIC_JOB_CHANNEL, on_music_job("STARTED")
-                    )
-                ),
-                asyncio.create_task(
-                    subscribe(
-                        RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL,
-                        on_music_job("COMPLETED"),
-                    )
-                ),
-            ]
-        )
-
+        task = asyncio.create_task(subscribe(RedisChannels.MUSIC_JOB_CHANNEL, handler))
         while True:
             await websocket.send_json({})
             await asyncio.sleep(1)
@@ -122,8 +106,7 @@ async def listen_jobs(
     except Exception:
         print(traceback.format_exc())
     finally:
-        for task in tasks:
-            task.cancel()
+        task.cancel()
 
 
 @app.post("/download", status_code=202, response_model=MusicResponses.Download)
@@ -166,7 +149,10 @@ async def download(
         file = await file.read()
 
     q.enqueue("server.api.music.tasks.run_job", job_id, file)
-    await redis.publish(RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value, job_id)
+    await redis.publish(
+        RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value,
+        json.dumps({"job_id": job_id, "type": "STARTED"}),
+    )
     return JSONResponse({"job": jsonable_encoder(job_info)})
 
 

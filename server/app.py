@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import FileResponse
-from server.api import youtube, auth, music, elasticsearch
+from server.api import youtube, auth, music
 from server.config import config
 from server.cron import Cron
 from server.dependencies import get_user
@@ -37,7 +37,6 @@ app = FastAPI(
 )
 
 app.router.include_router(auth.app.router, prefix="/auth")
-app.router.include_router(elasticsearch.app.router, prefix="/elasticsearch")
 app.router.include_router(music.app.router, prefix="/music")
 app.router.include_router(youtube.app.router, prefix="/youtube")
 

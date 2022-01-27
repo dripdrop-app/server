@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from server.api.youtube import google_api
 from server.api.youtube.tasks import update_google_access_token
 from server.config import config
+from server.dependencies import get_authenticated_user
 from server.models import (
     db,
     GoogleAccount,
@@ -23,12 +24,10 @@ from server.models import (
     YoutubeChannels,
     YoutubeVideos,
     YoutubeVideoCategories,
+    AuthenticatedUser,
 )
-from server.dependencies import get_authenticated_user
-from server.models import AuthenticatedUser
 from server.models.api import YoutubeResponses
-from server.redis import subscribe
-from server.utils.enums import RedisChannels
+from server.redis import subscribe, RedisChannels
 from sqlalchemy import desc, func, select, distinct, update
 from typing import List
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
@@ -86,17 +85,12 @@ async def listen_subscription_job(
                 )
         return
 
-    tasks: List[Task] = []
+    task: Task = None
     try:
         await websocket.accept()
-        tasks.append(
-            asyncio.create_task(
-                subscribe(
-                    RedisChannels.COMPLETED_YOUTUBE_SUBSCRIPTION_JOB_CHANNEL, handler
-                )
-            )
+        task = asyncio.create_task(
+            subscribe(RedisChannels.YOUTUBE_SUBSCRIPTION_JOB_CHANNEL, handler)
         )
-
         while True:
             await websocket.send_json({})
             await asyncio.sleep(1)
@@ -109,8 +103,7 @@ async def listen_subscription_job(
     except Exception:
         print(traceback.format_exc())
     finally:
-        for task in tasks:
-            task.cancel()
+        task.cancel()
 
 
 @app.get("/oauth", response_class=PlainTextResponse)

@@ -14,6 +14,7 @@ from server.models import (
     YoutubeVideos,
 )
 from server.queue import q
+from server.redis import redis, RedisChannels
 from server.utils.decorators import exception_handler, worker_task
 from sqlalchemy import delete, select, func, update, insert
 
@@ -149,14 +150,17 @@ async def update_user_youtube_subscriptions_job(user_email: str):
 
     google_account = GoogleAccount.parse_obj(google_account)
     google_email = google_account.email
-    # query = youtube_jobs.select().where(youtube_jobs.c.email == google_email)
-    # job = await db.fetch_one(query)
-    # if job:
-    #     return
 
-    # query = youtube_jobs.insert().values(job_id=youtube_job_id,
-    #               email=google_email, completed=False, failed=False)
+    query = (
+        update(GoogleAccounts)
+        .values(subscriptions_loading=True)
+        .where(GoogleAccounts.user_email == user_email)
+    )
     await db.execute(query)
+    await redis.publish(
+        RedisChannels.YOUTUBE_SUBSCRIPTION_JOB_CHANNEL.value, user_email
+    )
+
     access_token = await update_google_access_token(google_email)
     if not access_token:
         return
@@ -194,8 +198,15 @@ async def update_user_youtube_subscriptions_job(user_email: str):
         YoutubeSubscriptions.id.notin_(current_subscriptions)
     )
     await db.execute(query)
-    # query = youtube_jobs.delete().where(youtube_jobs.c.email == google_email)
+    query = (
+        update(GoogleAccounts)
+        .values(subscriptions_loading=False)
+        .where(GoogleAccounts.user_email == user_email)
+    )
     await db.execute(query)
+    await redis.publish(
+        RedisChannels.YOUTUBE_SUBSCRIPTION_JOB_CHANNEL.value, user_email
+    )
 
 
 @worker_task

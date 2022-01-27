@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import json
 import mutagen
 import os
 import re
@@ -14,9 +15,8 @@ from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import yt_download
 from server.models import MusicJob, db, MusicJobs
 from server.models.api import MusicResponses
-from server.redis import redis
+from server.redis import redis, RedisChannels
 from server.utils.decorators import worker_task
-from server.utils.enums import RedisChannels
 from sqlalchemy import select, update
 
 JOB_DIR = "music_jobs"
@@ -83,7 +83,7 @@ async def run_job(job_id: str, file):
                         audio_file.tags.add(
                             mutagen.id3.APIC(mimetype="image/png", data=imageData)
                         )
-                    except:
+                    except Exception:
                         print(traceback.format_exc())
 
             audio_file.tags.add(mutagen.id3.TIT2(text=title))
@@ -101,7 +101,10 @@ async def run_job(job_id: str, file):
                 update(MusicJobs).where(MusicJobs.id == job_id).values(completed=True)
             )
             await db.execute(query)
-            await redis.publish(RedisChannels.COMPLETED_MUSIC_JOB_CHANNEL.value, job_id)
+            await redis.publish(
+                RedisChannels.MUSIC_JOB_CHANNEL.value,
+                json.dumps({"job_id": job_id, "type": "COMPLETED"}),
+            )
     except Exception as e:
         if job:
             query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
@@ -153,7 +156,7 @@ def read_tags(file: Union[str, bytes, None], filename):
             if buffer
             else None,
         )
-    except:
+    except Exception:
         subprocess.run(["rm", "-rf", tag_path])
         print(traceback.format_exc())
         return MusicResponses.Tags(

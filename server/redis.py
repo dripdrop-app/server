@@ -1,9 +1,14 @@
 import aioredis
+from enum import Enum
 from typing import Coroutine
 from server.config import config
-from server.utils.enums import RedisChannels
 
 redis = aioredis.from_url(config.redis_url)
+
+
+class RedisChannels(Enum):
+    MUSIC_JOB_CHANNEL = "MUSIC_JOB_CHANNEL"
+    YOUTUBE_SUBSCRIPTION_JOB_CHANNEL = "YOUTUBE_SUBSCRIPTION_JOB_CHANNEL"
 
 
 async def subscribe(channel: RedisChannels, message_handler: Coroutine):
