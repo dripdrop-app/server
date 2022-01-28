@@ -29,7 +29,7 @@ from server.models import AuthenticatedUser
 from server.models.api import YoutubeResponses
 from server.redis import subscribe
 from server.utils.enums import RedisChannels
-from sqlalchemy import desc, func, select, distinct, update
+from sqlalchemy import desc, func, select, update
 from typing import List
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
@@ -123,77 +123,60 @@ async def create_oauth_link(user: AuthenticatedUser = Depends(get_authenticated_
 
 @app.get("/videos/{page}/{per_page}", response_model=YoutubeResponses.Videos)
 async def get_youtube_videos(
-    page: int = 1,
+    page: int = Path(1, ge=1),
     per_page: int = Path(50, le=50),
     user: AuthenticatedUser = Depends(get_authenticated_user),
     video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
 ):
-    google_account_subquery = (
+    main_query = (
         select(GoogleAccounts)
         .where(GoogleAccounts.user_email == user.email)
-        .alias("google_accounts_sub")
+        .alias(name="google_accounts")
+        .join(YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email)
+        .join(YoutubeChannels, YoutubeChannels.id == YoutubeSubscriptions.channel_id)
     )
 
-    youtube_videos_all_query = select(YoutubeVideos)
+    videos_query = select(YoutubeVideos)
     if channel_id:
-        youtube_videos_all_query = youtube_videos_all_query.where(
-            YoutubeVideos.channel_id == channel_id
-        )
-    youtube_videos_all_query = youtube_videos_all_query.alias("youtube_videos_all")
-
-    youtube_videos_sub_query = select(YoutubeVideos).where(
-        YoutubeVideos.category_id.in_(video_categories)
+        videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
+    videos_query = videos_query.alias(name="youtube_videos")
+    query = main_query.join(
+        videos_query, videos_query.c.channel_id == YoutubeChannels.id
+    ).join(
+        YoutubeVideoCategories, YoutubeVideoCategories.id == videos_query.c.category_id
     )
-    if channel_id:
-        youtube_videos_sub_query.where(YoutubeVideos.id == channel_id)
-    youtube_videos_sub_query = youtube_videos_sub_query.alias("youtube_videos_sub")
-
-    joins = google_account_subquery.join(
-        YoutubeSubscriptions,
-        google_account_subquery.c.email == YoutubeSubscriptions.email,
-    )
-    joins = joins.join(
-        YoutubeChannels, YoutubeSubscriptions.channel_id == YoutubeChannels.id
-    )
-
-    all_joins = joins.join(
-        youtube_videos_all_query,
-        YoutubeChannels.id == youtube_videos_all_query.c.channel_id,
-    )
-    sub_joins = joins.join(
-        youtube_videos_sub_query,
-        YoutubeChannels.id == youtube_videos_sub_query.c.channel_id,
-    )
-
-    if len(video_categories) == 0:
-        joins = all_joins
-        youtube_videos_query = youtube_videos_all_query
-    else:
-        joins = sub_joins
-        youtube_videos_query = youtube_videos_sub_query
-
-    query = select([func.count(youtube_videos_query.c.id)]).select_from(joins)
-    count = await db.fetch_val(query)
-
-    query = select([distinct(youtube_videos_all_query.c.category_id)]).select_from(
-        all_joins
-    )
-    category_ids = [row.get("category_id") for row in await db.fetch_all(query)]
-
-    query = select(YoutubeVideoCategories).where(
-        YoutubeVideoCategories.id.in_(category_ids)
+    query = (
+        select(YoutubeVideoCategories)
+        .select_from(query)
+        .distinct(YoutubeVideoCategories.id)
     )
     categories = await db.fetch_all(query)
 
+    videos_query = select(YoutubeVideos)
+    if channel_id:
+        videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
+    if video_categories:
+        videos_query = videos_query.where(
+            YoutubeVideos.category_id.in_(video_categories)
+        )
+    videos_query = videos_query.alias(name="youtube_videos")
+    query = main_query.join(
+        videos_query, videos_query.c.channel_id == YoutubeChannels.id
+    )
+
+    count_query = select(func.count(videos_query.c.id)).select_from(query)
+    count = await db.fetch_val(count_query)
+
     query = (
-        select(youtube_videos_query, YoutubeChannels.title.label("channel_title"))
-        .select_from(joins)
-        .order_by(desc(youtube_videos_query.c.published_at))
+        select(videos_query, YoutubeChannels.title.label("channel_title"))
+        .select_from(query)
+        .order_by(desc(videos_query.c.published_at))
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
     videos = await db.fetch_all(query)
+
     return JSONResponse(
         {
             "videos": jsonable_encoder(videos),
@@ -207,24 +190,19 @@ async def get_youtube_videos(
     "/subscriptions/{page}/{per_page}", response_model=YoutubeResponses.Subscriptions
 )
 async def get_youtube_subscriptions(
-    page: int = 1,
+    page: int = Path(1, ge=1),
     per_page: int = Path(50, le=50),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
-    google_account_subquery = (
+    main_query = (
         select(GoogleAccounts)
         .where(GoogleAccounts.user_email == user.email)
-        .alias("google_accounts_sub")
-    )
-    joins = google_account_subquery.join(
-        YoutubeSubscriptions,
-        google_account_subquery.c.email == YoutubeSubscriptions.email,
-    )
-    joins = joins.join(
-        YoutubeChannels, YoutubeSubscriptions.channel_id == YoutubeChannels.id
+        .alias(name="google_accounts")
+        .join(YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email)
+        .join(YoutubeChannels, YoutubeChannels.id == YoutubeSubscriptions.channel_id)
     )
 
-    query = select([func.count(YoutubeSubscriptions.id)]).select_from(joins)
+    query = select(func.count(YoutubeSubscriptions.id)).select_from(main_query)
     count = await db.fetch_val(query)
 
     query = (
@@ -233,7 +211,7 @@ async def get_youtube_subscriptions(
             YoutubeChannels.title.label("channel_title"),
             YoutubeChannels.thumbnail.label("channel_thumbnail"),
         )
-        .select_from(joins)
+        .select_from(main_query)
         .order_by(YoutubeChannels.title)
         .offset((page - 1) * per_page)
         .limit(per_page)
