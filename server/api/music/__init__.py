@@ -150,7 +150,7 @@ async def download(
 
     q.enqueue("server.api.music.tasks.run_job", job_id, file)
     await redis.publish(
-        RedisChannels.STARTED_MUSIC_JOB_CHANNEL.value,
+        RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps({"job_id": job_id, "type": "STARTED"}),
     )
     return JSONResponse({"job": jsonable_encoder(job_info)})
