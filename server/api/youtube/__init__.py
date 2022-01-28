@@ -27,8 +27,7 @@ from server.models import (
     AuthenticatedUser,
 )
 from server.models.api import YoutubeResponses
-from server.redis import subscribe
-from server.utils.enums import RedisChannels
+from server.redis import subscribe, RedisChannels
 from sqlalchemy import desc, func, select, update
 from typing import List
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
