@@ -23,6 +23,7 @@ const FiltersView = (props: {
 }) => {
 	const { state, updateState } = props;
 	const [getVideos, getVideosState] = useLazyFetch<YoutubeVideoResponse>();
+	const [getCategories, getVideoCategoriesState] = useLazyFetch<YoutubeVideoCategoriesResponse>();
 
 	const { categories, selectedCategories, per_page, page, total_videos } = state;
 
@@ -67,17 +68,27 @@ const FiltersView = (props: {
 	);
 
 	useEffect(() => {
+		if (getVideoCategoriesState.isSuccess) {
+			const { categories } = getVideoCategoriesState.data;
+			updateState((prev) => ({ ...prev, categories }));
+		}
+	}, [getVideoCategoriesState.data, getVideoCategoriesState.isSuccess, updateState]);
+
+	useEffect(() => {
 		if (getVideosState.isSuccess) {
-			const { videos, total_videos, categories } = getVideosState.data;
-			updateState((prev) => ({ ...prev, videos, total_videos, categories, loaded: true }));
+			const { videos, total_videos } = getVideosState.data;
+			updateState((prev) => ({ ...prev, videos, total_videos, loaded: true }));
 		}
 	}, [getVideosState.data, getVideosState.isSuccess, updateState]);
 
 	useEffect(() => {
 		if (!state.loaded && !getVideosState.started) {
 			queryVideos(state);
+			getCategories({
+				url: `/youtube/videos/categories${state.channel_id ? `?channel_id=${state.channel_id}` : ''}`,
+			});
 		}
-	}, [getVideosState.started, queryVideos, state]);
+	}, [getCategories, getVideosState.started, queryVideos, state]);
 
 	if (getVideosState.isLoading || !state.loaded) {
 		return (

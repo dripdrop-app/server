@@ -17,7 +17,7 @@ from typing import Optional
 app = FastAPI()
 
 
-@app.get("/check_session", response_model=AuthResponses.User, responses={401: {}})
+@app.get("/session", response_model=AuthResponses.User, responses={401: {}})
 async def check_session(user: AuthenticatedUser = Depends(get_authenticated_user)):
     return JSONResponse({"email": user.email, "admin": user.admin}, 200)
 

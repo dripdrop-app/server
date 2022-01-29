@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { DefaultValue, useRecoilState } from 'recoil';
-import { Button, CircularProgress, Stack, Tab, Tabs, Typography, Box } from '@mui/material';
+import { Button, CircularProgress, Divider, Stack, Typography } from '@mui/material';
 import useLazyFetch from '../hooks/useLazyFetch';
 import VideosView from '../components/YoutubeCollections/VideosView';
 import SubscriptionsView from '../components/YoutubeCollections/SubscriptionsView';
 import { authAtom } from '../atoms/YoutubeCollections';
 
-const YoutubeCollections = () => {
+interface YoutubeCollectionsProps {
+	page: 'VIDEOS' | 'SUBSCRIPTIONS';
+}
+
+const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	const [youtubeAuth, setYoutubeAuth] = useRecoilState(authAtom);
-	const [tabIndex, setTabIndex] = useState(0);
 
 	const [getOAuthLink, getOAuthLinkStatus] = useLazyFetch<string>();
 	const [getYoutubeAccount, getYoutubeAccountStatus] = useLazyFetch<YoutubeState>();
@@ -64,14 +67,12 @@ const YoutubeCollections = () => {
 				</Stack>
 			) : (
 				<React.Fragment>
-					<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-						<Tabs value={tabIndex} onChange={(e, v) => setTabIndex(v)}>
-							<Tab value={0} label="videos" />
-							<Tab value={1} label="subscriptions" />
-						</Tabs>
-					</Box>
-					{tabIndex === 0 ? <VideosView channelID={null} /> : null}
-					{tabIndex === 1 ? <SubscriptionsView /> : null}
+					<Typography sx={{ m: 1 }} variant="h5">
+						{props.page.charAt(0).toLocaleUpperCase() + props.page.substring(1).toLocaleLowerCase()}
+					</Typography>
+					<Divider />
+					{props.page === 'VIDEOS' ? <VideosView channelID={null} /> : null}
+					{props.page === 'SUBSCRIPTIONS' ? <SubscriptionsView /> : null}
 				</React.Fragment>
 			)}
 		</Stack>

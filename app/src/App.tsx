@@ -1,58 +1,10 @@
-import React, { Fragment, useCallback, useEffect } from 'react';
-import { Link, Route, Switch } from 'react-router-dom';
-import { AppBar, Box, Button, CircularProgress, Stack, Toolbar, Typography } from '@mui/material';
-import { useRecoilValueLoadable, useSetRecoilState } from 'recoil';
+import React from 'react';
+import { Route, Switch } from 'react-router-dom';
+import { AppBar, Box, CircularProgress, Stack, Toolbar } from '@mui/material';
+import { useRecoilValueLoadable } from 'recoil';
 import { userAtom } from './atoms/Auth';
 import { Auth, MusicDownloader, YoutubeCollections } from './pages';
-import DripDrop from './images/dripdrop.png';
-import useLazyFetch from './hooks/useLazyFetch';
-
-interface HeaderLinkProps {
-	text: string | JSX.Element;
-	link: string;
-}
-
-const HeaderLink = (props: HeaderLinkProps) => {
-	return (
-		<Link style={{ color: 'white', textDecoration: 'none' }} to={props.link}>
-			<Button color="inherit">{props.text}</Button>
-		</Link>
-	);
-};
-
-const Header = () => {
-	const user = useRecoilValueLoadable(userAtom);
-	const setUser = useSetRecoilState(userAtom);
-
-	const [logout, logoutStatus] = useLazyFetch<null>();
-
-	const logoutFn = useCallback(() => logout({ url: '/auth/logout' }), [logout]);
-
-	useEffect(() => {
-		if (logoutStatus.isSuccess) {
-			setUser(() => null);
-		}
-	}, [logoutStatus.isSuccess, setUser]);
-
-	if (user.state === 'hasValue') {
-		const email = user.getValue()?.email;
-		if (email) {
-			return (
-				<Fragment>
-					<HeaderLink link="/" text={<img height="40px" alt="DripDrop" src={DripDrop} />} />
-					<HeaderLink link="/musicDownload" text="Music Downloader" />
-					<HeaderLink link="/youtubeCollections" text="Youtube Collections" />
-					<Box sx={{ flexGrow: 1 }} />
-					<Typography variant="h5">{email}</Typography>
-					<Button onClick={() => logoutFn()} color="inherit">
-						Logout
-					</Button>
-				</Fragment>
-			);
-		}
-	}
-	return null;
-};
+import Header from './components/Header';
 
 const Routes = () => {
 	const user = useRecoilValueLoadable(userAtom);
@@ -67,7 +19,8 @@ const Routes = () => {
 	if (user.state === 'hasValue' && user.getValue()?.email) {
 		return (
 			<Switch>
-				<Route path="/youtubeCollections" render={() => <YoutubeCollections />} />
+				<Route path="/youtube/subscriptions" render={() => <YoutubeCollections page="SUBSCRIPTIONS" />} />
+				<Route path="/youtube/videos" render={() => <YoutubeCollections page="VIDEOS" />} />
 				<Route path="/musicDownload" render={() => <MusicDownloader />} />
 				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>

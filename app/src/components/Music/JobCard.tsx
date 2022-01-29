@@ -35,17 +35,6 @@ const JobCard = (props: JobCardProps) => {
 	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
 	const [removeJob, removeJobStatus] = useLazyFetch();
 
-	const tryDownloadJob = useCallback(() => {
-		downloadJob({ url: '/music/download_job', responseType: 'blob', params: { id } });
-	}, [downloadJob, id]);
-
-	const tryRemoveJob = useCallback(
-		async (deletedJobID: string) => {
-			removeJob({ url: '/music/delete_job', method: 'DELETE', params: { id: deletedJobID } });
-		},
-		[removeJob]
-	);
-
 	const copyJob = useCallback(() => {
 		setMusicForm({
 			title,
@@ -131,7 +120,11 @@ const JobCard = (props: JobCardProps) => {
 								{!completed && !failed ? <CircularProgress /> : null}
 								<ButtonGroup variant="contained">
 									{completed && !failed ? (
-										<Button title="Download File" color="success" onClick={() => tryDownloadJob()}>
+										<Button
+											title="Download File"
+											color="success"
+											onClick={() => downloadJob({ url: `/music/jobs/download/${id}`, responseType: 'blob' })}
+										>
 											<FileDownload />
 										</Button>
 									) : null}
@@ -143,7 +136,11 @@ const JobCard = (props: JobCardProps) => {
 									<Button title="Copy to Form" onClick={() => copyJob()}>
 										<CopyAll />
 									</Button>
-									<Button title="Delete Job and File" color="error" onClick={() => tryRemoveJob(id)}>
+									<Button
+										title="Delete Job and File"
+										color="error"
+										onClick={() => removeJob({ url: `/music/jobs/delete/${id}`, method: 'DELETE' })}
+									>
 										<Delete />
 									</Button>
 								</ButtonGroup>
@@ -159,13 +156,13 @@ const JobCard = (props: JobCardProps) => {
 			artwork_url,
 			completed,
 			copyJob,
+			downloadJob,
 			failed,
 			filename,
 			grouping,
 			id,
+			removeJob,
 			title,
-			tryDownloadJob,
-			tryRemoveJob,
 			youtube_url,
 		]
 	);

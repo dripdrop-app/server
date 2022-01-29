@@ -44,7 +44,7 @@ const JobList = () => {
 		[setJobs]
 	);
 
-	const loadingWS = useWebsocket('/music/listen_jobs', socketHandler);
+	const loadingWS = useWebsocket('/music/jobs/listen', socketHandler);
 
 	return useMemo(
 		() => (

@@ -48,10 +48,17 @@ declare global {
 	interface YoutubeVideoResponse {
 		total_videos: number;
 		videos: YoutubeVideo[];
+	}
+
+	interface YoutubeVideoCategoriesResponse {
 		categories: YoutubeVideoCategory[];
 	}
 
-	interface YoutubeVideosViewState extends YoutubeVideoResponse, FilterState, PageState {
+	interface YoutubeVideosViewState
+		extends YoutubeVideoResponse,
+			YoutubeVideoCategoriesResponse,
+			FilterState,
+			PageState {
 		channel_id: string | null;
 		loaded: bool;
 	}

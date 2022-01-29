@@ -5,7 +5,7 @@ export const userAtom = atom({
 	key: 'user',
 	default: (async () => {
 		try {
-			const response: AxiosResponse<User> = await axios.get('/auth/check_session');
+			const response: AxiosResponse<User> = await axios.get('/auth/session');
 			return response.data;
 		} catch {}
 		return null;

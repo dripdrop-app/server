@@ -58,9 +58,11 @@ class YoutubeResponses:
     class Account(BaseModel):
         email: str
 
+    class VideoCategories(BaseModel):
+        categories: List[YoutubeVideoCategory]
+
     class Videos(BaseModel):
         total_videos: int
-        categories: List[YoutubeVideoCategory]
         videos: List[YoutubeVideo]
 
     class Subscriptions(BaseModel):

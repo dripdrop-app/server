@@ -65,7 +65,7 @@ const FormActions = (props: FormActionProps) => {
 		formData.append('artist', artist);
 		formData.append('album', album);
 		formData.append('grouping', grouping || '');
-		performOperation({ url: '/music/download', method: 'POST', data: formData });
+		performOperation({ url: '/music/jobs/create', method: 'POST', data: formData });
 	}, [album, artist, artwork_url, fileInputRef, fileType, grouping, performOperation, title, youtube_url]);
 
 	useEffect(() => {

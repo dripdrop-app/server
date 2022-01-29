@@ -1,4 +1,4 @@
-import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, CircularProgress, Divider, Stack, TextField, Typography } from '@mui/material';
 import { useSetRecoilState } from 'recoil';
 import DripDrop from '../images/dripdrop.png';
@@ -11,17 +11,8 @@ const Auth = () => {
 	const [email, setemail] = useState('');
 	const [password, setPassword] = useState('');
 
-	const [loginFn, loginStatus] = useLazyFetch<User>();
-	const [signupFn, signupStatus] = useLazyFetch();
-
-	const login = useCallback(
-		(email: string, password: string) => loginFn({ url: '/auth/login', method: 'POST', data: { email, password } }),
-		[loginFn]
-	);
-	const signup = useCallback(
-		(email: string, password: string) => signupFn({ url: '/auth/create', method: 'POST', data: { email, password } }),
-		[signupFn]
-	);
+	const [login, loginStatus] = useLazyFetch<User>();
+	const [signup, signupStatus] = useLazyFetch();
 
 	const error = useMemo(() => {
 		return signupStatus.error && signupStatus.timestamp > loginStatus.timestamp
@@ -83,10 +74,16 @@ const Auth = () => {
 						<CircularProgress />
 					) : (
 						<Fragment>
-							<Button variant="contained" onClick={() => login(email, password)}>
+							<Button
+								variant="contained"
+								onClick={() => login({ url: '/auth/login', method: 'POST', data: { email, password } })}
+							>
 								Login
 							</Button>
-							<Button variant="contained" onClick={() => signup(email, password)}>
+							<Button
+								variant="contained"
+								onClick={() => signup({ url: '/auth/create', method: 'POST', data: { email, password } })}
+							>
 								Sign Up
 							</Button>
 						</Fragment>
