@@ -21,7 +21,11 @@ const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
 					text={<CardMedia sx={{ flex: 2 }} component="img" image={subscription.channel_thumbnail} />}
 				/>
 				<CardContent sx={{ flex: 1 }}>
-					<CustomLink useMaterial={true} href={channelLink} text={subscription.channel_title} />
+					<CustomLink
+						useMaterial={true}
+						href={channelLink}
+						text={<Typography variant="subtitle1">{subscription.channel_title}</Typography>}
+					/>
 				</CardContent>
 				<CardContent>
 					<Stack>
