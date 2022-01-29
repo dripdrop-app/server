@@ -1,9 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-	Button,
-	Card,
-	CardContent,
-	CardMedia,
 	CircularProgress,
 	Container,
 	Dialog,
@@ -19,12 +15,12 @@ import {
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
+import _ from 'lodash';
 import { subscriptionsAtom } from '../../atoms/YoutubeCollections';
 import useLazyFetch from '../../hooks/useLazyFetch';
 import CustomGrid from './CustomGrid';
-import _ from 'lodash';
 import VideosView from './VideosView';
-import { Variant } from '@mui/material/styles/createTypography';
+import YoutubeSubscriptionCard from './YoutubeSubscriptionCard';
 
 const SubscriptionsView = () => {
 	const [subscriptionsView, setSubscriptionsView] = useRecoilState(subscriptionsAtom);
@@ -60,20 +56,6 @@ const SubscriptionsView = () => {
 		setShowModal(true);
 	}, []);
 
-	const ChannelLink = (variant: Variant, subscription: YoutubeSubscription) => {
-		return (
-			<Typography variant={variant}>
-				<Link
-					sx={{ textDecoration: 'none' }}
-					target="_blank"
-					href={`https://youtube.com/channel/${subscription.channel_id}`}
-				>
-					{subscription.channel_title}
-				</Link>
-			</Typography>
-		);
-	};
-
 	useEffect(() => {
 		if (getSubscriptionsState.isSuccess) {
 			const { subscriptions, total_subscriptions } = getSubscriptionsState.data;
@@ -102,7 +84,15 @@ const SubscriptionsView = () => {
 					<React.Fragment>
 						<DialogTitle>
 							<Stack direction="row" justifyContent="space-between">
-								{ChannelLink('h3', selectedSubscription)}
+								<Typography variant="h3">
+									<Link
+										sx={{ textDecoration: 'none' }}
+										target="_blank"
+										href={`https://youtube.com/channel/${selectedSubscription.channel_id}`}
+									>
+										{selectedSubscription.channel_title}
+									</Link>
+								</Typography>{' '}
 								<IconButton onClick={() => setShowModal(false)}>
 									<Close />
 								</IconButton>
@@ -126,29 +116,13 @@ const SubscriptionsView = () => {
 				</Stack>
 				<CustomGrid
 					items={subscriptions}
-					renderItem={(subscription) => {
-						const publishedAt = new Date(subscription.published_at).toLocaleDateString();
-						return (
-							<Card sx={{ height: '100%' }}>
-								<Link sx={{ flex: 2 }} target="_blank" href={`https://youtube.com/channel/${subscription.channel_id}`}>
-									<CardMedia component="img" image={subscription.channel_thumbnail} />
-								</Link>
-								<CardContent sx={{ flex: 1 }}>{ChannelLink('subtitle1', subscription)}</CardContent>
-								<CardContent>
-									<Stack>
-										<Button variant="contained" onClick={() => showChannelVideos(subscription)}>
-											show videos
-										</Button>
-									</Stack>
-								</CardContent>
-								<CardContent>
-									<Stack direction="column">
-										<Typography variant="caption">Subscribed: {publishedAt}</Typography>
-									</Stack>
-								</CardContent>
-							</Card>
-						);
-					}}
+					renderItem={(subscription, selected) => (
+						<YoutubeSubscriptionCard
+							subscription={subscription}
+							selected={selected}
+							showChannelVideos={showChannelVideos}
+						/>
+					)}
 				/>
 				<Stack direction="row" sx={{ my: 5 }} justifyContent="center">
 					<Pagination

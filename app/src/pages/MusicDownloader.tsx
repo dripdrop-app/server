@@ -6,7 +6,9 @@ import JobList from '../components/Music/JobList';
 const MusicDownloader = () => {
 	return (
 		<Stack sx={{ m: 5 }}>
-			<Typography variant="h2">MP3 Downloader / Converter</Typography>
+			<Typography sx={{ mb: 5 }} variant="h2">
+				MP3 Downloader / Converter
+			</Typography>
 			<Stack direction="row">
 				<Container sx={{ flex: 2 }}>
 					<MusicForm />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Grid } from '@mui/material';
 
-const CustomGrid = <T,>(props: { items: T[]; renderItem: (item: T) => JSX.Element }) => {
+const CustomGrid = <T,>(props: { items: T[]; renderItem: (item: T, selected: boolean) => JSX.Element }) => {
 	const [hoveredItem, setHoveredItem] = useState(-1);
 
 	return (
@@ -9,7 +9,6 @@ const CustomGrid = <T,>(props: { items: T[]; renderItem: (item: T) => JSX.Elemen
 			{props.items.map((item, i) => {
 				return (
 					<Grid
-						sx={{ transform: hoveredItem === i ? 'scale(1.1)' : '' }}
 						onMouseEnter={() => setHoveredItem(i)}
 						onMouseLeave={() => setHoveredItem(-1)}
 						item
@@ -17,7 +16,7 @@ const CustomGrid = <T,>(props: { items: T[]; renderItem: (item: T) => JSX.Elemen
 						md={3}
 						key={i}
 					>
-						{props.renderItem(item)}
+						{props.renderItem(item, hoveredItem === i)}
 					</Grid>
 				);
 			})}
