@@ -69,19 +69,33 @@ async def get_youtube_video_categories(
     user: AuthenticatedUser = Depends(get_authenticated_user),
     channel_id: str = Query(None),
 ):
-    query = (
-        select(GoogleAccounts)
-        .where(GoogleAccounts.user_email == user.email)
-        .alias(name="google_accounts")
-        .join(YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email)
-        .join(YoutubeChannels, YoutubeChannels.id == YoutubeSubscriptions.channel_id)
-    )
+    channel_subquery = select(YoutubeChannels)
+    if channel_id:
+        query = channel_subquery.where(YoutubeChannels.id == channel_id)
+    channel_subquery = channel_subquery.alias("yt_channels")
+
+    if channel_id:
+        query = channel_subquery
+    else:
+        query = (
+            select(GoogleAccounts)
+            .where(GoogleAccounts.user_email == user.email)
+            .alias(name="g_accounts")
+            .join(
+                YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email
+            )
+            .join(
+                channel_subquery,
+                channel_subquery.c.id == YoutubeSubscriptions.channel_id,
+            )
+        )
+
     videos_query = select(YoutubeVideos)
     if channel_id:
         videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
     videos_query = videos_query.alias(name="youtube_videos")
     query = query.join(
-        videos_query, videos_query.c.channel_id == YoutubeChannels.id
+        videos_query, videos_query.c.channel_id == channel_subquery.c.id
     ).join(
         YoutubeVideoCategories, YoutubeVideoCategories.id == videos_query.c.category_id
     )
@@ -102,14 +116,26 @@ async def get_youtube_videos(
     video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
 ):
-    query = (
-        select(GoogleAccounts)
-        .where(GoogleAccounts.user_email == user.email)
-        .alias(name="google_accounts")
-        .join(YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email)
-        .join(YoutubeChannels, YoutubeChannels.id == YoutubeSubscriptions.channel_id)
-    )
+    channel_subquery = select(YoutubeChannels)
+    if channel_id:
+        query = channel_subquery.where(YoutubeChannels.id == channel_id)
+    channel_subquery = channel_subquery.alias("yt_channels")
 
+    if channel_id:
+        query = channel_subquery
+    else:
+        query = (
+            select(GoogleAccounts)
+            .where(GoogleAccounts.user_email == user.email)
+            .alias(name="g_accounts")
+            .join(
+                YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email
+            )
+            .join(
+                channel_subquery,
+                channel_subquery.c.id == YoutubeSubscriptions.channel_id,
+            )
+        )
     videos_query = select(YoutubeVideos)
     if channel_id:
         videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
@@ -119,12 +145,12 @@ async def get_youtube_videos(
         )
     videos_query = videos_query.alias(name="youtube_videos")
 
-    query = query.join(videos_query, videos_query.c.channel_id == YoutubeChannels.id)
+    query = query.join(videos_query, videos_query.c.channel_id == channel_subquery.c.id)
     count_query = select(func.count(videos_query.c.id)).select_from(query)
     count = await db.fetch_val(count_query)
 
     query = (
-        select(videos_query, YoutubeChannels.title.label("channel_title"))
+        select(videos_query, channel_subquery.c.title.label("channel_title"))
         .select_from(query)
         .order_by(desc(videos_query.c.published_at))
         .offset((page - 1) * per_page)
