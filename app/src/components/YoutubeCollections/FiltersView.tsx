@@ -90,7 +90,7 @@ const FiltersView = (props: {
 		}
 	}, [getCategories, getVideosState.started, queryVideos, state]);
 
-	if (getVideosState.isLoading || !state.loaded) {
+	if (getVideosState.isLoading || !state.loaded || getVideoCategoriesState.isLoading) {
 		return (
 			<Stack justifyContent="center" direction="row" sx={{ my: 5 }}>
 				<CircularProgress />
