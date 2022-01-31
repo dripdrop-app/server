@@ -77,17 +77,16 @@ async def get_youtube_video_categories(
     if channel_id:
         query = channel_subquery
     else:
-        query = (
+        google_query = (
             select(GoogleAccounts)
             .where(GoogleAccounts.user_email == user.email)
             .alias(name="g_accounts")
-            .join(
-                YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email
-            )
-            .join(
-                channel_subquery,
-                channel_subquery.c.id == YoutubeSubscriptions.channel_id,
-            )
+        )
+        query = google_query.join(
+            YoutubeSubscriptions, YoutubeSubscriptions.email == google_query.c.email
+        ).join(
+            channel_subquery,
+            channel_subquery.c.id == YoutubeSubscriptions.channel_id,
         )
 
     videos_query = select(YoutubeVideos)
@@ -124,17 +123,16 @@ async def get_youtube_videos(
     if channel_id:
         query = channel_subquery
     else:
-        query = (
+        google_query = (
             select(GoogleAccounts)
             .where(GoogleAccounts.user_email == user.email)
             .alias(name="g_accounts")
-            .join(
-                YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email
-            )
-            .join(
-                channel_subquery,
-                channel_subquery.c.id == YoutubeSubscriptions.channel_id,
-            )
+        )
+        query = google_query.join(
+            YoutubeSubscriptions, YoutubeSubscriptions.email == google_query.c.email
+        ).join(
+            channel_subquery,
+            channel_subquery.c.id == YoutubeSubscriptions.channel_id,
         )
     videos_query = select(YoutubeVideos)
     if channel_id:
