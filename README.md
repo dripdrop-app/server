@@ -55,6 +55,8 @@ PORT 5000 (TEST)
 
 TO DO
 
-- Move Youtube Links to separate component files
+- Move subscription modal to separate page
+- Create new pages (Youtube Video and Youtube Subscription Page)
 - Add iframe youtube videos to play on site
+- Add queuing to youtube videos (custom single playlist)
 - Use a new button to go navigate to content on youtube
