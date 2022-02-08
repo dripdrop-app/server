@@ -30,15 +30,16 @@ const CustomLink = (props: CustomLinkProps) => {
 		[props.href, props.to]
 	);
 
-	const link = props.useMaterial ? (
-		<MaterialLink style={linkStyle} {...linkProps}>
-			{props.text}
-		</MaterialLink>
-	) : (
-		<Link style={linkStyle} {...linkProps}>
-			{props.text}
-		</Link>
-	);
+	const link =
+		props.useMaterial || props.href ? (
+			<MaterialLink style={linkStyle} {...linkProps}>
+				{props.text}
+			</MaterialLink>
+		) : (
+			<Link style={linkStyle} {...linkProps}>
+				{props.text}
+			</Link>
+		);
 
 	if (props.button) {
 		return <Button color="inherit">{link}</Button>;
