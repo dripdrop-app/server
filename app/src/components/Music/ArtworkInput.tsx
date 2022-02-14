@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useRecoilState } from 'recoil';
 import { Stack, TextField, Button, CircularProgress } from '@mui/material';
 import { defaultTextFieldProps, isBase64, isValidImage, isValidLink } from '../../utils/helpers';
-import { artworkURLSelector } from '../../atoms/Music';
+import { artworkURLSelector } from '../../state/Music';
 import BlankImage from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
 

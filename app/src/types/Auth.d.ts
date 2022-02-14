@@ -17,4 +17,8 @@ declare global {
 		email: string;
 		admin: boolean;
 	}
+
+	interface UserState extends User {
+		authenticated: boolean;
+	}
 }

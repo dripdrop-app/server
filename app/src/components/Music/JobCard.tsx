@@ -13,7 +13,7 @@ import {
 	ButtonGroup,
 	Button,
 } from '@mui/material';
-import { jobAtom, jobsAtom, musicFormAtom } from '../../atoms/Music';
+import { jobAtom, jobsAtom, musicFormAtom } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import Image from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
@@ -30,7 +30,7 @@ const JobCard = (props: JobCardProps) => {
 	const { id } = props;
 	const job = useRecoilValue(jobAtom(id));
 
-	const { filename, youtube_url, title, artist, album, grouping, artwork_url, completed, failed } = job;
+	const { filename, youtubeUrl, title, artist, album, grouping, artworkUrl, completed, failed } = job;
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
 	const [removeJob, removeJobStatus] = useLazyFetch();
@@ -42,13 +42,13 @@ const JobCard = (props: JobCardProps) => {
 			album,
 			grouping: grouping || '',
 			fileType: FILE_TYPE.YOUTUBE,
-			youtube_url: youtube_url || '',
+			youtubeUrl: youtubeUrl || '',
 			filename: '',
-			artwork_url: artwork_url || '',
+			artworkUrl: artworkUrl || '',
 			groupingLoading: false,
 			tagsLoading: false,
 		});
-	}, [album, artist, artwork_url, grouping, setMusicForm, title, youtube_url]);
+	}, [album, artist, artworkUrl, grouping, setMusicForm, title, youtubeUrl]);
 
 	useEffect(() => {
 		if (removeJobStatus.isSuccess) {
@@ -78,7 +78,7 @@ const JobCard = (props: JobCardProps) => {
 			<Card>
 				<Container sx={{ my: 1 }}>
 					<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center">
-						<CardMedia component="img" height="150" image={artwork_url || Image} alt="artwork" />
+						<CardMedia component="img" height="150" image={artworkUrl || Image} alt="artwork" />
 						<CardContent sx={{ flex: 2 }}>
 							<Stack direction="row" spacing={1}>
 								<Typography variant="caption">ID:</Typography>
@@ -89,7 +89,7 @@ const JobCard = (props: JobCardProps) => {
 							<Stack direction="row" spacing={1}>
 								<Typography variant="caption">Source:</Typography>
 								<Typography sx={typographyDefaultCSS} variant="caption">
-									{filename || youtube_url}
+									{filename || youtubeUrl}
 								</Typography>
 							</Stack>
 							<Stack direction="row" spacing={1}>
@@ -153,7 +153,7 @@ const JobCard = (props: JobCardProps) => {
 		[
 			album,
 			artist,
-			artwork_url,
+			artworkUrl,
 			completed,
 			copyJob,
 			downloadJob,
@@ -163,7 +163,7 @@ const JobCard = (props: JobCardProps) => {
 			id,
 			removeJob,
 			title,
-			youtube_url,
+			youtubeUrl,
 		]
 	);
 };

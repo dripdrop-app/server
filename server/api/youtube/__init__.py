@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import PlainTextResponse
 from importlib_metadata import email
 from server.api.youtube import google_api
 from server.api.youtube.tasks import update_google_access_token
@@ -8,6 +7,8 @@ from server.config import config
 from server.dependencies import get_authenticated_user
 from server.models import (
     db,
+    YoutubeVideo,
+    YoutubeVideoCategory,
     GoogleAccount,
     GoogleAccounts,
     YoutubeSubscriptions,
@@ -16,7 +17,12 @@ from server.models import (
     YoutubeVideoCategories,
     AuthenticatedUser,
 )
-from server.models.api import YoutubeResponses
+from server.models.api import (
+    YoutubeResponses,
+    YoutubeSubscriptionResponse,
+    YoutubeVideoCategoryResponse,
+    YoutubeVideoResponse,
+)
 from server.redis import (
     create_websocket_redis_channel_listener,
     RedisChannels,
@@ -47,12 +53,9 @@ async def get_youtube_account(
                 await db.execute(query)
         else:
             access_token = google_account.access_token
-        return JSONResponse(
-            {
-                "email": google_account.email,
-                "refresh": not bool(access_token),
-            }
-        )
+        return YoutubeResponses.Account(
+            email=google_account.email, refresh=not bool(access_token)
+        ).dict()
     raise HTTPException(404)
 
 
@@ -103,17 +106,26 @@ async def get_youtube_video_categories(
         .select_from(query)
         .distinct(YoutubeVideoCategories.id)
     )
-    categories = await db.fetch_all(query)
-    return JSONResponse({"categories": jsonable_encoder(categories)})
+    categories = []
+    for row in await db.fetch_all(query):
+        category = YoutubeVideoCategory.parse_obj(row)
+        categories.append(
+            YoutubeVideoCategoryResponse(
+                id=category.id,
+                name=category.name,
+                created_at=category.created_at,
+            )
+        )
+    return YoutubeResponses.VideoCategories(categories=categories).dict()
 
 
 @app.get("/videos/{page}/{per_page}", response_model=YoutubeResponses.Videos)
 async def get_youtube_videos(
     page: int = Path(1, ge=1),
     per_page: int = Path(50, le=50),
-    user: AuthenticatedUser = Depends(get_authenticated_user),
     video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
+    user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     channel_subquery = select(YoutubeChannels)
     if channel_id:
@@ -154,14 +166,22 @@ async def get_youtube_videos(
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
-    videos = await db.fetch_all(query)
-
-    return JSONResponse(
-        {
-            "videos": jsonable_encoder(videos),
-            "total_videos": count,
-        }
-    )
+    videos = []
+    for row in await db.fetch_all(query):
+        video = YoutubeVideo.parse_obj(row)
+        videos.append(
+            YoutubeVideoResponse(
+                id=video.id,
+                title=video.title,
+                thumbnail=video.thumbnail,
+                channel_id=video.channel_id,
+                published_at=video.published_at,
+                category_id=video.category_id,
+                created_at=video.created_at,
+                channel_title=row["channel_title"],
+            )
+        )
+    return YoutubeResponses.Videos(videos=videos, total_videos=count).dict()
 
 
 @app.get(
@@ -194,10 +214,12 @@ async def get_youtube_subscriptions(
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
-    subscriptions = await db.fetch_all(query)
-    return JSONResponse(
-        {"subscriptions": jsonable_encoder(subscriptions), "total_subscriptions": count}
-    )
+    subscriptions = [
+        YoutubeSubscriptionResponse.parse_obj(row) for row in await db.fetch_all(query)
+    ]
+    return YoutubeResponses.Subscriptions(
+        subscriptions=subscriptions, total_subscriptions=count
+    ).dict()
 
 
 @app.websocket("/youtube/subscriptions/listen")
@@ -228,7 +250,9 @@ async def listen_subscription_job(
     query = select(GoogleAccounts).where(GoogleAccounts.user_email == email)
     google_account = GoogleAccount.parse_obj(await db.fetch_one(query))
     await websocket.send_json(
-        {"type": "SUBSCRIPTION_STATE", "status": google_account.subscriptions_loading}
+        YoutubeResponses.SubscriptionUpdate(
+            status=google_account.subscriptions_loading
+        ).dict()
     )
     await create_websocket_redis_channel_listener(
         websocket=websocket,

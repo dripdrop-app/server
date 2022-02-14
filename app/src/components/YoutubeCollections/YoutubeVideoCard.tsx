@@ -9,9 +9,9 @@ interface YoutubeVideoCardProps {
 
 const YoutubeVideoCard = (props: YoutubeVideoCardProps) => {
 	const video = props.video;
-	const publishedAt = new Date(video.published_at).toLocaleDateString();
+	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
 	const videoLink = `https://youtube.com/watch?v=${video.id}`;
-	const channelLink = `https://youtube.com/channel/${video.channel_id}`;
+	const channelLink = `https://youtube.com/channel/${video.channelId}`;
 
 	return (
 		<Card sx={{ height: '100%' }} raised={props.selected}>
@@ -28,7 +28,7 @@ const YoutubeVideoCard = (props: YoutubeVideoCardProps) => {
 				<CardContent>
 					<Stack direction="row" justifyContent="space-between" flexWrap="wrap" spacing={1}>
 						<Typography variant="caption">
-							<CustomLink useMaterial={true} href={channelLink} text={video.channel_title} />
+							<CustomLink useMaterial={true} href={channelLink} text={video.channelTitle} />
 						</Typography>
 						<Typography variant="caption">{publishedAt}</Typography>
 					</Stack>

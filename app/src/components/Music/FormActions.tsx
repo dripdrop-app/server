@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { Alert, Button, CircularProgress, Snackbar } from '@mui/material';
 import { FILE_TYPE } from '../../utils/enums';
-import { initialFormState, musicFormAtom } from '../../atoms/Music';
+import { initialFormState, musicFormAtom } from '../../state/Music';
 import BlankImage from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
 
@@ -17,7 +17,7 @@ const FormActions = (props: FormActionProps) => {
 	const [openError, setOpenError] = useState(false);
 	const [musicForm, setMusicForm] = useRecoilState(musicFormAtom);
 
-	const { title, artist, album, grouping, artwork_url, filename, fileType, youtube_url, groupingLoading, tagsLoading } =
+	const { title, artist, album, grouping, artworkUrl, filename, fileType, youtubeUrl, groupingLoading, tagsLoading } =
 		musicForm;
 
 	const resetForm = useCallback(() => {
@@ -40,10 +40,10 @@ const FormActions = (props: FormActionProps) => {
 			formData.append('file', file);
 		}
 		if (fileType === FILE_TYPE.YOUTUBE) {
-			formData.append('youtube_url', youtube_url || '');
+			formData.append('youtubeUrl', youtubeUrl || '');
 		}
-		if (artwork_url) {
-			formData.append('artwork_url', artwork_url);
+		if (artworkUrl) {
+			formData.append('artworkUrl', artworkUrl);
 		} else {
 			const imageResponse = await fetch(BlankImage);
 			if (imageResponse.ok) {
@@ -57,7 +57,7 @@ const FormActions = (props: FormActionProps) => {
 							reader.readAsDataURL(blob);
 						});
 					const url = (await readFilePromise()) as string;
-					formData.append('artwork_url', url);
+					formData.append('artworkUrl', url);
 				} catch {}
 			}
 		}
@@ -66,7 +66,7 @@ const FormActions = (props: FormActionProps) => {
 		formData.append('album', album);
 		formData.append('grouping', grouping || '');
 		performOperation({ url: '/music/jobs/create', method: 'POST', data: formData });
-	}, [album, artist, artwork_url, fileInputRef, fileType, grouping, performOperation, title, youtube_url]);
+	}, [album, artist, artworkUrl, fileInputRef, fileType, grouping, performOperation, title, youtubeUrl]);
 
 	useEffect(() => {
 		if (performOperationStatus.isSuccess) {
@@ -79,15 +79,15 @@ const FormActions = (props: FormActionProps) => {
 	useEffect(() => {
 		if (
 			(fileType === FILE_TYPE.YOUTUBE &&
-				youtube_url &&
-				RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youtube_url)) ||
+				youtubeUrl &&
+				RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youtubeUrl)) ||
 			(fileType !== FILE_TYPE.YOUTUBE && filename)
 		) {
 			setValidForm(!!title && !!artist && !!album);
 		} else {
 			setValidForm(false);
 		}
-	}, [album, artist, fileType, filename, title, youtube_url]);
+	}, [album, artist, fileType, filename, title, youtubeUrl]);
 
 	return useMemo(
 		() => (

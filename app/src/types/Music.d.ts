@@ -3,9 +3,9 @@ import { FILE_TYPE } from '../utils/enums';
 declare global {
 	interface MusicForm {
 		fileType: keyof typeof FILE_TYPE;
-		youtube_url: string;
+		youtubeUrl: string;
 		filename: string;
-		artwork_url: string;
+		artworkUrl: string;
 		title: string;
 		artist: string;
 		album: string;
@@ -15,14 +15,14 @@ declare global {
 	}
 
 	interface Job
-		extends Pick<MusicForm, 'youtube_url' | 'filename' | 'artwork_url' | 'title' | 'artist' | 'album' | 'grouping'> {
+		extends Pick<MusicForm, 'youtubeUrl' | 'filename' | 'artworkUrl' | 'title' | 'artist' | 'album' | 'grouping'> {
 		id: string;
 		completed: boolean;
 		failed: boolean;
 	}
 
 	interface TagsResponse {
-		artwork_url: string;
+		artworkUrl: string;
 		title: string;
 		artist: string;
 		album: string;

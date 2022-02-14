@@ -6,11 +6,11 @@ from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
 from server.config import config
 from server.models import (
+    db,
     AuthenticatedUser,
     Session,
     User,
     Users,
-    db,
     Sessions,
     SessionUser,
     AdminUser,

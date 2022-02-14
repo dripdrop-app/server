@@ -8,6 +8,7 @@ from server.models import (
     GoogleAccount,
     YoutubeChannel,
     GoogleAccounts,
+    YoutubeSubscription,
     YoutubeSubscriptions,
     YoutubeChannels,
     YoutubeVideoCategories,
@@ -107,13 +108,12 @@ async def add_youtube_channel(channel):
             title=channel_title,
             thumbnail=channel_thumbnail,
             upload_playlist_id=channel_upload_playlist_id,
+            last_updated=datetime.now(timezone.utc) - timedelta(days=30),
         )
         await db.execute(query)
-        date_limit = datetime.now(timezone.utc) - timedelta(days=30)
         q.enqueue(
             "server.api.youtube.tasks.add_new_channel_videos_job",
             channel_id,
-            date_limit,
         )
     except UniqueViolationError:
         pass
@@ -211,9 +211,10 @@ async def update_user_youtube_subscriptions_job(user_email: str):
 
 @worker_task
 @exception_handler
-async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
+async def add_new_channel_videos_job(channel_id: str):
     query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
+    last_updated = youtube_channel.last_updated
     channel_upload_playist = youtube_channel.upload_playlist_id
     for uploaded_playlist_videos in google_api.get_playlist_videos(
         channel_upload_playist
@@ -253,17 +254,16 @@ async def add_new_channel_videos_job(channel_id: str, last_updated: datetime):
 
 @worker_task
 @exception_handler
-async def update_channels():
-    query = select(YoutubeChannels)
+async def update_active_channels():
+    query = select(YoutubeSubscriptions).group_by(YoutubeSubscriptions.channel_id)
     channels = []
-    async for channel in db.iterate(query):
-        channel = YoutubeChannel.parse_obj(channel)
+    async for subscription in db.iterate(query):
+        subscription = YoutubeSubscription.parse_obj(subscription)
         q.enqueue(
             "server.api.youtube.tasks.add_new_channel_videos_job",
-            channel.id,
-            channel.last_updated,
+            subscription.channel_id,
         )
-        channels.append(channel)
+        channels.append(subscription.channel_id)
         if len(channels) == 50:
             # GET CHANNEL INFO AND UPDATE
             pass

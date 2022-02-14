@@ -4,72 +4,78 @@ declare global {
 	interface YoutubeState {
 		email: string;
 		refresh: boolean;
-		loaded: boolean;
 	}
 
 	interface YoutubeVideo {
 		id: string;
 		title: string;
 		thumbnail: string;
-		channel_id: string;
-		channel_title: string;
-		published_at: string;
-		category_id: number;
-		created_at: string;
+		channelId: string;
+		channelTitle: string;
+		publishedAt: string;
+		categoryId: number;
+		createdAt: string;
+	}
+
+	interface YoutubeChannel {
+		id: string;
+		title: string;
+		thumbnail?: string;
+		uploadPlaylistId?: string;
+		createdAt: string;
+		lastUpdated: string;
 	}
 
 	interface YoutubeSubscription {
 		id: string;
-		channel_id: string;
-		channel_title: string;
-		channel_thumbnail: string;
+		channelId: string;
+		channelTitle: string;
+		channelThumbnail: string;
 		email: string;
-		published_at: string;
-		created_at: string;
+		publishedAt: string;
+		createdAt: string;
 	}
 
 	interface YoutubeVideoCategory {
 		id: number;
 		name: string;
-		created_at: string;
+		createdAt: string;
 	}
 
 	interface PageState {
 		page: number;
-		per_page: 10 | 25 | 50;
+		perPage: 10 | 25 | 50;
 	}
 
 	interface FilterState {
 		selectedCategories: number[];
 	}
 
-	interface Options extends Partial<FilterState>, Partial<PageState> {}
-
-	interface YoutubeVideoResponse {
-		total_videos: number;
-		videos: YoutubeVideo[];
+	interface YoutubeVideoOptions extends PageState, FilterState {
+		channelId: string | null;
 	}
 
 	interface YoutubeVideoCategoriesResponse {
 		categories: YoutubeVideoCategory[];
 	}
 
-	interface YoutubeVideosViewState
-		extends YoutubeVideoResponse,
-			YoutubeVideoCategoriesResponse,
-			FilterState,
-			PageState {
-		channel_id: string | null;
-		loaded: bool;
+	interface YoutubeVideosResponse {
+		totalVideos: number;
+		videos: YoutubeVideo[];
 	}
 
-	interface YoutubeSubscriptionResponse {
-		total_subscriptions: number;
+	interface YoutubeSubscriptionsResponse {
+		totalSubscriptions: number;
 		subscriptions: YoutubeSubscription[];
 	}
-	interface YoutubeSubscriptionsViewState extends PageState {
-		subscriptions: YoutubeSubscription[];
-		total_subscriptions: number;
-		loaded: bool;
+
+	interface YoutubeVideoCategoriesState {
+		channelId: string | null;
 	}
+
+	interface YoutubeVideosState extends FilterState, PageState {
+		channelId: string | null;
+	}
+
+	interface YoutubeSubscriptionsState extends PageState {}
 }

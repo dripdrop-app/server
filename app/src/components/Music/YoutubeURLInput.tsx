@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { YouTube } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { fileTypeSelector, groupingLoadingSelector, groupingSelector, youtubeURLSelector } from '../../atoms/Music';
+import { fileTypeSelector, groupingLoadingSelector, groupingSelector, youtubeURLSelector } from '../../state/Music';
 import useLazyFetch from '../../hooks/useLazyFetch';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, isValidYTLink } from '../../utils/helpers';

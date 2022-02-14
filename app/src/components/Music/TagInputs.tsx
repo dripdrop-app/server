@@ -7,7 +7,7 @@ import {
 	groupingLoadingSelector,
 	groupingSelector,
 	titleSelector,
-} from '../../atoms/Music';
+} from '../../state/Music';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 const TagInputs = () => {

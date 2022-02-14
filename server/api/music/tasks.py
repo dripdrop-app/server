@@ -14,7 +14,7 @@ from yt_dlp.utils import sanitize_filename
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import yt_download
 from server.models import MusicJob, db, MusicJobs
-from server.models.api import MusicResponses
+from server.models.api import MusicResponses, RedisResponses
 from server.redis import redis, RedisChannels
 from server.utils.decorators import worker_task
 from sqlalchemy import select, update
@@ -103,7 +103,9 @@ async def run_job(job_id: str, file):
             await db.execute(query)
             await redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL.value,
-                json.dumps({"job_id": job_id, "type": "COMPLETED"}),
+                json.dumps(
+                    RedisResponses.MusicChannel(job_id=job_id, type="COMPLETED").dict()
+                ),
             )
     except Exception as e:
         if job:

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Button, Menu, MenuItem } from '@mui/material';
+import { ArrowDropDown } from '@mui/icons-material';
 import CustomLink from '../Link';
 
 const YoutubeDropdown = () => {
@@ -10,6 +11,7 @@ const YoutubeDropdown = () => {
 		<React.Fragment>
 			<Button color="inherit" ref={buttonRef} onClick={() => setShowMenu(!showMenu)}>
 				Youtube Collections
+				<ArrowDropDown />
 			</Button>
 			<Menu anchorEl={buttonRef.current} open={showMenu} onClose={() => setShowMenu(false)}>
 				<CustomLink

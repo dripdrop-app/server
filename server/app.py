@@ -1,7 +1,9 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import FileResponse
-from server.api import youtube, auth, music
+from server.api.auth import app as auth_app
+from server.api.music import app as music_app
+from server.api.youtube import app as youtube_app
 from server.config import config
 from server.cron import Cron
 from server.dependencies import get_user
@@ -20,7 +22,9 @@ if config.env == "production":
         args=("server.api.youtube.tasks.update_youtube_video_categories", True),
     )
     cron.add_cron(
-        "0 5 * * *", q.enqueue, args=("server.api.youtube.tasks.update_channels",)
+        "0 5 * * *",
+        q.enqueue,
+        args=("server.api.youtube.tasks.update_active_channels",),
     )
     cron.add_cron(
         "0 3 * * sun",
@@ -36,9 +40,9 @@ app = FastAPI(
     dependencies=[Depends(get_user)],
 )
 
-app.router.include_router(auth.app.router, prefix="/auth")
-app.router.include_router(music.app.router, prefix="/music")
-app.router.include_router(youtube.app.router, prefix="/youtube")
+app.router.include_router(auth_app.router, prefix="/auth")
+app.router.include_router(music_app.router, prefix="/music")
+app.router.include_router(youtube_app.router, prefix="/youtube")
 
 
 @app.get("/{path:path}")

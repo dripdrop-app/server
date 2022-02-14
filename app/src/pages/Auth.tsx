@@ -2,13 +2,13 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, CircularProgress, Divider, Stack, TextField, Typography } from '@mui/material';
 import { useSetRecoilState } from 'recoil';
 import DripDrop from '../images/dripdrop.png';
-import { userAtom } from '../atoms/Auth';
+import { userState } from '../state/Auth';
 import useLazyFetch from '../hooks/useLazyFetch';
 import { defaultTextFieldProps } from '../utils/helpers';
 
 const Auth = () => {
-	const setUser = useSetRecoilState(userAtom);
-	const [email, setemail] = useState('');
+	const setUser = useSetRecoilState(userState);
+	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 
 	const [login, loginStatus] = useLazyFetch<User>();
@@ -36,7 +36,7 @@ const Auth = () => {
 	useEffect(() => {
 		if (loginStatus.isSuccess) {
 			const { data } = loginStatus;
-			setUser(() => data);
+			setUser(() => ({ ...data, authenticated: true }));
 		}
 	}, [loginStatus, setUser]);
 
@@ -53,7 +53,7 @@ const Auth = () => {
 				<TextField
 					{...defaultTextFieldProps}
 					value={email}
-					onChange={(e) => setemail(e.target.value)}
+					onChange={(e) => setEmail(e.target.value)}
 					required
 					label="Email"
 					variant="outlined"

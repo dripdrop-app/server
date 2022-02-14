@@ -10,21 +10,21 @@ interface YoutubeSubscriptionCardProps {
 
 const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
 	const subscription = props.subscription;
-	const publishedAt = new Date(subscription.published_at).toLocaleDateString();
-	const channelLink = `https://youtube.com/channel/${subscription.channel_id}`;
+	const publishedAt = new Date(subscription.publishedAt).toLocaleDateString();
+	const channelLink = `https://youtube.com/channel/${subscription.channelId}`;
 
 	return useMemo(
 		() => (
 			<Card sx={{ height: '100%' }} raised={props.selected}>
 				<CustomLink
 					href={channelLink}
-					text={<CardMedia sx={{ flex: 2 }} component="img" image={subscription.channel_thumbnail} />}
+					text={<CardMedia sx={{ flex: 2 }} component="img" image={subscription.channelThumbnail} />}
 				/>
 				<CardContent sx={{ flex: 1 }}>
 					<CustomLink
 						useMaterial={true}
 						href={channelLink}
-						text={<Typography variant="subtitle1">{subscription.channel_title}</Typography>}
+						text={<Typography variant="subtitle1">{subscription.channelTitle}</Typography>}
 					/>
 				</CardContent>
 				<CardContent>

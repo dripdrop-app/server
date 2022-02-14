@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, Switch, TextField } from '@mui/material';
-import { filenameSelector, fileTypeSelector, musicFormAtom, tagsLoadingSelector } from '../../atoms/Music';
+import { filenameSelector, fileTypeSelector, musicFormAtom, tagsLoadingSelector } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
 import YoutubeURLInput from './YoutubeURLInput';
@@ -56,14 +56,14 @@ const FileSwitch = (props: FileSwitchProps) => {
 
 	useEffect(() => {
 		if (getFileTagsStatus.isSuccess) {
-			const { title, artist, album, grouping, artwork_url } = getFileTagsStatus.data;
+			const { title, artist, album, grouping, artworkUrl } = getFileTagsStatus.data;
 			setMusicForm((form) => ({
 				...form,
 				title: title || '',
 				artist: artist || '',
 				album: album || resolveAlbumFromTitle(title),
 				grouping: grouping || '',
-				artwork_url: artwork_url || '',
+				artworkUrl: artworkUrl || '',
 			}));
 		}
 	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, setMusicForm]);

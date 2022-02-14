@@ -1,13 +1,14 @@
 import bcrypt
 import uuid
 from asyncpg.exceptions import UniqueViolationError
-from fastapi import FastAPI, Depends, Response, HTTPException
+from fastapi import Body, FastAPI, Depends, Response, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import EmailStr
 from sqlalchemy.sql.expression import true
 from server.api.youtube import google_api
 from server.dependencies import SessionHandler, get_authenticated_user
 from server.models import AuthenticatedUser
-from server.models.api import AuthRequests, AuthResponses
+from server.models.api import AuthResponses
 from server.config import config
 from server.models import db, GoogleAccounts, Users, Sessions, User
 from server.queue import q
@@ -19,14 +20,11 @@ app = FastAPI()
 
 @app.get("/session", response_model=AuthResponses.User, responses={401: {}})
 async def check_session(user: AuthenticatedUser = Depends(get_authenticated_user)):
-    return JSONResponse({"email": user.email, "admin": user.admin}, 200)
+    return AuthResponses.User(email=user.email, admin=user.admin).dict()
 
 
 @app.post("/login", response_model=AuthResponses.User, responses={401: {}, 404: {}})
-async def login(body: AuthRequests.Login):
-    email = body.email
-    password = body.password
-
+async def login(email: str = Body(None), password: str = Body(None)):
     query = select(Users).where(Users.email == email)
     account = await db.fetch_one(query)
     if not account:
@@ -45,12 +43,7 @@ async def login(body: AuthRequests.Login):
     query = insert(Sessions).values(id=session_id, user_email=email)
     await db.execute(query)
 
-    response = JSONResponse(
-        {
-            "email": email,
-            "admin": account.admin,
-        }
-    )
+    response = JSONResponse(AuthResponses.User(email=email, admin=account.admin).dict())
 
     TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
     response.set_cookie(
@@ -84,12 +77,12 @@ async def create_new_account(email: str, password: str):
     await db.execute(query)
 
 
-@app.post("/create", response_model=AuthRequests.Login, status_code=201)
-async def create_account(body: AuthRequests.CreateAccount):
-    email = body.email
-    password = body.password
+@app.post("/create", response_model=AuthResponses.User, status_code=201)
+async def create_account(
+    email: EmailStr = Body(None), password: str = Body(None, min_length=8)
+):
     await create_new_account(email, password)
-    return JSONResponse({"email": email, "admin": False})
+    return AuthResponses.User(email=email, admin=False)
 
 
 # @requires([AuthScopes.ADMIN])

@@ -130,7 +130,6 @@ const useLazyFetch = <T>(): LazyFetch<T> => {
 			const response: AxiosResponse<any> = await axios({ ...config, signal: controller.current.signal });
 			return dispatch({ type: 'SUCCESS', payload: { response, data: response.data } });
 		} catch (error) {
-			console.log(error);
 			const { response, request } = error as AxiosError;
 			if (response) {
 				dispatch({

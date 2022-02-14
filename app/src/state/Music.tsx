@@ -3,9 +3,9 @@ import { FILE_TYPE } from '../utils/enums';
 
 export const initialFormState: MusicForm = {
 	fileType: FILE_TYPE.YOUTUBE,
-	youtube_url: '',
+	youtubeUrl: '',
 	filename: '',
-	artwork_url: '',
+	artworkUrl: '',
 	title: '',
 	artist: '',
 	album: '',
@@ -46,9 +46,9 @@ const variableFormSelector = <T extends keyof MusicForm>(formKey: keyof MusicFor
 
 export const titleSelector = variableFormSelector<'title'>('title');
 
-export const youtubeURLSelector = variableFormSelector<'youtube_url'>('youtube_url');
+export const youtubeURLSelector = variableFormSelector<'youtubeUrl'>('youtubeUrl');
 
-export const artworkURLSelector = variableFormSelector<'artwork_url'>('artwork_url');
+export const artworkURLSelector = variableFormSelector<'artworkUrl'>('artworkUrl');
 
 export const fileTypeSelector = variableFormSelector<'fileType'>('fileType');
 

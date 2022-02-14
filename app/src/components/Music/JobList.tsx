@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { Typography, Button, Stack, Box, CircularProgress } from '@mui/material';
 import { NavigateNext, NavigateBefore } from '@mui/icons-material';
-import { jobsAtom } from '../../atoms/Music';
+import { jobsAtom } from '../../state/Music';
 import JobCard from './JobCard';
 import useWebsocket from '../../hooks/useWebsocket';
 
