@@ -3,11 +3,11 @@ import {
 	Box,
 	Button,
 	Chip,
-	CircularProgress,
 	Container,
 	Menu,
 	MenuItem,
 	Pagination,
+	Skeleton,
 	Stack,
 	ToggleButton,
 	ToggleButtonGroup,
@@ -16,32 +16,29 @@ import { ArrowDropDown } from '@mui/icons-material';
 import { videoCategoriesSelector, videoOptionsState, videosSelector } from '../../state/YoutubeCollections';
 import CustomGrid from './CustomGrid';
 import YoutubeVideoCard from './YoutubeVideoCard';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
-const VideosView = (props: { channelID: string | null }) => {
+interface BaseProps {
+	channelID: string | null;
+}
+
+const CategoriesSelect = (props: BaseProps) => {
 	const buttonRef = useRef<HTMLButtonElement | null>(null);
 	const [showMenu, setShowMenu] = useState(false);
 
 	const [videoOptions, updateVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
-	const videosState = useRecoilValueLoadable(videosSelector(props.channelID));
 	const videoCategoriesState = useRecoilValueLoadable(videoCategoriesSelector(props.channelID));
 
-	if (
-		videosState.state === 'loading' ||
-		videosState.state === 'hasError' ||
-		videoCategoriesState.state === 'loading' ||
-		videoCategoriesState.state === 'hasError'
-	) {
+	if (videoCategoriesState.state === 'loading' || videoCategoriesState.state === 'hasError') {
 		return (
 			<Stack justifyContent="center" direction="row" sx={{ my: 5 }}>
-				<CircularProgress />
+				<Skeleton variant="text" />
 			</Stack>
 		);
 	}
 
 	const { categories } = videoCategoriesState.contents;
-	const { videos, totalVideos } = videosState.contents;
-	const { perPage, page, selectedCategories } = videoOptions;
+	const { selectedCategories } = videoOptions;
 
 	const SelectedCategoryChip = (id: number) => {
 		const category = categories.find((category: YoutubeVideoCategory) => category.id === id);
@@ -83,34 +80,65 @@ const VideosView = (props: { channelID: string | null }) => {
 	};
 
 	return (
-		<Container sx={{ my: 5 }}>
-			<Stack sx={{ my: 2 }} direction="row" alignItems="center" spacing={2}>
-				<Button variant="contained" ref={buttonRef} onClick={() => setShowMenu(true)}>
-					Categories
-					<ArrowDropDown />
-				</Button>
-				<Menu anchorEl={buttonRef.current} open={showMenu} onClose={() => setShowMenu(false)}>
-					{CategoryList()}
-				</Menu>
-				<Stack direction="row" flexWrap="wrap">
-					{selectedCategories.map((id) => SelectedCategoryChip(id))}
-				</Stack>
-				<Button variant="contained" onClick={() => updateVideoOptions({ ...videoOptions, selectedCategories: [] })}>
-					Reset
-				</Button>
-				<Box sx={{ flexGrow: 1 }} />
-				<ToggleButtonGroup
-					exclusive
-					value={perPage}
-					onChange={(e, v) => updateVideoOptions({ ...videoOptions, perPage: v })}
-				>
-					{([10, 25, 50] as PageState['perPage'][]).map((v) => (
-						<ToggleButton key={v} value={v}>
-							{v}
-						</ToggleButton>
-					))}
-				</ToggleButtonGroup>
+		<React.Fragment>
+			<Button variant="contained" ref={buttonRef} onClick={() => setShowMenu(true)}>
+				Categories
+				<ArrowDropDown />
+			</Button>
+			<Menu anchorEl={buttonRef.current} open={showMenu} onClose={() => setShowMenu(false)}>
+				{CategoryList()}
+			</Menu>
+			<Stack direction="row" flexWrap="wrap">
+				{selectedCategories.map((id) => SelectedCategoryChip(id))}
 			</Stack>
+			<Button variant="contained" onClick={() => updateVideoOptions({ ...videoOptions, selectedCategories: [] })}>
+				Reset
+			</Button>
+		</React.Fragment>
+	);
+};
+
+const PerPageSelector = (props: BaseProps) => {
+	const [videoOptions, updateVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
+
+	const { perPage } = videoOptions;
+
+	return (
+		<ToggleButtonGroup
+			exclusive
+			value={perPage}
+			onChange={(e, v) => updateVideoOptions({ ...videoOptions, perPage: v })}
+		>
+			{([10, 25, 50] as PageState['perPage'][]).map((v) => (
+				<ToggleButton key={v} value={v}>
+					{v}
+				</ToggleButton>
+			))}
+		</ToggleButtonGroup>
+	);
+};
+
+const VideosDisplay = (props: BaseProps) => {
+	const [videoOptions, updateVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
+	const videosState = useRecoilValueLoadable(videosSelector(props.channelID));
+
+	const { perPage, page } = videoOptions;
+
+	if (videosState.state === 'loading' || videosState.state === 'hasError') {
+		return (
+			<Stack justifyContent="center" direction="row" sx={{ my: 5 }}>
+				<CustomGrid
+					items={Array(perPage).fill(0)}
+					renderItem={(i, selected) => <Skeleton width="100%" height="10em" variant="rectangular" />}
+				/>
+			</Stack>
+		);
+	}
+
+	const { videos, totalVideos } = videosState.contents;
+
+	return (
+		<React.Fragment>
 			<CustomGrid
 				items={videos}
 				renderItem={(video, selected) => <YoutubeVideoCard selected={selected} video={video} />}
@@ -123,6 +151,19 @@ const VideosView = (props: { channelID: string | null }) => {
 					color="primary"
 				/>
 			</Stack>
+		</React.Fragment>
+	);
+};
+
+const VideosView = (props: BaseProps) => {
+	return (
+		<Container sx={{ my: 5 }}>
+			<Stack sx={{ my: 2 }} direction="row" alignItems="center" spacing={2}>
+				<CategoriesSelect channelID={props.channelID} />
+				<Box sx={{ flexGrow: 1 }} />
+				<PerPageSelector channelID={props.channelID} />
+			</Stack>
+			<VideosDisplay channelID={props.channelID} />
 		</Container>
 	);
 };
