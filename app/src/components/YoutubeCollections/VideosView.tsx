@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react';
 import { useRecoilState, useRecoilValueLoadable } from 'recoil';
 import {
 	Box,
@@ -16,7 +17,6 @@ import { ArrowDropDown } from '@mui/icons-material';
 import { videoCategoriesSelector, videoOptionsState, videosSelector } from '../../state/YoutubeCollections';
 import CustomGrid from './CustomGrid';
 import YoutubeVideoCard from './YoutubeVideoCard';
-import React, { useRef, useState } from 'react';
 
 interface BaseProps {
 	channelID: string | null;
@@ -62,7 +62,9 @@ const CategoriesSelect = (props: BaseProps) => {
 	};
 
 	const CategoryList = () => {
-		const sortedCategories = [...categories].sort((a, b) => (a.name > b.name ? 1 : -1));
+		const sortedCategories = [...categories]
+			.sort((a, b) => (a.name > b.name ? 1 : -1))
+			.filter((c) => selectedCategories.indexOf(c.id) === -1);
 		return sortedCategories.map((category) => {
 			return (
 				<MenuItem
@@ -109,7 +111,7 @@ const PerPageSelector = (props: BaseProps) => {
 			value={perPage}
 			onChange={(e, v) => updateVideoOptions({ ...videoOptions, perPage: v })}
 		>
-			{([10, 25, 50] as PageState['perPage'][]).map((v) => (
+			{[10, 25, 50].map((v) => (
 				<ToggleButton key={v} value={v}>
 					{v}
 				</ToggleButton>

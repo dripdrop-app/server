@@ -76,9 +76,7 @@ export const videoCategoriesSelector = selectorFamily<YoutubeVideoCategoriesResp
 const getYoutubeVideos = async (options: YoutubeVideoOptions) => {
 	const queryParams = [];
 	options.selectedCategories.forEach((category) => {
-		if (category !== -1) {
-			queryParams.push(`video_categories=${category}`);
-		}
+		queryParams.push(`video_categories=${category}`);
 	});
 	if (options.channelId) {
 		queryParams.push(`channel_id=${options.channelId}`);

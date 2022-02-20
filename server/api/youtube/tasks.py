@@ -8,7 +8,6 @@ from server.models import (
     GoogleAccount,
     YoutubeChannel,
     GoogleAccounts,
-    YoutubeSubscription,
     YoutubeSubscriptions,
     YoutubeChannels,
     YoutubeVideoCategories,
@@ -17,7 +16,7 @@ from server.models import (
 from server.queue import q
 from server.redis import redis, RedisChannels
 from server.utils.decorators import exception_handler, worker_task
-from sqlalchemy import delete, select, func, update, insert
+from sqlalchemy import delete, distinct, select, func, update, insert
 
 
 async def update_google_access_token(google_email: str):
@@ -255,15 +254,15 @@ async def add_new_channel_videos_job(channel_id: str):
 @worker_task
 @exception_handler
 async def update_active_channels():
-    query = select(YoutubeSubscriptions).group_by(YoutubeSubscriptions.channel_id)
+    query = select(distinct(YoutubeSubscriptions.channel_id))
     channels = []
     async for subscription in db.iterate(query):
-        subscription = YoutubeSubscription.parse_obj(subscription)
+        channel_id = subscription.get("channel_id")
         q.enqueue(
             "server.api.youtube.tasks.add_new_channel_videos_job",
-            subscription.channel_id,
+            channel_id,
         )
-        channels.append(subscription.channel_id)
+        channels.append(channel_id)
         if len(channels) == 50:
             # GET CHANNEL INFO AND UPDATE
             pass

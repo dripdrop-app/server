@@ -15,7 +15,7 @@ const PerPageSelector = () => {
 			value={perPage}
 			onChange={(e, v) => updateSubscriptionOptions({ ...subscriptionOptions, perPage: v })}
 		>
-			{([10, 25, 50] as PageState['perPage'][]).map((v) => (
+			{[10, 25, 50].map((v) => (
 				<ToggleButton key={v} value={v}>
 					{v}
 				</ToggleButton>

@@ -44,7 +44,7 @@ declare global {
 
 	interface PageState {
 		page: number;
-		perPage: 10 | 25 | 50;
+		perPage: number;
 	}
 
 	interface FilterState {
