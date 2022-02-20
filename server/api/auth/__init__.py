@@ -11,7 +11,7 @@ from server.models import AuthenticatedUser
 from server.models.api import AuthResponses
 from server.config import config
 from server.models import db, GoogleAccounts, Users, Sessions, User
-from server.queue import q
+from server.rq import queue
 from sqlalchemy import select, insert, update
 from typing import Optional
 
@@ -136,12 +136,12 @@ async def google_oauth2(state: str, code: str, error: Optional[str] = None):
                 await db.execute(query)
             except Exception:
                 return RedirectResponse("/youtubeCollections")
-            update_categories_job = q.enqueue(
+            job = queue.enqueue(
                 "server.api.youtube.tasks.update_youtube_video_categories", False
             )
-            q.enqueue_call(
+            queue.enqueue_call(
                 "server.api.youtube.tasks.update_user_youtube_subscriptions_job",
                 args=(email,),
-                depends_on=update_categories_job.id,
+                depends_on=job,
             )
     return RedirectResponse("/youtubeCollections")

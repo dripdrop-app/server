@@ -13,7 +13,7 @@ from server.models import (
     YoutubeVideoCategories,
     YoutubeVideos,
 )
-from server.queue import q
+from server.rq import queue
 from server.redis import redis, RedisChannels
 from server.utils.decorators import exception_handler, worker_task
 from sqlalchemy import delete, distinct, select, func, update, insert
@@ -110,7 +110,7 @@ async def add_youtube_channel(channel):
             last_updated=datetime.now(timezone.utc) - timedelta(days=30),
         )
         await db.execute(query)
-        q.enqueue(
+        queue.enqueue(
             "server.api.youtube.tasks.add_new_channel_videos_job",
             channel_id,
         )
@@ -247,7 +247,11 @@ async def add_new_channel_videos_job(channel_id: str):
         if len(recent_uploaded_playlist_videos) < len(uploaded_playlist_videos):
             break
 
-    query = update(YoutubeChannels).values(last_updated=datetime.now(timezone.utc))
+    query = (
+        update(YoutubeChannels)
+        .values(last_updated=datetime.now(timezone.utc))
+        .where(YoutubeChannels.id == channel_id)
+    )
     await db.execute(query)
 
 
@@ -258,7 +262,7 @@ async def update_active_channels():
     channels = []
     async for subscription in db.iterate(query):
         channel_id = subscription.get("channel_id")
-        q.enqueue(
+        queue.enqueue(
             "server.api.youtube.tasks.add_new_channel_videos_job",
             channel_id,
         )
@@ -282,7 +286,7 @@ async def update_subscriptions():
             datetime.now(timezone.utc) - google_account.last_updated
         ).days
         if days_since_last_update >= 7:
-            q.enqueue(
+            queue.enqueue(
                 "server.api.youtube.tasks.update_user_youtube_subscriptions_job",
                 google_account.user_email,
             )

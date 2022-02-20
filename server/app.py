@@ -5,37 +5,25 @@ from server.api.auth import app as auth_app
 from server.api.music import app as music_app
 from server.api.youtube import app as youtube_app
 from server.config import config
-from server.cron import Cron
 from server.dependencies import get_user
 from server.models import db
-from server.queue import q
+from server.rq import cron_job
 
-cron = Cron()
 
 if config.env == "production":
-    cron.add_cron(
-        "0 1 * * *",
-        q.enqueue,
-        args=("server.api.youtube.tasks.update_active_channels",),
-    )
-    cron.add_cron(
+    cron_job("0 1 * * *", "server.api.youtube.tasks.update_active_channels")
+    cron_job(
         "0 2 * * *",
-        q.enqueue,
-        args=("server.api.youtube.tasks.update_youtube_video_categories", True),
+        "server.api.youtube.tasks.update_youtube_video_categories",
+        args=(True,),
     )
-    cron.add_cron(
-        "0 3 * * sun",
-        q.enqueue,
-        args=("server.api.youtube.tasks.update_subscriptions",),
-    )
-    cron.add_cron(
-        "0 5 * * sun", q.enqueue, args=("server.api.youtube.tasks.channel_cleanup",)
-    )
+    cron_job("0 3 * * sun", "server.api.youtube.tasks.update_subscriptions")
+    cron_job("0 5 * * sun", "server.api.youtube.tasks.channel_cleanup")
 
 app = FastAPI(
     title="DripDrop",
-    on_startup=[db.connect, cron.run],
-    on_shutdown=[cron.end, db.disconnect],
+    on_startup=[db.connect],
+    on_shutdown=[db.disconnect],
     responses={400: {}},
     dependencies=[Depends(get_user)],
 )

@@ -32,7 +32,7 @@ from server.redis import (
     create_websocket_redis_channel_listener,
     redis,
 )
-from server.queue import q
+from server.rq import queue
 from sqlalchemy import desc, select, insert, delete, update
 from typing import Optional
 from yt_dlp.utils import sanitize_filename
@@ -179,7 +179,7 @@ async def create_job(
     if file:
         file = await file.read()
 
-    q.enqueue("server.api.music.tasks.run_job", job_id, file)
+    queue.enqueue("server.api.music.tasks.run_job", job_id, file)
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),
