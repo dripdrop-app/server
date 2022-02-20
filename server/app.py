@@ -14,7 +14,9 @@ cron = Cron()
 
 if config.env == "production":
     cron.add_cron(
-        "0 1 * * sun", q.enqueue, args=("server.api.youtube.tasks.channel_cleanup",)
+        "0 1 * * *",
+        q.enqueue,
+        args=("server.api.youtube.tasks.update_active_channels",),
     )
     cron.add_cron(
         "0 2 * * *",
@@ -22,14 +24,12 @@ if config.env == "production":
         args=("server.api.youtube.tasks.update_youtube_video_categories", True),
     )
     cron.add_cron(
-        "0 5 * * *",
-        q.enqueue,
-        args=("server.api.youtube.tasks.update_active_channels",),
-    )
-    cron.add_cron(
         "0 3 * * sun",
         q.enqueue,
         args=("server.api.youtube.tasks.update_subscriptions",),
+    )
+    cron.add_cron(
+        "0 5 * * sun", q.enqueue, args=("server.api.youtube.tasks.channel_cleanup",)
     )
 
 app = FastAPI(
