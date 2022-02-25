@@ -5,7 +5,7 @@ trap "kill 0" EXIT
 source venv/bin/activate
 uvicorn server.app:app --reload --reload-dir server --port 5000 &
 # Use below command to test with multiple workers
-# uvicorn server.app:app --workers 2 --port 5000 &
+# gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornWorker -b :5000 &  
 rq worker --with-scheduler &
 
 wait
