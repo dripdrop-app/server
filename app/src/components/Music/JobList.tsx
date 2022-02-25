@@ -1,21 +1,24 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { Typography, Button, Stack, Box, CircularProgress } from '@mui/material';
 import { NavigateNext, NavigateBefore } from '@mui/icons-material';
-import { jobsAtom } from '../../state/Music';
+import { jobsSelector } from '../../state/Music';
 import JobCard from './JobCard';
 import useWebsocket from '../../hooks/useWebsocket';
+import useFetch from '../../hooks/useFetch';
 
 const JobList = () => {
 	const [page, setPage] = useState(0);
-	const [jobs, setJobs] = useRecoilState(jobsAtom);
-	const jobs_length = useMemo(() => jobs.length, [jobs]);
-	const PAGE_SIZE = useMemo(() => 5, []);
+	const [jobs, setJobs] = useRecoilState(jobsSelector);
 
-	const prevPage = Math.max(page - 1, 0);
-	const nextPage = Math.min(page + 1, jobs_length / PAGE_SIZE) - Number(jobs_length % PAGE_SIZE === 0);
+	const getJobsStatus = useFetch<JobsResponse>({ url: '/music/jobs' });
 
-	const jobs_page = useMemo(() => jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [PAGE_SIZE, jobs, page]);
+	useEffect(() => {
+		if (getJobsStatus.success) {
+			const { jobs } = getJobsStatus.data;
+			setJobs(jobs);
+		}
+	}, [getJobsStatus.data, getJobsStatus.success, setJobs]);
 
 	const socketHandler = useCallback(
 		(event) => {
@@ -46,32 +49,46 @@ const JobList = () => {
 
 	const loadingWS = useWebsocket('/music/jobs/listen', socketHandler);
 
-	return useMemo(
-		() => (
+	if (getJobsStatus.loading || getJobsStatus.error) {
+		return (
 			<Stack sx={{ my: 5 }}>
 				<Stack direction="row" justifyContent="center">
-					<Button disabled={page - 1 < 0} onClick={() => setPage(prevPage)}>
-						<NavigateBefore />
-					</Button>
 					<Typography variant="h5">Jobs</Typography>
-					<Button disabled={page + 1 > jobs_length / PAGE_SIZE} onClick={() => setPage(nextPage)}>
-						<NavigateNext />
-					</Button>
-				</Stack>
-				<Stack textAlign="center" alignItems="center" sx={{ my: 5 }}>
-					{jobs_length === 0 && !loadingWS ? <Typography variant="body2">No Existing Jobs</Typography> : null}
-					{loadingWS ? <CircularProgress /> : null}
-				</Stack>
-				<Stack spacing={1} alignSelf="center" justifyContent="center">
-					{jobs_page.map((job) => (
-						<Box key={job.id}>
-							<JobCard id={job.id} />
-						</Box>
-					))}
 				</Stack>
 			</Stack>
-		),
-		[PAGE_SIZE, jobs_length, jobs_page, loadingWS, nextPage, page, prevPage]
+		);
+	}
+
+	const PAGE_SIZE = 5;
+
+	const prevPage = Math.max(page - 1, 0);
+	const nextPage = Math.min(page + 1, jobs.length / PAGE_SIZE) - Number(jobs.length % PAGE_SIZE === 0);
+
+	const jobs_page = jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+	return (
+		<Stack sx={{ my: 5 }}>
+			<Stack direction="row" justifyContent="center">
+				<Button disabled={page - 1 < 0} onClick={() => setPage(prevPage)}>
+					<NavigateBefore />
+				</Button>
+				<Typography variant="h5">Jobs</Typography>
+				<Button disabled={page + 1 > jobs.length / PAGE_SIZE} onClick={() => setPage(nextPage)}>
+					<NavigateNext />
+				</Button>
+			</Stack>
+			<Stack textAlign="center" alignItems="center" sx={{ my: 5 }}>
+				{jobs.length === 0 && !loadingWS ? <Typography variant="body2">No Existing Jobs</Typography> : null}
+				{loadingWS ? <CircularProgress /> : null}
+			</Stack>
+			<Stack spacing={1} alignSelf="center" justifyContent="center">
+				{jobs_page.map((job) => (
+					<Box key={job.id}>
+						<JobCard id={job.id} />
+					</Box>
+				))}
+			</Stack>
+		</Stack>
 	);
 };
 

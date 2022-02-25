@@ -7,8 +7,15 @@ from sqlalchemy.ext.declarative import declarative_base
 from server.config import config
 from typing import Optional
 
+
 DATABASE_URL = config.database_url
-db = databases.Database(DATABASE_URL)
+
+
+def create_db():
+    return databases.Database(DATABASE_URL)
+
+
+db = create_db()
 metadata = sqlalchemy.MetaData()
 Base = declarative_base(metadata=metadata)
 

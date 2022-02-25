@@ -1,11 +1,10 @@
+import server.api.youtube.google_api as google_api
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket
 from fastapi.responses import PlainTextResponse
 from importlib_metadata import email
-from server.api.youtube import google_api
-from server.api.youtube.tasks import update_google_access_token
 from server.config import config
 from server.dependencies import get_authenticated_user
-from server.models import (
+from server.models.main import (
     db,
     YoutubeVideo,
     YoutubeVideoCategory,
@@ -27,6 +26,7 @@ from server.redis import (
     create_websocket_redis_channel_listener,
     RedisChannels,
 )
+from server.tasks.youtube import update_google_access_token
 from sqlalchemy import desc, func, select, update
 from typing import List
 
@@ -43,7 +43,7 @@ async def get_youtube_account(
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
         if config.env == "production":
-            access_token = await update_google_access_token(google_account.email)
+            access_token = await update_google_access_token(google_account.email, db=db)
             if access_token != google_account.access_token:
                 query = (
                     update(GoogleAccounts)

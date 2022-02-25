@@ -2,7 +2,7 @@ import { useRef, useCallback, useEffect, useMemo, useReducer } from 'react';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { apiValidatorErrorParser } from '../utils/helpers';
 
-type LazyFetchState<T> =
+type FetchState<T> =
 	| {
 			error: null;
 			response: AxiosResponse<T>;
@@ -26,19 +26,9 @@ type LazyFetchState<T> =
 			loading: true;
 			success: false;
 			timestamp: Date;
-	  }
-	| {
-			error: null;
-			response: null;
-			data: null;
-			loading: false;
-			success: false;
-			timestamp: Date;
 	  };
 
-type LazyFetchFn = (config: AxiosRequestConfig) => Promise<void>;
-
-type LazyFetch<T> = [LazyFetchFn, LazyFetchState<T>];
+type FetchFn = (config: AxiosRequestConfig) => Promise<void>;
 
 type AsyncAction<T> =
 	| {
@@ -53,7 +43,7 @@ type AsyncAction<T> =
 			payload: { response: AxiosResponse<T>; data: T };
 	  };
 
-const reducer = <T>(state: LazyFetchState<T>, action: AsyncAction<T>): LazyFetchState<T> => {
+const reducer = <T>(state: FetchState<T>, action: AsyncAction<T>): FetchState<T> => {
 	if (action.type === 'LOADING') {
 		return {
 			error: null,
@@ -85,18 +75,19 @@ const reducer = <T>(state: LazyFetchState<T>, action: AsyncAction<T>): LazyFetch
 	return state;
 };
 
-const useLazyFetch = <T>(): LazyFetch<T> => {
+const useFetch = <T>(config: AxiosRequestConfig): FetchState<T> => {
 	const [fetchState, dispatch] = useReducer(reducer, {
 		error: null,
 		response: null,
 		data: null,
-		loading: false,
+		loading: true,
 		success: false,
 		timestamp: new Date(Date.now()),
 	});
 	const controller = useRef(new AbortController());
+	const currentConfig = useRef(config);
 
-	const triggerFetch: LazyFetchFn = useCallback(async (config: AxiosRequestConfig) => {
+	const triggerFetch: FetchFn = useCallback(async (config: AxiosRequestConfig) => {
 		try {
 			dispatch({ type: 'LOADING' });
 			const response: AxiosResponse<any> = await axios({ ...config, signal: controller.current.signal });
@@ -123,13 +114,17 @@ const useLazyFetch = <T>(): LazyFetch<T> => {
 	}, []);
 
 	useEffect(() => {
+		triggerFetch(currentConfig.current);
+	}, [triggerFetch]);
+
+	useEffect(() => {
 		let c = controller.current;
 		return () => {
 			c.abort();
 		};
 	}, []);
 
-	return useMemo(() => [triggerFetch, fetchState as LazyFetchState<T>], [fetchState, triggerFetch]);
+	return useMemo(() => fetchState as FetchState<T>, [fetchState]);
 };
 
-export default useLazyFetch;
+export default useFetch;

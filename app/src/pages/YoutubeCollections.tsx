@@ -16,7 +16,7 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	const [getOAuthLink, getOAuthLinkStatus] = useLazyFetch<string>();
 
 	useEffect(() => {
-		if (getOAuthLinkStatus.isSuccess) {
+		if (getOAuthLinkStatus.success) {
 			const oAuthURL = getOAuthLinkStatus.data;
 			window.location.href = oAuthURL;
 		}
@@ -40,11 +40,11 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 			{!email ? (
 				<Stack alignItems="center" margin={10}>
 					<Button
-						disabled={getOAuthLinkStatus.isLoading}
+						disabled={getOAuthLinkStatus.loading}
 						variant="contained"
 						onClick={() => getOAuthLink({ url: '/youtube/oauth' })}
 					>
-						{getOAuthLinkStatus.isLoading ? (
+						{getOAuthLinkStatus.loading ? (
 							<CircularProgress />
 						) : refresh ? (
 							'Reconnect Google Account'

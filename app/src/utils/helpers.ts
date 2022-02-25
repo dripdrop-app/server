@@ -42,3 +42,22 @@ export const isValidImage = (url: string) => RegExp(/^https:\/\/(www\.)?.+\.(jpg
 export const isValidLink = (url: string) => RegExp(/^https:\/\/(www\.)?.*/).test(url);
 
 export const isValidYTLink = (url: string) => RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(url);
+
+interface ValidationError {
+	loc: string[];
+	msg: string;
+	type: string;
+}
+
+export const apiValidatorErrorParser = (errors: ValidationError[]) => {
+	return errors.reduce((msg, error) => {
+		const field = error.loc.pop();
+		console.log(field);
+		if (field) {
+			let message = error.msg.replace('value', field);
+			message = message.charAt(0).toLocaleUpperCase() + message.substring(1);
+			msg = !msg ? message : `${msg}, ${message}`;
+		}
+		return msg;
+	}, '');
+};

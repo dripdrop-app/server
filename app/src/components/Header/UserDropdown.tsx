@@ -13,10 +13,10 @@ const UserDropdown = () => {
 	const [logout, logoutStatus] = useLazyFetch<null>();
 
 	useEffect(() => {
-		if (logoutStatus.isSuccess) {
+		if (logoutStatus.success) {
 			setUser(() => initialUserState);
 		}
-	}, [logoutStatus.isSuccess, setUser]);
+	}, [logoutStatus.success, setUser]);
 
 	if (user.authenticated) {
 		return (

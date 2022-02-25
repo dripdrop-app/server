@@ -1,17 +1,21 @@
 import bcrypt
 import uuid
+import server.api.youtube.google_api as google_api
 from asyncpg.exceptions import UniqueViolationError
 from fastapi import Body, FastAPI, Depends, Response, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import EmailStr
 from sqlalchemy.sql.expression import true
-from server.api.youtube import google_api
 from server.dependencies import SessionHandler, get_authenticated_user
-from server.models import AuthenticatedUser
+from server.models.main import AuthenticatedUser
 from server.models.api import AuthResponses
 from server.config import config
-from server.models import db, GoogleAccounts, Users, Sessions, User
+from server.models.main import db, GoogleAccounts, Users, Sessions, User
 from server.rq import queue
+from server.tasks.youtube import (
+    update_youtube_video_categories,
+    update_user_youtube_subscriptions_job,
+)
 from sqlalchemy import select, insert, update
 from typing import Optional
 
@@ -136,11 +140,9 @@ async def google_oauth2(state: str, code: str, error: Optional[str] = None):
                 await db.execute(query)
             except Exception:
                 return RedirectResponse("/youtubeCollections")
-            job = queue.enqueue(
-                "server.api.youtube.tasks.update_youtube_video_categories", False
-            )
+            job = queue.enqueue(update_youtube_video_categories, False)
             queue.enqueue_call(
-                "server.api.youtube.tasks.update_user_youtube_subscriptions_job",
+                update_user_youtube_subscriptions_job,
                 args=(email,),
                 depends_on=job,
             )

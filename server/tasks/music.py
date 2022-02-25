@@ -8,12 +8,13 @@ import re
 import subprocess
 import traceback
 import uuid
+from databases import Database
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import yt_download
-from server.models.main import MusicJob, db, MusicJobs
+from server.models.main import MusicJob, MusicJobs
 from server.models.api import MusicResponses, RedisResponses
 from server.redis import redis, RedisChannels
 from server.utils.decorators import worker_task
@@ -23,7 +24,7 @@ JOB_DIR = "music_jobs"
 
 
 @worker_task
-async def run_job(job_id: str, file):
+async def run_job(job_id: str, file, db: Database = None):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = MusicJob.parse_obj(await db.fetch_one(query))
     try:

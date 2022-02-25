@@ -51,11 +51,11 @@ const FileSwitch = (props: FileSwitchProps) => {
 	);
 
 	useEffect(() => {
-		setTagsLoading(getFileTagsStatus.isLoading);
+		setTagsLoading(getFileTagsStatus.loading);
 	}, [getFileTagsStatus, setTagsLoading]);
 
 	useEffect(() => {
-		if (getFileTagsStatus.isSuccess) {
+		if (getFileTagsStatus.success) {
 			const { title, artist, album, grouping, artworkUrl } = getFileTagsStatus.data;
 			setMusicForm((form) => ({
 				...form,
@@ -66,7 +66,7 @@ const FileSwitch = (props: FileSwitchProps) => {
 				artworkUrl: artworkUrl || '',
 			}));
 		}
-	}, [getFileTagsStatus.data, getFileTagsStatus.isSuccess, setMusicForm]);
+	}, [getFileTagsStatus.data, getFileTagsStatus.success, setMusicForm]);
 
 	return useMemo(
 		() => (

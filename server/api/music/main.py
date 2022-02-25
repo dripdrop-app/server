@@ -17,22 +17,22 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from server.api.music.imgdl import download_image
 from server.api.music.mp3dl import extract_info
-from server.api.music.tasks import read_tags, JOB_DIR
 from server.dependencies import get_authenticated_user
-from server.models import db, MusicJobs, AuthenticatedUser, MusicJob
+from server.models.main import db, MusicJobs, AuthenticatedUser, MusicJob
 from server.models.api import (
+    youtube_regex,
     JobInfo,
     JobInfoResponse,
     MusicResponses,
     RedisResponses,
-    youtube_regex,
 )
 from server.redis import (
+    redis,
     RedisChannels,
     create_websocket_redis_channel_listener,
-    redis,
 )
 from server.rq import queue
+from server.tasks.music import run_job, read_tags, JOB_DIR
 from sqlalchemy import desc, select, insert, delete, update
 from typing import Optional
 from yt_dlp.utils import sanitize_filename
@@ -70,6 +70,33 @@ async def get_tags(file: UploadFile = File(None)):
     loop = asyncio.get_event_loop()
     tags = await loop.run_in_executor(None, read_tags, await file.read(), file.filename)
     return tags.dict()
+
+
+@app.get("/jobs", response_model=MusicResponses.AllJobs)
+async def get_jobs(user: AuthenticatedUser = Depends(get_authenticated_user)):
+    query = (
+        select(MusicJobs)
+        .where(MusicJobs.user_email == user.email)
+        .order_by(desc(MusicJobs.created_at))
+    )
+    jobs = []
+    for row in await db.fetch_all(query):
+        job = JobInfo.parse_obj(row)
+        jobs.append(
+            JobInfoResponse(
+                id=job.id,
+                filename=job.filename,
+                youtube_url=job.youtube_url,
+                artwork_url=job.artwork_url,
+                title=job.title,
+                artist=job.artist,
+                album=job.album,
+                grouping=job.grouping,
+                completed=job.completed,
+                failed=job.failed,
+            )
+        )
+    return MusicResponses.AllJobs(jobs=jobs).dict()
 
 
 @app.websocket("/jobs/listen")
@@ -112,35 +139,12 @@ async def listen_jobs(
         return
 
     await websocket.accept()
-    query = (
-        select(MusicJobs)
-        .where(MusicJobs.user_email == user.email)
-        .order_by(desc(MusicJobs.created_at))
-    )
-    jobs = []
-    for row in await db.fetch_all(query):
-        job = JobInfo.parse_obj(row)
-        jobs.append(
-            JobInfoResponse(
-                id=job.id,
-                filename=job.filename,
-                youtube_url=job.youtube_url,
-                artwork_url=job.artwork_url,
-                title=job.title,
-                artist=job.artist,
-                album=job.album,
-                grouping=job.grouping,
-                completed=job.completed,
-                failed=job.failed,
-            )
-        )
-    await websocket.send_json(MusicResponses.AllJobs(jobs=jobs).dict(by_alias=True))
     await create_websocket_redis_channel_listener(
         websocket=websocket, channel=RedisChannels.MUSIC_JOB_CHANNEL, handler=handler
     )
 
 
-@app.post("/jobs/create", status_code=202, response_model=MusicResponses.CreateJob)
+@app.post("/jobs/create", status_code=202)
 async def create_job(
     youtubeUrl: Optional[str] = Form(None, regex=youtube_regex),
     artworkUrl: Optional[str] = Form(None),
@@ -179,12 +183,12 @@ async def create_job(
     if file:
         file = await file.read()
 
-    queue.enqueue("server.api.music.tasks.run_job", job_id, file)
+    queue.enqueue(run_job, job_id, file)
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),
     )
-    return MusicResponses.CreateJob(job=JobInfoResponse.parse_obj(job_info)).dict()
+    return Response(None, 202)
 
 
 @app.delete("/jobs/delete/{job_id}")

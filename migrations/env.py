@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-from server.models import metadata, DATABASE_URL
+from server.models.main import metadata, DATABASE_URL
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
@@ -12,7 +12,7 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
-config.set_main_option('sqlalchemy.url', str(DATABASE_URL))
+config.set_main_option("sqlalchemy.url", str(DATABASE_URL))
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -64,9 +64,7 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

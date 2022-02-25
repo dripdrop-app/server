@@ -69,12 +69,12 @@ const FormActions = (props: FormActionProps) => {
 	}, [album, artist, artworkUrl, fileInputRef, fileType, grouping, performOperation, title, youtubeUrl]);
 
 	useEffect(() => {
-		if (performOperationStatus.isSuccess) {
+		if (performOperationStatus.success) {
 			resetForm();
-		} else if (performOperationStatus.isError) {
+		} else if (performOperationStatus.error) {
 			setOpenError(true);
 		}
-	}, [performOperationStatus.isError, performOperationStatus.isSuccess, resetForm]);
+	}, [performOperationStatus.error, performOperationStatus.data, resetForm, performOperationStatus.success]);
 
 	useEffect(() => {
 		if (
@@ -108,7 +108,7 @@ const FormActions = (props: FormActionProps) => {
 				>
 					<Alert severity="error">Task failed to start.</Alert>
 				</Snackbar>
-				{!performOperationStatus.isLoading && !groupingLoading && !tagsLoading ? (
+				{!performOperationStatus.loading && !groupingLoading && !tagsLoading ? (
 					<React.Fragment>
 						<Button variant="contained" disabled={!validForm} onClick={run}>
 							{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
@@ -129,7 +129,7 @@ const FormActions = (props: FormActionProps) => {
 			groupingLoading,
 			openError,
 			openSuccess,
-			performOperationStatus.isLoading,
+			performOperationStatus.loading,
 			resetForm,
 			run,
 			tagsLoading,

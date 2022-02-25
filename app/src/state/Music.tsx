@@ -1,5 +1,38 @@
 import { atom, DefaultValue, selector, selectorFamily } from 'recoil';
 import { FILE_TYPE } from '../utils/enums';
+import { userState } from './Auth';
+
+const jobsState = atom<Job[]>({
+	key: 'jobsState',
+	default: [],
+});
+
+export const jobsSelector = selector<Job[]>({
+	key: 'jobs',
+	get: ({ get }) => {
+		const user = get(userState);
+		if (user.authenticated) {
+			return get(jobsState);
+		}
+		return [];
+	},
+	set: ({ set }, newJobs) => {
+		if (newJobs instanceof DefaultValue) {
+			return;
+		}
+		set(jobsState, () => newJobs);
+	},
+});
+
+export const jobAtom = selectorFamily<Job, string>({
+	key: 'job',
+	get:
+		(id) =>
+		({ get }) => {
+			const jobs = get(jobsState);
+			return jobs.find((job) => job.id === id) as Job;
+		},
+});
 
 export const initialFormState: MusicForm = {
 	fileType: FILE_TYPE.YOUTUBE,
@@ -17,19 +50,6 @@ export const initialFormState: MusicForm = {
 export const musicFormAtom = atom<MusicForm>({
 	key: 'musicForm',
 	default: { ...initialFormState },
-});
-
-export const jobsAtom = atom<Job[]>({
-	key: 'jobs',
-	default: [],
-});
-
-export const jobAtom = selectorFamily<Job, string>({
-	key: 'job',
-	get:
-		(id) =>
-		({ get }) =>
-			get(jobsAtom).find((job) => job.id === id) as Job,
 });
 
 const variableFormSelector = <T extends keyof MusicForm>(formKey: keyof MusicForm) =>

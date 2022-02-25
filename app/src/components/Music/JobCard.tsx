@@ -13,7 +13,7 @@ import {
 	ButtonGroup,
 	Button,
 } from '@mui/material';
-import { jobAtom, jobsAtom, musicFormAtom } from '../../state/Music';
+import { jobAtom, jobsSelector, musicFormAtom } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import Image from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
@@ -24,7 +24,7 @@ interface JobCardProps {
 }
 
 const JobCard = (props: JobCardProps) => {
-	const setJobs = useSetRecoilState(jobsAtom);
+	const setJobs = useSetRecoilState(jobsSelector);
 	const setMusicForm = useSetRecoilState(musicFormAtom);
 
 	const { id } = props;
@@ -51,13 +51,13 @@ const JobCard = (props: JobCardProps) => {
 	}, [album, artist, artworkUrl, grouping, setMusicForm, title, youtubeUrl]);
 
 	useEffect(() => {
-		if (removeJobStatus.isSuccess) {
+		if (removeJobStatus.success) {
 			setJobs((jobs) => jobs.filter((job) => job.id !== id));
 		}
-	}, [id, removeJobStatus.isSuccess, setJobs]);
+	}, [id, removeJobStatus.data, removeJobStatus.success, setJobs]);
 
 	useEffect(() => {
-		if (downloadJobStatus.isSuccess) {
+		if (downloadJobStatus.success) {
 			const response = downloadJobStatus.response;
 			const data = downloadJobStatus.data;
 			if (response) {
@@ -71,7 +71,7 @@ const JobCard = (props: JobCardProps) => {
 				a.click();
 			}
 		}
-	}, [downloadJobStatus.data, downloadJobStatus.isSuccess, downloadJobStatus.response]);
+	}, [downloadJobStatus.data, downloadJobStatus.response, downloadJobStatus.success]);
 
 	return useMemo(
 		() => (

@@ -20,7 +20,7 @@ const ArtworkInput = () => {
 	}, [artworkURL, getArtworkURL]);
 
 	useEffect(() => {
-		if (getArtworkURLStatus.isSuccess) {
+		if (getArtworkURLStatus.success) {
 			const new_artwork_url = getArtworkURLStatus.data.artwork_url;
 			setArtworkURL(new_artwork_url);
 		}
@@ -47,7 +47,7 @@ const ArtworkInput = () => {
 						Clear
 					</Button>
 				</Stack>
-				{getArtworkURLStatus.isLoading ? (
+				{getArtworkURLStatus.loading ? (
 					<CircularProgress />
 				) : (
 					<img
@@ -58,7 +58,7 @@ const ArtworkInput = () => {
 				)}
 			</React.Fragment>
 		),
-		[artworkURL, getArtworkURLStatus.isLoading, setArtworkURL, valid]
+		[artworkURL, getArtworkURLStatus.loading, setArtworkURL, valid]
 	);
 };
 

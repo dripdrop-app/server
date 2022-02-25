@@ -1,12 +1,12 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import FileResponse
-from server.api.auth import app as auth_app
-from server.api.music import app as music_app
-from server.api.youtube import app as youtube_app
+from server.api.auth.main import app as auth_app
+from server.api.music.main import app as music_app
+from server.api.youtube.main import app as youtube_app
 from server.cron import cron_start, cron_end
 from server.dependencies import get_user
-from server.models import db
+from server.models.main import db
 
 
 app = FastAPI(

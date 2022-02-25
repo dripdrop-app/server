@@ -21,6 +21,10 @@ declare global {
 		failed: boolean;
 	}
 
+	interface JobsResponse {
+		jobs: Job[];
+	}
+
 	interface TagsResponse {
 		artworkUrl: string;
 		title: string;

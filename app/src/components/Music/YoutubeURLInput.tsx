@@ -18,17 +18,17 @@ const YoutubeURLInput = () => {
 	const [getGrouping, getGroupingStatus] = useLazyFetch<Pick<MusicForm, 'grouping'>>();
 
 	useEffect(() => {
-		setGroupingLoading(getGroupingStatus.isLoading);
-	}, [getGroupingStatus.isLoading, setGroupingLoading]);
+		setGroupingLoading(getGroupingStatus.loading);
+	}, [getGroupingStatus.loading, setGroupingLoading]);
 
 	useEffect(() => {
-		if (getGroupingStatus.isSuccess) {
+		if (getGroupingStatus.success) {
 			const { grouping } = getGroupingStatus.data;
 			if (youtubeURL) {
 				setGroupingSelector(grouping);
 			}
 		}
-	}, [getGroupingStatus, setGroupingSelector, youtubeURL]);
+	}, [getGroupingStatus.success, getGroupingStatus.data, setGroupingSelector, youtubeURL]);
 
 	useEffect(() => {
 		if (youtubeURL && valid) {

@@ -24,15 +24,15 @@ const authState = atom<YoutubeState>({
 export const authSelector = selector<YoutubeState>({
 	key: 'youtubeAuth',
 	get: async ({ get }) => {
-		const youtubeAccount = get(authState);
-		if (!youtubeAccount.email) {
-			const user = get(userState);
-			if (user) {
+		const user = get(userState);
+		if (user.authenticated) {
+			const youtubeAccount = get(authState);
+			if (!youtubeAccount.email) {
 				return await getYoutubeAccount();
 			}
-			return initialYoutubeAuthState;
+			return youtubeAccount;
 		}
-		return youtubeAccount;
+		return initialYoutubeAuthState;
 	},
 	set: ({ set }, newValue) => set(authState, newValue),
 });

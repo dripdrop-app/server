@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from server.models import YoutubeVideoCategory, YoutubeSubscription, YoutubeVideo
+from server.models.main import YoutubeVideoCategory, YoutubeSubscription, YoutubeVideo
 from typing import Literal, Optional, List
 
 email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
@@ -73,7 +73,6 @@ class MusicResponses:
         pass
 
     class AllJobs(ResponseBaseModel):
-        type = "ALL"
         jobs: List[JobInfoResponse]
 
     class JobUpdate(ResponseBaseModel):

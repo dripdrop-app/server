@@ -21,7 +21,7 @@ const Auth = () => {
 	}, [loginStatus.error, loginStatus.timestamp, signupStatus.error, signupStatus.timestamp]);
 
 	const info = useMemo(() => {
-		if (signupStatus.isSuccess && signupStatus.timestamp > loginStatus.timestamp) {
+		if (signupStatus.success && signupStatus.timestamp > loginStatus.timestamp) {
 			return (
 				<Alert severity="info">
 					Account successfully created. You can login once your account has been approved by the adminstrator.
@@ -31,10 +31,10 @@ const Auth = () => {
 			return <Alert severity="error">{error}</Alert>;
 		}
 		return null;
-	}, [error, loginStatus.timestamp, signupStatus.isSuccess, signupStatus.timestamp]);
+	}, [error, loginStatus.timestamp, signupStatus.success, signupStatus.timestamp]);
 
 	useEffect(() => {
-		if (loginStatus.isSuccess) {
+		if (loginStatus.success) {
 			const { data } = loginStatus;
 			setUser(() => ({ ...data, authenticated: true }));
 		}
@@ -70,7 +70,7 @@ const Auth = () => {
 					error={!!error}
 				/>
 				<Stack direction="row" spacing={3}>
-					{signupStatus.isLoading || loginStatus.isLoading ? (
+					{signupStatus.loading || loginStatus.loading ? (
 						<CircularProgress />
 					) : (
 						<Fragment>
@@ -91,7 +91,7 @@ const Auth = () => {
 				</Stack>
 			</Stack>
 		),
-		[error, info, login, loginStatus.isLoading, password, signup, signupStatus.isLoading, email]
+		[error, info, login, loginStatus.loading, password, signup, signupStatus.loading, email]
 	);
 };
 
