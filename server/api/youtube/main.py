@@ -1,7 +1,6 @@
 import server.api.youtube.google_api as google_api
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket
 from fastapi.responses import PlainTextResponse
-from importlib_metadata import email
 from server.config import config
 from server.dependencies import get_authenticated_user
 from server.models.main import (
@@ -247,7 +246,7 @@ async def listen_subscription_job(
         return
 
     await websocket.accept()
-    query = select(GoogleAccounts).where(GoogleAccounts.user_email == email)
+    query = select(GoogleAccounts).where(GoogleAccounts.user_email == user.email)
     google_account = GoogleAccount.parse_obj(await db.fetch_one(query))
     await websocket.send_json(
         YoutubeResponses.SubscriptionUpdate(
