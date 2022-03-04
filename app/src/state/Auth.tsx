@@ -1,5 +1,11 @@
-import { atom } from 'recoil';
+import { atom, selector } from 'recoil';
 import axios, { AxiosResponse } from 'axios';
+
+const initialUserState: UserState = {
+	email: '',
+	admin: false,
+	authenticated: false,
+};
 
 const checkSession = async () => {
 	try {
@@ -10,13 +16,13 @@ const checkSession = async () => {
 	}
 };
 
-export const initialUserState: UserState = {
-	email: '',
-	admin: false,
-	authenticated: false,
-};
-
 export const userState = atom<UserState>({
 	key: 'auth',
 	default: checkSession(),
+});
+
+export const resetUserState = selector({
+	key: 'resetAuth',
+	get: () => null,
+	set: ({ set }) => set(userState, initialUserState),
 });

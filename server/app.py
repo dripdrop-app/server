@@ -1,6 +1,7 @@
 import os
-from fastapi import FastAPI, Request, Depends
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from server.api.auth.main import app as auth_app
 from server.api.music.main import app as music_app
 from server.api.youtube.main import app as youtube_app
@@ -22,16 +23,11 @@ app.router.include_router(music_app.router, prefix="/music")
 app.router.include_router(youtube_app.router, prefix="/youtube")
 
 
-@app.get("/{path:path}")
-async def index(request: Request):
-    path = request.path_params.get("path")
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return HTMLResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
 
-    if path == "":
-        path = "index.html"
 
-    filepath = os.path.join(os.path.dirname(__file__), f"../build/{path}")
-
-    if os.path.exists(filepath):
-        return FileResponse(filepath)
-
-    return FileResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
+app.mount(
+    "/", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../build"))
+)

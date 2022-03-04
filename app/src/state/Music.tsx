@@ -24,17 +24,17 @@ export const jobsSelector = selector<Job[]>({
 	},
 });
 
-export const jobAtom = selectorFamily<Job, string>({
+export const jobAtom = selectorFamily({
 	key: 'job',
 	get:
-		(id) =>
+		(id: string) =>
 		({ get }) => {
 			const jobs = get(jobsState);
-			return jobs.find((job) => job.id === id) as Job;
+			return jobs.find((job) => job.id === id);
 		},
 });
 
-export const initialFormState: MusicForm = {
+const initialFormState: MusicForm = {
 	fileType: FILE_TYPE.YOUTUBE,
 	youtubeUrl: '',
 	filename: '',
@@ -49,7 +49,31 @@ export const initialFormState: MusicForm = {
 
 export const musicFormAtom = atom<MusicForm>({
 	key: 'musicForm',
-	default: { ...initialFormState },
+	default: initialFormState,
+});
+
+export const resetMusicForm = selector({
+	key: 'resetMusicForm',
+	get: () => null,
+	set: ({ set }) => set(musicFormAtom, initialFormState),
+});
+
+export const validMusicForm = selector({
+	key: 'validMusicForm',
+	get: ({ get }) => {
+		const form = get(musicFormAtom);
+		const { fileType, youtubeUrl, filename, title, artist, album } = form;
+		if (
+			(fileType === FILE_TYPE.YOUTUBE &&
+				youtubeUrl &&
+				RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youtubeUrl)) ||
+			(fileType !== FILE_TYPE.YOUTUBE && filename)
+		) {
+			return !!title && !!artist && !!album;
+		} else {
+			return false;
+		}
+	},
 });
 
 const variableFormSelector = <T extends keyof MusicForm>(formKey: keyof MusicForm) =>

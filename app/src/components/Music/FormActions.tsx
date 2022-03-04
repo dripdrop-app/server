@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Alert, Button, CircularProgress, Snackbar } from '@mui/material';
 import { FILE_TYPE } from '../../utils/enums';
-import { initialFormState, musicFormAtom } from '../../state/Music';
+import { resetMusicForm, musicFormAtom, validMusicForm } from '../../state/Music';
 import BlankImage from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
 
@@ -15,16 +15,11 @@ const FormActions = (props: FormActionProps) => {
 
 	const [openSuccess, setOpenSuccess] = useState(false);
 	const [openError, setOpenError] = useState(false);
-	const [musicForm, setMusicForm] = useRecoilState(musicFormAtom);
+	const musicForm = useRecoilValue(musicFormAtom);
+	const resetForm = useSetRecoilState(resetMusicForm);
+	const validForm = useRecoilValue(validMusicForm);
 
-	const { title, artist, album, grouping, artworkUrl, filename, fileType, youtubeUrl, groupingLoading, tagsLoading } =
-		musicForm;
-
-	const resetForm = useCallback(() => {
-		setMusicForm(initialFormState);
-	}, [setMusicForm]);
-
-	const [validForm, setValidForm] = useState(false);
+	const { title, artist, album, grouping, artworkUrl, fileType, youtubeUrl, groupingLoading, tagsLoading } = musicForm;
 
 	const [performOperation, performOperationStatus] = useLazyFetch();
 
@@ -49,15 +44,17 @@ const FormActions = (props: FormActionProps) => {
 			if (imageResponse.ok) {
 				const blob = await imageResponse.blob();
 				try {
-					const readFilePromise = () =>
+					const readFilePromise: () => Promise<string | ArrayBuffer | null> = () =>
 						new Promise((resolve, reject) => {
 							const reader = new FileReader();
 							reader.onloadend = () => resolve(reader.result);
 							reader.onerror = reject;
 							reader.readAsDataURL(blob);
 						});
-					const url = (await readFilePromise()) as string;
-					formData.append('artworkUrl', url);
+					const url = await readFilePromise();
+					if (typeof url === 'string') {
+						formData.append('artworkUrl', url);
+					}
 				} catch {}
 			}
 		}
@@ -70,24 +67,11 @@ const FormActions = (props: FormActionProps) => {
 
 	useEffect(() => {
 		if (performOperationStatus.success) {
-			resetForm();
+			resetForm(null);
 		} else if (performOperationStatus.error) {
 			setOpenError(true);
 		}
 	}, [performOperationStatus.error, performOperationStatus.data, resetForm, performOperationStatus.success]);
-
-	useEffect(() => {
-		if (
-			(fileType === FILE_TYPE.YOUTUBE &&
-				youtubeUrl &&
-				RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youtubeUrl)) ||
-			(fileType !== FILE_TYPE.YOUTUBE && filename)
-		) {
-			setValidForm(!!title && !!artist && !!album);
-		} else {
-			setValidForm(false);
-		}
-	}, [album, artist, fileType, filename, title, youtubeUrl]);
 
 	return useMemo(
 		() => (
@@ -115,7 +99,7 @@ const FormActions = (props: FormActionProps) => {
 							{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
 							{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
 						</Button>
-						<Button variant="contained" onClick={resetForm}>
+						<Button variant="contained" onClick={() => resetForm(null)}>
 							Reset
 						</Button>
 					</React.Fragment>

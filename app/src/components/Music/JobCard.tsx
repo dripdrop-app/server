@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { FileDownload, CopyAll, Delete, Error } from '@mui/icons-material';
 import {
@@ -24,31 +24,28 @@ interface JobCardProps {
 }
 
 const JobCard = (props: JobCardProps) => {
+	const { id } = props;
 	const setJobs = useSetRecoilState(jobsSelector);
 	const setMusicForm = useSetRecoilState(musicFormAtom);
-
-	const { id } = props;
 	const job = useRecoilValue(jobAtom(id));
-
-	const { filename, youtubeUrl, title, artist, album, grouping, artworkUrl, completed, failed } = job;
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
 	const [removeJob, removeJobStatus] = useLazyFetch();
 
 	const copyJob = useCallback(() => {
-		setMusicForm({
-			title,
-			artist,
-			album,
-			grouping: grouping || '',
-			fileType: FILE_TYPE.YOUTUBE,
-			youtubeUrl: youtubeUrl || '',
-			filename: '',
-			artworkUrl: artworkUrl || '',
-			groupingLoading: false,
-			tagsLoading: false,
-		});
-	}, [album, artist, artworkUrl, grouping, setMusicForm, title, youtubeUrl]);
+		if (job) {
+			setMusicForm({
+				...job,
+				grouping: job.grouping || '',
+				fileType: FILE_TYPE.YOUTUBE,
+				youtubeUrl: job.youtubeUrl || '',
+				filename: '',
+				artworkUrl: job.artworkUrl || '',
+				groupingLoading: false,
+				tagsLoading: false,
+			});
+		}
+	}, [job, setMusicForm]);
 
 	useEffect(() => {
 		if (removeJobStatus.success) {
@@ -74,97 +71,84 @@ const JobCard = (props: JobCardProps) => {
 	}, [downloadJobStatus.data, downloadJobStatus.response, downloadJobStatus.success]);
 
 	return useMemo(
-		() => (
-			<Card>
-				<Container sx={{ my: 1 }}>
-					<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center">
-						<CardMedia component="img" height="150" image={artworkUrl || Image} alt="artwork" />
-						<CardContent sx={{ flex: 2 }}>
-							<Stack direction="row" spacing={1}>
-								<Typography variant="caption">ID:</Typography>
-								<Typography sx={typographyDefaultCSS} variant="caption">
-									{id}
-								</Typography>
-							</Stack>
-							<Stack direction="row" spacing={1}>
-								<Typography variant="caption">Source:</Typography>
-								<Typography sx={typographyDefaultCSS} variant="caption">
-									{filename || youtubeUrl}
-								</Typography>
-							</Stack>
-							<Stack direction="row" spacing={1}>
-								<Typography variant="caption">Title:</Typography>
-								<Typography sx={typographyDefaultCSS} variant="caption">
-									{title}
-								</Typography>
-							</Stack>
-							<Stack direction="row" spacing={1}>
-								<Typography variant="caption">Artist:</Typography>
-								<Typography sx={typographyDefaultCSS} variant="caption">
-									{artist}
-								</Typography>
-							</Stack>
-							<Stack direction="row" spacing={1}>
-								<Typography variant="caption">Album:</Typography>
-								<Typography sx={typographyDefaultCSS} variant="caption">
-									{album}
-								</Typography>
-							</Stack>
-							<Stack direction="row" spacing={1}>
-								<Typography variant="caption">Grouping:</Typography>
-								<Typography sx={typographyDefaultCSS} variant="caption">
-									{grouping}
-								</Typography>
-							</Stack>
-							<CardActions>
-								{!completed && !failed ? <CircularProgress /> : null}
-								<ButtonGroup variant="contained">
-									{completed && !failed ? (
+		() =>
+			!job ? null : (
+				<Card>
+					<Container sx={{ my: 1 }}>
+						<Stack direction={{ xs: 'column', md: 'row' }} alignItems="center">
+							<CardMedia component="img" height="150" image={job.artworkUrl || Image} alt="artwork" />
+							<CardContent sx={{ flex: 2 }}>
+								<Stack direction="row" spacing={1}>
+									<Typography variant="caption">ID:</Typography>
+									<Typography sx={typographyDefaultCSS} variant="caption">
+										{id}
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={1}>
+									<Typography variant="caption">Source:</Typography>
+									<Typography sx={typographyDefaultCSS} variant="caption">
+										{job.filename || job.youtubeUrl}
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={1}>
+									<Typography variant="caption">Title:</Typography>
+									<Typography sx={typographyDefaultCSS} variant="caption">
+										{job.title}
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={1}>
+									<Typography variant="caption">Artist:</Typography>
+									<Typography sx={typographyDefaultCSS} variant="caption">
+										{job.artist}
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={1}>
+									<Typography variant="caption">Album:</Typography>
+									<Typography sx={typographyDefaultCSS} variant="caption">
+										{job.album}
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={1}>
+									<Typography variant="caption">Grouping:</Typography>
+									<Typography sx={typographyDefaultCSS} variant="caption">
+										{job.grouping}
+									</Typography>
+								</Stack>
+								<CardActions>
+									{!job.completed && !job.failed ? <CircularProgress /> : null}
+									<ButtonGroup variant="contained">
+										{job.completed && !job.failed ? (
+											<Button
+												title="Download File"
+												color="success"
+												onClick={() => downloadJob({ url: `/music/jobs/download/${id}`, responseType: 'blob' })}
+											>
+												<FileDownload />
+											</Button>
+										) : null}
+										{job.failed ? (
+											<Button title="Job Failed / File Not Found" color="error">
+												<Error />
+											</Button>
+										) : null}
+										<Button title="Copy to Form" onClick={() => copyJob()}>
+											<CopyAll />
+										</Button>
 										<Button
-											title="Download File"
-											color="success"
-											onClick={() => downloadJob({ url: `/music/jobs/download/${id}`, responseType: 'blob' })}
+											title="Delete Job and File"
+											color="error"
+											onClick={() => removeJob({ url: `/music/jobs/delete/${id}`, method: 'DELETE' })}
 										>
-											<FileDownload />
+											<Delete />
 										</Button>
-									) : null}
-									{failed ? (
-										<Button title="Job Failed / File Not Found" color="error">
-											<Error />
-										</Button>
-									) : null}
-									<Button title="Copy to Form" onClick={() => copyJob()}>
-										<CopyAll />
-									</Button>
-									<Button
-										title="Delete Job and File"
-										color="error"
-										onClick={() => removeJob({ url: `/music/jobs/delete/${id}`, method: 'DELETE' })}
-									>
-										<Delete />
-									</Button>
-								</ButtonGroup>
-							</CardActions>
-						</CardContent>
-					</Stack>
-				</Container>
-			</Card>
-		),
-		[
-			album,
-			artist,
-			artworkUrl,
-			completed,
-			copyJob,
-			downloadJob,
-			failed,
-			filename,
-			grouping,
-			id,
-			removeJob,
-			title,
-			youtubeUrl,
-		]
+									</ButtonGroup>
+								</CardActions>
+							</CardContent>
+						</Stack>
+					</Container>
+				</Card>
+			),
+		[copyJob, downloadJob, id, job, removeJob]
 	);
 };
 

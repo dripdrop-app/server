@@ -1,22 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Button, Avatar, Menu, MenuItem } from '@mui/material';
 import { Person } from '@mui/icons-material';
-import { useRecoilState } from 'recoil';
-import { initialUserState, userState } from '../../state/Auth';
+import { userState, resetUserState } from '../../state/Auth';
 import useLazyFetch from '../../hooks/useLazyFetch';
 
 const UserDropdown = () => {
-	const [user, setUser] = useRecoilState(userState);
 	const [showMenu, setShowMenu] = useState(false);
 	const buttonRef = useRef<null | HTMLButtonElement>(null);
+	const user = useRecoilValue(userState);
+	const resetUser = useSetRecoilState(resetUserState);
 
 	const [logout, logoutStatus] = useLazyFetch<null>();
 
 	useEffect(() => {
 		if (logoutStatus.success) {
-			setUser(() => initialUserState);
+			resetUser(null);
 		}
-	}, [logoutStatus.success, setUser]);
+	}, [logoutStatus.success, resetUser]);
 
 	if (user.authenticated) {
 		return (
