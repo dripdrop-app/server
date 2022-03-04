@@ -26,8 +26,3 @@ app.router.include_router(youtube_app.router, prefix="/youtube")
 @app.get("/", response_class=HTMLResponse)
 def index():
     return HTMLResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
-
-
-app.mount(
-    "/", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../build"))
-)
