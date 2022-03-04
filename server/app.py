@@ -23,11 +23,13 @@ app.router.include_router(music_app.router, prefix="/music")
 app.router.include_router(youtube_app.router, prefix="/youtube")
 
 
-@app.get("/", response_class=FileResponse)
-def index():
-    return FileResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
-
-
 app.mount(
-    "/", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../build"))
+    "/static",
+    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../build/static")),
+    name="static",
 )
+
+
+@app.get("/{path:path}")
+async def index():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
