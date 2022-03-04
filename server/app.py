@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from server.api.auth.main import app as auth_app
@@ -31,5 +31,11 @@ app.mount(
 
 
 @app.get("/{path:path}")
-async def index():
+async def index(request: Request):
+    path = request.path_params.get("path")
+    if path == "":
+        path = "index.html"
+    filepath = os.path.join(os.path.dirname(__file__), f"../build/{path}")
+    if os.path.exists(filepath):
+        return FileResponse(filepath)
     return FileResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
