@@ -25,7 +25,10 @@ app.router.include_router(youtube_app.router, prefix="/youtube")
 
 app.mount(
     "/static",
-    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../build/static")),
+    StaticFiles(
+        directory=os.path.join(os.path.dirname(__file__), "../build/static"),
+        check_dir=False,
+    ),
     name="static",
 )
 

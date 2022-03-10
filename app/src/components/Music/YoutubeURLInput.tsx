@@ -1,40 +1,16 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { YouTube } from '@mui/icons-material';
 import { TextField } from '@mui/material';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { fileTypeSelector, groupingLoadingSelector, groupingSelector, youtubeURLSelector } from '../../state/Music';
-import useLazyFetch from '../../hooks/useLazyFetch';
+import { useAtom, useAtomValue } from 'jotai';
+import { fileTypeAtom, youtubeURLAtom } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, isValidYTLink } from '../../utils/helpers';
 
 const YoutubeURLInput = () => {
-	const [youtubeURL, setYoutubeURL] = useRecoilState(youtubeURLSelector);
-	const fileType = useRecoilValue(fileTypeSelector);
-	const setGroupingLoading = useSetRecoilState(groupingLoadingSelector);
-	const setGroupingSelector = useSetRecoilState(groupingSelector);
+	const [youtubeUrl, setYoutubeURL] = useAtom(youtubeURLAtom);
+	const fileType = useAtomValue(fileTypeAtom);
 
-	const valid = isValidYTLink(youtubeURL);
-
-	const [getGrouping, getGroupingStatus] = useLazyFetch<Pick<MusicForm, 'grouping'>>();
-
-	useEffect(() => {
-		setGroupingLoading(getGroupingStatus.loading);
-	}, [getGroupingStatus.loading, setGroupingLoading]);
-
-	useEffect(() => {
-		if (getGroupingStatus.success) {
-			const { grouping } = getGroupingStatus.data;
-			if (youtubeURL) {
-				setGroupingSelector(grouping);
-			}
-		}
-	}, [getGroupingStatus.success, getGroupingStatus.data, setGroupingSelector, youtubeURL]);
-
-	useEffect(() => {
-		if (youtubeURL && valid) {
-			getGrouping({ url: '/music/grouping', params: { youtube_url: youtubeURL } });
-		}
-	}, [getGrouping, valid, youtubeURL]);
+	const valid = isValidYTLink(youtubeUrl);
 
 	return (
 		<React.Fragment>
@@ -46,12 +22,12 @@ const YoutubeURLInput = () => {
 			<TextField
 				{...defaultTextFieldProps}
 				required
-				value={youtubeURL}
+				value={youtubeUrl}
 				label="YouTube URL"
 				disabled={fileType !== FILE_TYPE.YOUTUBE}
 				onChange={(e) => setYoutubeURL(e.target.value)}
 				error={!valid && fileType === FILE_TYPE.YOUTUBE}
-				helperText={youtubeURL ? '' : 'Must be a valid YouTube link.'}
+				helperText={youtubeUrl ? '' : 'Must be a valid YouTube link.'}
 			/>
 		</React.Fragment>
 	);

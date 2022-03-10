@@ -1,38 +1,19 @@
-import { atom, DefaultValue, selector, selectorFamily } from 'recoil';
+import axios, { AxiosResponse } from 'axios';
+import { atom } from 'jotai';
+import { selectAtom, atomFamily, atomWithHash } from 'jotai/utils';
 import { FILE_TYPE } from '../utils/enums';
-import { userState } from './Auth';
+import { isBase64, isValidImage, isValidLink, isValidYTLink, resolveAlbumFromTitle } from '../utils/helpers';
 
-const jobsState = atom<Job[]>({
-	key: 'jobsState',
-	default: [],
-});
+const jobsState = atom<Job[]>([]);
 
-export const jobsSelector = selector<Job[]>({
-	key: 'jobs',
-	get: ({ get }) => {
-		const user = get(userState);
-		if (user.authenticated) {
-			return get(jobsState);
-		}
-		return [];
-	},
-	set: ({ set }, newJobs) => {
-		if (newJobs instanceof DefaultValue) {
-			return;
-		}
-		set(jobsState, () => newJobs);
-	},
-});
+export const jobsAtom = atom(
+	(get) => get(jobsState),
+	(get, set, update: Job[]) => {
+		set(jobsState, update);
+	}
+);
 
-export const jobAtom = selectorFamily({
-	key: 'job',
-	get:
-		(id: string) =>
-		({ get }) => {
-			const jobs = get(jobsState);
-			return jobs.find((job) => job.id === id);
-		},
-});
+export const jobAtom = atomFamily((jobID: string) => atom((get) => get(jobsState).find((job) => job.id === jobID)));
 
 const initialFormState: MusicForm = {
 	fileType: FILE_TYPE.YOUTUBE,
@@ -43,67 +24,111 @@ const initialFormState: MusicForm = {
 	artist: '',
 	album: '',
 	grouping: '',
-	groupingLoading: false,
-	tagsLoading: false,
 };
 
-export const musicFormAtom = atom<MusicForm>({
-	key: 'musicForm',
-	default: initialFormState,
-});
-
-export const resetMusicForm = selector({
-	key: 'resetMusicForm',
-	get: () => null,
-	set: ({ set }) => set(musicFormAtom, initialFormState),
-});
-
-export const validMusicForm = selector({
-	key: 'validMusicForm',
-	get: ({ get }) => {
-		const form = get(musicFormAtom);
-		const { fileType, youtubeUrl, filename, title, artist, album } = form;
-		if (
-			(fileType === FILE_TYPE.YOUTUBE &&
-				youtubeUrl &&
-				RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youtubeUrl)) ||
-			(fileType !== FILE_TYPE.YOUTUBE && filename)
-		) {
-			return !!title && !!artist && !!album;
-		} else {
-			return false;
+export const musicFormAtom = atomWithHash('musicForm', initialFormState, {
+	serialize: (form) => {
+		const params = new URLSearchParams();
+		for (let key in form) {
+			params.append(key, String(form[key as keyof MusicForm]));
 		}
+		return params.toString();
+	},
+	deserialize: (hash) => {
+		const params = new URLSearchParams(hash);
+		const form: Record<any, any> = {};
+		params.forEach((val, key) => {
+			form[key] = val;
+		});
+		return form as MusicForm;
 	},
 });
 
-const variableFormSelector = <T extends keyof MusicForm>(formKey: keyof MusicForm) =>
-	selector<MusicForm[T]>({
-		key: formKey,
-		get: ({ get }) => get(musicFormAtom)[formKey] as MusicForm[T],
-		set: ({ set }, newFormValue) => {
-			if (newFormValue instanceof DefaultValue) {
-				return;
+export const validMusicForm = selectAtom(musicFormAtom, (form) => {
+	const { fileType, youtubeUrl, filename, title, artist, album } = form;
+	if (
+		(fileType === FILE_TYPE.YOUTUBE &&
+			youtubeUrl &&
+			RegExp(/^https:\/\/(www\.)?youtube\.com\/watch\?v=.+/).test(youtubeUrl)) ||
+		(fileType !== FILE_TYPE.YOUTUBE && filename)
+	) {
+		return !!title && !!artist && !!album;
+	} else {
+		return false;
+	}
+});
+
+const variableMusicAtom = <T extends keyof MusicForm>(formKey: T) =>
+	atom(
+		(get) => get(musicFormAtom)[formKey],
+		(get, set, update: MusicForm[T]) => {
+			set(musicFormAtom, (form) => ({ ...form, [formKey]: update }));
+		}
+	);
+
+export const titleAtom = atom(
+	(get) => get(musicFormAtom).title,
+	(get, set, update: string) => {
+		set(musicFormAtom, (prev) => ({ ...prev, title: update }));
+		set(albumAtom, resolveAlbumFromTitle(update));
+	}
+);
+
+export const youtubeURLAtom = atom(
+	(get) => get(musicFormAtom).youtubeUrl,
+	async (get, set, update: string) => {
+		const url = update;
+		set(musicFormAtom, (prev) => ({ ...prev, youtubeUrl: url }));
+		if (isValidYTLink(url)) {
+			set(groupingLoadingAtom, true);
+			try {
+				const response: AxiosResponse<Pick<MusicForm, 'grouping'>> = await axios.get('/music/grouping', {
+					params: { youtube_url: url },
+				});
+				set(groupingAtom, response.data.grouping);
+			} finally {
+				set(groupingLoadingAtom, false);
 			}
-			set(musicFormAtom, (prev) => ({ ...prev, [formKey]: newFormValue }));
-		},
-	});
+		}
+	}
+);
 
-export const titleSelector = variableFormSelector<'title'>('title');
+export const artworkLoadingAtom = atom(false);
 
-export const youtubeURLSelector = variableFormSelector<'youtubeUrl'>('youtubeUrl');
+export const artworkURLAtom = atom(
+	(get) => get(musicFormAtom).artworkUrl,
+	async (get, set, update: string) => {
+		const url = update;
+		set(musicFormAtom, (prev) => ({ ...prev, artworkUrl: url }));
+		if (url && !isValidImage(url) && !isBase64(url) && isValidLink(url)) {
+			set(artworkLoadingAtom, true);
+			try {
+				const response: AxiosResponse<Pick<MusicForm, 'artworkUrl'>> = await axios.get('/music/artwork', {
+					params: { artwork_url: url },
+				});
+				set(musicFormAtom, (prev) => ({ ...prev, artworkUrl: response.data.artworkUrl }));
+			} finally {
+				set(artworkLoadingAtom, false);
+			}
+		}
+	}
+);
 
-export const artworkURLSelector = variableFormSelector<'artworkUrl'>('artworkUrl');
+export const validArtworkAtom = atom((get) => {
+	const url = get(musicFormAtom).artworkUrl;
+	return isBase64(url) || isValidImage(url);
+});
 
-export const fileTypeSelector = variableFormSelector<'fileType'>('fileType');
+export const fileTypeAtom = variableMusicAtom('fileType');
 
-export const filenameSelector = variableFormSelector<'filename'>('filename');
+export const filenameAtom = variableMusicAtom('filename');
 
-export const artistSelector = variableFormSelector<'artist'>('artist');
+export const artistAtom = variableMusicAtom('artist');
 
-export const albumSelector = variableFormSelector<'album'>('album');
+export const albumAtom = variableMusicAtom('album');
 
-export const groupingSelector = variableFormSelector<'grouping'>('grouping');
+export const groupingLoadingAtom = atom(false);
 
-export const groupingLoadingSelector = variableFormSelector<'groupingLoading'>('groupingLoading');
+export const groupingAtom = variableMusicAtom('grouping');
 
-export const tagsLoadingSelector = variableFormSelector<'tagsLoading'>('tagsLoading');
+export const tagsLoadingAtom = atom(false);

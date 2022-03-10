@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useAtom } from 'jotai';
 import { Typography, Button, Stack, Box, CircularProgress } from '@mui/material';
 import { NavigateNext, NavigateBefore } from '@mui/icons-material';
-import { jobsSelector } from '../../state/Music';
+import { jobsAtom } from '../../state/Music';
 import JobCard from './JobCard';
 import useWebsocket from '../../hooks/useWebsocket';
 import useFetch from '../../hooks/useFetch';
 
 const JobList = () => {
 	const [page, setPage] = useState(0);
-	const [jobs, setJobs] = useRecoilState(jobsSelector);
+	const [jobs, setJobs] = useAtom(jobsAtom);
 
 	const getJobsStatus = useFetch<JobsResponse>({ url: '/music/jobs' });
 
@@ -25,26 +25,24 @@ const JobList = () => {
 			const json = JSON.parse(event.data);
 			const type = json.type;
 			if (type === 'ALL') {
-				setJobs(() => json.jobs);
+				setJobs(json.jobs);
 			} else if (type === 'STARTED') {
-				setJobs((jobs) => [...json.jobs, ...jobs]);
+				setJobs([...json.jobs, ...jobs]);
 			} else if (type === 'COMPLETED') {
-				setJobs((jobs) => {
-					const newJobs = [...jobs];
-					const completedJobs = json.jobs.reduce((map: any, job: any) => {
-						map[job.id] = job;
-						return map;
-					}, {});
-					newJobs.forEach((job, index) => {
-						if (completedJobs[job.id]) {
-							newJobs[index] = completedJobs[job.id];
-						}
-					});
-					return [...newJobs];
+				const newJobs = [...jobs];
+				const completedJobs = json.jobs.reduce((map: any, job: any) => {
+					map[job.id] = job;
+					return map;
+				}, {});
+				newJobs.forEach((job, index) => {
+					if (completedJobs[job.id]) {
+						newJobs[index] = completedJobs[job.id];
+					}
 				});
+				setJobs([...newJobs]);
 			}
 		},
-		[setJobs]
+		[jobs, setJobs]
 	);
 
 	const loadingWS = useWebsocket('/music/jobs/listen', socketHandler);

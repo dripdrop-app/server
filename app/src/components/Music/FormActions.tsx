@@ -1,8 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useAtomValue } from 'jotai';
+import { useResetAtom } from 'jotai/utils';
 import { Alert, Button, CircularProgress, Snackbar } from '@mui/material';
 import { FILE_TYPE } from '../../utils/enums';
-import { resetMusicForm, musicFormAtom, validMusicForm } from '../../state/Music';
+import {
+	groupingLoadingAtom,
+	musicFormAtom,
+	tagsLoadingAtom,
+	validArtworkAtom,
+	validMusicForm,
+} from '../../state/Music';
 import BlankImage from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
 
@@ -15,11 +22,14 @@ const FormActions = (props: FormActionProps) => {
 
 	const [openSuccess, setOpenSuccess] = useState(false);
 	const [openError, setOpenError] = useState(false);
-	const musicForm = useRecoilValue(musicFormAtom);
-	const resetForm = useSetRecoilState(resetMusicForm);
-	const validForm = useRecoilValue(validMusicForm);
+	const musicForm = useAtomValue(musicFormAtom);
+	const resetForm = useResetAtom(musicFormAtom);
+	const validForm = useAtomValue(validMusicForm);
+	const validArtwork = useAtomValue(validArtworkAtom);
+	const groupingLoading = useAtomValue(groupingLoadingAtom);
+	const tagsLoading = useAtomValue(tagsLoadingAtom);
 
-	const { title, artist, album, grouping, artworkUrl, fileType, youtubeUrl, groupingLoading, tagsLoading } = musicForm;
+	const { title, artist, album, grouping, artworkUrl, fileType, youtubeUrl } = musicForm;
 
 	const [performOperation, performOperationStatus] = useLazyFetch();
 
@@ -37,7 +47,7 @@ const FormActions = (props: FormActionProps) => {
 		if (fileType === FILE_TYPE.YOUTUBE) {
 			formData.append('youtubeUrl', youtubeUrl || '');
 		}
-		if (artworkUrl) {
+		if (validArtwork) {
 			formData.append('artworkUrl', artworkUrl);
 		} else {
 			const imageResponse = await fetch(BlankImage);
@@ -63,11 +73,11 @@ const FormActions = (props: FormActionProps) => {
 		formData.append('album', album);
 		formData.append('grouping', grouping || '');
 		performOperation({ url: '/music/jobs/create', method: 'POST', data: formData });
-	}, [album, artist, artworkUrl, fileInputRef, fileType, grouping, performOperation, title, youtubeUrl]);
+	}, [album, artist, artworkUrl, fileInputRef, fileType, grouping, performOperation, title, validArtwork, youtubeUrl]);
 
 	useEffect(() => {
 		if (performOperationStatus.success) {
-			resetForm(null);
+			resetForm();
 		} else if (performOperationStatus.error) {
 			setOpenError(true);
 		}
@@ -99,7 +109,7 @@ const FormActions = (props: FormActionProps) => {
 							{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
 							{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
 						</Button>
-						<Button variant="contained" onClick={() => resetForm(null)}>
+						<Button variant="contained" onClick={() => resetForm()}>
 							Reset
 						</Button>
 					</React.Fragment>

@@ -1,25 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useAtom, useAtomValue } from 'jotai';
 import { CircularProgress, TextField } from '@mui/material';
-import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
-import {
-	albumSelector,
-	artistSelector,
-	groupingLoadingSelector,
-	groupingSelector,
-	titleSelector,
-} from '../../state/Music';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { defaultTextFieldProps } from '../../utils/helpers';
+import { albumAtom, artistAtom, groupingLoadingAtom, groupingAtom, titleAtom } from '../../state/Music';
 
 const TagInputs = () => {
-	const [title, setTitle] = useRecoilState(titleSelector);
-	const [artist, setArtist] = useRecoilState(artistSelector);
-	const [album, setAlbum] = useRecoilState(albumSelector);
-	const [grouping, setGrouping] = useRecoilState(groupingSelector);
-	const groupingLoading = useRecoilValue(groupingLoadingSelector);
-
-	useEffect(() => {
-		setAlbum(resolveAlbumFromTitle(title));
-	}, [setAlbum, title]);
+	const [title, setTitle] = useAtom(titleAtom);
+	const [artist, setArtist] = useAtom(artistAtom);
+	const [album, setAlbum] = useAtom(albumAtom);
+	const [grouping, setGrouping] = useAtom(groupingAtom);
+	const groupingLoading = useAtomValue(groupingLoadingAtom);
 
 	return (
 		<React.Fragment>

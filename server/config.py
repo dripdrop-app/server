@@ -5,7 +5,6 @@ class Settings(BaseSettings):
     env: str
     database_url: str
     redis_url: str
-    port: int
     api_key: str
     secret_key: str
     google_client_id: str

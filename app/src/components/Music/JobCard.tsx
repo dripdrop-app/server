@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useAtomValue, useSetAtom, useAtom } from 'jotai';
 import { FileDownload, CopyAll, Delete, Error } from '@mui/icons-material';
 import {
 	Card,
@@ -13,7 +13,7 @@ import {
 	ButtonGroup,
 	Button,
 } from '@mui/material';
-import { jobAtom, jobsSelector, musicFormAtom } from '../../state/Music';
+import { jobAtom, jobsAtom, musicFormAtom } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import Image from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
@@ -25,9 +25,9 @@ interface JobCardProps {
 
 const JobCard = (props: JobCardProps) => {
 	const { id } = props;
-	const setJobs = useSetRecoilState(jobsSelector);
-	const setMusicForm = useSetRecoilState(musicFormAtom);
-	const job = useRecoilValue(jobAtom(id));
+	const [jobs, setJobs] = useAtom(jobsAtom);
+	const setMusicForm = useSetAtom(musicFormAtom);
+	const job = useAtomValue(jobAtom(id));
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
 	const [removeJob, removeJobStatus] = useLazyFetch();
@@ -41,17 +41,15 @@ const JobCard = (props: JobCardProps) => {
 				youtubeUrl: job.youtubeUrl || '',
 				filename: '',
 				artworkUrl: job.artworkUrl || '',
-				groupingLoading: false,
-				tagsLoading: false,
 			});
 		}
 	}, [job, setMusicForm]);
 
 	useEffect(() => {
 		if (removeJobStatus.success) {
-			setJobs((jobs) => jobs.filter((job) => job.id !== id));
+			setJobs(jobs.filter((job) => job.id !== id));
 		}
-	}, [id, removeJobStatus.data, removeJobStatus.success, setJobs]);
+	}, [id, jobs, removeJobStatus.data, removeJobStatus.success, setJobs]);
 
 	useEffect(() => {
 		if (downloadJobStatus.success) {

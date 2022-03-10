@@ -1,18 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useRecoilState, useRecoilValueLoadable } from 'recoil';
-import {
-	Box,
-	Button,
-	Chip,
-	Container,
-	Menu,
-	MenuItem,
-	Pagination,
-	Skeleton,
-	Stack,
-	ToggleButton,
-	ToggleButtonGroup,
-} from '@mui/material';
+import { Button, Chip, Container, Menu, MenuItem, Pagination, Skeleton, Stack } from '@mui/material';
 import { ArrowDropDown } from '@mui/icons-material';
 import { videoCategoriesSelector, videoOptionsState, videosSelector } from '../../state/YoutubeCollections';
 import CustomGrid from './CustomGrid';
@@ -100,26 +88,6 @@ const CategoriesSelect = (props: BaseProps) => {
 	);
 };
 
-const PerPageSelector = (props: BaseProps) => {
-	const [videoOptions, updateVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
-
-	const { perPage } = videoOptions;
-
-	return (
-		<ToggleButtonGroup
-			exclusive
-			value={perPage}
-			onChange={(e, v) => updateVideoOptions({ ...videoOptions, perPage: v })}
-		>
-			{[10, 25, 50].map((v) => (
-				<ToggleButton key={v} value={v}>
-					{v}
-				</ToggleButton>
-			))}
-		</ToggleButtonGroup>
-	);
-};
-
 const VideosDisplay = (props: BaseProps) => {
 	const [videoOptions, updateVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
 	const videosState = useRecoilValueLoadable(videosSelector(props.channelID));
@@ -162,8 +130,6 @@ const VideosView = (props: BaseProps) => {
 		<Container sx={{ my: 5 }}>
 			<Stack sx={{ my: 2 }} direction="row" alignItems="center" spacing={2}>
 				<CategoriesSelect channelID={props.channelID} />
-				<Box sx={{ flexGrow: 1 }} />
-				<PerPageSelector channelID={props.channelID} />
 			</Stack>
 			<VideosDisplay channelID={props.channelID} />
 		</Container>

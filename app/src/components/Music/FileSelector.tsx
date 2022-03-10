@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
+import { useAtom, useSetAtom } from 'jotai';
 import { Button, Switch, TextField } from '@mui/material';
-import { filenameSelector, fileTypeSelector, musicFormAtom, tagsLoadingSelector } from '../../state/Music';
+import { filenameAtom, fileTypeAtom, musicFormAtom, tagsLoadingAtom } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import { defaultTextFieldProps, resolveAlbumFromTitle } from '../../utils/helpers';
 import YoutubeURLInput from './YoutubeURLInput';
 import useLazyFetch from '../../hooks/useLazyFetch';
-import { useRecoilState, useSetRecoilState } from 'recoil';
 
 interface FileSwitchProps {
 	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
@@ -14,10 +14,10 @@ interface FileSwitchProps {
 const FileSwitch = (props: FileSwitchProps) => {
 	const { fileInputRef } = props;
 
-	const [filename, setFilename] = useRecoilState(filenameSelector);
-	const [fileType, setFileType] = useRecoilState(fileTypeSelector);
-	const setMusicForm = useSetRecoilState(musicFormAtom);
-	const setTagsLoading = useSetRecoilState(tagsLoadingSelector);
+	const [filename, setFilename] = useAtom(filenameAtom);
+	const [fileType, setFileType] = useAtom(fileTypeAtom);
+	const setMusicForm = useSetAtom(musicFormAtom);
+	const setTagsLoading = useSetAtom(tagsLoadingAtom);
 
 	const [getFileTags, getFileTagsStatus] = useLazyFetch<TagsResponse>();
 

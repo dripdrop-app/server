@@ -1,28 +1,9 @@
 import React from 'react';
-import { Container, Pagination, Skeleton, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Container, Pagination, Skeleton, Stack } from '@mui/material';
 import { useRecoilState, useRecoilValueLoadable } from 'recoil';
 import CustomGrid from './CustomGrid';
 import YoutubeSubscriptionCard from './YoutubeSubscriptionCard';
 import { subscriptionOptionsState, subscriptionsSelector } from '../../state/YoutubeCollections';
-
-const PerPageSelector = () => {
-	const [subscriptionOptions, updateSubscriptionOptions] = useRecoilState(subscriptionOptionsState);
-	const { perPage } = subscriptionOptions;
-
-	return (
-		<ToggleButtonGroup
-			exclusive
-			value={perPage}
-			onChange={(e, v) => updateSubscriptionOptions({ ...subscriptionOptions, perPage: v })}
-		>
-			{[10, 25, 50].map((v) => (
-				<ToggleButton key={v} value={v}>
-					{v}
-				</ToggleButton>
-			))}
-		</ToggleButtonGroup>
-	);
-};
 
 const SubscriptionsDisplay = () => {
 	const [subscriptionOptions, updateSubscriptionOptions] = useRecoilState(subscriptionOptionsState);
@@ -66,9 +47,6 @@ const SubscriptionsView = () => {
 	return (
 		<React.Fragment>
 			<Container sx={{ my: 5 }}>
-				<Stack sx={{ my: 2 }} direction="row" justifyContent="flex-end">
-					<PerPageSelector />
-				</Stack>
 				<SubscriptionsDisplay />
 			</Container>
 		</React.Fragment>
