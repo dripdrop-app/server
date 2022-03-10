@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { atom } from 'jotai';
-import { selectAtom, atomFamily, atomWithHash } from 'jotai/utils';
+import { selectAtom, atomFamily, atomWithStorage } from 'jotai/utils';
 import { FILE_TYPE } from '../utils/enums';
 import { isBase64, isValidImage, isValidLink, isValidYTLink, resolveAlbumFromTitle } from '../utils/helpers';
 
@@ -26,23 +26,7 @@ const initialFormState: MusicForm = {
 	grouping: '',
 };
 
-export const musicFormAtom = atomWithHash('musicForm', initialFormState, {
-	serialize: (form) => {
-		const params = new URLSearchParams();
-		for (let key in form) {
-			params.append(key, String(form[key as keyof MusicForm]));
-		}
-		return params.toString();
-	},
-	deserialize: (hash) => {
-		const params = new URLSearchParams(hash);
-		const form: Record<any, any> = {};
-		params.forEach((val, key) => {
-			form[key] = val;
-		});
-		return form as MusicForm;
-	},
-});
+export const musicFormAtom = atomWithStorage('musicForm', initialFormState);
 
 export const validMusicForm = selectAtom(musicFormAtom, (form) => {
 	const { fileType, youtubeUrl, filename, title, artist, album } = form;
