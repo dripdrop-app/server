@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
-import { Typography, Button, Stack, Box, CircularProgress } from '@mui/material';
-import { NavigateNext, NavigateBefore } from '@mui/icons-material';
+import { Container, Grid, Header, Icon, Loader, Message, Pagination } from 'semantic-ui-react';
 import { jobsAtom } from '../../state/Music';
 import JobCard from './JobCard';
 import useWebsocket from '../../hooks/useWebsocket';
@@ -45,48 +44,83 @@ const JobList = () => {
 		[jobs, setJobs]
 	);
 
-	const loadingWS = useWebsocket('/music/jobs/listen', socketHandler);
+	const socketState = useWebsocket('/music/jobs/listen', socketHandler);
 
-	if (getJobsStatus.loading || getJobsStatus.error) {
+	const Jobs = useMemo(() => {
+		if (getJobsStatus.loading || getJobsStatus.error) {
+			return <Loader size="big" active />;
+		}
+
+		const PAGE_SIZE = 4;
+		const jobs_slice = jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
 		return (
-			<Stack sx={{ my: 5 }}>
-				<Stack direction="row" justifyContent="center">
-					<Typography variant="h5">Jobs</Typography>
-				</Stack>
-			</Stack>
+			<Container>
+				<Grid stackable>
+					<Grid.Row>
+						<Grid.Column>
+							{socketState === WebSocket.CLOSED ? (
+								<Message negative>
+									<Message.Header>Refresh page to get Job Updates</Message.Header>
+								</Message>
+							) : null}
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>
+						<Grid.Column>
+							<Container>{jobs.length === 0 ? 'No Existing Jobs' : null}</Container>
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>
+						<Grid.Column>
+							<Container>
+								<Grid stackable stretched>
+									{jobs_slice.map((job) => (
+										<Grid.Column computer={4} tablet={8} key={job.id}>
+											<JobCard id={job.id} />
+										</Grid.Column>
+									))}
+								</Grid>
+							</Container>
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row textAlign="center">
+						<Grid.Column>
+							<Pagination
+								boundaryRange={0}
+								activePage={page + 1}
+								firstItem={null}
+								lastItem={null}
+								prevItem={{ content: <Icon name="angle left" />, icon: true }}
+								nextItem={{ content: <Icon name="angle right" />, icon: true }}
+								ellipsisItem={null}
+								totalPages={Math.ceil(jobs.length / PAGE_SIZE)}
+								onPageChange={(e, data) => {
+									if (data.activePage) {
+										setPage(Number(data.activePage) - 1);
+									}
+								}}
+							/>
+						</Grid.Column>
+					</Grid.Row>
+				</Grid>
+			</Container>
 		);
-	}
-
-	const PAGE_SIZE = 5;
-
-	const prevPage = Math.max(page - 1, 0);
-	const nextPage = Math.min(page + 1, jobs.length / PAGE_SIZE) - Number(jobs.length % PAGE_SIZE === 0);
-
-	const jobs_page = jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+	}, [getJobsStatus.error, getJobsStatus.loading, jobs, page, socketState]);
 
 	return (
-		<Stack sx={{ my: 5 }}>
-			<Stack direction="row" justifyContent="center">
-				<Button disabled={page - 1 < 0} onClick={() => setPage(prevPage)}>
-					<NavigateBefore />
-				</Button>
-				<Typography variant="h5">Jobs</Typography>
-				<Button disabled={page + 1 > jobs.length / PAGE_SIZE} onClick={() => setPage(nextPage)}>
-					<NavigateNext />
-				</Button>
-			</Stack>
-			<Stack textAlign="center" alignItems="center" sx={{ my: 5 }}>
-				{jobs.length === 0 && !loadingWS ? <Typography variant="body2">No Existing Jobs</Typography> : null}
-				{loadingWS ? <CircularProgress /> : null}
-			</Stack>
-			<Stack spacing={1} alignSelf="center" justifyContent="center">
-				{jobs_page.map((job) => (
-					<Box key={job.id}>
-						<JobCard id={job.id} />
-					</Box>
-				))}
-			</Stack>
-		</Stack>
+		<Container>
+			<Grid padded="vertically">
+				<Grid.Row>
+					<Grid.Column>
+						<Header as="h1">Jobs</Header>
+					</Grid.Column>
+				</Grid.Row>
+				<Grid.Row>
+					<Grid.Column>{Jobs}</Grid.Column>
+				</Grid.Row>
+			</Grid>
+		</Container>
 	);
 };
 

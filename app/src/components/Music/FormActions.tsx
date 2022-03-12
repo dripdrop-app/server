@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useAtomValue } from 'jotai';
 import { useResetAtom } from 'jotai/utils';
-import { Alert, Button, CircularProgress, Snackbar } from '@mui/material';
+import { Button, Container, Grid } from 'semantic-ui-react';
 import { FILE_TYPE } from '../../utils/enums';
 import {
+	artworkLoadingAtom,
 	groupingLoadingAtom,
 	musicFormAtom,
 	tagsLoadingAtom,
@@ -20,14 +21,13 @@ interface FormActionProps {
 const FormActions = (props: FormActionProps) => {
 	const { fileInputRef } = props;
 
-	const [openSuccess, setOpenSuccess] = useState(false);
-	const [openError, setOpenError] = useState(false);
 	const musicForm = useAtomValue(musicFormAtom);
 	const resetForm = useResetAtom(musicFormAtom);
 	const validForm = useAtomValue(validMusicForm);
 	const validArtwork = useAtomValue(validArtworkAtom);
 	const groupingLoading = useAtomValue(groupingLoadingAtom);
 	const tagsLoading = useAtomValue(tagsLoadingAtom);
+	const artworkLoading = useAtomValue(artworkLoadingAtom);
 
 	const { title, artist, album, grouping, artworkUrl, fileType, youtubeUrl } = musicForm;
 
@@ -78,51 +78,40 @@ const FormActions = (props: FormActionProps) => {
 	useEffect(() => {
 		if (performOperationStatus.success) {
 			resetForm();
-		} else if (performOperationStatus.error) {
-			setOpenError(true);
 		}
-	}, [performOperationStatus.error, performOperationStatus.data, resetForm, performOperationStatus.success]);
+	}, [resetForm, performOperationStatus.success]);
 
 	return useMemo(
 		() => (
-			<React.Fragment>
-				<Snackbar
-					open={openSuccess}
-					autoHideDuration={5000}
-					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-					onClose={() => setOpenSuccess(false)}
-				>
-					<Alert severity="success">Task started successfully.</Alert>
-				</Snackbar>
-				<Snackbar
-					open={openError}
-					autoHideDuration={5000}
-					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-					onClose={() => setOpenError(false)}
-				>
-					<Alert severity="error">Task failed to start.</Alert>
-				</Snackbar>
-				{!performOperationStatus.loading && !groupingLoading && !tagsLoading ? (
-					<React.Fragment>
-						<Button variant="contained" disabled={!validForm} onClick={run}>
-							{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
-							{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
-							{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
-						</Button>
-						<Button variant="contained" onClick={() => resetForm()}>
-							Reset
-						</Button>
-					</React.Fragment>
-				) : (
-					<CircularProgress />
-				)}
-			</React.Fragment>
+			<Container>
+				<Grid stackable>
+					<Grid.Row>
+						<Grid.Column width={4}>
+							<Button
+								color={performOperationStatus.error ? 'red' : 'blue'}
+								disabled={!validForm}
+								onClick={run}
+								loading={performOperationStatus.loading || groupingLoading || tagsLoading || artworkLoading}
+							>
+								{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
+								{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
+								{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
+							</Button>
+						</Grid.Column>
+						<Grid.Column width={2}>
+							<Button onClick={() => resetForm()} color="blue">
+								Reset
+							</Button>
+						</Grid.Column>
+					</Grid.Row>
+				</Grid>
+			</Container>
 		),
 		[
+			artworkLoading,
 			fileType,
 			groupingLoading,
-			openError,
-			openSuccess,
+			performOperationStatus.error,
 			performOperationStatus.loading,
 			resetForm,
 			run,

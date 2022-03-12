@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRecoilValueLoadable } from 'recoil';
-import { Button, CircularProgress, Divider, Stack, Typography } from '@mui/material';
+import { Button, Container, Grid, Header } from 'semantic-ui-react';
 import useLazyFetch from '../hooks/useLazyFetch';
 import VideosView from '../components/YoutubeCollections/VideosView';
 import SubscriptionsView from '../components/YoutubeCollections/SubscriptionsView';
@@ -22,48 +22,70 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 		}
 	}, [getOAuthLinkStatus]);
 
-	if (youtubeAuth.state === 'loading' || youtubeAuth.state === 'hasError') {
-		return (
-			<Stack direction="row" justifyContent="center" sx={{ m: 5 }}>
-				<CircularProgress />
-			</Stack>
-		);
-	}
+	const Content = useMemo(() => {
+		if (youtubeAuth.state === 'hasValue') {
+			if (youtubeAuth.contents.email) {
+				return (
+					<Container>
+						<Grid container divided="vertically">
+							<Grid.Row>
+								<Grid.Column>
+									<Header>
+										{props.page.charAt(0).toLocaleUpperCase() + props.page.substring(1).toLocaleLowerCase()}
+									</Header>
+								</Grid.Column>
+							</Grid.Row>
+							<Grid.Row>
+								<Grid.Column>
+									{props.page === 'VIDEOS' ? <VideosView channelID={null} /> : null}
+									{props.page === 'SUBSCRIPTIONS' ? <SubscriptionsView /> : null}
+								</Grid.Column>
+							</Grid.Row>
+						</Grid>
+					</Container>
+				);
+			}
+			return (
+				<Container>
+					<Grid>
+						<Grid.Row>
+							<Grid.Column textAlign="center">
+								<Button
+									color="blue"
+									loading={getOAuthLinkStatus.loading}
+									onClick={() => getOAuthLink({ url: '/youtube/oauth' })}
+								>
+									{youtubeAuth.contents.refresh ? 'Reconnect Google Account' : 'Log in with Google'}
+								</Button>
+							</Grid.Column>
+						</Grid.Row>
+					</Grid>
+				</Container>
+			);
+		}
+	}, [
+		props.page,
+		getOAuthLink,
+		getOAuthLinkStatus.loading,
+		youtubeAuth.contents.email,
+		youtubeAuth.contents.refresh,
+		youtubeAuth.state,
+	]);
 
-	const { email, refresh } = youtubeAuth.contents;
-
-	return (
-		<Stack sx={{ m: 5 }}>
-			<Typography sx={{ my: 1 }} variant="h2">
-				Youtube Collections
-			</Typography>
-			{!email ? (
-				<Stack alignItems="center" margin={10}>
-					<Button
-						disabled={getOAuthLinkStatus.loading}
-						variant="contained"
-						onClick={() => getOAuthLink({ url: '/youtube/oauth' })}
-					>
-						{getOAuthLinkStatus.loading ? (
-							<CircularProgress />
-						) : refresh ? (
-							'Reconnect Google Account'
-						) : (
-							'Log in with Google'
-						)}
-					</Button>
-				</Stack>
-			) : (
-				<React.Fragment>
-					<Typography sx={{ m: 1 }} variant="h5">
-						{props.page.charAt(0).toLocaleUpperCase() + props.page.substring(1).toLocaleLowerCase()}
-					</Typography>
-					<Divider />
-					{props.page === 'VIDEOS' ? <VideosView channelID={null} /> : null}
-					{props.page === 'SUBSCRIPTIONS' ? <SubscriptionsView /> : null}
-				</React.Fragment>
-			)}
-		</Stack>
+	return useMemo(
+		() => (
+			<Container>
+				<Grid container padded>
+					<Grid.Row>
+						<Grid.Column>
+							<Header as="h1">Youtube Collections</Header>
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>{Content}</Grid.Row>
+				</Grid>
+			</Container>
+		),
+		[Content]
 	);
 };
 

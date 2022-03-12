@@ -1,9 +1,6 @@
-import React from 'react';
-import { Card, Stack, CardMedia, CardContent, Typography } from '@mui/material';
-import CustomLink from '../Link';
+import { Card, Container, Grid, Image } from 'semantic-ui-react';
 
 interface YoutubeVideoCardProps {
-	selected: boolean;
 	video: YoutubeVideo;
 }
 
@@ -14,26 +11,27 @@ const YoutubeVideoCard = (props: YoutubeVideoCardProps) => {
 	const channelLink = `https://youtube.com/channel/${video.channelId}`;
 
 	return (
-		<Card sx={{ height: '100%' }} raised={props.selected}>
-			<Stack sx={{ height: '100%' }} flexDirection="column" direction="column">
-				<CustomLink
-					href={videoLink}
-					text={<CardMedia sx={{ border: 0, flex: 2 }} component="img" image={video.thumbnail} />}
-				/>
-				<CardContent sx={{ flex: 1 }}>
-					<Typography variant="subtitle1">
-						<CustomLink useMaterial={true} href={videoLink} text={video.title} />
-					</Typography>
-				</CardContent>
-				<CardContent>
-					<Stack direction="row" justifyContent="space-between" flexWrap="wrap" spacing={1}>
-						<Typography variant="caption">
-							<CustomLink useMaterial={true} href={channelLink} text={video.channelTitle} />
-						</Typography>
-						<Typography variant="caption">{publishedAt}</Typography>
-					</Stack>
-				</CardContent>
-			</Stack>
+		<Card fluid>
+			<Image fluid src={video.thumbnail} />
+			<Card.Content>
+				<Container>
+					<a href={videoLink} target="_blank" rel="noreferrer">
+						{video.title}
+					</a>
+				</Container>
+			</Card.Content>
+			<Card.Content extra>
+				<Grid>
+					<Grid.Column textAlign="left" width={10} floated="left">
+						<a href={channelLink} target="_blank" rel="noreferrer">
+							{video.channelTitle}
+						</a>
+					</Grid.Column>
+					<Grid.Column verticalAlign="bottom" textAlign="right" width={6} floated="right">
+						{publishedAt}
+					</Grid.Column>
+				</Grid>
+			</Card.Content>
 		</Card>
 	);
 };

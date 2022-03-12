@@ -4,15 +4,20 @@ import { server_domain } from '../config';
 type MessageHandler = (ev: MessageEvent<any>) => void;
 
 const useWebsocket = (socket_url: string, messageHandler: MessageHandler) => {
-	const [loading, setLoading] = useState(true);
 	const ws = useMemo(
 		() => new WebSocket(`${process.env.NODE_ENV === 'production' ? 'wss' : 'ws'}://${server_domain}${socket_url}`),
 		[socket_url]
 	);
+	const [websocketState, setWebsocketState] = useState(ws.readyState);
 
-	ws.onopen = () => {
-		setLoading(false);
-	};
+	useEffect(() => {
+		const t = setInterval(() => {
+			if (ws.readyState !== websocketState) {
+				setWebsocketState(ws.readyState);
+			}
+		}, 1000);
+		return () => clearInterval(t);
+	}, [websocketState, ws.readyState]);
 
 	useEffect(() => {
 		ws.onmessage = messageHandler;
@@ -27,7 +32,7 @@ const useWebsocket = (socket_url: string, messageHandler: MessageHandler) => {
 		};
 	}, [ws]);
 
-	return loading;
+	return websocketState;
 };
 
 export default useWebsocket;

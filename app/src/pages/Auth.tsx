@@ -1,10 +1,8 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, CircularProgress, Divider, Stack, TextField, Typography } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { Container, Form, Grid, Message, Segment, Tab } from 'semantic-ui-react';
 import { useSetRecoilState } from 'recoil';
-import DripDrop from '../images/dripdrop.png';
 import { userState } from '../state/Auth';
 import useLazyFetch from '../hooks/useLazyFetch';
-import { defaultTextFieldProps } from '../utils/helpers';
 
 const Auth = () => {
 	const setUser = useSetRecoilState(userState);
@@ -20,15 +18,15 @@ const Auth = () => {
 			: loginStatus.error;
 	}, [loginStatus.error, loginStatus.timestamp, signupStatus.error, signupStatus.timestamp]);
 
-	const info = useMemo(() => {
+	const Notice = useMemo(() => {
 		if (signupStatus.success && signupStatus.timestamp > loginStatus.timestamp) {
 			return (
-				<Alert severity="info">
+				<Message info>
 					Account successfully created. You can login once your account has been approved by the adminstrator.
-				</Alert>
+				</Message>
 			);
 		} else if (error) {
-			return <Alert severity="error">{error}</Alert>;
+			return <Message error>{error}</Message>;
 		}
 		return null;
 	}, [error, loginStatus.timestamp, signupStatus.success, signupStatus.timestamp]);
@@ -40,58 +38,90 @@ const Auth = () => {
 		}
 	}, [loginStatus, setUser]);
 
+	const Panes = useMemo(() => {
+		return [
+			{
+				menuItem: 'Login',
+				render: () => (
+					<Container>
+						<Grid stackable padded>
+							<Grid.Row>
+								<Grid.Column>{Notice}</Grid.Column>
+							</Grid.Row>
+							<Grid.Row>
+								<Grid.Column>
+									<Form>
+										<Form.Input required label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+										<Form.Input
+											required
+											label="Password"
+											value={password}
+											type="password"
+											onChange={(e) => setPassword(e.target.value)}
+										/>
+										<Form.Button
+											color="blue"
+											loading={loginStatus.loading}
+											onClick={() => login({ url: '/auth/login', method: 'POST', data: { email, password } })}
+										>
+											Login
+										</Form.Button>
+									</Form>
+								</Grid.Column>
+							</Grid.Row>
+						</Grid>
+					</Container>
+				),
+			},
+			{
+				menuItem: 'Sign Up',
+				render: () => (
+					<Container>
+						<Grid stackable padded>
+							<Grid.Row>
+								<Grid.Column>{Notice}</Grid.Column>
+							</Grid.Row>
+							<Grid.Row>
+								<Grid.Column>
+									<Form>
+										<Form.Input required label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+										<Form.Input
+											required
+											label="Password"
+											value={password}
+											type="password"
+											onChange={(e) => setPassword(e.target.value)}
+										/>
+										<Form.Button
+											color="blue"
+											onClick={() => signup({ url: '/auth/create', method: 'POST', data: { email, password } })}
+											loading={signupStatus.loading}
+										>
+											Sign Up
+										</Form.Button>
+									</Form>
+								</Grid.Column>
+							</Grid.Row>
+						</Grid>
+					</Container>
+				),
+			},
+		];
+	}, [Notice, email, login, loginStatus.loading, password, signup, signupStatus.loading]);
+
 	return useMemo(
 		() => (
-			<Stack marginY={20} direction="column" justifyContent="center" alignItems="center" spacing={5}>
-				<img alt="DripDrop" src={DripDrop} />
-				<Stack direction="row" spacing={1}>
-					<Typography variant="h5">Login</Typography>
-					<Divider orientation="vertical" flexItem />
-					<Typography variant="h5"> Sign Up</Typography>
-				</Stack>
-				{info}
-				<TextField
-					{...defaultTextFieldProps}
-					value={email}
-					onChange={(e) => setEmail(e.target.value)}
-					required
-					label="Email"
-					variant="outlined"
-					error={!!error}
-				/>
-				<TextField
-					{...defaultTextFieldProps}
-					type="password"
-					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-					required
-					variant="outlined"
-					label="Password"
-					error={!!error}
-				/>
-				<Stack direction="row" spacing={3}>
-					{signupStatus.loading || loginStatus.loading ? (
-						<CircularProgress />
-					) : (
-						<Fragment>
-							<Button
-								variant="contained"
-								onClick={() => login({ url: '/auth/login', method: 'POST', data: { email, password } })}
-							>
-								Login
-							</Button>
-							<Button
-								variant="contained"
-								onClick={() => signup({ url: '/auth/create', method: 'POST', data: { email, password } })}
-							>
-								Sign Up
-							</Button>
-						</Fragment>
-					)}
-				</Stack>
-			</Stack>
+			<Container>
+				<Grid stackable padded>
+					<Grid.Column>
+						<Segment>
+							<Tab panes={Panes} />
+						</Segment>
+					</Grid.Column>
+				</Grid>
+			</Container>
 		),
-		[error, info, login, loginStatus.loading, password, signup, signupStatus.loading, email]
+		[Panes]
 	);
 };
 

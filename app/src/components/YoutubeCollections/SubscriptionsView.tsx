@@ -1,55 +1,63 @@
-import React from 'react';
-import { Container, Pagination, Skeleton, Stack } from '@mui/material';
+import { useMemo } from 'react';
+import { Container, Loader, Grid, Icon, Pagination } from 'semantic-ui-react';
 import { useRecoilState, useRecoilValueLoadable } from 'recoil';
-import CustomGrid from './CustomGrid';
 import YoutubeSubscriptionCard from './YoutubeSubscriptionCard';
 import { subscriptionOptionsState, subscriptionsSelector } from '../../state/YoutubeCollections';
 
-const SubscriptionsDisplay = () => {
-	const [subscriptionOptions, updateSubscriptionOptions] = useRecoilState(subscriptionOptionsState);
-	const subscriptionsState = useRecoilValueLoadable(subscriptionsSelector);
-	const { perPage, page } = subscriptionOptions;
-
-	if (subscriptionsState.state === 'loading' || subscriptionsState.state === 'hasError') {
-		return (
-			<Stack justifyContent="center" direction="row" sx={{ my: 5 }}>
-				<CustomGrid
-					items={Array(perPage).fill(0)}
-					renderItem={(i, selected) => <Skeleton width="100%" height="10em" variant="rectangular" />}
-				/>
-			</Stack>
-		);
-	}
-
-	const { subscriptions, totalSubscriptions } = subscriptionsState.contents;
-
-	return (
-		<React.Fragment>
-			<CustomGrid
-				items={subscriptions}
-				renderItem={(subscription, selected) => (
-					<YoutubeSubscriptionCard subscription={subscription} selected={selected} showChannelVideos={(s) => {}} />
-				)}
-			/>
-			<Stack direction="row" sx={{ my: 5 }} justifyContent="center">
-				<Pagination
-					page={page}
-					onChange={(e, page) => updateSubscriptionOptions({ ...subscriptionOptions, page })}
-					count={Math.ceil(totalSubscriptions / perPage)}
-					color="primary"
-				/>
-			</Stack>
-		</React.Fragment>
-	);
-};
-
 const SubscriptionsView = () => {
-	return (
-		<React.Fragment>
-			<Container sx={{ my: 5 }}>
-				<SubscriptionsDisplay />
+	const [subscriptionOptions, setSubscriptionOptions] = useRecoilState(subscriptionOptionsState);
+	const subscriptions = useRecoilValueLoadable(subscriptionsSelector);
+
+	const Subscriptions = useMemo(() => {
+		if (subscriptions.state === 'hasValue') {
+			return subscriptions.contents.subscriptions.map((subscription) => (
+				<Grid.Column computer={4} tablet={8} key={subscription.id}>
+					<YoutubeSubscriptionCard subscription={subscription} />
+				</Grid.Column>
+			));
+		}
+		return (
+			<Container style={{ display: 'flex', alignItems: 'center' }}>
+				<Loader size="huge" active />
 			</Container>
-		</React.Fragment>
+		);
+	}, [subscriptions.contents.subscriptions, subscriptions.state]);
+
+	const Paginator = useMemo(() => {
+		if (subscriptions.state === 'hasValue') {
+			return (
+				<Pagination
+					boundaryRange={0}
+					activePage={subscriptionOptions.page}
+					firstItem={null}
+					lastItem={null}
+					prevItem={{ content: <Icon name="angle left" />, icon: true }}
+					nextItem={{ content: <Icon name="angle right" />, icon: true }}
+					ellipsisItem={null}
+					totalPages={Math.ceil(subscriptions.contents.totalSubscriptions / subscriptionOptions.perPage)}
+					onPageChange={(e, data) => {
+						if (data.activePage) {
+							setSubscriptionOptions({ ...subscriptionOptions, page: Number(data.activePage) });
+						}
+					}}
+				/>
+			);
+		}
+		return null;
+	}, [setSubscriptionOptions, subscriptionOptions, subscriptions.contents.totalSubscriptions, subscriptions.state]);
+
+	return useMemo(
+		() => (
+			<Container>
+				<Grid stackable stretched padded="vertically">
+					{Subscriptions}
+				</Grid>
+				<Grid>
+					<Grid.Column textAlign="center">{Paginator}</Grid.Column>
+				</Grid>
+			</Container>
+		),
+		[Paginator, Subscriptions]
 	);
 };
 

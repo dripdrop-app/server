@@ -1,11 +1,8 @@
-import React, { useMemo } from 'react';
-import { Card, CardMedia, CardContent, Stack, Button, Typography } from '@mui/material';
-import CustomLink from '../Link';
+import { useMemo } from 'react';
+import { Card, Grid, Image } from 'semantic-ui-react';
 
 interface YoutubeSubscriptionCardProps {
 	subscription: YoutubeSubscription;
-	selected: boolean;
-	showChannelVideos: (subscription: YoutubeSubscription) => void;
 }
 
 const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
@@ -15,33 +12,31 @@ const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
 
 	return useMemo(
 		() => (
-			<Card sx={{ height: '100%' }} raised={props.selected}>
-				<CustomLink
-					href={channelLink}
-					text={<CardMedia sx={{ flex: 2 }} component="img" image={subscription.channelThumbnail} />}
-				/>
-				<CardContent sx={{ flex: 1 }}>
-					<CustomLink
-						useMaterial={true}
-						href={channelLink}
-						text={<Typography variant="subtitle1">{subscription.channelTitle}</Typography>}
-					/>
-				</CardContent>
-				<CardContent>
-					<Stack>
-						<Button variant="contained" onClick={() => props.showChannelVideos(subscription)}>
-							show videos
-						</Button>
-					</Stack>
-				</CardContent>
-				<CardContent>
-					<Stack direction="column">
-						<Typography variant="caption">Subscribed: {publishedAt}</Typography>
-					</Stack>
-				</CardContent>
+			<Card>
+				<Image fluid src={subscription.channelThumbnail} />
+				<Card.Content>
+					<Card.Description>
+						<Grid>
+							<Grid.Row>
+								<Grid.Column>
+									<a href={channelLink} target="_blank" rel="noreferrer">
+										{subscription.channelTitle}
+									</a>
+								</Grid.Column>
+							</Grid.Row>
+						</Grid>
+					</Card.Description>
+				</Card.Content>
+				<Card.Content extra>
+					<Grid>
+						<Grid.Row>
+							<Grid.Column>Subscribed on {publishedAt}</Grid.Column>
+						</Grid.Row>
+					</Grid>
+				</Card.Content>
 			</Card>
 		),
-		[channelLink, props, publishedAt, subscription]
+		[channelLink, publishedAt, subscription]
 	);
 };
 

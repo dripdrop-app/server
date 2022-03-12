@@ -1,13 +1,3 @@
-import { TextFieldProps } from '@mui/material';
-import { SxProps } from '@mui/system';
-
-export const defaultTextFieldProps: TextFieldProps = {
-	sx: { mx: 3, flex: 1 },
-	variant: 'standard',
-};
-
-export const typographyDefaultCSS: SxProps = { textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
-
 export const resolveAlbumFromTitle = (title: string) => {
 	let album = '';
 

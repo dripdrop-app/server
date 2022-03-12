@@ -26,7 +26,24 @@ const initialFormState: MusicForm = {
 	grouping: '',
 };
 
-export const musicFormAtom = atomWithStorage('musicForm', initialFormState);
+export const musicFormAtom = atomWithStorage('musicForm', initialFormState, {
+	getItem: (key) => {
+		let form: MusicForm | string | null = localStorage.getItem(key);
+		if (typeof form === 'string') {
+			form = JSON.parse(form);
+			form = form as MusicForm;
+			form.filename = '';
+			return form;
+		}
+		return initialFormState;
+	},
+	setItem: (key, form) => {
+		return localStorage.setItem(key, JSON.stringify(form));
+	},
+	removeItem: (key) => {
+		return localStorage.removeItem(key);
+	},
+});
 
 export const validMusicForm = selectAtom(musicFormAtom, (form) => {
 	const { fileType, youtubeUrl, filename, title, artist, album } = form;

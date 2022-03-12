@@ -1,24 +1,23 @@
-import React from 'react';
-import { Container, Stack, Divider, Typography } from '@mui/material';
+import { Container, Grid } from 'semantic-ui-react';
 import MusicForm from '../components/Music/MusicForm';
 import JobList from '../components/Music/JobList';
 
 const MusicDownloader = () => {
 	return (
-		<Stack sx={{ m: 5 }}>
-			<Typography sx={{ mb: 5 }} variant="h2">
-				MP3 Downloader / Converter
-			</Typography>
-			<Stack direction="row">
-				<Container sx={{ flex: 2 }}>
-					<MusicForm />
-				</Container>
-				<Divider orientation="vertical" flexItem />
-				<Container sx={{ flex: 1 }}>
-					<JobList />
-				</Container>
-			</Stack>
-		</Stack>
+		<Container>
+			<Grid stackable padded divided>
+				<Grid.Row>
+					<Grid.Column>
+						<MusicForm />
+					</Grid.Column>
+				</Grid.Row>
+				<Grid.Row>
+					<Grid.Column>
+						<JobList />
+					</Grid.Column>
+				</Grid.Row>
+			</Grid>
+		</Container>
 	);
 };
 
