@@ -11,7 +11,7 @@ const MusicForm = () => {
 	return useMemo(
 		() => (
 			<Container>
-				<Grid stackable padded="vertically">
+				<Grid stackable>
 					<Grid.Row>
 						<Grid.Column>
 							<Header as="h1">MP3 Downloader / Converter</Header>

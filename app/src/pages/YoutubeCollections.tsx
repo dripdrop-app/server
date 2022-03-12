@@ -27,7 +27,7 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 			if (youtubeAuth.contents.email) {
 				return (
 					<Container>
-						<Grid container divided="vertically">
+						<Grid divided="vertically">
 							<Grid.Row>
 								<Grid.Column>
 									<Header>
@@ -75,13 +75,15 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	return useMemo(
 		() => (
 			<Container>
-				<Grid container padded>
+				<Grid stackable padded>
 					<Grid.Row>
 						<Grid.Column>
 							<Header as="h1">Youtube Collections</Header>
 						</Grid.Column>
 					</Grid.Row>
-					<Grid.Row>{Content}</Grid.Row>
+					<Grid.Row>
+						<Grid.Column>{Content}</Grid.Column>
+					</Grid.Row>
 				</Grid>
 			</Container>
 		),
