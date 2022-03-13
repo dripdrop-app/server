@@ -51,9 +51,11 @@ declare global {
 		selectedCategories: number[];
 	}
 
-	interface YoutubeVideoOptions extends PageState, FilterState {
-		channelId: string | null;
+	interface ChannelState {
+		channelId?: string;
 	}
+
+	type YoutubeVideoOptions = PageState & FilterState & ChannelState;
 
 	interface YoutubeVideoCategoriesResponse {
 		categories: YoutubeVideoCategory[];
@@ -69,13 +71,9 @@ declare global {
 		subscriptions: YoutubeSubscription[];
 	}
 
-	interface YoutubeVideoCategoriesState {
-		channelId: string | null;
-	}
+	type YoutubeVideoCategoriesState = YoutubeVideoCategoriesResponse & ChannelState;
 
-	interface YoutubeVideosState extends FilterState, PageState {
-		channelId: string | null;
-	}
+	type YoutubeVideosState = FilterState & PageState & YoutubeVideosResponse & ChannelState;
 
-	interface YoutubeSubscriptionsState extends PageState {}
+	type YoutubeSubscriptionsState = PageState & YoutubeSubscriptionsResponse;
 }

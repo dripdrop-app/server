@@ -1,21 +1,42 @@
 import axios, { AxiosResponse } from 'axios';
 import { atom } from 'jotai';
-import { selectAtom, atomFamily, atomWithStorage } from 'jotai/utils';
+import { selectAtom, atomWithStorage } from 'jotai/utils';
 import { FILE_TYPE } from '../utils/enums';
 import { isBase64, isValidImage, isValidLink, isValidYTLink, resolveAlbumFromTitle } from '../utils/helpers';
+import { userAtomState } from './Auth';
 
-const jobsState = atom<Job[]>([]);
+const initialJobsState: JobsState = {
+	jobs: [],
+};
 
-export const jobsAtom = atom(
-	(get) => get(jobsState),
-	(get, set, update: Job[]) => {
-		set(jobsState, update);
+const jobsAtom = atom({ loading: true, data: initialJobsState });
+
+export const jobsAtomState = atom(
+	(get) => get(jobsAtom),
+	(get, set, update: Job[] | undefined) => {
+		const user = get(userAtomState);
+		const currentState = get(jobsAtom);
+		if (update) {
+			return set(jobsAtom, { loading: false, data: { jobs: update } });
+		}
+		const GetJobs = async () => {
+			set(jobsAtom, (prev) => ({ ...prev, loading: true }));
+			try {
+				const response: AxiosResponse<JobsResponse> = await axios.get('/music/jobs');
+				set(jobsAtom, { data: { jobs: response.data.jobs }, loading: false });
+			} catch {
+				set(jobsAtom, (prev) => ({ ...prev, loading: false }));
+			}
+		};
+		if (user.data.authenticated && !currentState.data.jobs.length) {
+			GetJobs();
+		}
 	}
 );
 
-export const jobAtom = atomFamily((jobID: string) => atom((get) => get(jobsState).find((job) => job.id === jobID)));
+jobsAtomState.onMount = (setAtom) => setAtom();
 
-const initialFormState: MusicForm = {
+const initialFormState: MusicFormState = {
 	fileType: FILE_TYPE.YOUTUBE,
 	youtubeUrl: '',
 	filename: '',
@@ -28,10 +49,10 @@ const initialFormState: MusicForm = {
 
 export const musicFormAtom = atomWithStorage('musicForm', initialFormState, {
 	getItem: (key) => {
-		let form: MusicForm | string | null = localStorage.getItem(key);
+		let form: MusicFormState | string | null = localStorage.getItem(key);
 		if (typeof form === 'string') {
 			form = JSON.parse(form);
-			form = form as MusicForm;
+			form = form as MusicFormState;
 			form.filename = '';
 			return form;
 		}
@@ -59,10 +80,10 @@ export const validMusicForm = selectAtom(musicFormAtom, (form) => {
 	}
 });
 
-const variableMusicAtom = <T extends keyof MusicForm>(formKey: T) =>
+const variableMusicAtom = <T extends keyof MusicFormState>(formKey: T) =>
 	atom(
 		(get) => get(musicFormAtom)[formKey],
-		(get, set, update: MusicForm[T]) => {
+		(get, set, update: MusicFormState[T]) => {
 			set(musicFormAtom, (form) => ({ ...form, [formKey]: update }));
 		}
 	);
@@ -83,7 +104,7 @@ export const youtubeURLAtom = atom(
 		if (isValidYTLink(url)) {
 			set(groupingLoadingAtom, true);
 			try {
-				const response: AxiosResponse<Pick<MusicForm, 'grouping'>> = await axios.get('/music/grouping', {
+				const response: AxiosResponse<Pick<MusicFormState, 'grouping'>> = await axios.get('/music/grouping', {
 					params: { youtube_url: url },
 				});
 				set(groupingAtom, response.data.grouping);
@@ -104,7 +125,7 @@ export const artworkURLAtom = atom(
 		if (url && !isValidImage(url) && !isBase64(url) && isValidLink(url)) {
 			set(artworkLoadingAtom, true);
 			try {
-				const response: AxiosResponse<Pick<MusicForm, 'artworkUrl'>> = await axios.get('/music/artwork', {
+				const response: AxiosResponse<Pick<MusicFormState, 'artworkUrl'>> = await axios.get('/music/artwork', {
 					params: { artwork_url: url },
 				});
 				set(musicFormAtom, (prev) => ({ ...prev, artworkUrl: response.data.artworkUrl }));

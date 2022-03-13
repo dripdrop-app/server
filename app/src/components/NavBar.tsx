@@ -1,17 +1,17 @@
 import { Fragment, useEffect, useMemo } from 'react';
-import { useRecoilValueLoadable, useSetRecoilState } from 'recoil';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Dropdown, Icon, Image, Menu, Sticky } from 'semantic-ui-react';
 import { useHistory } from 'react-router';
-import { resetUserState, userState } from '../state/Auth';
+import { resetUserState, userAtomState } from '../state/Auth';
 import DripDrop from '../images/dripdrop.png';
 import useLazyFetch from '../hooks/useLazyFetch';
 
 const NavBar = () => {
-	const user = useRecoilValueLoadable(userState);
+	const user = useAtomValue(userAtomState);
 	const history = useHistory();
 
 	const [logout, logoutStatus] = useLazyFetch<null>();
-	const resetUser = useSetRecoilState(resetUserState);
+	const resetUser = useSetAtom(resetUserState);
 
 	useEffect(() => {
 		if (logoutStatus.success) {
@@ -20,7 +20,7 @@ const NavBar = () => {
 	}, [logoutStatus.success, resetUser]);
 
 	const NavButtons = useMemo(() => {
-		if (user.state === 'hasValue' && user.contents.authenticated) {
+		if (user.data.authenticated) {
 			return (
 				<Fragment>
 					<Menu.Item onClick={() => history.push('/')}>HOME</Menu.Item>
@@ -36,7 +36,7 @@ const NavBar = () => {
 					<Menu.Menu position="right">
 						<Dropdown trigger={<Icon size="big" name="user circle" />} item>
 							<Dropdown.Menu>
-								<Dropdown.Item>{user.contents.email}</Dropdown.Item>
+								<Dropdown.Item>{user.data.email}</Dropdown.Item>
 								<Dropdown.Item onClick={() => logout({ url: '/auth/logout' })}>Logout</Dropdown.Item>
 							</Dropdown.Menu>
 						</Dropdown>
@@ -45,7 +45,7 @@ const NavBar = () => {
 			);
 		}
 		return null;
-	}, [history, logout, user.contents.authenticated, user.contents.email, user.state]);
+	}, [history, logout, user.data.authenticated, user.data.email]);
 
 	return (
 		<Sticky>

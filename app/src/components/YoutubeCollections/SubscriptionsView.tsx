@@ -1,16 +1,16 @@
 import { useMemo } from 'react';
 import { Container, Loader, Grid, Icon, Pagination } from 'semantic-ui-react';
-import { useRecoilState, useRecoilValueLoadable } from 'recoil';
+import { useAtom } from 'jotai';
 import YoutubeSubscriptionCard from './YoutubeSubscriptionCard';
-import { subscriptionOptionsState, subscriptionsSelector } from '../../state/YoutubeCollections';
+import { youtubeSubscriptionsAtomState } from '../../state/YoutubeCollections';
 
 const SubscriptionsView = () => {
-	const [subscriptionOptions, setSubscriptionOptions] = useRecoilState(subscriptionOptionsState);
-	const subscriptions = useRecoilValueLoadable(subscriptionsSelector);
+	const [subscriptionsState, setSubscriptionsState] = useAtom(youtubeSubscriptionsAtomState);
 
 	const Subscriptions = useMemo(() => {
-		if (subscriptions.state === 'hasValue') {
-			return subscriptions.contents.subscriptions.map((subscription) => (
+		if (!subscriptionsState.loading) {
+			const { subscriptions } = subscriptionsState.data;
+			return subscriptions.map((subscription) => (
 				<Grid.Column computer={4} tablet={8} key={subscription.id}>
 					<YoutubeSubscriptionCard subscription={subscription} />
 				</Grid.Column>
@@ -21,30 +21,36 @@ const SubscriptionsView = () => {
 				<Loader size="huge" active />
 			</Container>
 		);
-	}, [subscriptions.contents.subscriptions, subscriptions.state]);
+	}, [subscriptionsState.data, subscriptionsState.loading]);
 
 	const Paginator = useMemo(() => {
-		if (subscriptions.state === 'hasValue') {
+		if (!subscriptionsState.loading) {
 			return (
 				<Pagination
 					boundaryRange={0}
-					activePage={subscriptionOptions.page}
+					activePage={subscriptionsState.data.page}
 					firstItem={null}
 					lastItem={null}
 					prevItem={{ content: <Icon name="angle left" />, icon: true }}
 					nextItem={{ content: <Icon name="angle right" />, icon: true }}
 					ellipsisItem={null}
-					totalPages={Math.ceil(subscriptions.contents.totalSubscriptions / subscriptionOptions.perPage)}
+					totalPages={Math.ceil(subscriptionsState.data.totalSubscriptions / subscriptionsState.data.perPage)}
 					onPageChange={(e, data) => {
 						if (data.activePage) {
-							setSubscriptionOptions({ ...subscriptionOptions, page: Number(data.activePage) });
+							setSubscriptionsState({ perPage: subscriptionsState.data.perPage, page: Number(data.activePage) });
 						}
 					}}
 				/>
 			);
 		}
 		return null;
-	}, [setSubscriptionOptions, subscriptionOptions, subscriptions.contents.totalSubscriptions, subscriptions.state]);
+	}, [
+		setSubscriptionsState,
+		subscriptionsState.data.page,
+		subscriptionsState.data.perPage,
+		subscriptionsState.data.totalSubscriptions,
+		subscriptionsState.loading,
+	]);
 
 	return useMemo(
 		() => (

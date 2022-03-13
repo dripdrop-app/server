@@ -1,34 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
 import { Container, Grid, Header, Icon, Loader, Message, Pagination } from 'semantic-ui-react';
-import { jobsAtom } from '../../state/Music';
+import { jobsAtomState } from '../../state/Music';
 import JobCard from './JobCard';
 import useWebsocket from '../../hooks/useWebsocket';
-import useFetch from '../../hooks/useFetch';
 
 const JobList = () => {
 	const [page, setPage] = useState(0);
-	const [jobs, setJobs] = useAtom(jobsAtom);
-
-	const getJobsStatus = useFetch<JobsResponse>({ url: '/music/jobs' });
-
-	useEffect(() => {
-		if (getJobsStatus.success) {
-			const { jobs } = getJobsStatus.data;
-			setJobs(jobs);
-		}
-	}, [getJobsStatus.data, getJobsStatus.success, setJobs]);
+	const [jobsState, setJobsState] = useAtom(jobsAtomState);
 
 	const socketHandler = useCallback(
 		(event) => {
 			const json = JSON.parse(event.data);
 			const type = json.type;
-			if (type === 'ALL') {
-				setJobs(json.jobs);
-			} else if (type === 'STARTED') {
-				setJobs([...json.jobs, ...jobs]);
+			if (type === 'STARTED') {
+				setJobsState([...json.jobs, ...jobsState.data.jobs]);
 			} else if (type === 'COMPLETED') {
-				const newJobs = [...jobs];
+				const newJobs = [...jobsState.data.jobs];
 				const completedJobs = json.jobs.reduce((map: any, job: any) => {
 					map[job.id] = job;
 					return map;
@@ -38,19 +26,20 @@ const JobList = () => {
 						newJobs[index] = completedJobs[job.id];
 					}
 				});
-				setJobs([...newJobs]);
+				setJobsState([...newJobs]);
 			}
 		},
-		[jobs, setJobs]
+		[jobsState.data.jobs, setJobsState]
 	);
 
 	const socketState = useWebsocket('/music/jobs/listen', socketHandler);
 
 	const Jobs = useMemo(() => {
-		if (getJobsStatus.loading || getJobsStatus.error) {
+		if (jobsState.loading) {
 			return <Loader size="big" active />;
 		}
 
+		const jobs = jobsState.data.jobs;
 		const PAGE_SIZE = 4;
 		const jobs_slice = jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -77,7 +66,7 @@ const JobList = () => {
 								<Grid stackable stretched>
 									{jobs_slice.map((job) => (
 										<Grid.Column computer={4} tablet={8} key={job.id}>
-											<JobCard id={job.id} />
+											<JobCard job={job} />
 										</Grid.Column>
 									))}
 								</Grid>
@@ -106,7 +95,7 @@ const JobList = () => {
 				</Grid>
 			</Container>
 		);
-	}, [getJobsStatus.error, getJobsStatus.loading, jobs, page, socketState]);
+	}, [jobsState.data.jobs, jobsState.loading, page, socketState]);
 
 	return (
 		<Container>

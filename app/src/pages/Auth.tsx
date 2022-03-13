@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Container, Form, Grid, Message, Segment, Tab } from 'semantic-ui-react';
-import { useSetRecoilState } from 'recoil';
-import { userState } from '../state/Auth';
+import { useSetAtom } from 'jotai';
+import { userAtomState } from '../state/Auth';
 import useLazyFetch from '../hooks/useLazyFetch';
 
 const Auth = () => {
-	const setUser = useSetRecoilState(userState);
+	const setUser = useSetAtom(userAtomState);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 
@@ -34,7 +34,7 @@ const Auth = () => {
 	useEffect(() => {
 		if (loginStatus.success) {
 			const { data } = loginStatus;
-			setUser(() => ({ ...data, authenticated: true }));
+			setUser({ ...data, authenticated: true });
 		}
 	}, [loginStatus, setUser]);
 

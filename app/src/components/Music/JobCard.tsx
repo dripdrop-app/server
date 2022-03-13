@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useAtomValue, useSetAtom, useAtom } from 'jotai';
+import { useSetAtom, useAtom } from 'jotai';
 import { Button, Card, Container, Grid, Image, List } from 'semantic-ui-react';
-import { jobAtom, jobsAtom, musicFormAtom } from '../../state/Music';
+import { jobsAtomState, musicFormAtom } from '../../state/Music';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
 import useLazyFetch from '../../hooks/useLazyFetch';
 
 interface JobCardProps {
-	id: string;
+	job: Job;
 }
 
 const JobCard = (props: JobCardProps) => {
-	const { id } = props;
-	const [jobs, setJobs] = useAtom(jobsAtom);
+	const { job } = props;
+	const [jobsState, setJobsState] = useAtom(jobsAtomState);
 	const setMusicForm = useSetAtom(musicFormAtom);
-	const job = useAtomValue(jobAtom(id));
 
 	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
 	const [removeJob, removeJobStatus] = useLazyFetch();
@@ -33,10 +32,11 @@ const JobCard = (props: JobCardProps) => {
 	}, [job, setMusicForm]);
 
 	useEffect(() => {
+		const currentJobId = job.id;
 		if (removeJobStatus.success) {
-			setJobs(jobs.filter((job) => job.id !== id));
+			setJobsState(jobsState.data.jobs.filter((job) => job.id !== currentJobId));
 		}
-	}, [id, jobs, removeJobStatus.data, removeJobStatus.success, setJobs]);
+	}, [job, jobsState.data.jobs, removeJobStatus.data, removeJobStatus.success, setJobsState]);
 
 	useEffect(() => {
 		if (downloadJobStatus.success) {
@@ -109,7 +109,7 @@ const JobCard = (props: JobCardProps) => {
 											loading={!job.completed}
 											icon="cloud download"
 											color="green"
-											onClick={() => downloadJob({ url: `/music/jobs/download/${id}`, responseType: 'blob' })}
+											onClick={() => downloadJob({ url: `/music/jobs/download/${job.id}`, responseType: 'blob' })}
 										/>
 									) : null}
 									{job.failed ? <Button fluid icon="x" color="red" /> : null}
@@ -122,7 +122,7 @@ const JobCard = (props: JobCardProps) => {
 										icon="trash"
 										color="red"
 										fluid
-										onClick={() => removeJob({ url: `/music/jobs/delete/${id}`, method: 'DELETE' })}
+										onClick={() => removeJob({ url: `/music/jobs/delete/${job.id}`, method: 'DELETE' })}
 									/>
 								</Grid.Column>
 							</Grid.Row>
@@ -131,7 +131,7 @@ const JobCard = (props: JobCardProps) => {
 				</Card.Content>
 			</Card>
 		);
-	}, [copyJob, downloadJob, id, job, removeJob]);
+	}, [copyJob, downloadJob, job, removeJob]);
 };
 
 export default JobCard;

@@ -1,30 +1,28 @@
 import { useMemo } from 'react';
-import { useRecoilState, useRecoilValueLoadable } from 'recoil';
+import { useAtom, useAtomValue } from 'jotai';
 import { Button, Container, Dropdown, Grid, Icon, Loader, Pagination } from 'semantic-ui-react';
-import { videoCategoriesSelector, videoOptionsState, videosSelector } from '../../state/YoutubeCollections';
+import { youtubeVideoCategoriesAtomState, youtubeVideosAtomState } from '../../state/YoutubeCollections';
 import YoutubeVideoCard from './YoutubeVideoCard';
 
 interface BaseProps {
-	channelID: string | null;
+	channelID?: string;
 }
 
 const CategoriesSelect = (props: BaseProps) => {
-	const [videoOptions, setVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
-	const videoCategoriesState = useRecoilValueLoadable(videoCategoriesSelector(props.channelID));
+	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
+	const videoCategoriesState = useAtomValue(youtubeVideoCategoriesAtomState(props.channelID));
 
 	const CategoryList = useMemo(() => {
-		if (videoCategoriesState.state === 'hasValue') {
-			const sortedCategories = [...videoCategoriesState.contents.categories].sort((a, b) => (a.name > b.name ? 1 : -1));
-			return sortedCategories.map((category) => {
-				return {
-					key: category.id,
-					text: category.name,
-					value: category.id,
-				};
-			});
-		}
-		return [];
-	}, [videoCategoriesState.contents.categories, videoCategoriesState.state]);
+		const { categories } = videoCategoriesState.data;
+		const sortedCategories = [...categories].sort((a, b) => (a.name > b.name ? 1 : -1));
+		return sortedCategories.map((category) => {
+			return {
+				key: category.id,
+				text: category.name,
+				value: category.id,
+			};
+		});
+	}, [videoCategoriesState.data]);
 
 	return useMemo(
 		() => (
@@ -32,8 +30,8 @@ const CategoriesSelect = (props: BaseProps) => {
 				<Grid.Row verticalAlign="middle">
 					<Grid.Column width={14}>
 						<Dropdown
-							value={videoOptions.selectedCategories}
-							loading={videoCategoriesState.state !== 'hasValue'}
+							value={videosState.data.selectedCategories}
+							loading={videoCategoriesState.loading || videosState.loading}
 							placeholder="Categories"
 							multiple
 							selection
@@ -41,28 +39,27 @@ const CategoriesSelect = (props: BaseProps) => {
 							onChange={(e, data) => {
 								if (data.value) {
 									const newValue = data.value as number[];
-									setVideoOptions({ ...videoOptions, selectedCategories: newValue });
+									setVideosState({ ...videosState.data, selectedCategories: newValue });
 								}
 							}}
 						/>
 					</Grid.Column>
 					<Grid.Column width={2}>
-						<Button onClick={() => setVideoOptions({ ...videoOptions, selectedCategories: [] })}>Reset</Button>
+						<Button onClick={() => setVideosState({ ...videosState.data, selectedCategories: [] })}>Reset</Button>
 					</Grid.Column>
 				</Grid.Row>
 			</Grid>
 		),
-		[CategoryList, setVideoOptions, videoCategoriesState.state, videoOptions]
+		[CategoryList, setVideosState, videoCategoriesState.loading, videosState.data, videosState.loading]
 	);
 };
 
 const VideosDisplay = (props: BaseProps) => {
-	const [videoOptions, setVideoOptions] = useRecoilState(videoOptionsState(props.channelID));
-	const videos = useRecoilValueLoadable(videosSelector(props.channelID));
+	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
 
 	const Videos = useMemo(() => {
-		if (videos.state === 'hasValue') {
-			return videos.contents.videos.map((video) => (
+		if (!videosState.loading) {
+			return videosState.data.videos.map((video) => (
 				<Grid.Column computer={4} tablet={8} key={video.id}>
 					<YoutubeVideoCard video={video} />
 				</Grid.Column>
@@ -73,30 +70,27 @@ const VideosDisplay = (props: BaseProps) => {
 				<Loader size="huge" active />
 			</Container>
 		);
-	}, [videos.contents.videos, videos.state]);
+	}, [videosState.data.videos, videosState.loading]);
 
 	const Paginator = useMemo(() => {
-		if (videos.state === 'hasValue') {
-			return (
-				<Pagination
-					boundaryRange={0}
-					activePage={videoOptions.page}
-					firstItem={null}
-					lastItem={null}
-					prevItem={{ content: <Icon name="angle left" />, icon: true }}
-					nextItem={{ content: <Icon name="angle right" />, icon: true }}
-					ellipsisItem={null}
-					totalPages={Math.ceil(videos.contents.totalVideos / videoOptions.perPage)}
-					onPageChange={(e, data) => {
-						if (data.activePage) {
-							setVideoOptions({ ...videoOptions, page: Number(data.activePage) });
-						}
-					}}
-				/>
-			);
-		}
-		return null;
-	}, [setVideoOptions, videoOptions, videos.contents.totalVideos, videos.state]);
+		return (
+			<Pagination
+				boundaryRange={0}
+				activePage={videosState.data.page}
+				firstItem={null}
+				lastItem={null}
+				prevItem={{ content: <Icon name="angle left" />, icon: true }}
+				nextItem={{ content: <Icon name="angle right" />, icon: true }}
+				ellipsisItem={null}
+				totalPages={Math.ceil(videosState.data.totalVideos / videosState.data.perPage)}
+				onPageChange={(e, data) => {
+					if (data.activePage) {
+						setVideosState({ ...videosState.data, page: Number(data.activePage) });
+					}
+				}}
+			/>
+		);
+	}, [setVideosState, videosState.data]);
 
 	return useMemo(
 		() => (
