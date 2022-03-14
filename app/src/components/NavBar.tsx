@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Dropdown, Icon, Image, Menu, Sticky } from 'semantic-ui-react';
+import { Dropdown, Icon, Image, Menu } from 'semantic-ui-react';
 import { useHistory } from 'react-router';
 import { resetUserState, userAtomState } from '../state/Auth';
 import DripDrop from '../images/dripdrop.png';
@@ -48,14 +48,12 @@ const NavBar = () => {
 	}, [history, logout, user.data.authenticated, user.data.email]);
 
 	return (
-		<Sticky>
-			<Menu style={{ borderRadius: 0 }} color="blue" inverted borderless stackable>
-				<Menu.Item>
-					<Image size="mini" src={DripDrop} />
-				</Menu.Item>
-				{NavButtons}
-			</Menu>
-		</Sticky>
+		<Menu style={{ borderRadius: 0 }} color="blue" inverted borderless stackable>
+			<Menu.Item>
+				<Image size="mini" src={DripDrop} />
+			</Menu.Item>
+			{NavButtons}
+		</Menu>
 	);
 };
 

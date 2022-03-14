@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { Container, Loader } from 'semantic-ui-react';
+import { Container, Grid, Loader, Ref, Sticky } from 'semantic-ui-react';
 import { useAtomValue } from 'jotai';
 import { userAtomState } from './state/Auth';
 import { Auth, MusicDownloader, YoutubeCollections } from './pages';
@@ -8,6 +8,7 @@ import NavBar from './components/NavBar';
 
 const App = () => {
 	const userState = useAtomValue(userAtomState);
+	const stickyRef = useRef<HTMLElement | null>(null);
 
 	const Routes = useMemo(() => {
 		if (userState.loading) {
@@ -34,10 +35,20 @@ const App = () => {
 	}, [userState.data.authenticated, userState.loading]);
 
 	return (
-		<React.Fragment>
-			<NavBar />
-			{Routes}
-		</React.Fragment>
+		<Ref innerRef={stickyRef}>
+			<Grid stackable>
+				<Grid.Row>
+					<Grid.Column>
+						<Sticky context={stickyRef}>
+							<NavBar />
+						</Sticky>
+					</Grid.Column>
+				</Grid.Row>
+				<Grid.Row>
+					<Grid.Column>{Routes}</Grid.Column>
+				</Grid.Row>
+			</Grid>
+		</Ref>
 	);
 };
 
