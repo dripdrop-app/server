@@ -28,3 +28,5 @@ Server
 - Link server block to sites-enabled
 - Install certbot to enable ssl with let's encrypt
 - Modify nginx configurations to upgrade connection protocols
+- Install supervisor to automatically manage processes
+- Create supervisor conf file for the server and run supervisord with the web user
