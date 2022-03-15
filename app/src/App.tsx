@@ -36,18 +36,16 @@ const App = () => {
 
 	return (
 		<Ref innerRef={stickyRef}>
-			<Grid stackable>
-				<Grid.Row>
-					<Grid.Column>
-						<Sticky context={stickyRef}>
-							<NavBar />
-						</Sticky>
-					</Grid.Column>
-				</Grid.Row>
-				<Grid.Row>
-					<Grid.Column>{Routes}</Grid.Column>
-				</Grid.Row>
-			</Grid>
+			<div>
+				<Sticky context={stickyRef}>
+					<NavBar />
+				</Sticky>
+				<Grid stackable padded>
+					<Grid.Row>
+						<Grid.Column>{Routes}</Grid.Column>
+					</Grid.Row>
+				</Grid>
+			</div>
 		</Ref>
 	);
 };
