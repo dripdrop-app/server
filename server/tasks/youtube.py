@@ -110,6 +110,26 @@ async def add_youtube_video(video, db: Database):
         pass
 
 
+async def update_channels(channels: list, db: Database = None):
+    async def update_channel(channel_info: dict):
+        try:
+            channel_id = channel_info["id"]
+            channel_thumbnail = channel_info["snippet"]["thumbnails"]["high"]["url"]
+            query = (
+                update(YoutubeChannel)
+                .values(thumbnail=channel_thumbnail)
+                .where(YoutubeChannel.id == channel_id)
+            )
+            await db.execute(query)
+        except Exception:
+            pass
+
+    channels_info = await google_api.get_channels_info(channels)
+    await asyncio.gather(
+        [update_channel(channel_info) for channel_info in channels_info]
+    )
+
+
 @worker_task
 @exception_handler
 async def update_youtube_video_categories(cron: bool, db: Database = None):
@@ -270,12 +290,10 @@ async def update_active_channels(db: Database = None):
         )
         channels.append(channel_id)
         if len(channels) == 50:
-            # GET CHANNEL INFO AND UPDATE
-            pass
+            await update_channels(channels, db)
             channels = []
     if len(channels) > 0:
-        # GET CHANNEL INFO AND UPDATE
-        pass
+        await update_channels(channels, db)
 
 
 @worker_task

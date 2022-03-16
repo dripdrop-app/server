@@ -76,4 +76,9 @@ declare global {
 	type YoutubeVideosState = FilterState & PageState & YoutubeVideosResponse & ChannelState;
 
 	type YoutubeSubscriptionsState = PageState & YoutubeSubscriptionsResponse;
+
+	interface YoutubeVideoQueueState {
+		videos: YoutubeVideo[];
+		currentIndex: number;
+	}
 }

@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import axios, { AxiosResponse } from 'axios';
 import { userAtomState } from './Auth';
-import { atomFamily } from 'jotai/utils';
+import { atomFamily, atomWithStorage } from 'jotai/utils';
 import _ from 'lodash';
 
 const initialYoutubeauthAtomState: YoutubeState = {
@@ -190,3 +190,10 @@ export const youtubeSubscriptionsAtomState = atom(
 );
 
 youtubeSubscriptionsAtomState.onMount = (setAtom) => setAtom();
+
+const initialVideoQueue: YoutubeVideoQueueState = {
+	videos: [],
+	currentIndex: 0,
+};
+
+export const videoQueueAtom = atomWithStorage('videoQueue', initialVideoQueue);
