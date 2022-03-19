@@ -43,6 +43,11 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		[setVideoQueue, videoQueue.videos.length]
 	);
 
+	const clearQueue = useCallback(() => {
+		setVideoQueue({ videos: [], currentIndex: 0 });
+		props.onClose();
+	}, [props, setVideoQueue]);
+
 	const removeQueueItem = useCallback(
 		(index: number) => {
 			let closeModal = false;
@@ -170,6 +175,11 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 									>
 										Play Next
 									</Button>
+								</Grid.Column>
+							</Grid.Row>
+							<Grid.Row textAlign="right">
+								<Grid.Column>
+									<Button onClick={clearQueue}>Clear Queue</Button>
 								</Grid.Column>
 							</Grid.Row>
 						</Grid>

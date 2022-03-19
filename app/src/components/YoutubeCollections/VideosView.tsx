@@ -91,7 +91,7 @@ const VideosDisplay = (props: BaseProps) => {
 
 const VideosView = (props: BaseProps) => {
 	const [openQueue, setOpenQueue] = useState(false);
-	const videoQueue = useAtomValue(videoQueueAtom);
+	const [videoQueue, setVideoQueue] = useAtom(videoQueueAtom);
 	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
 
 	const Paginator = useMemo(() => {
@@ -134,6 +134,17 @@ const VideosView = (props: BaseProps) => {
 					<Grid.Row only="mobile">
 						<Grid.Column textAlign="center">
 							<Segment>{OpenQueueButton}</Segment>
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>
+						<Grid.Column textAlign="right">
+							<Button
+								onClick={() =>
+									setVideoQueue((prev) => ({ ...prev, videos: [...prev.videos, ...videosState.data.videos] }))
+								}
+							>
+								Enqueue All
+							</Button>
 						</Grid.Column>
 					</Grid.Row>
 					<Grid.Row>
