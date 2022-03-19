@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Container, Loader, Grid, Icon, Pagination } from 'semantic-ui-react';
 import { useAtom } from 'jotai';
-import YoutubeSubscriptionCard from './YoutubeSubscriptionCard';
+import SubscriptionCard from './SubscriptionCard';
 import { youtubeSubscriptionsAtomState } from '../../state/YoutubeCollections';
 
 const SubscriptionsView = () => {
@@ -12,7 +12,7 @@ const SubscriptionsView = () => {
 			const { subscriptions } = subscriptionsState.data;
 			return subscriptions.map((subscription) => (
 				<Grid.Column computer={4} tablet={8} key={subscription.id}>
-					<YoutubeSubscriptionCard subscription={subscription} />
+					<SubscriptionCard subscription={subscription} />
 				</Grid.Column>
 			));
 		}
@@ -59,7 +59,9 @@ const SubscriptionsView = () => {
 					{Subscriptions}
 				</Grid>
 				<Grid>
-					<Grid.Column textAlign="center">{Paginator}</Grid.Column>
+					<Grid.Row>
+						<Grid.Column textAlign="center">{Paginator}</Grid.Column>
+					</Grid.Row>
 				</Grid>
 			</Container>
 		),

@@ -1,8 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { Button, Container, Dropdown, Grid, Icon, Loader, Pagination } from 'semantic-ui-react';
-import { youtubeVideoCategoriesAtomState, youtubeVideosAtomState } from '../../state/YoutubeCollections';
-import YoutubeVideoCard from './YoutubeVideoCard';
+import { Button, Container, Dropdown, Grid, Icon, Loader, Pagination, Segment } from 'semantic-ui-react';
+import {
+	videoQueueAtom,
+	youtubeVideoCategoriesAtomState,
+	youtubeVideosAtomState,
+} from '../../state/YoutubeCollections';
+import VideoCard from './VideoCard';
+import VideoQueueModal from './VideoQueueModal';
 
 interface BaseProps {
 	channelID?: string;
@@ -55,13 +60,13 @@ const CategoriesSelect = (props: BaseProps) => {
 };
 
 const VideosDisplay = (props: BaseProps) => {
-	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
+	const videosState = useAtomValue(youtubeVideosAtomState(props.channelID));
 
 	const Videos = useMemo(() => {
 		if (!videosState.loading) {
 			return videosState.data.videos.map((video) => (
 				<Grid.Column computer={4} tablet={8} key={video.id}>
-					<YoutubeVideoCard video={video} />
+					<VideoCard video={video} />
 				</Grid.Column>
 			));
 		}
@@ -72,57 +77,100 @@ const VideosDisplay = (props: BaseProps) => {
 		);
 	}, [videosState.data.videos, videosState.loading]);
 
-	const Paginator = useMemo(() => {
-		return (
-			<Pagination
-				boundaryRange={0}
-				activePage={videosState.data.page}
-				firstItem={null}
-				lastItem={null}
-				prevItem={{ content: <Icon name="angle left" />, icon: true }}
-				nextItem={{ content: <Icon name="angle right" />, icon: true }}
-				ellipsisItem={null}
-				totalPages={Math.ceil(videosState.data.totalVideos / videosState.data.perPage)}
-				onPageChange={(e, data) => {
-					if (data.activePage) {
-						setVideosState({ ...videosState.data, page: Number(data.activePage) });
-					}
-				}}
-			/>
-		);
-	}, [setVideosState, videosState.data]);
-
 	return useMemo(
 		() => (
 			<Container>
 				<Grid stackable stretched>
 					{Videos}
 				</Grid>
-				<Grid stackable>
-					<Grid.Column textAlign="center">{Paginator}</Grid.Column>
-				</Grid>
 			</Container>
 		),
-		[Paginator, Videos]
+		[Videos]
 	);
 };
 
 const VideosView = (props: BaseProps) => {
-	return (
-		<Container>
-			<Grid stackable padded="vertically">
-				<Grid.Row>
-					<Grid.Column>
-						<CategoriesSelect channelID={props.channelID} />
-					</Grid.Column>
-				</Grid.Row>
-				<Grid.Row>
-					<Grid.Column>
-						<VideosDisplay channelID={props.channelID} />
-					</Grid.Column>
-				</Grid.Row>
-			</Grid>
-		</Container>
+	const [openQueue, setOpenQueue] = useState(false);
+	const videoQueue = useAtomValue(videoQueueAtom);
+	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
+
+	const Paginator = useMemo(() => {
+		if (!videosState.loading) {
+			return (
+				<Pagination
+					boundaryRange={0}
+					activePage={videosState.data.page}
+					firstItem={{ content: <Icon name="angle double left" />, icon: true }}
+					lastItem={{ content: <Icon name="angle double right" />, icon: true }}
+					prevItem={{ content: <Icon name="angle left" />, icon: true }}
+					nextItem={{ content: <Icon name="angle right" />, icon: true }}
+					ellipsisItem={null}
+					totalPages={Math.ceil(videosState.data.totalVideos / videosState.data.perPage)}
+					onPageChange={(e, data) => {
+						if (data.activePage) {
+							setVideosState({ ...videosState.data, page: Number(data.activePage) });
+						}
+					}}
+				/>
+			);
+		}
+	}, [setVideosState, videosState.data, videosState.loading]);
+
+	const OpenQueueButton = useMemo(() => {
+		const emptyQueue = videoQueue.videos.length === 0;
+		const text = emptyQueue ? 'Queue Empty' : 'Open Queue';
+		return (
+			<Button disabled={emptyQueue} onClick={() => setOpenQueue(true)}>
+				{text}
+			</Button>
+		);
+	}, [videoQueue.videos.length]);
+
+	return useMemo(
+		() => (
+			<Container>
+				<VideoQueueModal open={openQueue} onClose={() => setOpenQueue(false)} />
+				<Grid stackable padded="vertically">
+					<Grid.Row only="mobile">
+						<Grid.Column textAlign="center">
+							<Segment>{OpenQueueButton}</Segment>
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>
+						<Grid.Column>
+							<CategoriesSelect channelID={props.channelID} />
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>
+						<Grid.Column>
+							<VideosDisplay channelID={props.channelID} />
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row only="computer tablet">
+						<Container as="div" style={{ position: 'fixed', bottom: 0 }}>
+							<Grid.Column>
+								<Segment>
+									<Grid stackable>
+										<Grid.Row>
+											<Grid.Column as="div" textAlign="center" width={8}>
+												{OpenQueueButton}
+											</Grid.Column>
+											<Grid.Column textAlign="center" width={8}>
+												{Paginator}
+											</Grid.Column>
+										</Grid.Row>
+									</Grid>
+								</Segment>
+							</Grid.Column>
+						</Container>
+					</Grid.Row>
+					<Grid.Row only="mobile">
+						<Grid.Column textAlign="center">{Paginator}</Grid.Column>
+					</Grid.Row>
+				</Grid>
+			</Container>
+		),
+		[OpenQueueButton, Paginator, openQueue, props.channelID]
 	);
 };
 

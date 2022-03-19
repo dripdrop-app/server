@@ -97,19 +97,22 @@ const JobList = () => {
 		);
 	}, [jobsState.data.jobs, jobsState.loading, page, socketState]);
 
-	return (
-		<Container>
-			<Grid padded="vertically">
-				<Grid.Row>
-					<Grid.Column>
-						<Header as="h1">Jobs</Header>
-					</Grid.Column>
-				</Grid.Row>
-				<Grid.Row>
-					<Grid.Column>{Jobs}</Grid.Column>
-				</Grid.Row>
-			</Grid>
-		</Container>
+	return useMemo(
+		() => (
+			<Container>
+				<Grid padded="vertically">
+					<Grid.Row>
+						<Grid.Column>
+							<Header as="h1">Jobs</Header>
+						</Grid.Column>
+					</Grid.Row>
+					<Grid.Row>
+						<Grid.Column>{Jobs}</Grid.Column>
+					</Grid.Row>
+				</Grid>
+			</Container>
+		),
+		[Jobs]
 	);
 };
 

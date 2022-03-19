@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { Card, Grid, Image } from 'semantic-ui-react';
+import { Card, Container, Grid, Image } from 'semantic-ui-react';
 
-interface YoutubeSubscriptionCardProps {
+interface SubscriptionCardProps {
 	subscription: YoutubeSubscription;
 }
 
-const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
+const SubscriptionCard = (props: SubscriptionCardProps) => {
 	const subscription = props.subscription;
 	const publishedAt = new Date(subscription.publishedAt).toLocaleDateString();
 	const channelLink = `https://youtube.com/channel/${subscription.channelId}`;
@@ -19,9 +19,9 @@ const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
 						<Grid>
 							<Grid.Row>
 								<Grid.Column>
-									<a href={channelLink} target="_blank" rel="noreferrer">
+									<Container as="a" href={channelLink} target="_blank" rel="noreferrer">
 										{subscription.channelTitle}
-									</a>
+									</Container>
 								</Grid.Column>
 							</Grid.Row>
 						</Grid>
@@ -40,4 +40,4 @@ const YoutubeSubscriptionCard = (props: YoutubeSubscriptionCardProps) => {
 	);
 };
 
-export default YoutubeSubscriptionCard;
+export default SubscriptionCard;

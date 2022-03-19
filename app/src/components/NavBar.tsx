@@ -47,13 +47,16 @@ const NavBar = () => {
 		return null;
 	}, [history, logout, user.data.authenticated, user.data.email]);
 
-	return (
-		<Menu style={{ borderRadius: 0 }} color="blue" inverted borderless stackable>
-			<Menu.Item>
-				<Image size="mini" src={DripDrop} />
-			</Menu.Item>
-			{NavButtons}
-		</Menu>
+	return useMemo(
+		() => (
+			<Menu style={{ borderRadius: 0 }} color="blue" inverted borderless stackable>
+				<Menu.Item>
+					<Image size="mini" src={DripDrop} />
+				</Menu.Item>
+				{NavButtons}
+			</Menu>
+		),
+		[NavButtons]
 	);
 };
 

@@ -161,7 +161,6 @@ export const youtubeSubscriptionsAtomState = atom(
 			const keys = ['perPage', 'page'];
 			const origOptions = _.pick(initialYoutubeSubscriptionsState, keys);
 			const currOptions = _.pick(currentState.data, keys);
-			console.log(origOptions, currOptions);
 			if (_.isEqual(origOptions, currOptions) && currentState.data.subscriptions.length) {
 				return;
 			}
