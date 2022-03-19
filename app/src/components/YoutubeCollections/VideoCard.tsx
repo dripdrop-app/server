@@ -19,7 +19,7 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const VideoInfo = useMemo(
 		() => (
-			<Grid>
+			<Grid stackable>
 				<Grid.Column textAlign="left" width={10} floated="left">
 					<Container as="a" href={channelLink} target="_blank" rel="noreferrer">
 						{video.channelTitle}
