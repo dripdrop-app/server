@@ -45,13 +45,18 @@ async def run_job(job_id: str, file, db: Database = None):
                 pass
             os.mkdir(job_path)
 
-            if file:
+            if filename and file:
                 file_path = os.path.join(job_path, filename)
                 f = open(file_path, "wb")
                 f.write(file)
                 f.close()
-
-            if youtube_url:
+                file_path = os.path.join(job_path, filename)
+                new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
+                AudioSegment.from_file(file_path).export(
+                    new_filename, format="mp3", bitrate="320k"
+                )
+                filename = new_filename
+            elif youtube_url:
 
                 def updateProgress(d):
                     nonlocal filename
@@ -59,13 +64,6 @@ async def run_job(job_id: str, file, db: Database = None):
                         filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
 
                 yt_download(youtube_url, [updateProgress], job_path)
-            elif filename:
-                file_path = os.path.join(job_path, filename)
-                new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
-                AudioSegment.from_file(file_path).export(
-                    new_filename, format="mp3", bitrate="320k"
-                )
-                filename = new_filename
 
             audio_file = mutagen.File(filename)
 

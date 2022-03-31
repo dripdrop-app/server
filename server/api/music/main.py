@@ -118,20 +118,18 @@ async def listen_jobs(
                 await websocket.send_json(
                     MusicResponses.JobUpdate(
                         type=type,
-                        jobs=[
-                            JobInfoResponse(
-                                id=job.id,
-                                filename=job.filename,
-                                youtube_url=job.youtube_url,
-                                artwork_url=job.artwork_url,
-                                title=job.title,
-                                artist=job.artist,
-                                album=job.album,
-                                grouping=job.grouping,
-                                completed=job.completed,
-                                failed=job.failed,
-                            )
-                        ],
+                        job=JobInfoResponse(
+                            id=job.id,
+                            filename=job.filename,
+                            youtube_url=job.youtube_url,
+                            artwork_url=job.artwork_url,
+                            title=job.title,
+                            artist=job.artist,
+                            album=job.album,
+                            grouping=job.grouping,
+                            completed=job.completed,
+                            failed=job.failed,
+                        ),
                     ).dict(by_alias=True)
                 )
             except Exception:
@@ -144,26 +142,57 @@ async def listen_jobs(
     )
 
 
-@app.post("/jobs/create", status_code=202)
-async def create_job(
-    youtubeUrl: Optional[str] = Form(None, regex=youtube_regex),
+@app.post("/jobs/create/youtube", status_code=202)
+async def create_job__from_youtube(
+    youtubeUrl: str = Form(None, regex=youtube_regex),
     artworkUrl: Optional[str] = Form(None),
     title: str = Form(None),
     artist: str = Form(None),
     album: str = Form(None),
     grouping: Optional[str] = Form(""),
-    file: UploadFile = File(None),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
-    if not youtubeUrl and not file:
-        return Response(None, 400)
-
-    filename = file.filename if file else None
-
     job_info = JobInfo(
         id=job_id,
         youtube_url=youtubeUrl,
+        artwork_url=artworkUrl,
+        title=title,
+        artist=artist,
+        album=album,
+        grouping=grouping,
+        filename=None,
+        completed=False,
+        failed=False,
+    )
+    query = insert(MusicJobs).values(
+        **job_info.dict(),
+        user_email=user.email,
+    )
+    await db.execute(query)
+    queue.enqueue(run_job, job_id, None)
+    await redis.publish(
+        RedisChannels.MUSIC_JOB_CHANNEL.value,
+        json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),
+    )
+    return Response(None, 202)
+
+
+@app.post("/jobs/create/file", status_code=202)
+async def create_job_from_file(
+    file: UploadFile = File(None),
+    artworkUrl: Optional[str] = Form(None),
+    title: str = Form(None),
+    artist: str = Form(None),
+    album: str = Form(None),
+    grouping: Optional[str] = Form(""),
+    user: AuthenticatedUser = Depends(get_authenticated_user),
+):
+    job_id = str(uuid.uuid4())
+    filename = file.filename
+    job_info = JobInfo(
+        id=job_id,
+        youtube_url=None,
         artwork_url=artworkUrl,
         title=title,
         artist=artist,
@@ -173,16 +202,12 @@ async def create_job(
         completed=False,
         failed=False,
     )
-
     query = insert(MusicJobs).values(
         **job_info.dict(),
         user_email=user.email,
     )
     await db.execute(query)
-
-    if file:
-        file = await file.read()
-
+    file = await file.read()
     queue.enqueue(run_job, job_id, file)
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
@@ -202,7 +227,7 @@ async def delete_job(
     try:
         await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
     except Exception:
-        pass
+        raise HTTPException(404)
     return Response(None)
 
 

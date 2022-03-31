@@ -77,7 +77,7 @@ class MusicResponses:
 
     class JobUpdate(ResponseBaseModel):
         type: Literal["COMPLETED", "STARTED"]
-        jobs: List[JobInfoResponse]
+        job: JobInfoResponse
 
     class CreateJob(ResponseBaseModel):
         job: JobInfoResponse
