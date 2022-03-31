@@ -1,18 +1,10 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { useAtomValue } from 'jotai';
-import { useResetAtom } from 'jotai/utils';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Container, Grid } from 'semantic-ui-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useLazyCreateFileJobQuery, useLazyCreateYoutubeJobQuery } from '../../api';
+import { resetForm } from '../../state/music';
 import { FILE_TYPE } from '../../utils/enums';
-import {
-	artworkLoadingAtom,
-	groupingLoadingAtom,
-	musicFormAtom,
-	tagsLoadingAtom,
-	validArtworkAtom,
-	validMusicForm,
-} from '../../state/Music';
 import BlankImage from '../../images/blank_image.jpeg';
-import useLazyFetch from '../../hooks/useLazyFetch';
 
 interface FormActionProps {
 	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
@@ -20,21 +12,26 @@ interface FormActionProps {
 
 const FormActions = (props: FormActionProps) => {
 	const { fileInputRef } = props;
+	const [failedCreateJob, setFailedCreateJob] = useState(false);
 
-	const musicForm = useAtomValue(musicFormAtom);
-	const resetForm = useResetAtom(musicFormAtom);
-	const validForm = useAtomValue(validMusicForm);
-	const validArtwork = useAtomValue(validArtworkAtom);
-	const groupingLoading = useAtomValue(groupingLoadingAtom);
-	const tagsLoading = useAtomValue(tagsLoadingAtom);
-	const artworkLoading = useAtomValue(artworkLoadingAtom);
+	const [createFileJob, createFileJobStatus] = useLazyCreateFileJobQuery();
+	const [createYoutubeJob, createYoutubeJobStatus] = useLazyCreateYoutubeJobQuery();
 
-	const { title, artist, album, grouping, artworkUrl, fileType, youtubeUrl } = musicForm;
-
-	const [performOperation, performOperationStatus] = useLazyFetch();
+	const dispatch = useDispatch();
+	const { formLoading, valid, title, artist, album, grouping, artworkUrl, fileType, youtubeUrl, validArtwork } =
+		useSelector((state: RootState) => {
+			let formLoading = false;
+			for (const query in state.api.queries) {
+				if (query.includes('grouping') || query.includes('artwork') || query.includes('tags')) {
+					const call = state.api.queries[query];
+					formLoading = formLoading || (call?.status === 'pending' ?? formLoading);
+				}
+			}
+			return { formLoading, ...state.music };
+		});
 
 	const run = useCallback(async () => {
-		const formData = new FormData();
+		let artwork = validArtwork ? artworkUrl : (await fetch(BlankImage)).url;
 		if (
 			fileType !== FILE_TYPE.YOUTUBE &&
 			fileInputRef.current &&
@@ -42,44 +39,41 @@ const FormActions = (props: FormActionProps) => {
 			fileInputRef.current.files.length > 0
 		) {
 			const file = fileInputRef.current.files[0];
-			formData.append('file', file);
-		}
-		if (fileType === FILE_TYPE.YOUTUBE) {
-			formData.append('youtubeUrl', youtubeUrl || '');
-		}
-		if (validArtwork) {
-			formData.append('artworkUrl', artworkUrl);
+			createFileJob({ file, artworkUrl: artwork, title, artist, album, grouping });
 		} else {
-			const imageResponse = await fetch(BlankImage);
-			if (imageResponse.ok) {
-				const blob = await imageResponse.blob();
-				try {
-					const readFilePromise: () => Promise<string | ArrayBuffer | null> = () =>
-						new Promise((resolve, reject) => {
-							const reader = new FileReader();
-							reader.onloadend = () => resolve(reader.result);
-							reader.onerror = reject;
-							reader.readAsDataURL(blob);
-						});
-					const url = await readFilePromise();
-					if (typeof url === 'string') {
-						formData.append('artworkUrl', url);
-					}
-				} catch {}
-			}
+			createYoutubeJob({ youtubeUrl, artworkUrl: artwork, title, artist, album, grouping });
 		}
-		formData.append('title', title);
-		formData.append('artist', artist);
-		formData.append('album', album);
-		formData.append('grouping', grouping || '');
-		performOperation({ url: '/music/jobs/create', method: 'POST', data: formData });
-	}, [album, artist, artworkUrl, fileInputRef, fileType, grouping, performOperation, title, validArtwork, youtubeUrl]);
+	}, [
+		album,
+		artist,
+		artworkUrl,
+		createFileJob,
+		createYoutubeJob,
+		fileInputRef,
+		fileType,
+		grouping,
+		title,
+		validArtwork,
+		youtubeUrl,
+	]);
 
 	useEffect(() => {
-		if (performOperationStatus.success) {
-			resetForm();
+		if (!createYoutubeJobStatus.isUninitialized) {
+			setFailedCreateJob(!createYoutubeJobStatus.isSuccess);
 		}
-	}, [resetForm, performOperationStatus.success]);
+		if (createYoutubeJobStatus.isSuccess) {
+			dispatch(resetForm());
+		}
+	}, [createYoutubeJobStatus.isSuccess, createYoutubeJobStatus.isUninitialized, dispatch]);
+
+	useEffect(() => {
+		if (!createFileJobStatus.isUninitialized) {
+			setFailedCreateJob(!createFileJobStatus.isSuccess);
+		}
+		if (createFileJobStatus.isSuccess) {
+			dispatch(resetForm());
+		}
+	}, [dispatch, createFileJobStatus.isSuccess, createFileJobStatus.isUninitialized]);
 
 	return useMemo(
 		() => (
@@ -88,10 +82,10 @@ const FormActions = (props: FormActionProps) => {
 					<Grid.Row>
 						<Grid.Column width={4}>
 							<Button
-								color={performOperationStatus.error ? 'red' : 'blue'}
-								disabled={!validForm}
+								color={failedCreateJob ? 'red' : 'blue'}
+								disabled={!valid}
 								onClick={run}
-								loading={performOperationStatus.loading || groupingLoading || tagsLoading || artworkLoading}
+								loading={createFileJobStatus.isFetching || createYoutubeJobStatus.isFetching || formLoading}
 							>
 								{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
 								{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
@@ -99,7 +93,7 @@ const FormActions = (props: FormActionProps) => {
 							</Button>
 						</Grid.Column>
 						<Grid.Column width={2}>
-							<Button onClick={() => resetForm()} color="blue">
+							<Button onClick={() => dispatch(resetForm())} color="blue">
 								Reset
 							</Button>
 						</Grid.Column>
@@ -108,15 +102,14 @@ const FormActions = (props: FormActionProps) => {
 			</Container>
 		),
 		[
-			artworkLoading,
+			createFileJobStatus.isFetching,
+			createYoutubeJobStatus.isFetching,
+			dispatch,
+			failedCreateJob,
 			fileType,
-			groupingLoading,
-			performOperationStatus.error,
-			performOperationStatus.loading,
-			resetForm,
+			formLoading,
 			run,
-			tagsLoading,
-			validForm,
+			valid,
 		]
 	);
 };

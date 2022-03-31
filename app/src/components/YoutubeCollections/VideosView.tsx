@@ -1,11 +1,8 @@
-import { useMemo, useState } from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { useMemo, useReducer, useState } from 'react';
 import { Button, Container, Dropdown, Grid, Icon, Loader, Pagination, Segment } from 'semantic-ui-react';
-import {
-	videoQueueAtom,
-	youtubeVideoCategoriesAtomState,
-	youtubeVideosAtomState,
-} from '../../state/YoutubeCollections';
+import { useSelector, useDispatch } from 'react-redux';
+import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
+import { addManyVideosToQueue } from '../../state/youtubeCollections';
 import VideoCard from './VideoCard';
 import VideoQueueModal from './VideoQueueModal';
 
@@ -13,21 +10,40 @@ interface BaseProps {
 	channelID?: string;
 }
 
-const CategoriesSelect = (props: BaseProps) => {
-	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
-	const videoCategoriesState = useAtomValue(youtubeVideoCategoriesAtomState(props.channelID));
+interface FilterState {
+	selectedCategories: number[];
+	page: number;
+	perPage: number;
+}
 
+const initialState: FilterState = {
+	selectedCategories: [],
+	page: 1,
+	perPage: 50,
+};
+
+const reducer = (state = initialState, action: Partial<FilterState>) => {
+	return { ...state, ...action };
+};
+
+interface CategoriesSelectProps {
+	categoriesLoading: boolean;
+	videosLoading: boolean;
+	categories: YoutubeVideoCategory[];
+	selectedCategories: number[];
+	setSelectedCategories: (categories: number[]) => void;
+}
+
+const CategoriesSelect = (props: CategoriesSelectProps) => {
 	const CategoryList = useMemo(() => {
-		const { categories } = videoCategoriesState.data;
-		const sortedCategories = [...categories].sort((a, b) => (a.name > b.name ? 1 : -1));
-		return sortedCategories.map((category) => {
-			return {
+		return [...props.categories]
+			.sort((a, b) => (a.name > b.name ? 1 : -1))
+			.map((category) => ({
 				key: category.id,
 				text: category.name,
 				value: category.id,
-			};
-		});
-	}, [videoCategoriesState.data]);
+			}));
+	}, [props.categories]);
 
 	return useMemo(
 		() => (
@@ -35,8 +51,8 @@ const CategoriesSelect = (props: BaseProps) => {
 				<Grid.Row verticalAlign="middle">
 					<Grid.Column width={14}>
 						<Dropdown
-							value={videosState.data.selectedCategories}
-							loading={videoCategoriesState.loading || videosState.loading}
+							value={props.selectedCategories}
+							loading={props.categoriesLoading || props.videosLoading}
 							placeholder="Categories"
 							multiple
 							selection
@@ -44,27 +60,43 @@ const CategoriesSelect = (props: BaseProps) => {
 							onChange={(e, data) => {
 								if (data.value) {
 									const newValue = data.value as number[];
-									setVideosState({ ...videosState.data, selectedCategories: newValue });
+									props.setSelectedCategories(newValue);
 								}
 							}}
 						/>
 					</Grid.Column>
 					<Grid.Column width={2}>
-						<Button onClick={() => setVideosState({ ...videosState.data, selectedCategories: [] })}>Reset</Button>
+						<Button onClick={() => props.setSelectedCategories([])}>Reset</Button>
 					</Grid.Column>
 				</Grid.Row>
 			</Grid>
 		),
-		[CategoryList, setVideosState, videoCategoriesState.loading, videosState.data, videosState.loading]
+		[CategoryList, props]
 	);
 };
 
-const VideosDisplay = (props: BaseProps) => {
-	const videosState = useAtomValue(youtubeVideosAtomState(props.channelID));
+const VideosView = (props: BaseProps) => {
+	const [filterState, filterDispatch] = useReducer(reducer, initialState);
+	const [openQueue, setOpenQueue] = useState(false);
+
+	const videosStatus = useYoutubeVideosQuery(filterState);
+	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
+
+	const videos = useMemo(() => (videosStatus.data ? videosStatus.data.videos : []), [videosStatus.data]);
+	const totalVideos = useMemo(() => (videosStatus.data ? videosStatus.data.totalVideos : 0), [videosStatus.data]);
+	const categories = useMemo(
+		() => (videoCategoriesStatus.data ? videoCategoriesStatus.data.categories : []),
+		[videoCategoriesStatus.data]
+	);
+
+	const dispatch = useDispatch();
+	const videoQueue = useSelector((state: RootState) => ({
+		videos: state.videoQueue.videos,
+	}));
 
 	const Videos = useMemo(() => {
-		if (!videosState.loading) {
-			return videosState.data.videos.map((video) => (
+		if (!videosStatus.isFetching) {
+			return videos.map((video) => (
 				<Grid.Column computer={4} tablet={8} key={video.id}>
 					<VideoCard video={video} />
 				</Grid.Column>
@@ -75,46 +107,29 @@ const VideosDisplay = (props: BaseProps) => {
 				<Loader size="huge" active />
 			</Container>
 		);
-	}, [videosState.data.videos, videosState.loading]);
-
-	return useMemo(
-		() => (
-			<Container>
-				<Grid stackable stretched>
-					{Videos}
-				</Grid>
-			</Container>
-		),
-		[Videos]
-	);
-};
-
-const VideosView = (props: BaseProps) => {
-	const [openQueue, setOpenQueue] = useState(false);
-	const [videoQueue, setVideoQueue] = useAtom(videoQueueAtom);
-	const [videosState, setVideosState] = useAtom(youtubeVideosAtomState(props.channelID));
+	}, [videos, videosStatus.isFetching]);
 
 	const Paginator = useMemo(() => {
-		if (!videosState.loading) {
+		if (!videosStatus.isFetching) {
 			return (
 				<Pagination
 					boundaryRange={0}
-					activePage={videosState.data.page}
+					activePage={filterState.page}
 					firstItem={{ content: <Icon name="angle double left" />, icon: true }}
 					lastItem={{ content: <Icon name="angle double right" />, icon: true }}
 					prevItem={{ content: <Icon name="angle left" />, icon: true }}
 					nextItem={{ content: <Icon name="angle right" />, icon: true }}
 					ellipsisItem={null}
-					totalPages={Math.ceil(videosState.data.totalVideos / videosState.data.perPage)}
+					totalPages={Math.ceil(totalVideos / filterState.perPage)}
 					onPageChange={(e, data) => {
 						if (data.activePage) {
-							setVideosState({ ...videosState.data, page: Number(data.activePage) });
+							filterDispatch({ page: Number(data.activePage) });
 						}
 					}}
 				/>
 			);
 		}
-	}, [setVideosState, videosState.data, videosState.loading]);
+	}, [filterState.page, filterState.perPage, totalVideos, videosStatus.isFetching]);
 
 	const OpenQueueButton = useMemo(() => {
 		const emptyQueue = videoQueue.videos.length === 0;
@@ -138,23 +153,25 @@ const VideosView = (props: BaseProps) => {
 					</Grid.Row>
 					<Grid.Row>
 						<Grid.Column textAlign="right">
-							<Button
-								onClick={() =>
-									setVideoQueue((prev) => ({ ...prev, videos: [...prev.videos, ...videosState.data.videos] }))
-								}
-							>
-								Enqueue All
-							</Button>
+							<Button onClick={() => dispatch(addManyVideosToQueue(videos))}>Enqueue All</Button>
 						</Grid.Column>
 					</Grid.Row>
 					<Grid.Row>
 						<Grid.Column>
-							<CategoriesSelect channelID={props.channelID} />
+							<CategoriesSelect
+								categories={categories}
+								categoriesLoading={videoCategoriesStatus.isFetching}
+								videosLoading={videosStatus.isFetching}
+								selectedCategories={filterState.selectedCategories}
+								setSelectedCategories={(categories) => filterDispatch({ selectedCategories: categories })}
+							/>
 						</Grid.Column>
 					</Grid.Row>
 					<Grid.Row>
 						<Grid.Column>
-							<VideosDisplay channelID={props.channelID} />
+							<Grid stackable stretched>
+								{Videos}
+							</Grid>
 						</Grid.Column>
 					</Grid.Row>
 					<Grid.Row only="computer tablet">
@@ -181,7 +198,18 @@ const VideosView = (props: BaseProps) => {
 				</Grid>
 			</Container>
 		),
-		[OpenQueueButton, Paginator, openQueue, props.channelID]
+		[
+			OpenQueueButton,
+			Paginator,
+			Videos,
+			categories,
+			dispatch,
+			filterState.selectedCategories,
+			openQueue,
+			videoCategoriesStatus.isFetching,
+			videos,
+			videosStatus.isFetching,
+		]
 	);
 };
 

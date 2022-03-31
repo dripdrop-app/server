@@ -1,51 +1,41 @@
 import { useEffect, useMemo } from 'react';
-import { useAtomValue } from 'jotai';
 import { Button, Container, Grid, Header, Loader } from 'semantic-ui-react';
-import useLazyFetch from '../hooks/useLazyFetch';
-import VideosView from '../components/YoutubeCollections/VideosView';
-import SubscriptionsView from '../components/YoutubeCollections/SubscriptionsView';
-import { authAtomState } from '../state/YoutubeCollections';
+import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../api';
 
 interface YoutubeCollectionsProps {
-	page: 'VIDEOS' | 'SUBSCRIPTIONS';
+	title: string;
+	children: JSX.Element;
 }
 
 const YoutubeCollections = (props: YoutubeCollectionsProps) => {
-	const youtubeAuth = useAtomValue(authAtomState);
-
-	const [getOAuthLink, getOAuthLinkStatus] = useLazyFetch<string>();
+	const youtubeAuthStatus = useCheckYoutubeAuthQuery(null);
+	const [getOAuthLink, getOAuthLinkStatus] = useLazyGetOauthLinkQuery();
 
 	useEffect(() => {
-		if (getOAuthLinkStatus.success) {
+		if (getOAuthLinkStatus.isSuccess) {
 			const oAuthURL = getOAuthLinkStatus.data;
 			window.location.href = oAuthURL;
 		}
 	}, [getOAuthLinkStatus]);
 
 	const Content = useMemo(() => {
-		if (youtubeAuth.loading) {
+		if (youtubeAuthStatus.isFetching) {
 			return (
 				<Container style={{ display: 'flex', alignItems: 'center' }}>
 					<Loader size="huge" active />
 				</Container>
 			);
-		}
-		if (youtubeAuth.data.email) {
+		} else if (youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.email) {
 			return (
 				<Container>
 					<Grid divided="vertically">
 						<Grid.Row>
 							<Grid.Column>
-								<Header>
-									{props.page.charAt(0).toLocaleUpperCase() + props.page.substring(1).toLocaleLowerCase()}
-								</Header>
+								<Header>{props.title}</Header>
 							</Grid.Column>
 						</Grid.Row>
 						<Grid.Row>
-							<Grid.Column>
-								{props.page === 'VIDEOS' ? <VideosView /> : null}
-								{props.page === 'SUBSCRIPTIONS' ? <SubscriptionsView /> : null}
-							</Grid.Column>
+							<Grid.Column>{props.children}</Grid.Column>
 						</Grid.Row>
 					</Grid>
 				</Container>
@@ -56,12 +46,10 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 				<Grid>
 					<Grid.Row>
 						<Grid.Column textAlign="center">
-							<Button
-								color="blue"
-								loading={getOAuthLinkStatus.loading}
-								onClick={() => getOAuthLink({ url: '/youtube/oauth' })}
-							>
-								{youtubeAuth.data.refresh ? 'Reconnect Google Account' : 'Log in with Google'}
+							<Button color="blue" loading={getOAuthLinkStatus.isFetching} onClick={() => getOAuthLink(null)}>
+								{youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.refresh
+									? 'Reconnect Google Account'
+									: 'Log in with Google'}
 							</Button>
 						</Grid.Column>
 					</Grid.Row>
@@ -69,11 +57,12 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 			</Container>
 		);
 	}, [
-		youtubeAuth.loading,
-		youtubeAuth.data.email,
-		youtubeAuth.data.refresh,
-		getOAuthLinkStatus.loading,
-		props.page,
+		youtubeAuthStatus.isFetching,
+		youtubeAuthStatus.isSuccess,
+		youtubeAuthStatus.data,
+		getOAuthLinkStatus.isFetching,
+		props.title,
+		props.children,
 		getOAuthLink,
 	]);
 

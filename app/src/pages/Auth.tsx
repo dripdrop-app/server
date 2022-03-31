@@ -1,25 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Container, Form, Grid, Message, Segment, Tab } from 'semantic-ui-react';
-import { useSetAtom } from 'jotai';
-import { userAtomState } from '../state/Auth';
-import useLazyFetch from '../hooks/useLazyFetch';
+import { useCreateMutation, useLoginMutation } from '../api';
+import { isFetchBaseQueryError } from '../utils/helpers';
 
 const Auth = () => {
-	const setUser = useSetAtom(userAtomState);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 
-	const [login, loginStatus] = useLazyFetch<User>();
-	const [signup, signupStatus] = useLazyFetch();
+	const [login, loginStatus] = useLoginMutation();
+	const [signup, signupStatus] = useCreateMutation();
 
 	const error = useMemo(() => {
-		return signupStatus.error && signupStatus.timestamp > loginStatus.timestamp
-			? signupStatus.error
-			: loginStatus.error;
-	}, [loginStatus.error, loginStatus.timestamp, signupStatus.error, signupStatus.timestamp]);
+		let error;
+		if (signupStatus.error && loginStatus.error) {
+			error = signupStatus.startedTimeStamp < loginStatus.startedTimeStamp ? signupStatus.error : loginStatus.error;
+		} else if (signupStatus.error) {
+			if (isFetchBaseQueryError(signupStatus.error)) {
+				error = signupStatus.error.data;
+			}
+		} else if (loginStatus.error) {
+			if (isFetchBaseQueryError(loginStatus.error)) {
+				error = loginStatus.error.data;
+			}
+		}
+		return typeof error === 'string' ? error : JSON.stringify(error);
+	}, [loginStatus.error, loginStatus.startedTimeStamp, signupStatus.error, signupStatus.startedTimeStamp]);
 
 	const Notice = useMemo(() => {
-		if (signupStatus.success && signupStatus.timestamp > loginStatus.timestamp) {
+		if (
+			signupStatus.isSuccess &&
+			(!loginStatus.startedTimeStamp || signupStatus.fulfilledTimeStamp > loginStatus.startedTimeStamp)
+		) {
 			return (
 				<Message info>
 					Account successfully created. You can login once your account has been approved by the adminstrator.
@@ -29,14 +40,7 @@ const Auth = () => {
 			return <Message error>{error}</Message>;
 		}
 		return null;
-	}, [error, loginStatus.timestamp, signupStatus.success, signupStatus.timestamp]);
-
-	useEffect(() => {
-		if (loginStatus.success) {
-			const { data } = loginStatus;
-			setUser({ ...data, authenticated: true });
-		}
-	}, [loginStatus, setUser]);
+	}, [error, loginStatus.startedTimeStamp, signupStatus.fulfilledTimeStamp, signupStatus.isSuccess]);
 
 	const Panes = useMemo(() => {
 		return [
@@ -61,8 +65,8 @@ const Auth = () => {
 										/>
 										<Form.Button
 											color="blue"
-											loading={loginStatus.loading}
-											onClick={() => login({ url: '/auth/login', method: 'POST', data: { email, password } })}
+											loading={loginStatus.isLoading}
+											onClick={() => login({ email, password })}
 										>
 											Login
 										</Form.Button>
@@ -94,8 +98,8 @@ const Auth = () => {
 										/>
 										<Form.Button
 											color="blue"
-											onClick={() => signup({ url: '/auth/create', method: 'POST', data: { email, password } })}
-											loading={signupStatus.loading}
+											onClick={() => signup({ email, password })}
+											loading={signupStatus.isLoading}
 										>
 											Sign Up
 										</Form.Button>
@@ -107,7 +111,7 @@ const Auth = () => {
 				),
 			},
 		];
-	}, [Notice, email, login, loginStatus.loading, password, signup, signupStatus.loading]);
+	}, [Notice, email, login, loginStatus.isLoading, password, signup, signupStatus.isLoading]);
 
 	return useMemo(
 		() => (

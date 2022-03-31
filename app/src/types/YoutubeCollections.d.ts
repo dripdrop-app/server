@@ -1,11 +1,6 @@
 export {};
 
 declare global {
-	interface YoutubeState {
-		email: string;
-		refresh: boolean;
-	}
-
 	interface YoutubeVideo {
 		id: string;
 		title: string;
@@ -40,45 +35,5 @@ declare global {
 		id: number;
 		name: string;
 		createdAt: string;
-	}
-
-	interface PageState {
-		page: number;
-		perPage: number;
-	}
-
-	interface FilterState {
-		selectedCategories: number[];
-	}
-
-	interface ChannelState {
-		channelId?: string;
-	}
-
-	type YoutubeVideoOptions = PageState & FilterState & ChannelState;
-
-	interface YoutubeVideoCategoriesResponse {
-		categories: YoutubeVideoCategory[];
-	}
-
-	interface YoutubeVideosResponse {
-		totalVideos: number;
-		videos: YoutubeVideo[];
-	}
-
-	interface YoutubeSubscriptionsResponse {
-		totalSubscriptions: number;
-		subscriptions: YoutubeSubscription[];
-	}
-
-	type YoutubeVideoCategoriesState = YoutubeVideoCategoriesResponse & ChannelState;
-
-	type YoutubeVideosState = FilterState & PageState & YoutubeVideosResponse & ChannelState;
-
-	type YoutubeSubscriptionsState = PageState & YoutubeSubscriptionsResponse;
-
-	interface YoutubeVideoQueueState {
-		videos: YoutubeVideo[];
-		currentIndex: number;
 	}
 }

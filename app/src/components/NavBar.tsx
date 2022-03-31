@@ -1,26 +1,17 @@
-import { Fragment, useEffect, useMemo } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { Fragment, useMemo } from 'react';
 import { Dropdown, Icon, Image, Menu } from 'semantic-ui-react';
 import { useHistory } from 'react-router';
-import { resetUserState, userAtomState } from '../state/Auth';
+import { useCheckSessionQuery, useLogoutMutation } from '../api';
 import DripDrop from '../images/dripdrop.png';
-import useLazyFetch from '../hooks/useLazyFetch';
 
 const NavBar = () => {
-	const user = useAtomValue(userAtomState);
+	const checkSessionStatus = useCheckSessionQuery(null);
+	const [logout] = useLogoutMutation();
+
 	const history = useHistory();
 
-	const [logout, logoutStatus] = useLazyFetch<null>();
-	const resetUser = useSetAtom(resetUserState);
-
-	useEffect(() => {
-		if (logoutStatus.success) {
-			resetUser(null);
-		}
-	}, [logoutStatus.success, resetUser]);
-
 	const NavButtons = useMemo(() => {
-		if (user.data.authenticated) {
+		if (checkSessionStatus.currentData && checkSessionStatus.isSuccess) {
 			return (
 				<Fragment>
 					<Menu.Item onClick={() => history.push('/')}>HOME</Menu.Item>
@@ -36,8 +27,8 @@ const NavBar = () => {
 					<Menu.Menu position="right">
 						<Dropdown trigger={<Icon size="big" name="user circle" />} item>
 							<Dropdown.Menu>
-								<Dropdown.Item>{user.data.email}</Dropdown.Item>
-								<Dropdown.Item onClick={() => logout({ url: '/auth/logout' })}>Logout</Dropdown.Item>
+								<Dropdown.Item>{checkSessionStatus.currentData.email}</Dropdown.Item>
+								<Dropdown.Item onClick={() => logout(null)}>Logout</Dropdown.Item>
 							</Dropdown.Menu>
 						</Dropdown>
 					</Menu.Menu>
@@ -45,7 +36,7 @@ const NavBar = () => {
 			);
 		}
 		return null;
-	}, [history, logout, user.data.authenticated, user.data.email]);
+	}, [checkSessionStatus.currentData, checkSessionStatus.isSuccess, history, logout]);
 
 	return useMemo(
 		() => (

@@ -1,60 +1,25 @@
-import { useCallback, useMemo, useState } from 'react';
-import { useAtom } from 'jotai';
-import { Container, Grid, Header, Icon, Loader, Message, Pagination } from 'semantic-ui-react';
-import { jobsAtomState } from '../../state/Music';
+import { useMemo, useState } from 'react';
+import { Container, Grid, Header, Icon, Loader, Pagination } from 'semantic-ui-react';
+import { useJobsQuery } from '../../api';
 import JobCard from './JobCard';
-import useWebsocket from '../../hooks/useWebsocket';
 
 const JobList = () => {
 	const [page, setPage] = useState(0);
-	const [jobsState, setJobsState] = useAtom(jobsAtomState);
 
-	const socketHandler = useCallback(
-		(event) => {
-			const json = JSON.parse(event.data);
-			const type = json.type;
-			if (type === 'STARTED') {
-				setJobsState([...json.jobs, ...jobsState.data.jobs]);
-			} else if (type === 'COMPLETED') {
-				const newJobs = [...jobsState.data.jobs];
-				const completedJobs = json.jobs.reduce((map: any, job: any) => {
-					map[job.id] = job;
-					return map;
-				}, {});
-				newJobs.forEach((job, index) => {
-					if (completedJobs[job.id]) {
-						newJobs[index] = completedJobs[job.id];
-					}
-				});
-				setJobsState([...newJobs]);
-			}
-		},
-		[jobsState.data.jobs, setJobsState]
-	);
-
-	const socketState = useWebsocket('/music/jobs/listen', socketHandler);
+	const jobsStatus = useJobsQuery(null, { refetchOnReconnect: true });
 
 	const Jobs = useMemo(() => {
-		if (jobsState.loading) {
+		if (jobsStatus.isFetching) {
 			return <Loader size="big" active />;
 		}
 
-		const jobs = jobsState.data.jobs;
-		const PAGE_SIZE = 4;
+		const jobs = jobsStatus.data ? jobsStatus.data.jobs : [];
+		const PAGE_SIZE = 5;
 		const jobs_slice = jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
 		return (
 			<Container>
 				<Grid stackable>
-					<Grid.Row>
-						<Grid.Column>
-							{socketState === WebSocket.CLOSED ? (
-								<Message negative>
-									<Message.Header>Refresh page to get Job Updates</Message.Header>
-								</Message>
-							) : null}
-						</Grid.Column>
-					</Grid.Row>
 					<Grid.Row>
 						<Grid.Column>
 							<Container>{jobs.length === 0 ? 'No Existing Jobs' : null}</Container>
@@ -95,7 +60,7 @@ const JobList = () => {
 				</Grid>
 			</Container>
 		);
-	}, [jobsState.data.jobs, jobsState.loading, page, socketState]);
+	}, [jobsStatus.data, jobsStatus.isFetching, page]);
 
 	return useMemo(
 		() => (

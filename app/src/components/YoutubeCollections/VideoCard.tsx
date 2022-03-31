@@ -1,21 +1,24 @@
 import { useState, useMemo } from 'react';
 import { Button, Card, Container, Embed, Grid, Image, Modal } from 'semantic-ui-react';
-import { useAtom } from 'jotai';
+import { useSelector, useDispatch } from 'react-redux';
 import ReactPlayer from 'react-player';
-import { videoQueueAtom } from '../../state/YoutubeCollections';
+import { addVideoToQueue } from '../../state/youtubeCollections';
 
 interface VideoCardProps {
 	video: YoutubeVideo;
 }
 
 const VideoCard = (props: VideoCardProps) => {
-	const [videoQueue, setVideoQueue] = useAtom(videoQueueAtom);
+	const { video } = props;
 	const [openModal, setOpenModal] = useState(false);
-	const video = props.video;
+
+	const dispatch = useDispatch();
+	const inQueue = useSelector((state: RootState) => {
+		return state.videoQueue.videos.find((video) => video.id === props.video.id);
+	});
+
 	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
 	const channelLink = `https://youtube.com/channel/${video.channelId}`;
-
-	const inQueue = useMemo(() => videoQueue.videos.find((v) => v.id === video.id), [video.id, videoQueue.videos]);
 
 	const VideoInfo = useMemo(
 		() => (
@@ -65,15 +68,13 @@ const VideoCard = (props: VideoCardProps) => {
 					{inQueue ? (
 						<Button color="green">Queued</Button>
 					) : (
-						<Button onClick={() => setVideoQueue((prev) => ({ ...prev, videos: [...prev.videos, video] }))}>
-							Add To Queue
-						</Button>
+						<Button onClick={() => dispatch(addVideoToQueue(video))}>Add To Queue</Button>
 					)}
 				</Card.Content>
 				<Card.Content extra>{VideoInfo}</Card.Content>
 			</Card>
 		),
-		[VideoInfo, VideoModal, inQueue, setVideoQueue, video]
+		[VideoInfo, VideoModal, dispatch, inQueue, video]
 	);
 };
 

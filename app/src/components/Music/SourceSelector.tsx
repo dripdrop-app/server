@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { useAtom, useSetAtom } from 'jotai';
 import { Checkbox, CheckboxProps, Container, Grid, Input } from 'semantic-ui-react';
-import { filenameAtom, fileTypeAtom, musicFormAtom, tagsLoadingAtom, youtubeURLAtom } from '../../state/Music';
+import { debounce } from 'lodash';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateForm } from '../../state/music';
+import { useLazyGroupingQuery, useLazyTagsQuery } from '../../api';
 import { FILE_TYPE } from '../../utils/enums';
-import { isValidYTLink, resolveAlbumFromTitle } from '../../utils/helpers';
-import useLazyFetch from '../../hooks/useLazyFetch';
 
 interface SourceSelectorProps {
 	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
@@ -13,21 +13,25 @@ interface SourceSelectorProps {
 const SourceSelector = (props: SourceSelectorProps) => {
 	const { fileInputRef } = props;
 
-	const [youtubeUrl, setYoutubeURL] = useAtom(youtubeURLAtom);
-	const [filename, setFilename] = useAtom(filenameAtom);
-	const [fileType, setFileType] = useAtom(fileTypeAtom);
-	const setMusicForm = useSetAtom(musicFormAtom);
-	const setTagsLoading = useSetAtom(tagsLoadingAtom);
+	const [getFileTags, getFileTagsStatus] = useLazyTagsQuery();
+	const [getGrouping, getGroupingStatus] = useLazyGroupingQuery();
 
-	const validYoutubeLink = isValidYTLink(youtubeUrl);
+	const dispatch = useDispatch();
+	const { grouping, youtubeUrl, filename, fileType, validYoutubeLink } = useSelector((state: RootState) => ({
+		youtubeUrl: state.music.youtubeUrl,
+		grouping: state.music.grouping,
+		filename: state.music.filename,
+		fileType: state.music.fileType,
+		validYoutubeLink: state.music.validYoutubeLink,
+	}));
 
-	const [getFileTags, getFileTagsStatus] = useLazyFetch<TagsResponse>();
+	const debouncedGetGrouping = useMemo(() => debounce(getGrouping, 1000), [getGrouping]);
 
 	const onFileSwitchChange = useCallback(
 		(event: React.FormEvent<HTMLInputElement>, data: CheckboxProps) => {
-			setFileType(data.checked ? FILE_TYPE.WAV_UPLOAD : FILE_TYPE.YOUTUBE);
+			dispatch(updateForm({ fileType: data.checked ? FILE_TYPE.WAV_UPLOAD : FILE_TYPE.YOUTUBE }));
 		},
-		[setFileType]
+		[dispatch]
 	);
 
 	const onBrowseClick = useCallback(() => {
@@ -43,32 +47,34 @@ const SourceSelector = (props: SourceSelectorProps) => {
 			const files = event.target.files;
 			if (files && files.length > 0) {
 				const file = files[0];
+				dispatch(updateForm({ filename: file.name }));
 				const formData = new FormData();
 				formData.append('file', file);
-				setFilename(file.name);
-				getFileTags({ url: '/music/tags', method: 'POST', data: formData });
+				getFileTags(file);
 			}
 		},
-		[getFileTags, setFilename]
+		[dispatch, getFileTags]
 	);
 
 	useEffect(() => {
-		setTagsLoading(getFileTagsStatus.loading);
-	}, [getFileTagsStatus, setTagsLoading]);
+		if (youtubeUrl && !grouping) {
+			debouncedGetGrouping(youtubeUrl);
+		}
+	}, [debouncedGetGrouping, grouping, youtubeUrl]);
 
 	useEffect(() => {
-		if (getFileTagsStatus.success) {
+		if (getFileTagsStatus.isSuccess) {
 			const { title, artist, album, grouping, artworkUrl } = getFileTagsStatus.data;
-			setMusicForm((form) => ({
-				...form,
-				title: title || '',
-				artist: artist || '',
-				album: album || resolveAlbumFromTitle(title),
-				grouping: grouping || '',
-				artworkUrl: artworkUrl || '',
-			}));
+			dispatch(updateForm({ title, artist, album, grouping, artworkUrl }));
 		}
-	}, [getFileTagsStatus.data, getFileTagsStatus.success, setMusicForm]);
+	}, [dispatch, getFileTagsStatus.data, getFileTagsStatus.isSuccess]);
+
+	useEffect(() => {
+		if (getGroupingStatus.isSuccess) {
+			const { grouping } = getGroupingStatus.data;
+			dispatch(updateForm({ grouping }));
+		}
+	}, [dispatch, getGroupingStatus.data, getGroupingStatus.isSuccess]);
 
 	return useMemo(() => {
 		return (
@@ -81,7 +87,7 @@ const SourceSelector = (props: SourceSelectorProps) => {
 								value={youtubeUrl}
 								label="Youtube URL"
 								disabled={fileType !== FILE_TYPE.YOUTUBE}
-								onChange={(e) => setYoutubeURL(e.target.value)}
+								onChange={(e) => dispatch(updateForm({ youtubeUrl: e.target.value }))}
 								error={!validYoutubeLink && fileType === FILE_TYPE.YOUTUBE}
 								required={fileType === FILE_TYPE.YOUTUBE}
 							/>
@@ -118,13 +124,13 @@ const SourceSelector = (props: SourceSelectorProps) => {
 			</Container>
 		);
 	}, [
+		dispatch,
 		fileInputRef,
 		fileType,
 		filename,
 		onBrowseClick,
 		onFileChange,
 		onFileSwitchChange,
-		setYoutubeURL,
 		validYoutubeLink,
 		youtubeUrl,
 	]);

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { useSetAtom, useAtom } from 'jotai';
+import { useCallback, useMemo } from 'react';
 import { Button, Card, Container, Grid, Image, List } from 'semantic-ui-react';
-import { jobsAtomState, musicFormAtom } from '../../state/Music';
+import { useDispatch } from 'react-redux';
+import { useRemoveJobMutation, useLazyDownloadJobQuery } from '../../api';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
-import useLazyFetch from '../../hooks/useLazyFetch';
+import { updateForm } from '../../state/music';
 
 interface JobCardProps {
 	job: Job;
@@ -12,48 +12,40 @@ interface JobCardProps {
 
 const JobCard = (props: JobCardProps) => {
 	const { job } = props;
-	const [jobsState, setJobsState] = useAtom(jobsAtomState);
-	const setMusicForm = useSetAtom(musicFormAtom);
 
-	const [downloadJob, downloadJobStatus] = useLazyFetch<Blob>();
-	const [removeJob, removeJobStatus] = useLazyFetch();
+	const [removeJob] = useRemoveJobMutation();
+	const [downloadJob] = useLazyDownloadJobQuery();
+
+	const dispatch = useDispatch();
 
 	const copyJob = useCallback(() => {
-		if (job) {
-			setMusicForm({
+		dispatch(
+			updateForm({
 				...job,
 				grouping: job.grouping || '',
 				fileType: FILE_TYPE.YOUTUBE,
 				youtubeUrl: job.youtubeUrl || '',
 				filename: '',
 				artworkUrl: job.artworkUrl || '',
-			});
-		}
-	}, [job, setMusicForm]);
+			})
+		);
+	}, [dispatch, job]);
 
-	useEffect(() => {
-		const currentJobId = job.id;
-		if (removeJobStatus.success) {
-			setJobsState(jobsState.data.jobs.filter((job) => job.id !== currentJobId));
+	const download = useCallback(async () => {
+		const result = await downloadJob(job.id);
+		if (result.isSuccess) {
+			const response = result.data;
+			const data = await response.blob();
+			const contentDisposition = response.headers.get('content-disposition') || '';
+			const groups = contentDisposition.match(/filename\*?=(?:utf-8''|")(.+)(?:"|;)?/);
+			const filename = decodeURIComponent(groups && groups.length > 1 ? groups[1] : 'downloaded.mp3');
+			const url = URL.createObjectURL(data);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
 		}
-	}, [job, jobsState.data.jobs, removeJobStatus.data, removeJobStatus.success, setJobsState]);
-
-	useEffect(() => {
-		if (downloadJobStatus.success) {
-			const response = downloadJobStatus.response;
-			const data = downloadJobStatus.data;
-			if (response) {
-				const contentDisposition = response.headers['content-disposition'] || '';
-				const groups = contentDisposition.match(/filename\*?=(?:utf-8''|")(.+)(?:"|;)?/);
-				const filename = decodeURIComponent(groups && groups.length > 1 ? groups[1] : 'downloaded.mp3');
-				const url = URL.createObjectURL(data);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = filename;
-				a.click();
-			}
-		}
-	}, [downloadJobStatus.data, downloadJobStatus.response, downloadJobStatus.success]);
+	}, [downloadJob, job.id]);
 
 	return useMemo(() => {
 		if (!job) {
@@ -109,7 +101,7 @@ const JobCard = (props: JobCardProps) => {
 											loading={!job.completed}
 											icon="cloud download"
 											color="green"
-											onClick={() => downloadJob({ url: `/music/jobs/download/${job.id}`, responseType: 'blob' })}
+											onClick={() => download()}
 										/>
 									) : null}
 									{job.failed ? <Button fluid icon="x" color="red" /> : null}
@@ -118,12 +110,7 @@ const JobCard = (props: JobCardProps) => {
 									<Button icon="copy" fluid onClick={() => copyJob()} />
 								</Grid.Column>
 								<Grid.Column>
-									<Button
-										icon="trash"
-										color="red"
-										fluid
-										onClick={() => removeJob({ url: `/music/jobs/delete/${job.id}`, method: 'DELETE' })}
-									/>
+									<Button icon="trash" color="red" fluid onClick={() => removeJob(job.id)} />
 								</Grid.Column>
 							</Grid.Row>
 						</Grid>
@@ -131,7 +118,7 @@ const JobCard = (props: JobCardProps) => {
 				</Card.Content>
 			</Card>
 		);
-	}, [copyJob, downloadJob, job, removeJob]);
+	}, [copyJob, download, job, removeJob]);
 };
 
 export default JobCard;

@@ -1,27 +1,44 @@
 import { useMemo, useRef } from 'react';
 import { Route, Switch } from 'react-router-dom';
 import { Container, Grid, Loader, Sticky } from 'semantic-ui-react';
-import { useAtomValue } from 'jotai';
-import { userAtomState } from './state/Auth';
-import { Auth, MusicDownloader, YoutubeCollections } from './pages';
+import { useCheckSessionQuery } from './api';
 import NavBar from './components/NavBar';
+import Auth from './pages/Auth';
+import MusicDownloader from './pages/MusicDownloader';
+import YoutubeCollections from './pages/YoutubeCollections';
+import SubscriptionsView from './components/YoutubeCollections/SubscriptionsView';
+import VideosView from './components/YoutubeCollections/VideosView';
 
 const App = () => {
-	const userState = useAtomValue(userAtomState);
+	const sessionStatus = useCheckSessionQuery(null);
 	const stickyRef = useRef<HTMLDivElement | null>(null);
 
 	const Routes = useMemo(() => {
-		if (userState.loading) {
+		if (sessionStatus.isFetching) {
 			return (
 				<Container style={{ display: 'flex', alignItems: 'center' }}>
 					<Loader size="huge" active />
 				</Container>
 			);
-		} else if (userState.data.authenticated) {
+		} else if (sessionStatus.data && sessionStatus.isSuccess) {
 			return (
 				<Switch>
-					<Route path="/youtube/subscriptions" render={() => <YoutubeCollections page="SUBSCRIPTIONS" />} />
-					<Route path="/youtube/videos" render={() => <YoutubeCollections page="VIDEOS" />} />
+					<Route
+						path="/youtube/subscriptions"
+						render={() => (
+							<YoutubeCollections title="Subscriptions">
+								<SubscriptionsView />
+							</YoutubeCollections>
+						)}
+					/>
+					<Route
+						path="/youtube/videos"
+						render={() => (
+							<YoutubeCollections title="Videos">
+								<VideosView />
+							</YoutubeCollections>
+						)}
+					/>
 					<Route path="/music" render={() => <MusicDownloader />} />
 					<Route path="/" render={() => <MusicDownloader />} />
 				</Switch>
@@ -32,7 +49,7 @@ const App = () => {
 				<Route path="/" render={() => <Auth />} />
 			</Switch>
 		);
-	}, [userState.data.authenticated, userState.loading]);
+	}, [sessionStatus.data, sessionStatus.isFetching, sessionStatus.isSuccess]);
 
 	return (
 		<div ref={stickyRef}>

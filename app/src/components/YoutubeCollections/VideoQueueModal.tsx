@@ -1,8 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Accordion, Button, Embed, Grid, Header, Icon, Item, Modal, Sticky } from 'semantic-ui-react';
-import { useAtom } from 'jotai';
+import { useDispatch, useSelector } from 'react-redux';
 import ReactPlayer from 'react-player';
-import { videoQueueAtom } from '../../state/YoutubeCollections';
+import {
+	advanceQueue,
+	reverseQueue,
+	removeVideoFromQueue,
+	clearQueue,
+	moveToIndex,
+} from '../../state/youtubeCollections';
 
 interface VideoQueueModalProps {
 	open: boolean;
@@ -10,18 +16,18 @@ interface VideoQueueModalProps {
 }
 
 const VideoQueueModal = (props: VideoQueueModalProps) => {
-	const [advanceSlide, setAdvanceSlide] = useState(false);
 	const [showQueue, setShowQueue] = useState(false);
 	const [showBackToTop, setShowBackToTop] = useState(false);
-	const [videoQueue, setVideoQueue] = useAtom(videoQueueAtom);
+
 	const stickyRef = useRef<HTMLDivElement | null>(null);
 	const videoRef = useRef<HTMLDivElement | null>(null);
-	const currentVideo = useMemo(() => {
-		if (videoQueue.videos[videoQueue.currentIndex]) {
-			return videoQueue.videos[videoQueue.currentIndex];
-		}
-		return null;
-	}, [videoQueue.currentIndex, videoQueue.videos]);
+
+	const dispatch = useDispatch();
+	const { videos, currentVideo, currentIndex } = useSelector((state: RootState) => ({
+		videos: state.videoQueue.videos,
+		currentVideo: state.videoQueue.currentVideo,
+		currentIndex: state.videoQueue.currentIndex,
+	}));
 
 	const scrollToTop = useCallback(() => {
 		const video = videoRef.current;
@@ -30,55 +36,21 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		}
 	}, []);
 
-	const moveSlide = useCallback(
-		(index: number) => {
-			if (index < 0) {
-				index = 0;
-			} else if (index >= videoQueue.videos.length) {
-				return;
-			}
-			setVideoQueue((prev) => ({ ...prev, currentIndex: index }));
-			setAdvanceSlide(false);
-		},
-		[setVideoQueue, videoQueue.videos.length]
-	);
-
-	const clearQueue = useCallback(() => {
-		setVideoQueue({ videos: [], currentIndex: 0 });
-		props.onClose();
-	}, [props, setVideoQueue]);
-
-	const removeQueueItem = useCallback(
-		(index: number) => {
-			let closeModal = false;
-			let newCurrentIndex = videoQueue.currentIndex;
-			if (videoQueue.videos.length === 1) {
-				closeModal = true;
-			}
-			if (index <= videoQueue.currentIndex) {
-				newCurrentIndex = Math.max(newCurrentIndex - 1, 0);
-			}
-			setVideoQueue((prev) => {
-				const newVideos = [...prev.videos];
-				newVideos.splice(index, 1);
-				return { videos: newVideos, currentIndex: newCurrentIndex };
-			});
-			if (closeModal) {
-				props.onClose();
-			}
-		},
-		[props, setVideoQueue, videoQueue.currentIndex, videoQueue.videos.length]
-	);
+	useMemo(() => {
+		if (!currentVideo) {
+			props.onClose();
+		}
+	}, [currentVideo, props]);
 
 	const QueueSlide = useMemo(() => {
 		const formatDate = (date: string) => new Date(date).toLocaleDateString();
 		if (currentVideo) {
 			return (
 				<Item.Group divided link>
-					{videoQueue.videos.map((video, index) => (
+					{videos.map((video, index) => (
 						<Item key={video.id}>
-							<Item.Image as="a" onClick={() => moveSlide(index)} size="small" src={video.thumbnail} />
-							<Item.Content as="a" onClick={() => moveSlide(index)}>
+							<Item.Image as="a" onClick={() => dispatch(moveToIndex(index))} size="small" src={video.thumbnail} />
+							<Item.Content as="a" onClick={() => dispatch(moveToIndex(index))}>
 								<Item.Header>{video.title}</Item.Header>
 								{video.id === currentVideo.id ? <Item.Meta>Now Playing</Item.Meta> : null}
 								<Item.Meta>{video.channelTitle}</Item.Meta>
@@ -87,7 +59,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 							</Item.Content>
 							<Item.Content>
 								<Item.Extra>
-									<Button floated="right" onClick={() => removeQueueItem(index)}>
+									<Button floated="right" onClick={() => dispatch(removeVideoFromQueue(video.id))}>
 										Remove
 									</Button>
 								</Item.Extra>
@@ -98,7 +70,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 			);
 		}
 		return null;
-	}, [currentVideo, moveSlide, removeQueueItem, videoQueue.videos]);
+	}, [currentVideo, dispatch, videos]);
 
 	const VideoPlayer = useMemo(() => {
 		if (currentVideo) {
@@ -111,28 +83,14 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 							url={`https://youtube.com/embed/${currentVideo.id}`}
 							controls={true}
 							playing={true}
-							onEnded={() => setAdvanceSlide(true)}
+							onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
 						/>
 					}
 				/>
 			);
 		}
 		return null;
-	}, [currentVideo]);
-
-	useEffect(() => {
-		let timeout: NodeJS.Timeout | null;
-		if (advanceSlide) {
-			timeout = setTimeout(() => {
-				moveSlide(videoQueue.currentIndex + 1);
-			}, 3000);
-		}
-		return () => {
-			if (timeout) {
-				clearTimeout(timeout);
-			}
-		};
-	}, [advanceSlide, moveSlide, videoQueue.currentIndex]);
+	}, [currentVideo, dispatch]);
 
 	return useMemo(
 		() => (
@@ -161,25 +119,19 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 							</Grid.Row>
 							<Grid.Row>
 								<Grid.Column textAlign="center" width={8}>
-									<Button
-										disabled={videoQueue.currentIndex - 1 < 0}
-										onClick={() => moveSlide(videoQueue.currentIndex - 1)}
-									>
+									<Button disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
 										Play Previous
 									</Button>
 								</Grid.Column>
 								<Grid.Column textAlign="center" width={8}>
-									<Button
-										disabled={videoQueue.currentIndex + 1 >= videoQueue.videos.length}
-										onClick={() => moveSlide(videoQueue.currentIndex + 1)}
-									>
+									<Button disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
 										Play Next
 									</Button>
 								</Grid.Column>
 							</Grid.Row>
 							<Grid.Row textAlign="right">
 								<Grid.Column>
-									<Button onClick={clearQueue}>Clear Queue</Button>
+									<Button onClick={() => dispatch(clearQueue())}>Clear Queue</Button>
 								</Grid.Column>
 							</Grid.Row>
 						</Grid>
@@ -199,7 +151,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 														<Icon name={`arrow ${showQueue ? 'up' : 'down'}`} />
 													</Grid.Column>
 													<Grid.Column width={2}>
-														{videoQueue.currentIndex + 1} / {videoQueue.videos.length}
+														{currentIndex + 1} / {videos.length}
 													</Grid.Column>
 												</Grid.Row>
 											</Grid>
@@ -216,14 +168,14 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		[
 			QueueSlide,
 			VideoPlayer,
-			moveSlide,
+			currentIndex,
+			dispatch,
 			props.onClose,
 			props.open,
 			scrollToTop,
 			showBackToTop,
 			showQueue,
-			videoQueue.currentIndex,
-			videoQueue.videos.length,
+			videos.length,
 		]
 	);
 };

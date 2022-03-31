@@ -1,26 +1,18 @@
 import { FILE_TYPE } from '../utils/enums';
 
 declare global {
-	interface Job
-		extends Pick<MusicForm, 'youtubeUrl' | 'filename' | 'artworkUrl' | 'title' | 'artist' | 'album' | 'grouping'> {
-		data: any;
+	interface Job {
 		id: string;
-		completed: boolean;
-		failed: boolean;
-	}
-
-	interface JobsResponse {
-		jobs: Job[];
-	}
-
-	interface TagsResponse {
-		artworkUrl: string;
+		youtubeUrl?: string;
+		filename?: string;
+		artworkUrl?: string;
 		title: string;
 		artist: string;
 		album: string;
-		grouping: string;
+		grouping?: string;
+		completed: boolean;
+		failed: boolean;
 	}
-
 	interface MusicFormState {
 		fileType: keyof typeof FILE_TYPE;
 		youtubeUrl: string;
@@ -33,4 +25,6 @@ declare global {
 	}
 
 	type JobsState = JobsResponse;
+
+	type PageState = PageBody;
 }
