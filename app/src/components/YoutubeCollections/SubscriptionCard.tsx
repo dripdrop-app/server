@@ -15,7 +15,9 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
 		() => (
 			<Card sx={sx} variant="outlined">
 				<Stack height="100%">
-					<CardMedia component="img" image={subscription.channelThumbnail} />
+					<Link href={channelLink} target="_blank" rel="noreferrer">
+						<CardMedia component="img" image={subscription.channelThumbnail} />
+					</Link>
 					<CardContent>
 						<Link href={channelLink} target="_blank" rel="noreferrer" underline="none">
 							{subscription.channelTitle}

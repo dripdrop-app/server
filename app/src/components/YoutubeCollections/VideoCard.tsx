@@ -86,7 +86,9 @@ const VideoCard = (props: VideoCardProps) => {
 			<Card sx={sx} variant="outlined">
 				{VideoModal}
 				<Stack height="100%">
-					<CardMedia component="img" image={video.thumbnail} />
+					<Link href="#" onClick={() => setOpenModal(true)}>
+						<CardMedia component="img" image={video.thumbnail} />
+					</Link>
 					<CardContent>
 						<Stack paddingY={2} spacing={2}>
 							<Link href="#" underline="none" onClick={() => setOpenModal(true)}>

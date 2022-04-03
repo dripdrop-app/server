@@ -11,11 +11,14 @@ import {
 	AccordionDetails,
 	Typography,
 	Button,
-	Card,
-	CardMedia,
-	Grid,
+	List,
+	ListItem,
+	ListItemAvatar,
+	Avatar,
+	ListItemText,
+	ListItemButton,
 } from '@mui/material';
-import { ArrowDownward, Close } from '@mui/icons-material';
+import { ArrowDownward, Close, Delete } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import ReactPlayer from 'react-player';
 import {
@@ -52,34 +55,26 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 	const QueueSlide = useMemo(() => {
 		if (currentVideo) {
 			return (
-				<Stack spacing={2}>
+				<List>
 					{videos.map((video, index) => (
-						<Card key={`queue-${video.id}`}>
-							<Grid container alignItems="center">
-								<Grid item md={3} sx={{ cursor: 'pointer' }}>
-									<CardMedia
-										onClick={() => dispatch(moveToIndex(index))}
-										sizes="sm"
-										component="img"
-										image={video.thumbnail}
-									/>
-								</Grid>
-								<Grid item md={8}>
-									<Box onClick={() => dispatch(moveToIndex(index))} sx={{ cursor: 'pointer' }}>
-										<Stack spacing={2} padding={2}>
-											{video.id === currentVideo.id ? <Typography variant="caption">Now Playing</Typography> : null}
-											<Typography variant="h6">{video.title}</Typography>
-											<Typography>{video.channelTitle}</Typography>
-										</Stack>
-									</Box>
-								</Grid>
-								<Grid item md={1}>
-									<Button onClick={() => dispatch(removeVideoFromQueue(video.id))}>Remove</Button>
-								</Grid>
-							</Grid>
-						</Card>
+						<ListItem
+							key={video.id}
+							secondaryAction={
+								<IconButton edge="end" onClick={() => dispatch(removeVideoFromQueue(video.id))}>
+									<Delete />
+								</IconButton>
+							}
+						>
+							<ListItemButton onClick={() => dispatch(moveToIndex(index))}>
+								<ListItemAvatar>
+									<Avatar alt={video.title} src={video.thumbnail} />
+								</ListItemAvatar>
+								<ListItemText primary={video.title} secondary={video.channelTitle} />
+								{video.id === currentVideo.id ? <ListItemText secondary="Now Playing" /> : null}
+							</ListItemButton>
+						</ListItem>
 					))}
-				</Stack>
+				</List>
 			);
 		}
 		return null;
@@ -114,27 +109,30 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 					</Stack>
 				</DialogTitle>
 				<DialogContent dividers>
-					<Box sx={{ height: '60vh' }}>{VideoPlayer}</Box>
-					<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
-						<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
-							Play Previous
-						</Button>
-						<Button
-							variant="contained"
-							disabled={currentIndex + 1 >= videos.length}
-							onClick={() => dispatch(advanceQueue())}
-						>
-							Play Next
-						</Button>
-					</Stack>
-				</DialogContent>
-				<DialogContent>
-					<Box paddingBottom={2}>
+					<Accordion expanded={!showQueue} elevation={0}>
+						<AccordionSummary>{currentVideo?.title}</AccordionSummary>
+						<AccordionDetails>
+							<Box sx={{ height: '60vh' }}>{VideoPlayer}</Box>
+							<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
+								<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
+									Play Previous
+								</Button>
+								<Button
+									variant="contained"
+									disabled={currentIndex + 1 >= videos.length}
+									onClick={() => dispatch(advanceQueue())}
+								>
+									Play Next
+								</Button>
+							</Stack>
+						</AccordionDetails>
+					</Accordion>
+					<Box paddingY={2}>
 						<Button variant="contained" onClick={() => dispatch(clearQueue())}>
 							Clear Queue
 						</Button>
 					</Box>
-					<Accordion expanded={showQueue} elevation={0} TransitionProps={{ unmountOnExit: true }}>
+					<Accordion expanded={showQueue} elevation={0}>
 						<AccordionSummary onClick={() => setShowQueue(!showQueue)} expandIcon={<ArrowDownward />}>
 							<Stack direction="row" spacing={2}>
 								<Typography>Queue</Typography>
@@ -148,7 +146,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 				</DialogContent>
 			</Dialog>
 		),
-		[QueueSlide, VideoPlayer, currentIndex, dispatch, onClose, open, showQueue, videos.length]
+		[QueueSlide, VideoPlayer, currentIndex, dispatch, onClose, open, showQueue, videos.length, currentVideo]
 	);
 };
 

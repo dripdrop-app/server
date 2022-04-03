@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import {
 	Stack,
 	Select,
@@ -11,6 +11,7 @@ import {
 	Skeleton,
 	Paper,
 	Chip,
+	Fab,
 } from '@mui/material';
 import { useSelector, useDispatch } from 'react-redux';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
@@ -19,6 +20,7 @@ import Paginator from '../Paginator';
 import VideoCard from './VideoCard';
 import VideoQueueModal from './VideoQueueModal';
 import { useCallback } from 'react';
+import { ArrowUpward } from '@mui/icons-material';
 
 interface BaseProps {
 	channelID?: string;
@@ -110,6 +112,7 @@ const CategoriesSelect = (props: CategoriesSelectProps) => {
 const VideosView = (props: BaseProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
 	const [openQueue, setOpenQueue] = useState(false);
+	const [showScrollButton, setShowScrollButton] = useState(false);
 
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
@@ -165,6 +168,19 @@ const VideosView = (props: BaseProps) => {
 		[filterState.page, filterState.perPage, totalVideos, videosStatus.isFetching]
 	);
 
+	const updateScrollButton = useCallback(() => {
+		if (window.scrollY > 0 && !showScrollButton) {
+			setShowScrollButton(true);
+		} else if (window.scrollY === 0 && showScrollButton) {
+			setShowScrollButton(false);
+		}
+	}, [showScrollButton]);
+
+	useEffect(() => {
+		window.addEventListener('scroll', updateScrollButton);
+		return () => window.removeEventListener('scroll', updateScrollButton);
+	}, [updateScrollButton]);
+
 	return useMemo(
 		() => (
 			<Stack spacing={2} paddingY={4}>
@@ -190,6 +206,19 @@ const VideosView = (props: BaseProps) => {
 						{Pager}
 					</Stack>
 				</Box>
+				<Box
+					sx={(theme) => ({
+						position: 'fixed',
+						right: '5vw',
+						bottom: '10vh',
+						[theme.breakpoints.down('md')]: { bottom: '5vh' },
+						display: showScrollButton ? 'block' : 'none',
+					})}
+				>
+					<Fab variant="circular" color="primary" onClick={() => window.scrollTo(0, 0)}>
+						<ArrowUpward />
+					</Fab>
+				</Box>
 				<Box display={{ xs: 'none', md: 'block' }}>
 					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, padding: 2 }}>
 						<Stack justifyContent="space-evenly" direction="row" spacing={4}>
@@ -211,6 +240,7 @@ const VideosView = (props: BaseProps) => {
 			videoCategoriesStatus.isFetching,
 			videos,
 			videosStatus.isFetching,
+			showScrollButton,
 		]
 	);
 };

@@ -134,21 +134,17 @@ const NavBar = () => {
 
 	return useMemo(
 		() => (
-			<Box>
-				<Box display={{ xs: 'none', md: 'block' }}>
-					<AppBar position="sticky">
-						<Toolbar>
-							<Avatar alt="Dripdrop" src={DripDrop} />
-							{NavButtons}
-						</Toolbar>
-					</AppBar>
+			<AppBar position="sticky">
+				<Box display={{ xs: 'none', md: 'contents' }}>
+					<Toolbar>
+						<Avatar alt="Dripdrop" src={DripDrop} />
+						{NavButtons}
+					</Toolbar>
 				</Box>
 				<Box display={{ md: 'none' }}>
-					<AppBar position="sticky">
-						<Toolbar disableGutters>{MobileMenu}</Toolbar>
-					</AppBar>
+					<Toolbar disableGutters>{MobileMenu}</Toolbar>
 				</Box>
-			</Box>
+			</AppBar>
 		),
 		[MobileMenu, NavButtons]
 	);
