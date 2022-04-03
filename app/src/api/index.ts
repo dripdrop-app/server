@@ -1,7 +1,7 @@
 import { BaseQueryApi } from '@reduxjs/toolkit/dist/query/baseQueryTypes';
 import { FetchBaseQueryArgs } from '@reduxjs/toolkit/dist/query/fetchBaseQuery';
 import { createApi, fetchBaseQuery, FetchArgs } from '@reduxjs/toolkit/query/react';
-import { server_domain } from '../config';
+import { buildWebsocketURL } from '../config';
 
 export const errorParser = (error: ErrorResponse | undefined) => {
 	if (error && typeof error.detail === 'string') {
@@ -55,21 +55,14 @@ const api = createApi({
 			}),
 			providesTags: ['User'],
 		}),
-		login: build.mutation<User, { email: string; password: string }>({
-			query: ({ email, password }) => ({
-				url: '/auth/login',
+		loginOrCreate: build.mutation<User | undefined, { email: string; password: string; login: boolean }>({
+			query: ({ email, password, login }) => ({
+				url: `/auth/${login ? 'login' : 'create'}`,
 				method: 'POST',
 				body: { email, password },
 			}),
-			invalidatesTags: (result) =>
-				result ? ['User', 'MusicJob', 'YoutubeSubscription', 'YoutubeVideo', 'YoutubeAuth'] : [],
-		}),
-		create: build.mutation<undefined, { email: string; password: string }>({
-			query: ({ email, password }) => ({
-				url: '/auth/create',
-				method: 'POST',
-				body: { email, password },
-			}),
+			invalidatesTags: (result, error, args) =>
+				args.login && !error ? ['User', 'MusicJob', 'YoutubeSubscription', 'YoutubeVideo', 'YoutubeAuth'] : [],
 		}),
 		logout: build.mutation<undefined, null>({
 			query: () => ({
@@ -102,7 +95,7 @@ const api = createApi({
 			query: () => '/music/jobs',
 			providesTags: (result) => (result ? result.jobs.map((job) => ({ type: 'MusicJob', id: job.id })) : []),
 			onCacheEntryAdded: async (arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) => {
-				const url = `${process.env.NODE_ENV === 'production' ? 'wss' : 'ws'}://${server_domain}/music/jobs/listen`;
+				const url = buildWebsocketURL('/music/jobs/listen');
 				const ws = new WebSocket(url);
 				try {
 					await cacheDataLoaded;
@@ -229,8 +222,7 @@ const api = createApi({
 export default api;
 export const {
 	useCheckSessionQuery,
-	useLoginMutation,
-	useCreateMutation,
+	useLoginOrCreateMutation,
 	useLogoutMutation,
 	useLazyArtworkQuery,
 	useLazyGroupingQuery,

@@ -1,131 +1,85 @@
-import { useMemo, useState } from 'react';
-import { Container, Form, Grid, Message, Segment, Tab } from 'semantic-ui-react';
-import { useCreateMutation, useLoginMutation } from '../api';
+import { useCallback, useMemo, useState } from 'react';
+import { Tabs, Tab, Grid, TextField, Stack, Container, Button, CircularProgress, Alert } from '@mui/material';
+import { useLoginOrCreateMutation } from '../api';
 import { isFetchBaseQueryError } from '../utils/helpers';
 
 const Auth = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [tab, setTab] = useState(0);
 
-	const [login, loginStatus] = useLoginMutation();
-	const [signup, signupStatus] = useCreateMutation();
+	const [loginOrCreate, loginOrCreateStatus] = useLoginOrCreateMutation();
 
 	const error = useMemo(() => {
-		let error;
-		if (signupStatus.error && loginStatus.error) {
-			error = signupStatus.startedTimeStamp < loginStatus.startedTimeStamp ? signupStatus.error : loginStatus.error;
-		} else if (signupStatus.error) {
-			if (isFetchBaseQueryError(signupStatus.error)) {
-				error = signupStatus.error.data;
+		if (loginOrCreateStatus.isError) {
+			if (isFetchBaseQueryError(loginOrCreateStatus.error)) {
+				return String(loginOrCreateStatus.error.data);
 			}
-		} else if (loginStatus.error) {
-			if (isFetchBaseQueryError(loginStatus.error)) {
-				error = loginStatus.error.data;
-			}
-		}
-		return typeof error === 'string' ? error : JSON.stringify(error);
-	}, [loginStatus.error, loginStatus.startedTimeStamp, signupStatus.error, signupStatus.startedTimeStamp]);
-
-	const Notice = useMemo(() => {
-		if (
-			signupStatus.isSuccess &&
-			(!loginStatus.startedTimeStamp || signupStatus.fulfilledTimeStamp > loginStatus.startedTimeStamp)
-		) {
-			return (
-				<Message info>
-					Account successfully created. You can login once your account has been approved by the adminstrator.
-				</Message>
-			);
-		} else if (error) {
-			return <Message error>{error}</Message>;
+			return loginOrCreateStatus.error;
 		}
 		return null;
-	}, [error, loginStatus.startedTimeStamp, signupStatus.fulfilledTimeStamp, signupStatus.isSuccess]);
+	}, [loginOrCreateStatus.error, loginOrCreateStatus.isError]);
 
-	const Panes = useMemo(() => {
-		return [
-			{
-				menuItem: 'Login',
-				render: () => (
-					<Container>
-						<Grid stackable padded>
-							<Grid.Row>
-								<Grid.Column>{Notice}</Grid.Column>
-							</Grid.Row>
-							<Grid.Row>
-								<Grid.Column>
-									<Form>
-										<Form.Input required label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-										<Form.Input
-											required
-											label="Password"
-											value={password}
-											type="password"
-											onChange={(e) => setPassword(e.target.value)}
-										/>
-										<Form.Button
-											color="blue"
-											loading={loginStatus.isLoading}
-											onClick={() => login({ email, password })}
-										>
-											Login
-										</Form.Button>
-									</Form>
-								</Grid.Column>
-							</Grid.Row>
-						</Grid>
-					</Container>
-				),
-			},
-			{
-				menuItem: 'Sign Up',
-				render: () => (
-					<Container>
-						<Grid stackable padded>
-							<Grid.Row>
-								<Grid.Column>{Notice}</Grid.Column>
-							</Grid.Row>
-							<Grid.Row>
-								<Grid.Column>
-									<Form>
-										<Form.Input required label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-										<Form.Input
-											required
-											label="Password"
-											value={password}
-											type="password"
-											onChange={(e) => setPassword(e.target.value)}
-										/>
-										<Form.Button
-											color="blue"
-											onClick={() => signup({ email, password })}
-											loading={signupStatus.isLoading}
-										>
-											Sign Up
-										</Form.Button>
-									</Form>
-								</Grid.Column>
-							</Grid.Row>
-						</Grid>
-					</Container>
-				),
-			},
-		];
-	}, [Notice, email, login, loginStatus.isLoading, password, signup, signupStatus.isLoading]);
+	const Notice = useMemo(() => {
+		if (loginOrCreateStatus.isSuccess && !loginOrCreateStatus.originalArgs?.login) {
+			return (
+				<Alert severity="info">
+					Account successfully created. You can login once your account has been approved by the adminstrator.
+				</Alert>
+			);
+		} else if (error) {
+			return <Alert severity="error">{error}</Alert>;
+		}
+		return null;
+	}, [error, loginOrCreateStatus.isSuccess, loginOrCreateStatus.originalArgs?.login]);
+
+	const submitForm = useCallback(() => {
+		if (tab === 0) {
+			loginOrCreate({ email, password, login: true });
+		} else {
+			loginOrCreate({ email, password, login: false });
+		}
+	}, [email, loginOrCreate, password, tab]);
+
+	const clearForm = useCallback(() => {
+		setEmail('');
+		setPassword('');
+	}, []);
 
 	return useMemo(
 		() => (
 			<Container>
-				<Grid stackable padded>
-					<Grid.Column>
-						<Segment>
-							<Tab panes={Panes} />
-						</Segment>
-					</Grid.Column>
+				<Grid container>
+					<Grid item xs={12}>
+						<Tabs value={tab}>
+							<Tab label="Login" onClick={() => setTab(0)} />
+							<Tab label="Sign up" onClick={() => setTab(1)} />
+						</Tabs>
+					</Grid>
+					<Grid item xs={12}>
+						<Stack spacing={2} marginY={3}>
+							{Notice}
+							<TextField value={email} onChange={(e) => setEmail(e.target.value)} label="Email" type="email" />
+							<TextField
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								label="Password"
+								type="password"
+							/>
+							<Stack direction="row" spacing={2}>
+								<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={submitForm}>
+									{loginOrCreateStatus.isLoading ? <CircularProgress sx={{ color: 'white' }} /> : 'Submit'}
+								</Button>
+								<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={clearForm}>
+									Clear
+								</Button>
+							</Stack>
+						</Stack>
+					</Grid>
 				</Grid>
 			</Container>
 		),
-		[Panes]
+		[Notice, clearForm, email, loginOrCreateStatus.isLoading, password, submitForm, tab]
 	);
 };
 

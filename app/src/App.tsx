@@ -1,6 +1,6 @@
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { Container, Grid, Loader, Sticky } from 'semantic-ui-react';
+import { Stack, CircularProgress, Container } from '@mui/material';
 import { useCheckSessionQuery } from './api';
 import NavBar from './components/NavBar';
 import Auth from './pages/Auth';
@@ -11,14 +11,13 @@ import VideosView from './components/YoutubeCollections/VideosView';
 
 const App = () => {
 	const sessionStatus = useCheckSessionQuery(null);
-	const stickyRef = useRef<HTMLDivElement | null>(null);
 
 	const Routes = useMemo(() => {
 		if (sessionStatus.isFetching) {
 			return (
-				<Container style={{ display: 'flex', alignItems: 'center' }}>
-					<Loader size="huge" active />
-				</Container>
+				<Stack padding={10} direction="row" justifyContent="center">
+					<CircularProgress />
+				</Stack>
 			);
 		} else if (sessionStatus.data && sessionStatus.isSuccess) {
 			return (
@@ -52,16 +51,10 @@ const App = () => {
 	}, [sessionStatus.data, sessionStatus.isFetching, sessionStatus.isSuccess]);
 
 	return (
-		<div ref={stickyRef}>
-			<Sticky context={stickyRef}>
-				<NavBar />
-			</Sticky>
-			<Grid stackable padded>
-				<Grid.Row>
-					<Grid.Column>{Routes}</Grid.Column>
-				</Grid.Row>
-			</Grid>
-		</div>
+		<Stack>
+			<NavBar />
+			<Container>{Routes}</Container>
+		</Stack>
 	);
 };
 

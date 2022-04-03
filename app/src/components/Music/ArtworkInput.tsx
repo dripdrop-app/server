@@ -1,11 +1,12 @@
 import { useEffect, useMemo } from 'react';
-import { Button, Container, Grid, Image, Input, Loader } from 'semantic-ui-react';
+import { Grid, TextField, Skeleton, Button } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { debounce } from 'lodash';
 import { isBase64 } from '../../utils/helpers';
 import { useLazyArtworkQuery } from '../../api';
 import { updateForm } from '../../state/music';
 import BlankImage from '../../images/blank_image.jpeg';
+import { Box } from '@mui/system';
 
 const ArtworkInput = () => {
 	const [getArtworkURL, getArtworkURLStatus] = useLazyArtworkQuery();
@@ -33,35 +34,32 @@ const ArtworkInput = () => {
 
 	return useMemo(
 		() => (
-			<Container>
-				<Grid stackable>
-					<Grid.Row verticalAlign="middle">
-						<Grid.Column width={4}>
-							{getArtworkURLStatus.isFetching ? (
-								<Loader size="big" active />
-							) : (
-								<Image size="medium" src={validArtwork ? artworkUrl : BlankImage} />
-							)}
-						</Grid.Column>
-						<Grid.Column width={9}>
-							<Input
-								fluid
-								value={artworkUrl}
-								label="Artwork URL"
-								error={!!artworkUrl && !validArtwork}
-								onChange={(e) => dispatch(updateForm({ artworkUrl: e.target.value }))}
-								disabled={isBase64(artworkUrl)}
-								loading={getArtworkURLStatus.isFetching}
-							/>
-						</Grid.Column>
-						<Grid.Column width={3}>
-							<Button color="blue" onClick={() => dispatch(updateForm({ artworkUrl: '' }))}>
-								Clear
-							</Button>
-						</Grid.Column>
-					</Grid.Row>
+			<Grid container spacing={1} alignItems="center">
+				<Grid item md={4}>
+					{!getArtworkURLStatus.isFetching ? (
+						<Box border={1} component="img" src={validArtwork ? artworkUrl : BlankImage} height="20vh" />
+					) : (
+						<Skeleton variant="rectangular" height="20vh" width="100%" />
+					)}
 				</Grid>
-			</Container>
+				<Grid item md={8}>
+					<TextField
+						fullWidth
+						label="Artwork URL"
+						value={artworkUrl}
+						error={!!artworkUrl && !validArtwork}
+						onChange={(e) => dispatch(updateForm({ artworkUrl: e.target.value }))}
+						disabled={isBase64(artworkUrl) || getArtworkURLStatus.isFetching}
+						InputProps={{
+							endAdornment: (
+								<Button variant="contained" onClick={() => dispatch(updateForm({ artworkUrl: '' }))}>
+									Clear
+								</Button>
+							),
+						}}
+					/>
+				</Grid>
+			</Grid>
 		),
 		[artworkUrl, dispatch, getArtworkURLStatus.isFetching, validArtwork]
 	);

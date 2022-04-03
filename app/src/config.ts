@@ -1,9 +1,5 @@
-let server_domain = '';
+const isProd = process.env.NODE_ENV === 'production';
+const protocol = isProd ? 'wss' : 'ws';
+const server_domain = isProd ? 'dripdrop.icu' : 'localhost:5000';
 
-if (process.env.NODE_ENV === 'production') {
-	server_domain = 'dripdrop.icu';
-} else {
-	server_domain = 'localhost:5000';
-}
-
-export { server_domain };
+export const buildWebsocketURL = (endpoint: string) => `${protocol}://${server_domain}${endpoint}`;

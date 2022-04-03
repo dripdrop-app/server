@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Container, Grid } from 'semantic-ui-react';
+import { Button, Snackbar, Stack, Alert } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLazyCreateFileJobQuery, useLazyCreateYoutubeJobQuery } from '../../api';
 import { resetForm } from '../../state/music';
@@ -12,7 +12,8 @@ interface FormActionProps {
 
 const FormActions = (props: FormActionProps) => {
 	const { fileInputRef } = props;
-	const [failedCreateJob, setFailedCreateJob] = useState(false);
+	const [openSuccess, setOpenSuccess] = useState(false);
+	const [openFailed, setOpenFailed] = useState(false);
 
 	const [createFileJob, createFileJobStatus] = useLazyCreateFileJobQuery();
 	const [createYoutubeJob, createYoutubeJobStatus] = useLazyCreateYoutubeJobQuery();
@@ -58,56 +59,68 @@ const FormActions = (props: FormActionProps) => {
 	]);
 
 	useEffect(() => {
-		if (!createYoutubeJobStatus.isUninitialized) {
-			setFailedCreateJob(!createYoutubeJobStatus.isSuccess);
-		}
 		if (createYoutubeJobStatus.isSuccess) {
+			setOpenSuccess(true);
 			dispatch(resetForm());
+		} else if (createYoutubeJobStatus.isError) {
+			setOpenFailed(true);
 		}
-	}, [createYoutubeJobStatus.isSuccess, createYoutubeJobStatus.isUninitialized, dispatch]);
+	}, [createYoutubeJobStatus.isError, createYoutubeJobStatus.isSuccess, dispatch]);
 
 	useEffect(() => {
-		if (!createFileJobStatus.isUninitialized) {
-			setFailedCreateJob(!createFileJobStatus.isSuccess);
-		}
 		if (createFileJobStatus.isSuccess) {
+			setOpenSuccess(true);
 			dispatch(resetForm());
+		} else if (createFileJobStatus.isError) {
+			setOpenFailed(true);
 		}
-	}, [dispatch, createFileJobStatus.isSuccess, createFileJobStatus.isUninitialized]);
+	}, [dispatch, createFileJobStatus.isSuccess, createFileJobStatus.isError]);
 
 	return useMemo(
 		() => (
-			<Container>
-				<Grid stackable>
-					<Grid.Row>
-						<Grid.Column width={4}>
-							<Button
-								color={failedCreateJob ? 'red' : 'blue'}
-								disabled={!valid}
-								onClick={run}
-								loading={createFileJobStatus.isFetching || createYoutubeJobStatus.isFetching || formLoading}
-							>
-								{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
-								{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
-								{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
-							</Button>
-						</Grid.Column>
-						<Grid.Column width={2}>
-							<Button onClick={() => dispatch(resetForm())} color="blue">
-								Reset
-							</Button>
-						</Grid.Column>
-					</Grid.Row>
-				</Grid>
-			</Container>
+			<Stack direction="row" justifyContent="space-evenly" flexWrap="wrap">
+				<Snackbar
+					anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
+					open={openSuccess}
+					autoHideDuration={5000}
+					onClose={() => setOpenSuccess(false)}
+				>
+					<Alert onClose={() => setOpenSuccess(false)} severity="success">
+						Successfully Created Job!
+					</Alert>
+				</Snackbar>
+				<Snackbar
+					anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
+					open={openFailed}
+					autoHideDuration={5000}
+					onClose={() => setOpenFailed(false)}
+				>
+					<Alert onClose={() => setOpenFailed(false)} severity="error">
+						Failed Created Job.
+					</Alert>
+				</Snackbar>
+				<Button
+					variant="contained"
+					disabled={!valid || createFileJobStatus.isFetching || createYoutubeJobStatus.isFetching || formLoading}
+					onClick={run}
+				>
+					{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
+					{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
+					{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
+				</Button>
+				<Button variant="contained" onClick={() => dispatch(resetForm())}>
+					Reset
+				</Button>
+			</Stack>
 		),
 		[
 			createFileJobStatus.isFetching,
 			createYoutubeJobStatus.isFetching,
 			dispatch,
-			failedCreateJob,
 			fileType,
 			formLoading,
+			openFailed,
+			openSuccess,
 			run,
 			valid,
 		]

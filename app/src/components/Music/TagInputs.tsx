@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Container, Grid, Input } from 'semantic-ui-react';
+import { Grid, TextField } from '@mui/material';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateForm } from '../../state/music';
 
@@ -24,47 +24,41 @@ const TagInputs = () => {
 
 	return useMemo(
 		() => (
-			<Container>
-				<Grid stackable>
-					<Grid.Row columns="equal">
-						<Grid.Column>
-							<Input
-								fluid
-								label="Title"
-								value={title}
-								onChange={(e) => dispatch(updateForm({ title: e.target.value }))}
-							/>
-						</Grid.Column>
-						<Grid.Column>
-							<Input
-								fluid
-								label="Artist"
-								value={artist}
-								onChange={(e) => dispatch(updateForm({ artist: e.target.value }))}
-							/>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row columns="equal">
-						<Grid.Column>
-							<Input
-								fluid
-								label="Album"
-								value={album}
-								onChange={(e) => dispatch(updateForm({ album: e.target.value }))}
-							/>
-						</Grid.Column>
-						<Grid.Column>
-							<Input
-								fluid
-								label="Grouping"
-								value={grouping}
-								onChange={(e) => dispatch(updateForm({ grouping: e.target.value }))}
-								loading={groupingLoading}
-							/>
-						</Grid.Column>
-					</Grid.Row>
+			<Grid container spacing={2} alignItems="center">
+				<Grid item>
+					<TextField
+						fullWidth
+						label="Title"
+						value={title}
+						onChange={(e) => dispatch(updateForm({ title: e.target.value }))}
+					/>
 				</Grid>
-			</Container>
+				<Grid item>
+					<TextField
+						fullWidth
+						label="Artist"
+						value={artist}
+						onChange={(e) => dispatch(updateForm({ artist: e.target.value }))}
+					/>
+				</Grid>
+				<Grid item>
+					<TextField
+						fullWidth
+						label="Album"
+						value={album}
+						onChange={(e) => dispatch(updateForm({ album: e.target.value }))}
+					/>
+				</Grid>
+				<Grid item>
+					<TextField
+						fullWidth
+						label="Grouping"
+						value={grouping}
+						onChange={(e) => dispatch(updateForm({ grouping: e.target.value }))}
+						disabled={groupingLoading}
+					/>
+				</Grid>
+			</Grid>
 		),
 		[album, artist, dispatch, grouping, groupingLoading, title]
 	);

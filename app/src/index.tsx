@@ -4,7 +4,10 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { store } from './store';
-import 'semantic-ui-css/semantic.min.css';
+import { ThemeProvider } from '@mui/material/styles';
+import { CssBaseline } from '@mui/material';
+// import './index.css';
+import Theme from './theme';
 
 // import reportWebVitals from './reportWebVitals';
 
@@ -12,7 +15,10 @@ ReactDOM.render(
 	<React.StrictMode>
 		<BrowserRouter>
 			<Provider store={store}>
-				<App />
+				<ThemeProvider theme={Theme}>
+					<CssBaseline />
+					<App />
+				</ThemeProvider>
 			</Provider>
 		</BrowserRouter>
 	</React.StrictMode>,

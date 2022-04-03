@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { Container, Grid, Header } from 'semantic-ui-react';
+import { Stack, Typography } from '@mui/material';
 import ArtworkInput from './ArtworkInput';
 import SourceSelector from './SourceSelector';
 import FormActions from './FormActions';
@@ -10,35 +10,15 @@ const MusicForm = () => {
 
 	return useMemo(
 		() => (
-			<Container>
-				<Grid stackable>
-					<Grid.Row>
-						<Grid.Column>
-							<Header as="h1">MP3 Downloader / Converter</Header>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<SourceSelector fileInputRef={fileInputRef} />
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<ArtworkInput />
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<TagInputs />
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<FormActions fileInputRef={fileInputRef} />
-						</Grid.Column>
-					</Grid.Row>
-				</Grid>
-			</Container>
+			<Stack paddingY={2}>
+				<Typography variant="h3">MP3 Downloader / Converter</Typography>
+				<Stack paddingY={5} spacing={3}>
+					<SourceSelector fileInputRef={fileInputRef} />
+					<ArtworkInput />
+					<TagInputs />
+					<FormActions fileInputRef={fileInputRef} />
+				</Stack>
+			</Stack>
 		),
 		[]
 	);

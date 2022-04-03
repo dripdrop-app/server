@@ -1,5 +1,21 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Accordion, Button, Embed, Grid, Header, Icon, Item, Modal, Sticky } from 'semantic-ui-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+	Box,
+	Dialog,
+	DialogContent,
+	DialogTitle,
+	Stack,
+	IconButton,
+	AccordionSummary,
+	Accordion,
+	AccordionDetails,
+	Typography,
+	Button,
+	Card,
+	CardMedia,
+	Grid,
+} from '@mui/material';
+import { ArrowDownward, Close } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import ReactPlayer from 'react-player';
 import {
@@ -16,11 +32,8 @@ interface VideoQueueModalProps {
 }
 
 const VideoQueueModal = (props: VideoQueueModalProps) => {
+	const { open, onClose } = props;
 	const [showQueue, setShowQueue] = useState(false);
-	const [showBackToTop, setShowBackToTop] = useState(false);
-
-	const stickyRef = useRef<HTMLDivElement | null>(null);
-	const videoRef = useRef<HTMLDivElement | null>(null);
 
 	const dispatch = useDispatch();
 	const { videos, currentVideo, currentIndex } = useSelector((state: RootState) => ({
@@ -29,44 +42,44 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		currentIndex: state.videoQueue.currentIndex,
 	}));
 
-	const scrollToTop = useCallback(() => {
-		const video = videoRef.current;
-		if (video) {
-			video.scrollIntoView();
-		}
-	}, []);
-
-	useMemo(() => {
+	useEffect(() => {
+		setShowQueue(false);
 		if (!currentVideo) {
 			props.onClose();
 		}
 	}, [currentVideo, props]);
 
 	const QueueSlide = useMemo(() => {
-		const formatDate = (date: string) => new Date(date).toLocaleDateString();
 		if (currentVideo) {
 			return (
-				<Item.Group divided link>
+				<Stack spacing={2}>
 					{videos.map((video, index) => (
-						<Item key={video.id}>
-							<Item.Image as="a" onClick={() => dispatch(moveToIndex(index))} size="small" src={video.thumbnail} />
-							<Item.Content as="a" onClick={() => dispatch(moveToIndex(index))}>
-								<Item.Header>{video.title}</Item.Header>
-								{video.id === currentVideo.id ? <Item.Meta>Now Playing</Item.Meta> : null}
-								<Item.Meta>{video.channelTitle}</Item.Meta>
-								<Item.Extra>{formatDate(video.publishedAt)}</Item.Extra>
-								<Item.Extra></Item.Extra>
-							</Item.Content>
-							<Item.Content>
-								<Item.Extra>
-									<Button floated="right" onClick={() => dispatch(removeVideoFromQueue(video.id))}>
-										Remove
-									</Button>
-								</Item.Extra>
-							</Item.Content>
-						</Item>
+						<Card key={`queue-${video.id}`}>
+							<Grid container alignItems="center">
+								<Grid item md={3} sx={{ cursor: 'pointer' }}>
+									<CardMedia
+										onClick={() => dispatch(moveToIndex(index))}
+										sizes="sm"
+										component="img"
+										image={video.thumbnail}
+									/>
+								</Grid>
+								<Grid item md={8}>
+									<Box onClick={() => dispatch(moveToIndex(index))} sx={{ cursor: 'pointer' }}>
+										<Stack spacing={2} padding={2}>
+											{video.id === currentVideo.id ? <Typography variant="caption">Now Playing</Typography> : null}
+											<Typography variant="h6">{video.title}</Typography>
+											<Typography>{video.channelTitle}</Typography>
+										</Stack>
+									</Box>
+								</Grid>
+								<Grid item md={1}>
+									<Button onClick={() => dispatch(removeVideoFromQueue(video.id))}>Remove</Button>
+								</Grid>
+							</Grid>
+						</Card>
 					))}
-				</Item.Group>
+				</Stack>
 			);
 		}
 		return null;
@@ -75,17 +88,14 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 	const VideoPlayer = useMemo(() => {
 		if (currentVideo) {
 			return (
-				<Embed
-					active
-					content={
-						<ReactPlayer
-							pip
-							url={`https://youtube.com/embed/${currentVideo.id}`}
-							controls={true}
-							playing={true}
-							onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
-						/>
-					}
+				<ReactPlayer
+					height="100%"
+					width="100%"
+					pip
+					url={`https://youtube.com/embed/${currentVideo.id}`}
+					controls={true}
+					playing={true}
+					onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
 				/>
 			);
 		}
@@ -94,89 +104,51 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 
 	return useMemo(
 		() => (
-			<Modal size="large" closeIcon open={props.open} onClose={props.onClose}>
-				<Modal.Header>Video Queue</Modal.Header>
-				<Modal.Content scrolling>
-					<div ref={videoRef}>
-						<Grid stackable>
-							<Grid.Row textAlign="right">
-								<Grid.Column>
-									<Sticky
-										styleElement={{ display: showBackToTop ? 'block' : 'none' }}
-										onUnstick={() => setShowBackToTop(false)}
-										onStick={() => setShowBackToTop(true)}
-										offset={100}
-										context={stickyRef}
-									>
-										<Button color="blue" onClick={() => scrollToTop()}>
-											Back to Top
-										</Button>
-									</Sticky>
-								</Grid.Column>
-							</Grid.Row>
-							<Grid.Row>
-								<Grid.Column>{VideoPlayer}</Grid.Column>
-							</Grid.Row>
-							<Grid.Row>
-								<Grid.Column textAlign="center" width={8}>
-									<Button disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
-										Play Previous
-									</Button>
-								</Grid.Column>
-								<Grid.Column textAlign="center" width={8}>
-									<Button disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
-										Play Next
-									</Button>
-								</Grid.Column>
-							</Grid.Row>
-							<Grid.Row textAlign="right">
-								<Grid.Column>
-									<Button onClick={() => dispatch(clearQueue())}>Clear Queue</Button>
-								</Grid.Column>
-							</Grid.Row>
-						</Grid>
-					</div>
-					<div ref={stickyRef}>
-						<Grid stackable>
-							<Grid.Row verticalAlign="middle">
-								<Grid.Column>
-									<Accordion styled fluid>
-										<Accordion.Title onClick={() => setShowQueue(!showQueue)}>
-											<Grid stackable>
-												<Grid.Row verticalAlign="middle">
-													<Grid.Column width={1}>
-														<Header>Queue</Header>
-													</Grid.Column>
-													<Grid.Column width={1}>
-														<Icon name={`arrow ${showQueue ? 'up' : 'down'}`} />
-													</Grid.Column>
-													<Grid.Column width={2}>
-														{currentIndex + 1} / {videos.length}
-													</Grid.Column>
-												</Grid.Row>
-											</Grid>
-										</Accordion.Title>
-										<Accordion.Content active={showQueue}>{QueueSlide}</Accordion.Content>
-									</Accordion>
-								</Grid.Column>
-							</Grid.Row>
-						</Grid>
-					</div>
-				</Modal.Content>
-			</Modal>
+			<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+				<DialogTitle>
+					<Stack direction="row" justifyContent="space-between" alignItems="center">
+						Video Queue
+						<IconButton onClick={onClose}>
+							<Close />
+						</IconButton>
+					</Stack>
+				</DialogTitle>
+				<DialogContent dividers>
+					<Box sx={{ height: '60vh' }}>{VideoPlayer}</Box>
+					<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
+						<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
+							Play Previous
+						</Button>
+						<Button
+							variant="contained"
+							disabled={currentIndex + 1 >= videos.length}
+							onClick={() => dispatch(advanceQueue())}
+						>
+							Play Next
+						</Button>
+					</Stack>
+				</DialogContent>
+				<DialogContent>
+					<Box paddingBottom={2}>
+						<Button variant="contained" onClick={() => dispatch(clearQueue())}>
+							Clear Queue
+						</Button>
+					</Box>
+					<Accordion expanded={showQueue} elevation={0} TransitionProps={{ unmountOnExit: true }}>
+						<AccordionSummary onClick={() => setShowQueue(!showQueue)} expandIcon={<ArrowDownward />}>
+							<Stack direction="row" spacing={2}>
+								<Typography>Queue</Typography>
+								<Typography>
+									{currentIndex + 1} / {videos.length}
+								</Typography>
+							</Stack>
+						</AccordionSummary>
+						<AccordionDetails>{QueueSlide}</AccordionDetails>
+					</Accordion>
+				</DialogContent>
+			</Dialog>
 		),
-		[
-			QueueSlide,
-			VideoPlayer,
-			currentIndex,
-			dispatch,
-			props.onClose,
-			props.open,
-			scrollToTop,
-			showBackToTop,
-			showQueue,
-			videos.length,
-		]
+		[QueueSlide, VideoPlayer, currentIndex, dispatch, onClose, open, showQueue, videos.length]
 	);
 };
 

@@ -1,7 +1,8 @@
 import { useMemo, useReducer } from 'react';
-import { Container, Loader, Grid, Icon, Pagination, Segment } from 'semantic-ui-react';
+import { Stack, Box, Grid, Paper, Skeleton } from '@mui/material';
 import { useYoutubeSubscriptionsQuery } from '../../api';
 import SubscriptionCard from './SubscriptionCard';
+import Paginator from '../Paginator';
 
 const initialState: PageState = {
 	page: 1,
@@ -25,72 +26,53 @@ const SubscriptionsView = () => {
 		if (subscriptionsStatus.data && !subscriptionsStatus.isFetching) {
 			const { subscriptions } = subscriptionsStatus.data;
 			return subscriptions.map((subscription) => (
-				<Grid.Column computer={4} tablet={8} key={subscription.id}>
-					<SubscriptionCard subscription={subscription} />
-				</Grid.Column>
+				<Grid key={`grid-${subscription.id}`} item md={2.93} sm={5.93} xs={12}>
+					<SubscriptionCard sx={{ height: '100%' }} subscription={subscription} />
+				</Grid>
 			));
 		}
-		return (
-			<Container style={{ display: 'flex', alignItems: 'center' }}>
-				<Loader size="huge" active />
-			</Container>
-		);
+		return Array(50)
+			.fill(0)
+			.map((v, i) => (
+				<Grid key={`grid-${i}`} item md={2.93} sm={5.93} xs={12}>
+					<Skeleton height="40vh" variant="rectangular" />
+				</Grid>
+			));
 	}, [subscriptionsStatus.data, subscriptionsStatus.isFetching]);
 
-	const Paginator = useMemo(() => {
-		if (!subscriptionsStatus.isFetching) {
-			return (
-				<Pagination
-					boundaryRange={0}
-					activePage={filterState.page}
-					firstItem={null}
-					lastItem={null}
-					prevItem={{ content: <Icon name="angle left" />, icon: true }}
-					nextItem={{ content: <Icon name="angle right" />, icon: true }}
-					ellipsisItem={null}
-					totalPages={Math.ceil(totalSubscriptions / filterState.perPage)}
-					onPageChange={(e, data) => {
-						if (data.activePage) {
-							filterDispatch({ page: Number(data.activePage) });
-						}
-					}}
-				/>
-			);
-		}
-		return null;
-	}, [filterState.page, filterState.perPage, subscriptionsStatus.isFetching, totalSubscriptions]);
+	const Pager = useMemo(
+		() => (
+			<Paginator
+				page={filterState.page}
+				pageCount={Math.ceil(totalSubscriptions / filterState.perPage)}
+				isFetching={subscriptionsStatus.isFetching}
+				onChange={(newPage) => filterDispatch({ page: newPage })}
+			/>
+		),
+		[filterState.page, filterState.perPage, subscriptionsStatus.isFetching, totalSubscriptions]
+	);
 
 	return useMemo(
 		() => (
-			<Container>
-				<Grid stackable padded="vertically">
-					<Grid.Row>
-						<Grid.Column>
-							<Grid stackable stretched>
-								{Subscriptions}
-							</Grid>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row only="computer tablet">
-						<Container as="div" style={{ position: 'fixed', bottom: 0 }}>
-							<Grid.Column>
-								<Segment>
-									<Grid stackable>
-										<Grid.Row>
-											<Grid.Column textAlign="center">{Paginator}</Grid.Column>
-										</Grid.Row>
-									</Grid>
-								</Segment>
-							</Grid.Column>
-						</Container>
-					</Grid.Row>
-					<Grid.Row only="mobile">
-						<Grid.Column textAlign="center"></Grid.Column>
-					</Grid.Row>
+			<Stack spacing={2} paddingY={2}>
+				<Grid container gap={1}>
+					{Subscriptions}
 				</Grid>
-			</Container>
+				<Box display={{ md: 'none' }}>
+					<Stack direction="row" justifyContent="center">
+						{Pager}
+					</Stack>
+				</Box>
+				<Box display={{ xs: 'none', md: 'block' }}>
+					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, padding: 2 }}>
+						<Stack direction="row" justifyContent="center">
+							{Pager}
+						</Stack>
+					</Paper>
+				</Box>
+			</Stack>
 		),
-		[Paginator, Subscriptions]
+		[Pager, Subscriptions]
 	);
 };
 

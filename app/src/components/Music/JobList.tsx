@@ -1,83 +1,71 @@
 import { useMemo, useState } from 'react';
-import { Container, Grid, Header, Icon, Loader, Pagination } from 'semantic-ui-react';
+import { CircularProgress, Stack, Typography, Grid } from '@mui/material';
 import { useJobsQuery } from '../../api';
 import JobCard from './JobCard';
+import Paginator from '../Paginator';
 
 const JobList = () => {
 	const [page, setPage] = useState(0);
 
 	const jobsStatus = useJobsQuery(null, { refetchOnReconnect: true });
 
+	const jobs = useMemo(
+		() => (jobsStatus.isSuccess ? jobsStatus.data.jobs : []),
+		[jobsStatus.data, jobsStatus.isSuccess]
+	);
+	const PAGE_SIZE = useMemo(() => 4, []);
+	const jobs_slice = useMemo(() => jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [PAGE_SIZE, jobs, page]);
+
 	const Jobs = useMemo(() => {
 		if (jobsStatus.isFetching) {
-			return <Loader size="big" active />;
+			return (
+				<Stack paddingY={5} direction="row" justifyContent="center">
+					<CircularProgress />
+				</Stack>
+			);
+		} else if (jobs.length === 0) {
+			return (
+				<Stack paddingY={5} direction="row" justifyContent="center">
+					No Existing Jobs
+				</Stack>
+			);
 		}
-
-		const jobs = jobsStatus.data ? jobsStatus.data.jobs : [];
-		const PAGE_SIZE = 5;
-		const jobs_slice = jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
 		return (
-			<Container>
-				<Grid stackable>
-					<Grid.Row>
-						<Grid.Column>
-							<Container>{jobs.length === 0 ? 'No Existing Jobs' : null}</Container>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<Container>
-								<Grid stackable stretched>
-									{jobs_slice.map((job) => (
-										<Grid.Column computer={4} tablet={8} key={job.id}>
-											<JobCard job={job} />
-										</Grid.Column>
-									))}
-								</Grid>
-							</Container>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row textAlign="center">
-						<Grid.Column>
-							<Pagination
-								boundaryRange={0}
-								activePage={page + 1}
-								firstItem={null}
-								lastItem={null}
-								prevItem={{ content: <Icon name="angle left" />, icon: true }}
-								nextItem={{ content: <Icon name="angle right" />, icon: true }}
-								ellipsisItem={null}
-								totalPages={Math.ceil(jobs.length / PAGE_SIZE)}
-								onPageChange={(e, data) => {
-									if (data.activePage) {
-										setPage(Number(data.activePage) - 1);
-									}
-								}}
-							/>
-						</Grid.Column>
-					</Grid.Row>
-				</Grid>
-			</Container>
+			<Grid container gap={1}>
+				{jobs_slice.map((job) => (
+					<Grid item md={2.93} sm={5.93} xs={12}>
+						<JobCard sx={{ height: '100%' }} job={job} />
+					</Grid>
+				))}
+			</Grid>
 		);
-	}, [jobsStatus.data, jobsStatus.isFetching, page]);
+	}, [jobs.length, jobsStatus.isFetching, jobs_slice]);
+
+	const JobsDisplay = useMemo(
+		() => (
+			<Stack paddingY={5} spacing={2}>
+				{Jobs}
+				<Stack direction="row" justifyContent="center">
+					<Paginator
+						page={page + 1}
+						pageCount={Math.ceil(jobs.length / PAGE_SIZE)}
+						onChange={(newPage) => setPage(newPage)}
+						isFetching={jobsStatus.isFetching}
+					/>
+				</Stack>
+			</Stack>
+		),
+		[Jobs, PAGE_SIZE, jobs.length, jobsStatus.isFetching, page]
+	);
 
 	return useMemo(
 		() => (
-			<Container>
-				<Grid padded="vertically">
-					<Grid.Row>
-						<Grid.Column>
-							<Header as="h1">Jobs</Header>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>{Jobs}</Grid.Column>
-					</Grid.Row>
-				</Grid>
-			</Container>
+			<Stack paddingY={2}>
+				<Typography variant="h3">Jobs</Typography>
+				{JobsDisplay}
+			</Stack>
 		),
-		[Jobs]
+		[JobsDisplay]
 	);
 };
 

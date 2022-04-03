@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Checkbox, CheckboxProps, Container, Grid, Input } from 'semantic-ui-react';
+import { Grid, TextField, Switch, Button } from '@mui/material';
 import { debounce } from 'lodash';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateForm } from '../../state/music';
@@ -28,8 +28,8 @@ const SourceSelector = (props: SourceSelectorProps) => {
 	const debouncedGetGrouping = useMemo(() => debounce(getGrouping, 1000), [getGrouping]);
 
 	const onFileSwitchChange = useCallback(
-		(event: React.FormEvent<HTMLInputElement>, data: CheckboxProps) => {
-			dispatch(updateForm({ fileType: data.checked ? FILE_TYPE.WAV_UPLOAD : FILE_TYPE.YOUTUBE }));
+		(event: React.FormEvent<HTMLInputElement>, checked: boolean) => {
+			dispatch(updateForm({ fileType: checked ? FILE_TYPE.WAV_UPLOAD : FILE_TYPE.YOUTUBE }));
 		},
 		[dispatch]
 	);
@@ -78,50 +78,41 @@ const SourceSelector = (props: SourceSelectorProps) => {
 
 	return useMemo(() => {
 		return (
-			<Container>
-				<Grid stackable>
-					<Grid.Row verticalAlign="middle">
-						<Grid.Column width={7}>
-							<Input
-								fluid
-								value={youtubeUrl}
-								label="Youtube URL"
-								disabled={fileType !== FILE_TYPE.YOUTUBE}
-								onChange={(e) => dispatch(updateForm({ youtubeUrl: e.target.value }))}
-								error={!validYoutubeLink && fileType === FILE_TYPE.YOUTUBE}
-								required={fileType === FILE_TYPE.YOUTUBE}
-							/>
-						</Grid.Column>
-						<Grid.Column width={2}>
-							<Checkbox
-								toggle
-								value={Number(fileType !== FILE_TYPE.YOUTUBE)}
-								checked={fileType !== FILE_TYPE.YOUTUBE}
-								onChange={onFileSwitchChange}
-							/>
-						</Grid.Column>
-						<Grid.Column width={7}>
-							<Input
-								readOnly
-								fluid
-								action={{
-									onClick: onBrowseClick,
-									disabled: fileType !== FILE_TYPE.MP3_UPLOAD && fileType !== FILE_TYPE.WAV_UPLOAD,
-									content: 'Browse',
-									color: 'blue',
-								}}
-								value={filename}
-								label="Filename"
-								onChange={onFileChange}
-								disabled={fileType !== FILE_TYPE.MP3_UPLOAD && fileType !== FILE_TYPE.WAV_UPLOAD}
-								error={filename === '' && fileType !== FILE_TYPE.YOUTUBE}
-								required={fileType !== FILE_TYPE.YOUTUBE}
-							/>
-						</Grid.Column>
-					</Grid.Row>
+			<Grid container spacing={1} alignItems="center">
+				<Grid item md={6}>
+					<TextField
+						fullWidth
+						label="Youtube URL"
+						value={youtubeUrl}
+						disabled={fileType !== FILE_TYPE.YOUTUBE}
+						onChange={(e) => dispatch(updateForm({ youtubeUrl: e.target.value }))}
+						error={!validYoutubeLink && fileType === FILE_TYPE.YOUTUBE}
+						required={fileType === FILE_TYPE.YOUTUBE}
+					/>
+				</Grid>
+				<Grid item md={1}>
+					<Switch value={fileType} checked={fileType !== FILE_TYPE.YOUTUBE} onChange={onFileSwitchChange} />
+				</Grid>
+				<Grid item md={5}>
+					<TextField
+						fullWidth
+						label="Filename"
+						value={filename}
+						disabled
+						error={filename === '' && fileType !== FILE_TYPE.YOUTUBE}
+						required={fileType !== FILE_TYPE.YOUTUBE}
+						onClick={onBrowseClick}
+						InputProps={{
+							endAdornment: (
+								<Button variant="contained" disabled={fileType === FILE_TYPE.YOUTUBE}>
+									Browse
+								</Button>
+							),
+						}}
+					/>
 				</Grid>
 				<input ref={fileInputRef} onChange={onFileChange} style={{ display: 'none' }} type="file" accept=".mp3,.wav" />
-			</Container>
+			</Grid>
 		);
 	}, [
 		dispatch,

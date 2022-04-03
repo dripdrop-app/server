@@ -1,10 +1,24 @@
 import { useMemo, useReducer, useState } from 'react';
-import { Button, Container, Dropdown, Grid, Icon, Loader, Pagination, Segment } from 'semantic-ui-react';
+import {
+	Stack,
+	Select,
+	MenuItem,
+	InputLabel,
+	FormControl,
+	Button,
+	Box,
+	Grid,
+	Skeleton,
+	Paper,
+	Chip,
+} from '@mui/material';
 import { useSelector, useDispatch } from 'react-redux';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
 import { addManyVideosToQueue } from '../../state/youtubeCollections';
+import Paginator from '../Paginator';
 import VideoCard from './VideoCard';
 import VideoQueueModal from './VideoQueueModal';
+import { useCallback } from 'react';
 
 interface BaseProps {
 	channelID?: string;
@@ -35,6 +49,7 @@ interface CategoriesSelectProps {
 }
 
 const CategoriesSelect = (props: CategoriesSelectProps) => {
+	// NOTE: USE MODAL SELECT ON MOBILE
 	const CategoryList = useMemo(() => {
 		return [...props.categories]
 			.sort((a, b) => (a.name > b.name ? 1 : -1))
@@ -45,33 +60,50 @@ const CategoriesSelect = (props: CategoriesSelectProps) => {
 			}));
 	}, [props.categories]);
 
+	const getCategory = useCallback(
+		(categoryId: number) => {
+			return CategoryList.find((category) => category.value === categoryId);
+		},
+		[CategoryList]
+	);
+
 	return useMemo(
 		() => (
-			<Grid stackable>
-				<Grid.Row verticalAlign="middle">
-					<Grid.Column width={14}>
-						<Dropdown
-							value={props.selectedCategories}
-							loading={props.categoriesLoading || props.videosLoading}
-							placeholder="Categories"
-							multiple
-							selection
-							options={CategoryList}
-							onChange={(e, data) => {
-								if (data.value) {
-									const newValue = data.value as number[];
-									props.setSelectedCategories(newValue);
+			<FormControl fullWidth>
+				<InputLabel id="categories">Categories</InputLabel>
+				<Select
+					labelId="categories"
+					label="Categories"
+					renderValue={(selected) => (
+						<Stack direction="row" flexWrap="wrap" spacing={1}>
+							{selected.map((s) => {
+								const category = getCategory(s);
+								if (category) {
+									return <Chip key={s} label={category.text} />;
 								}
-							}}
-						/>
-					</Grid.Column>
-					<Grid.Column width={2}>
-						<Button onClick={() => props.setSelectedCategories([])}>Reset</Button>
-					</Grid.Column>
-				</Grid.Row>
-			</Grid>
+								return null;
+							})}
+						</Stack>
+					)}
+					multiple
+					value={props.selectedCategories}
+					onChange={(e) => {
+						if (typeof e.target.value === 'string') {
+							props.setSelectedCategories(e.target.value.split(',').map(parseInt));
+						} else {
+							props.setSelectedCategories(e.target.value);
+						}
+					}}
+				>
+					{CategoryList.map((category) => (
+						<MenuItem key={category.key} value={category.value}>
+							{category.text}
+						</MenuItem>
+					))}
+				</Select>
+			</FormControl>
 		),
-		[CategoryList, props]
+		[CategoryList, getCategory, props]
 	);
 };
 
@@ -97,110 +129,80 @@ const VideosView = (props: BaseProps) => {
 	const Videos = useMemo(() => {
 		if (!videosStatus.isFetching) {
 			return videos.map((video) => (
-				<Grid.Column computer={4} tablet={8} key={video.id}>
-					<VideoCard video={video} />
-				</Grid.Column>
+				<Grid key={`grid-${video.id}`} item md={2.93} sm={5.93} xs={12}>
+					<VideoCard sx={{ height: '100%' }} video={video} />
+				</Grid>
 			));
 		}
-		return (
-			<Container style={{ display: 'flex', alignItems: 'center' }}>
-				<Loader size="huge" active />
-			</Container>
-		);
+		return Array(50)
+			.fill(0)
+			.map((v, i) => (
+				<Grid key={`grid-${i}`} item md={2.93} sm={5.93} xs={12}>
+					<Skeleton height="40vh" variant="rectangular" />
+				</Grid>
+			));
 	}, [videos, videosStatus.isFetching]);
-
-	const Paginator = useMemo(() => {
-		if (!videosStatus.isFetching) {
-			return (
-				<Pagination
-					boundaryRange={0}
-					activePage={filterState.page}
-					firstItem={{ content: <Icon name="angle double left" />, icon: true }}
-					lastItem={{ content: <Icon name="angle double right" />, icon: true }}
-					prevItem={{ content: <Icon name="angle left" />, icon: true }}
-					nextItem={{ content: <Icon name="angle right" />, icon: true }}
-					ellipsisItem={null}
-					totalPages={Math.ceil(totalVideos / filterState.perPage)}
-					onPageChange={(e, data) => {
-						if (data.activePage) {
-							filterDispatch({ page: Number(data.activePage) });
-						}
-					}}
-				/>
-			);
-		}
-	}, [filterState.page, filterState.perPage, totalVideos, videosStatus.isFetching]);
 
 	const OpenQueueButton = useMemo(() => {
 		const emptyQueue = videoQueue.videos.length === 0;
 		const text = emptyQueue ? 'Queue Empty' : 'Open Queue';
 		return (
-			<Button disabled={emptyQueue} onClick={() => setOpenQueue(true)}>
+			<Button variant="contained" disabled={emptyQueue} onClick={() => setOpenQueue(true)}>
 				{text}
 			</Button>
 		);
 	}, [videoQueue.videos.length]);
 
+	const Pager = useMemo(
+		() => (
+			<Paginator
+				page={filterState.page}
+				pageCount={Math.ceil(totalVideos / filterState.perPage)}
+				isFetching={videosStatus.isFetching}
+				onChange={(newPage) => filterDispatch({ page: newPage })}
+			/>
+		),
+		[filterState.page, filterState.perPage, totalVideos, videosStatus.isFetching]
+	);
+
 	return useMemo(
 		() => (
-			<Container>
+			<Stack spacing={2} paddingY={4}>
 				<VideoQueueModal open={openQueue} onClose={() => setOpenQueue(false)} />
-				<Grid stackable padded="vertically">
-					<Grid.Row only="mobile">
-						<Grid.Column textAlign="center">
-							<Segment>{OpenQueueButton}</Segment>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column textAlign="right">
-							<Button onClick={() => dispatch(addManyVideosToQueue(videos))}>Enqueue All</Button>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<CategoriesSelect
-								categories={categories}
-								categoriesLoading={videoCategoriesStatus.isFetching}
-								videosLoading={videosStatus.isFetching}
-								selectedCategories={filterState.selectedCategories}
-								setSelectedCategories={(categories) => filterDispatch({ selectedCategories: categories })}
-							/>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>
-							<Grid stackable stretched>
-								{Videos}
-							</Grid>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row only="computer tablet">
-						<Container as="div" style={{ position: 'fixed', bottom: 0 }}>
-							<Grid.Column>
-								<Segment>
-									<Grid stackable>
-										<Grid.Row>
-											<Grid.Column as="div" textAlign="center" width={8}>
-												{OpenQueueButton}
-											</Grid.Column>
-											<Grid.Column textAlign="center" width={8}>
-												{Paginator}
-											</Grid.Column>
-										</Grid.Row>
-									</Grid>
-								</Segment>
-							</Grid.Column>
-						</Container>
-					</Grid.Row>
-					<Grid.Row only="mobile">
-						<Grid.Column textAlign="center">{Paginator}</Grid.Column>
-					</Grid.Row>
+				<CategoriesSelect
+					categories={categories}
+					categoriesLoading={videoCategoriesStatus.isFetching}
+					videosLoading={videosStatus.isFetching}
+					selectedCategories={filterState.selectedCategories}
+					setSelectedCategories={(categories) => filterDispatch({ selectedCategories: categories })}
+				/>
+				<Stack direction="row" justifyContent="space-between">
+					<Box display={{ md: 'none' }}>{OpenQueueButton}</Box>
+					<Button variant="contained" onClick={() => dispatch(addManyVideosToQueue(videos))}>
+						Enqueue All
+					</Button>
+				</Stack>
+				<Grid container gap={1}>
+					{Videos}
 				</Grid>
-			</Container>
+				<Box display={{ md: 'none' }}>
+					<Stack direction="row" justifyContent="center">
+						{Pager}
+					</Stack>
+				</Box>
+				<Box display={{ xs: 'none', md: 'block' }}>
+					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, padding: 2 }}>
+						<Stack justifyContent="space-evenly" direction="row" spacing={4}>
+							{OpenQueueButton}
+							{Pager}
+						</Stack>
+					</Paper>
+				</Box>
+			</Stack>
 		),
 		[
 			OpenQueueButton,
-			Paginator,
+			Pager,
 			Videos,
 			categories,
 			dispatch,

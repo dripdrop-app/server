@@ -1,20 +1,38 @@
-import { useCallback, useMemo } from 'react';
-import { Button, Card, Container, Grid, Image, List } from 'semantic-ui-react';
+import { useCallback, useEffect, useMemo } from 'react';
+import {
+	Card,
+	Button,
+	ButtonGroup,
+	CardContent,
+	Stack,
+	CardMedia,
+	SxProps,
+	Theme,
+	List,
+	ListItem,
+	ListItemText,
+	CardActions,
+	Box,
+	CircularProgress,
+} from '@mui/material';
+import { Error } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
 import { useRemoveJobMutation, useLazyDownloadJobQuery } from '../../api';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
 import { updateForm } from '../../state/music';
+import { CopyAll, Delete, Download } from '@mui/icons-material';
 
 interface JobCardProps {
 	job: Job;
+	sx?: SxProps<Theme>;
 }
 
 const JobCard = (props: JobCardProps) => {
-	const { job } = props;
+	const { job, sx } = props;
 
 	const [removeJob] = useRemoveJobMutation();
-	const [downloadJob] = useLazyDownloadJobQuery();
+	const [downloadJob, downloadJobStatus] = useLazyDownloadJobQuery();
 
 	const dispatch = useDispatch();
 
@@ -31,10 +49,8 @@ const JobCard = (props: JobCardProps) => {
 		);
 	}, [dispatch, job]);
 
-	const download = useCallback(async () => {
-		const result = await downloadJob(job.id);
-		if (result.isSuccess) {
-			const response = result.data;
+	useEffect(() => {
+		const handleDownload = async (response: Response) => {
 			const data = await response.blob();
 			const contentDisposition = response.headers.get('content-disposition') || '';
 			const groups = contentDisposition.match(/filename\*?=(?:utf-8''|")(.+)(?:"|;)?/);
@@ -44,81 +60,110 @@ const JobCard = (props: JobCardProps) => {
 			a.href = url;
 			a.download = filename;
 			a.click();
+		};
+		if (downloadJobStatus.isSuccess) {
+			handleDownload(downloadJobStatus.data);
 		}
-	}, [downloadJob, job.id]);
+	}, [downloadJobStatus.data, downloadJobStatus.isSuccess]);
 
-	return useMemo(() => {
-		if (!job) {
-			return null;
+	const DownloadButton = useMemo(() => {
+		if (!job.completed && !job.failed) {
+			return (
+				<Button>
+					<CircularProgress />
+				</Button>
+			);
+		} else if (!job.completed) {
+			return (
+				<Button color="error" disabled>
+					<Error />
+				</Button>
+			);
 		}
 		return (
-			<Card fluid>
-				<Image fluid src={job.artworkUrl || BlankImage} />
-				<Card.Content>
-					<Card.Description textAlign="left">
-						<List>
-							<List.Item>
-								<List.Header>ID</List.Header>
-								{job.id}
-							</List.Item>
-							<List.Item>
-								<List.Header>Source</List.Header>
-								{job.filename || job.youtubeUrl}
-							</List.Item>
-						</List>
-					</Card.Description>
-				</Card.Content>
-				<Card.Content>
-					<Card.Description textAlign="center">
-						<List horizontal>
-							<List.Item>
-								<List.Header>Title</List.Header>
-								{job.title}
-							</List.Item>
-							<List.Item>
-								<List.Header>Artist</List.Header>
-								{job.artist}
-							</List.Item>
-							<List.Item>
-								<List.Header>Album</List.Header>
-								{job.album}
-							</List.Item>
-							<List.Item>
-								<List.Header>Grouping</List.Header>
-								{job.grouping}
-							</List.Item>
-						</List>
-					</Card.Description>
-				</Card.Content>
-				<Card.Content extra>
-					<Container>
-						<Grid container stackable>
-							<Grid.Row columns="equal">
-								<Grid.Column>
-									{!job.failed ? (
-										<Button
-											fluid
-											loading={!job.completed}
-											icon="cloud download"
-											color="green"
-											onClick={() => download()}
-										/>
-									) : null}
-									{job.failed ? <Button fluid icon="x" color="red" /> : null}
-								</Grid.Column>
-								<Grid.Column>
-									<Button icon="copy" fluid onClick={() => copyJob()} />
-								</Grid.Column>
-								<Grid.Column>
-									<Button icon="trash" color="red" fluid onClick={() => removeJob(job.id)} />
-								</Grid.Column>
-							</Grid.Row>
-						</Grid>
-					</Container>
-				</Card.Content>
-			</Card>
+			<Button color="success" onClick={() => downloadJob(job.id)}>
+				<Download />
+			</Button>
 		);
-	}, [copyJob, download, job, removeJob]);
+	}, [downloadJob, job.completed, job.failed, job.id]);
+
+	return useMemo(
+		() => (
+			<Card sx={sx}>
+				<Stack height="100%" alignItems="center">
+					<CardMedia component="img" image={job.artworkUrl || BlankImage} />
+					<CardContent>
+						<List>
+							<ListItem>
+								<Stack>
+									<ListItemText secondary="ID" />
+									<ListItemText primary={job.id} />
+								</Stack>
+							</ListItem>
+							<ListItem>
+								<Stack>
+									<ListItemText secondary="Source" />
+									<ListItemText primary={job.filename || job.youtubeUrl} />
+								</Stack>
+							</ListItem>
+							<ListItem>
+								<Stack>
+									<ListItemText secondary="Title" />
+									<ListItemText primary={job.title} />
+								</Stack>
+							</ListItem>
+							<ListItem>
+								<Stack>
+									<ListItemText secondary="Artist" />
+									<ListItemText primary={job.artist} />
+								</Stack>
+							</ListItem>
+							<ListItem>
+								<Stack>
+									<ListItemText secondary="Album" />
+									<ListItemText primary={job.album} />
+								</Stack>
+							</ListItem>
+							<ListItem>
+								<Stack>
+									<ListItemText secondary="Grouping" />
+									<ListItemText primary={job.grouping || 'None'} />
+								</Stack>
+							</ListItem>
+						</List>
+					</CardContent>
+					<Box flex={1} />
+					<CardActions>
+						<Stack direction="row" justifyContent="center">
+							<ButtonGroup>
+								{DownloadButton}
+								<Button onClick={() => copyJob()}>
+									<CopyAll />
+								</Button>
+								<Button color="error" onClick={() => removeJob(job.id)}>
+									<Delete />
+								</Button>
+							</ButtonGroup>
+						</Stack>
+					</CardActions>
+				</Stack>
+			</Card>
+		),
+		[
+			DownloadButton,
+			copyJob,
+			job.album,
+			job.artist,
+			job.artworkUrl,
+			job.filename,
+			job.grouping,
+			job.id,
+			job.title,
+			job.youtubeUrl,
+			removeJob,
+			sx,
+		]
+	);
 };
 
 export default JobCard;

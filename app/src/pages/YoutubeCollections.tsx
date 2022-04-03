@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Button, Container, Grid, Header, Loader } from 'semantic-ui-react';
+import { CircularProgress, Container, Stack, Typography, Button } from '@mui/material';
 import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../api';
 
 interface YoutubeCollectionsProps {
@@ -21,40 +21,26 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	const Content = useMemo(() => {
 		if (youtubeAuthStatus.isFetching) {
 			return (
-				<Container style={{ display: 'flex', alignItems: 'center' }}>
-					<Loader size="huge" active />
-				</Container>
+				<Stack padding={10} direction="row" justifyContent="center">
+					<CircularProgress />
+				</Stack>
 			);
 		} else if (youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.email) {
 			return (
-				<Container>
-					<Grid divided="vertically">
-						<Grid.Row>
-							<Grid.Column>
-								<Header>{props.title}</Header>
-							</Grid.Column>
-						</Grid.Row>
-						<Grid.Row>
-							<Grid.Column>{props.children}</Grid.Column>
-						</Grid.Row>
-					</Grid>
-				</Container>
+				<Stack paddingY={2}>
+					<Typography variant="h6">{props.title}</Typography>
+					{props.children}
+				</Stack>
 			);
 		}
+		const buttonText =
+			youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.refresh ? 'Reconnect Google Account' : 'Log in with Google';
 		return (
-			<Container>
-				<Grid>
-					<Grid.Row>
-						<Grid.Column textAlign="center">
-							<Button color="blue" loading={getOAuthLinkStatus.isFetching} onClick={() => getOAuthLink(null)}>
-								{youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.refresh
-									? 'Reconnect Google Account'
-									: 'Log in with Google'}
-							</Button>
-						</Grid.Column>
-					</Grid.Row>
-				</Grid>
-			</Container>
+			<Stack padding={10} direction="row" justifyContent="center">
+				<Button variant="contained" onClick={() => getOAuthLink(null)}>
+					{getOAuthLinkStatus.isFetching ? <CircularProgress /> : buttonText}
+				</Button>
+			</Stack>
 		);
 	}, [
 		youtubeAuthStatus.isFetching,
@@ -69,16 +55,10 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	return useMemo(
 		() => (
 			<Container>
-				<Grid stackable padded>
-					<Grid.Row>
-						<Grid.Column>
-							<Header as="h1">Youtube Collections</Header>
-						</Grid.Column>
-					</Grid.Row>
-					<Grid.Row>
-						<Grid.Column>{Content}</Grid.Column>
-					</Grid.Row>
-				</Grid>
+				<Stack paddingY={2}>
+					<Typography variant="h3">Youtube Collections</Typography>
+					{Content}
+				</Stack>
 			</Container>
 		),
 		[Content]
