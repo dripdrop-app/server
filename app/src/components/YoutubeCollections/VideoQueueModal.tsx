@@ -17,6 +17,8 @@ import {
 	Avatar,
 	ListItemText,
 	ListItemButton,
+	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 import { ArrowDownward, Close, Delete } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
@@ -37,6 +39,9 @@ interface VideoQueueModalProps {
 const VideoQueueModal = (props: VideoQueueModalProps) => {
 	const { open, onClose } = props;
 	const [showQueue, setShowQueue] = useState(false);
+
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
 	const dispatch = useDispatch();
 	const { videos, currentVideo, currentIndex } = useSelector((state: RootState) => ({
@@ -99,7 +104,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 
 	return useMemo(
 		() => (
-			<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+			<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
 				<DialogTitle>
 					<Stack direction="row" justifyContent="space-between" alignItems="center">
 						Video Queue
@@ -146,7 +151,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 				</DialogContent>
 			</Dialog>
 		),
-		[QueueSlide, VideoPlayer, currentIndex, dispatch, onClose, open, showQueue, videos.length, currentVideo]
+		[open, onClose, isMobile, showQueue, currentVideo, VideoPlayer, currentIndex, videos.length, QueueSlide, dispatch]
 	);
 };
 

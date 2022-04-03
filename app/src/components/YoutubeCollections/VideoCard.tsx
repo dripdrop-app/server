@@ -14,6 +14,8 @@ import {
 	IconButton,
 	SxProps,
 	Theme,
+	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
@@ -28,6 +30,9 @@ interface VideoCardProps {
 const VideoCard = (props: VideoCardProps) => {
 	const { video, sx } = props;
 	const [openModal, setOpenModal] = useState(false);
+
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
 	const dispatch = useDispatch();
 	const inQueue = useSelector((state: RootState) => {
@@ -52,8 +57,8 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const VideoModal = useMemo(
 		() => (
-			<Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="lg" fullWidth>
-				<Paper>
+			<Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="lg" fullWidth fullScreen={isMobile}>
+				<Paper sx={{ height: '100%' }}>
 					<DialogTitle>
 						<Stack direction="row" justifyContent="space-between" alignItems="center">
 							{video.title}
@@ -78,7 +83,7 @@ const VideoCard = (props: VideoCardProps) => {
 				</Paper>
 			</Dialog>
 		),
-		[VideoInfo, openModal, video.id, video.title]
+		[VideoInfo, openModal, video.id, video.title, isMobile]
 	);
 
 	return useMemo(

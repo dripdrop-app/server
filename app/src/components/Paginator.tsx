@@ -1,4 +1,4 @@
-import { Box, Pagination } from '@mui/material';
+import { Pagination, useTheme, useMediaQuery } from '@mui/material';
 
 interface PaginatorProps {
 	isFetching: boolean;
@@ -9,16 +9,18 @@ interface PaginatorProps {
 
 const Paginator = (props: PaginatorProps) => {
 	const { isFetching, page, pageCount, onChange } = props;
+
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
 	if (!isFetching) {
 		return (
-			<Box>
-				<Box display={{ md: 'none' }}>
-					<Pagination siblingCount={0} page={page} count={pageCount} onChange={(e, data) => onChange(data)} />
-				</Box>
-				<Box display={{ xs: 'none', md: 'block' }}>
-					<Pagination page={page} count={pageCount} onChange={(e, data) => onChange(data)} />
-				</Box>
-			</Box>
+			<Pagination
+				siblingCount={isMobile ? 0 : undefined}
+				page={page}
+				count={pageCount}
+				onChange={(e, data) => onChange(data)}
+			/>
 		);
 	}
 	return null;
