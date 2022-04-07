@@ -13,7 +13,7 @@ from server.models.main import db
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %HL%M:%S",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
 app = FastAPI(
