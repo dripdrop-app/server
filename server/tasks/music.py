@@ -2,6 +2,7 @@ import asyncio
 import base64
 import io
 import json
+import logging
 import mutagen
 import os
 import re
@@ -83,7 +84,7 @@ async def run_job(job_id: str, file, db: Database = None):
                             mutagen.id3.APIC(mimetype="image/png", data=imageData)
                         )
                     except Exception:
-                        print(traceback.format_exc())
+                        logging.exception(traceback.format_exc())
 
             audio_file.tags.add(mutagen.id3.TIT2(text=title))
             audio_file.tags.add(mutagen.id3.TPE1(text=artist))
@@ -159,7 +160,7 @@ def read_tags(file: Union[str, bytes, None], filename):
         )
     except Exception:
         subprocess.run(["rm", "-rf", tag_path])
-        print(traceback.format_exc())
+        logging.exception(traceback.format_exc())
         return MusicResponses.Tags(
             title=None, artist=None, album=None, grouping=None, artwork_url=None
         )

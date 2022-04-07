@@ -1,3 +1,4 @@
+import logging
 import yt_dlp
 
 
@@ -6,10 +7,11 @@ class Logger(object):
         pass
 
     def warning(self, msg):
+        logging.warn(msg)
         pass
 
     def error(self, msg):
-        print(msg)
+        logging.error(msg)
         return
 
 

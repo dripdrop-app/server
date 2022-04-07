@@ -126,7 +126,7 @@ async def update_channels(channels: list, db: Database = None):
 
     channels_info = await google_api.get_channels_info(channels)
     await asyncio.gather(
-        [update_channel(channel_info) for channel_info in channels_info]
+        *[update_channel(channel_info) for channel_info in channels_info]
     )
 
 

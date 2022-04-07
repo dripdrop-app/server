@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
@@ -20,7 +21,7 @@ def cron_job(cron_string: str, function: Callable, args=(), kwargs={}):
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
     next_run_time = cron.get_current(ret_type=datetime)
-    print(f"Scheduling {function} to run at {next_run_time}")
+    logging.info(f"Scheduling {function} to run at {next_run_time}")
     job = queue.enqueue_at(
         next_run_time,
         function,
@@ -42,7 +43,7 @@ async def cron_start():
             await redis.set("crons_added", 1)
 
             for job_id in scheduled_registry.get_job_ids():
-                print(f"Removing Job: {job_id}")
+                logging.info(f"Removing Job: {job_id}")
                 scheduled_registry.remove(job_id, delete_job=True)
 
             cron_job(

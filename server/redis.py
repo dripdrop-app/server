@@ -1,5 +1,6 @@
 import aioredis
 import asyncio
+import logging
 import traceback
 from asyncio import Task
 from enum import Enum
@@ -32,7 +33,7 @@ async def create_websocket_redis_channel_listener(
     except ConnectionClosedOK:
         await websocket.close()
     except Exception:
-        print(traceback.format_exc())
+        logging.exception(traceback.format_exc())
     finally:
         if task:
             task.cancel()

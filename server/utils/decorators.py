@@ -1,3 +1,4 @@
+import logging
 import traceback
 from asgiref.sync import sync_to_async
 from functools import wraps
@@ -14,7 +15,7 @@ def exception_handler(function):
                 function = sync_to_async(function)
             return await function(*args, **kwargs)
         except Exception:
-            print(traceback.format_exc())
+            logging.error(traceback.format_exc())
             return None
 
     return wrapper
