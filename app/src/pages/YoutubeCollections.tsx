@@ -12,8 +12,8 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	const [getOAuthLink, getOAuthLinkStatus] = useLazyGetOauthLinkQuery();
 
 	useEffect(() => {
-		if (getOAuthLinkStatus.isSuccess) {
-			const oAuthURL = getOAuthLinkStatus.data;
+		if (getOAuthLinkStatus.isSuccess && getOAuthLinkStatus.currentData) {
+			const oAuthURL = getOAuthLinkStatus.currentData;
 			window.location.href = oAuthURL;
 		}
 	}, [getOAuthLinkStatus]);
@@ -25,7 +25,7 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 					<CircularProgress />
 				</Stack>
 			);
-		} else if (youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.email) {
+		} else if (youtubeAuthStatus.isSuccess && youtubeAuthStatus.currentData.email) {
 			return (
 				<Stack paddingY={2}>
 					<Typography variant="h6">{props.title}</Typography>
@@ -34,7 +34,9 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 			);
 		}
 		const buttonText =
-			youtubeAuthStatus.isSuccess && youtubeAuthStatus.data.refresh ? 'Reconnect Google Account' : 'Log in with Google';
+			youtubeAuthStatus.isSuccess && youtubeAuthStatus.currentData.refresh
+				? 'Reconnect Google Account'
+				: 'Log in with Google';
 		return (
 			<Stack padding={10} direction="row" justifyContent="center">
 				<Button variant="contained" onClick={() => getOAuthLink(null)}>
@@ -45,7 +47,7 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 	}, [
 		youtubeAuthStatus.isFetching,
 		youtubeAuthStatus.isSuccess,
-		youtubeAuthStatus.data,
+		youtubeAuthStatus.currentData,
 		getOAuthLinkStatus.isFetching,
 		props.title,
 		props.children,

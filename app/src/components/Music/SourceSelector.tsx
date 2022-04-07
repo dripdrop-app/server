@@ -63,18 +63,18 @@ const SourceSelector = (props: SourceSelectorProps) => {
 	}, [debouncedGetGrouping, grouping, youtubeUrl]);
 
 	useEffect(() => {
-		if (getFileTagsStatus.isSuccess) {
-			const { title, artist, album, grouping, artworkUrl } = getFileTagsStatus.data;
+		if (getFileTagsStatus.isSuccess && getFileTagsStatus.currentData) {
+			const { title, artist, album, grouping, artworkUrl } = getFileTagsStatus.currentData;
 			dispatch(updateForm({ title, artist, album, grouping, artworkUrl }));
 		}
-	}, [dispatch, getFileTagsStatus.data, getFileTagsStatus.isSuccess]);
+	}, [dispatch, getFileTagsStatus.currentData, getFileTagsStatus.isSuccess]);
 
 	useEffect(() => {
-		if (getGroupingStatus.isSuccess) {
-			const { grouping } = getGroupingStatus.data;
+		if (getGroupingStatus.isSuccess && getGroupingStatus.currentData) {
+			const { grouping } = getGroupingStatus.currentData;
 			dispatch(updateForm({ grouping }));
 		}
-	}, [dispatch, getGroupingStatus.data, getGroupingStatus.isSuccess]);
+	}, [dispatch, getGroupingStatus.currentData, getGroupingStatus.isSuccess]);
 
 	return useMemo(() => {
 		return (

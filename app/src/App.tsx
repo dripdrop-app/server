@@ -19,7 +19,7 @@ const App = () => {
 					<CircularProgress />
 				</Stack>
 			);
-		} else if (sessionStatus.data && sessionStatus.isSuccess) {
+		} else if (sessionStatus.currentData && sessionStatus.isSuccess) {
 			return (
 				<Switch>
 					<Route
@@ -48,7 +48,7 @@ const App = () => {
 				<Route path="/" render={() => <Auth />} />
 			</Switch>
 		);
-	}, [sessionStatus.data, sessionStatus.isFetching, sessionStatus.isSuccess]);
+	}, [sessionStatus.currentData, sessionStatus.isFetching, sessionStatus.isSuccess]);
 
 	return (
 		<Stack>

@@ -44,7 +44,6 @@ const reducer = (state = initialState, action: Partial<FilterState>) => {
 
 interface CategoriesSelectProps {
 	categoriesLoading: boolean;
-	videosLoading: boolean;
 	categories: YoutubeVideoCategory[];
 	selectedCategories: number[];
 	setSelectedCategories: (categories: number[]) => void;
@@ -117,11 +116,20 @@ const VideosView = (props: BaseProps) => {
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
 
-	const videos = useMemo(() => (videosStatus.data ? videosStatus.data.videos : []), [videosStatus.data]);
-	const totalVideos = useMemo(() => (videosStatus.data ? videosStatus.data.totalVideos : 0), [videosStatus.data]);
+	const videos = useMemo(
+		() => (videosStatus.isSuccess && videosStatus.currentData ? videosStatus.currentData.videos : []),
+		[videosStatus.currentData, videosStatus.isSuccess]
+	);
+	const totalVideos = useMemo(
+		() => (videosStatus.isSuccess && videosStatus.currentData ? videosStatus.currentData.totalVideos : 0),
+		[videosStatus.currentData, videosStatus.isSuccess]
+	);
 	const categories = useMemo(
-		() => (videoCategoriesStatus.data ? videoCategoriesStatus.data.categories : []),
-		[videoCategoriesStatus.data]
+		() =>
+			videoCategoriesStatus.isSuccess && videoCategoriesStatus.currentData
+				? videoCategoriesStatus.currentData.categories
+				: [],
+		[videoCategoriesStatus.currentData, videoCategoriesStatus.isSuccess]
 	);
 
 	const dispatch = useDispatch();
@@ -188,7 +196,6 @@ const VideosView = (props: BaseProps) => {
 				<CategoriesSelect
 					categories={categories}
 					categoriesLoading={videoCategoriesStatus.isFetching}
-					videosLoading={videosStatus.isFetching}
 					selectedCategories={filterState.selectedCategories}
 					setSelectedCategories={(categories) => filterDispatch({ selectedCategories: categories })}
 				/>
@@ -239,7 +246,6 @@ const VideosView = (props: BaseProps) => {
 			openQueue,
 			videoCategoriesStatus.isFetching,
 			videos,
-			videosStatus.isFetching,
 			showScrollButton,
 		]
 	);

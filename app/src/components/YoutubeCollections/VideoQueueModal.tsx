@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import {
 	Box,
 	Dialog,
@@ -41,7 +42,8 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 	const [showQueue, setShowQueue] = useState(false);
 
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
+	const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
 	const dispatch = useDispatch();
 	const { videos, currentVideo, currentIndex } = useSelector((state: RootState) => ({
@@ -61,29 +63,35 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		if (currentVideo) {
 			return (
 				<List>
-					{videos.map((video, index) => (
-						<ListItem
-							key={video.id}
-							secondaryAction={
-								<IconButton edge="end" onClick={() => dispatch(removeVideoFromQueue(video.id))}>
-									<Delete />
-								</IconButton>
-							}
-						>
-							<ListItemButton onClick={() => dispatch(moveToIndex(index))}>
-								<ListItemAvatar>
-									<Avatar alt={video.title} src={video.thumbnail} />
-								</ListItemAvatar>
-								<ListItemText primary={video.title} secondary={video.channelTitle} />
-								{video.id === currentVideo.id ? <ListItemText secondary="Now Playing" /> : null}
-							</ListItemButton>
-						</ListItem>
-					))}
+					<Virtuoso
+						style={{ height: '60vh' }}
+						data={videos}
+						itemContent={(index, video) => (
+							<ListItem
+								key={video.id}
+								secondaryAction={
+									<IconButton edge="end" onClick={() => dispatch(removeVideoFromQueue(video.id))}>
+										<Delete />
+									</IconButton>
+								}
+							>
+								<ListItemButton onClick={() => dispatch(moveToIndex(index))}>
+									<Stack direction="row" flexWrap="wrap" spacing={isMobile ? 0 : 2} alignItems="center">
+										<ListItemAvatar>
+											<Avatar alt={video.title} src={video.thumbnail} />
+										</ListItemAvatar>
+										<ListItemText primary={video.title} secondary={video.channelTitle} />
+										{video.id === currentVideo.id ? <ListItemText secondary="Now Playing" /> : null}
+									</Stack>
+								</ListItemButton>
+							</ListItem>
+						)}
+					/>
 				</List>
 			);
 		}
 		return null;
-	}, [currentVideo, dispatch, videos]);
+	}, [currentVideo, dispatch, isMobile, videos]);
 
 	const VideoPlayer = useMemo(() => {
 		if (currentVideo) {
@@ -104,7 +112,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 
 	return useMemo(
 		() => (
-			<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
+			<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth fullScreen={isSmall}>
 				<DialogTitle>
 					<Stack direction="row" justifyContent="space-between" alignItems="center">
 						Video Queue
@@ -151,7 +159,7 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 				</DialogContent>
 			</Dialog>
 		),
-		[open, onClose, isMobile, showQueue, currentVideo, VideoPlayer, currentIndex, videos.length, QueueSlide, dispatch]
+		[open, onClose, isSmall, showQueue, currentVideo, VideoPlayer, currentIndex, videos.length, QueueSlide, dispatch]
 	);
 };
 

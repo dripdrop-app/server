@@ -11,12 +11,12 @@ const Paginator = (props: PaginatorProps) => {
 	const { isFetching, page, pageCount, onChange } = props;
 
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
 
 	if (!isFetching) {
 		return (
 			<Pagination
-				siblingCount={isMobile ? 0 : undefined}
+				siblingCount={isSmall ? 0 : undefined}
 				page={page}
 				count={pageCount}
 				onChange={(e, data) => onChange(data)}

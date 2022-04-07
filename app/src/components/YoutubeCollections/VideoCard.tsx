@@ -32,7 +32,7 @@ const VideoCard = (props: VideoCardProps) => {
 	const [openModal, setOpenModal] = useState(false);
 
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
 
 	const dispatch = useDispatch();
 	const inQueue = useSelector((state: RootState) => {
@@ -57,7 +57,7 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const VideoModal = useMemo(
 		() => (
-			<Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="lg" fullWidth fullScreen={isMobile}>
+			<Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="lg" fullWidth fullScreen={isSmall}>
 				<Paper sx={{ height: '100%' }}>
 					<DialogTitle>
 						<Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -83,7 +83,7 @@ const VideoCard = (props: VideoCardProps) => {
 				</Paper>
 			</Dialog>
 		),
-		[VideoInfo, openModal, video.id, video.title, isMobile]
+		[VideoInfo, openModal, video.id, video.title, isSmall]
 	);
 
 	return useMemo(

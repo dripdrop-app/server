@@ -30,7 +30,7 @@ const NavBar = () => {
 	const userMenu = useRef<HTMLButtonElement | null>(null);
 
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
 
 	const checkSessionStatus = useCheckSessionQuery(null);
 	const [logout] = useLogoutMutation();
@@ -42,7 +42,7 @@ const NavBar = () => {
 			<MenuItem
 				sx={sx}
 				onClick={() => {
-					if (isMobile) {
+					if (isSmall) {
 						setOpenMobileMenu(false);
 					} else {
 						setOpenUserMenu(false);
@@ -56,7 +56,7 @@ const NavBar = () => {
 				{children}
 			</MenuItem>
 		),
-		[isMobile]
+		[isSmall]
 	);
 
 	const NavButtons = useMemo(() => {

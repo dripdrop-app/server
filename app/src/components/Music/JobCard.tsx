@@ -61,10 +61,10 @@ const JobCard = (props: JobCardProps) => {
 			a.download = filename;
 			a.click();
 		};
-		if (downloadJobStatus.isSuccess) {
-			handleDownload(downloadJobStatus.data);
+		if (downloadJobStatus.isSuccess && downloadJobStatus.currentData) {
+			handleDownload(downloadJobStatus.currentData);
 		}
-	}, [downloadJobStatus.data, downloadJobStatus.isSuccess]);
+	}, [downloadJobStatus.currentData, downloadJobStatus.isSuccess]);
 
 	const DownloadButton = useMemo(() => {
 		if (!job.completed && !job.failed) {

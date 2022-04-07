@@ -10,8 +10,8 @@ const JobList = () => {
 	const jobsStatus = useJobsQuery(null, { refetchOnReconnect: true });
 
 	const jobs = useMemo(
-		() => (jobsStatus.isSuccess ? jobsStatus.data.jobs : []),
-		[jobsStatus.data, jobsStatus.isSuccess]
+		() => (jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.jobs : []),
+		[jobsStatus.currentData, jobsStatus.isSuccess]
 	);
 	const PAGE_SIZE = useMemo(() => 4, []);
 	const jobs_slice = useMemo(() => jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [PAGE_SIZE, jobs, page]);

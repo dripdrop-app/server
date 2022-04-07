@@ -26,11 +26,11 @@ const ArtworkInput = () => {
 	}, [artworkUrl, debouncedGetArtworkURL, validArtwork]);
 
 	useEffect(() => {
-		if (getArtworkURLStatus.isSuccess) {
-			const { artworkUrl } = getArtworkURLStatus.data;
+		if (getArtworkURLStatus.isSuccess && getArtworkURLStatus.currentData) {
+			const { artworkUrl } = getArtworkURLStatus.currentData;
 			dispatch(updateForm({ artworkUrl }));
 		}
-	}, [dispatch, getArtworkURLStatus.data, getArtworkURLStatus.isSuccess, getArtworkURLStatus.originalArgs]);
+	}, [dispatch, getArtworkURLStatus.currentData, getArtworkURLStatus.isSuccess, getArtworkURLStatus.originalArgs]);
 
 	return useMemo(
 		() => (

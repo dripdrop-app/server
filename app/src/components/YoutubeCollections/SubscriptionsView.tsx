@@ -18,13 +18,16 @@ const SubscriptionsView = () => {
 	const subscriptionsStatus = useYoutubeSubscriptionsQuery(filterState);
 
 	const totalSubscriptions = useMemo(
-		() => (subscriptionsStatus.data ? subscriptionsStatus.data.totalSubscriptions : 0),
-		[subscriptionsStatus.data]
+		() =>
+			subscriptionsStatus.isSuccess && subscriptionsStatus.currentData
+				? subscriptionsStatus.currentData.totalSubscriptions
+				: 0,
+		[subscriptionsStatus.currentData, subscriptionsStatus.isSuccess]
 	);
 
 	const Subscriptions = useMemo(() => {
-		if (subscriptionsStatus.data && !subscriptionsStatus.isFetching) {
-			const { subscriptions } = subscriptionsStatus.data;
+		if (subscriptionsStatus.currentData && !subscriptionsStatus.isFetching) {
+			const { subscriptions } = subscriptionsStatus.currentData;
 			return subscriptions.map((subscription) => (
 				<Grid key={`grid-${subscription.id}`} item md={2.93} sm={5.93} xs={12}>
 					<SubscriptionCard sx={{ height: '100%' }} subscription={subscription} />
@@ -35,10 +38,10 @@ const SubscriptionsView = () => {
 			.fill(0)
 			.map((v, i) => (
 				<Grid key={`grid-${i}`} item md={2.93} sm={5.93} xs={12}>
-					<Skeleton height="40vh" variant="rectangular" />
+					<Skeleton height="30vh" variant="rectangular" />
 				</Grid>
 			));
-	}, [subscriptionsStatus.data, subscriptionsStatus.isFetching]);
+	}, [subscriptionsStatus.currentData, subscriptionsStatus.isFetching]);
 
 	const Pager = useMemo(
 		() => (
