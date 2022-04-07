@@ -1,3 +1,4 @@
+import logging
 import os
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import FileResponse
@@ -9,6 +10,11 @@ from server.cron import cron_start, cron_end
 from server.dependencies import get_user
 from server.models.main import db
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %HL%M:%S",
+)
 
 app = FastAPI(
     title="DripDrop",
