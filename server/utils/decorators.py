@@ -1,8 +1,8 @@
-import logging
 import traceback
 from asgiref.sync import sync_to_async
 from functools import wraps
 from inspect import iscoroutinefunction
+from server.logging import logger
 from server.models.main import create_db
 
 
@@ -15,7 +15,7 @@ def exception_handler(function):
                 function = sync_to_async(function)
             return await function(*args, **kwargs)
         except Exception:
-            logging.error(traceback.format_exc())
+            logger.error(traceback.format_exc())
             return None
 
     return wrapper
