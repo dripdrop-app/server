@@ -2,10 +2,11 @@ import logging
 import sys
 import uvicorn.config
 import uvicorn.logging
+from typing import List
 
 
 class CustomFilter(logging.Filter):
-    def __init__(self, name: str = ..., levels: list[int] = []) -> None:
+    def __init__(self, name: str = ..., levels: List[int] = []) -> None:
         super().__init__(name)
         self.levels = set(levels)
 
