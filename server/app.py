@@ -12,7 +12,7 @@ from server.models.main import db
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
+    format="%(asctime)s %(levelname)s %(pathname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
