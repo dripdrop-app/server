@@ -1,12 +1,12 @@
 import aioredis
 import asyncio
+import logging
 import traceback
 from asyncio import Task
 from enum import Enum
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Coroutine
 from server.config import config
-from server.logging import logger
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 redis = aioredis.from_url(config.redis_url)
@@ -33,7 +33,7 @@ async def create_websocket_redis_channel_listener(
     except ConnectionClosedOK:
         await websocket.close()
     except Exception:
-        logger.exception(traceback.format_exc())
+        logging.exception(traceback.format_exc())
     finally:
         if task:
             task.cancel()
