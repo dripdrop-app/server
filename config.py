@@ -19,15 +19,15 @@ LOGGING_CONFIG = {
     },
     "handlers": {
         "console": {
-            "class": "logging.FileHandler",
+            "class": "logging.StreamHandler",
             "formatter": "generic",
-            "filename": "server.out.log",
+            "stream": "ext://sys.stdout",
             "filters": ["info"],
         },
         "error_console": {
-            "class": "logging.FileHandler",
+            "class": "logging.StreamHandler",
             "formatter": "generic",
-            "filename": "server.err.log",
+            "stream": "ext://sys.stderr",
             "filters": ["error"],
         },
     },
