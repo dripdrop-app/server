@@ -1,4 +1,4 @@
-import server.api.youtube.google_api as google_api
+import server.utils.google_api as google_api
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket
 from fastapi.responses import PlainTextResponse
 from server.config import config

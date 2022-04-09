@@ -13,8 +13,8 @@ from databases import Database
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
-from server.api.music.imgdl import download_image
-from server.api.music.mp3dl import yt_download
+from server.utils.imgdl import download_image
+from server.utils.mp3dl import yt_download
 from server.models.main import MusicJob, MusicJobs
 from server.models.api import MusicResponses, RedisResponses
 from server.redis import redis, RedisChannels

@@ -15,8 +15,8 @@ from fastapi import (
     Path,
 )
 from fastapi.responses import FileResponse
-from server.api.music.imgdl import download_image
-from server.api.music.mp3dl import extract_info
+from server.utils.imgdl import download_image
+from server.utils.mp3dl import extract_info
 from server.dependencies import get_authenticated_user
 from server.models.main import db, MusicJobs, AuthenticatedUser, MusicJob
 from server.models.api import (

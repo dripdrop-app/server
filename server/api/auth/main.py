@@ -1,6 +1,6 @@
 import bcrypt
+import server.utils.google_api as google_api
 import uuid
-import server.api.youtube.google_api as google_api
 from asyncpg.exceptions import UniqueViolationError
 from fastapi import Body, FastAPI, Depends, Response, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse

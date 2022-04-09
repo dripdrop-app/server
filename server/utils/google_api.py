@@ -1,3 +1,4 @@
+import logging
 import requests
 from typing import List
 from urllib import parse
@@ -48,6 +49,7 @@ def get_oauth_tokens(callback_url: str, code: str):
     )
     if response.ok:
         return response.json()
+    logging.warning(response.text)
     return None
 
 
@@ -64,6 +66,7 @@ def refresh_access_token(refresh_token: str):
     )
     if response.ok:
         return response.json()
+    logging.warning(response.text)
     return None
 
 
@@ -77,6 +80,7 @@ def get_user_email(access_token: str):
     if response.ok:
         json = response.json()
         return json.get("email")
+    logging.warning(response.text)
     return None
 
 
@@ -91,6 +95,7 @@ def get_video_categories():
     if response.ok:
         json = response.json()
         return json.get("items", [])
+    logging.warning(response.text)
     return []
 
 
@@ -113,6 +118,7 @@ def get_user_subscriptions(access_token: str):
             yield json.get("items")
             params["pageToken"] = json.get("nextPageToken", None)
         else:
+            logging.warning(response.text)
             yield []
             params["pageToken"] = None
 
@@ -133,6 +139,7 @@ def get_channels_info(channel_ids: List[str]):
     if response.ok:
         json = response.json()
         return json.get("items", [])
+    logging.warning(response.text)
     return []
 
 
@@ -155,6 +162,7 @@ def get_playlist_videos(playlist_id: str):
             yield json.get("items", [])
             params["pageToken"] = json.get("nextPageToken", None)
         else:
+            logging.warning(response.text)
             yield []
             params["pageToken"] = None
 
@@ -173,4 +181,5 @@ def get_videos_info(video_ids: str):
     if response.ok:
         json = response.json()
         return json.get("items", [])
+    logging.warning(response.text)
     return []

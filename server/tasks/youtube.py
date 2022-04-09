@@ -1,6 +1,6 @@
 import asyncio
 import dateutil.parser
-import server.api.youtube.google_api as google_api
+import server.utils.google_api as google_api
 from asyncpg.exceptions import UniqueViolationError
 from databases import Database
 from datetime import datetime, timedelta, timezone
@@ -302,14 +302,10 @@ async def update_subscriptions(db: Database = None):
     query = select(GoogleAccounts)
     async for google_account in db.iterate(query):
         google_account = GoogleAccount.parse_obj(google_account)
-        days_since_last_update = (
-            datetime.now(timezone.utc) - google_account.last_updated
-        ).days
-        if days_since_last_update >= 7:
-            queue.enqueue(
-                "server.tasks.youtube.update_user_youtube_subscriptions_job",
-                google_account.user_email,
-            )
+        queue.enqueue(
+            "server.tasks.youtube.update_user_youtube_subscriptions_job",
+            google_account.user_email,
+        )
 
 
 @worker_task
