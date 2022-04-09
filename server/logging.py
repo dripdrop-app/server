@@ -8,5 +8,5 @@ class LevelFilter:
 
     def filter(self, record: logging.LogRecord) -> bool:
         if record.levelno in self.levels:
-            return super().filter(record)
+            return True
         return False
