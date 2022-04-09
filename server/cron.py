@@ -52,7 +52,7 @@ async def cron_start():
                 args=(True,),
             )
             cron_job("0 1 * * *", update_active_channels)
-            cron_job("0 3 * * sun", update_subscriptions)
+            cron_job("0 3 * * *", update_subscriptions)
             cron_job("0 5 * * sun", channel_cleanup)
 
 
