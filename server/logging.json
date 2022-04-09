@@ -36,11 +36,13 @@
         "root": {"level": "INFO", "handlers": ["console", "error_console"]},
         "gunicorn.error": {
             "level": "INFO",
-            "handlers": ["error_console", "console"]
+            "handlers": ["error_console", "console"],
+            "propagate": false
         },
         "gunicorn.access": {
             "level": "INFO",
-            "handlers": ["console"]
+            "handlers": ["console"],
+            "propagate": false
         }
     }
 }
