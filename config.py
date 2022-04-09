@@ -11,28 +11,27 @@ LOGGING_CONFIG = {
         }
     },
     "filters": {
-        "error": {
-            "()": "server.logging.LevelFilter",
-            "levels": ["WARNING", "CRITICAL", "ERROR"],
+        "info": {
+            "()": "server.logging.ErrorFilter",
         },
-        "info": {"()": "server.logging.LevelFilter", "levels": ["INFO", "DEBUG"]},
     },
     "handlers": {
         "console": {
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "generic",
             "stream": "ext://sys.stdout",
             "filters": ["info"],
         },
         "error_console": {
+            "level": "WARNING",
             "class": "logging.StreamHandler",
             "formatter": "generic",
             "stream": "ext://sys.stderr",
-            "filters": ["error"],
         },
     },
     "loggers": {
-        "root": {"level": "INFO", "handlers": ["console", "error_console"]},
+        "": {"level": "INFO", "handlers": ["console", "error_console"]},
         "gunicorn.error": {"level": "INFO", "handlers": ["error_console", "console"]},
         "gunicorn.access": {"level": "INFO", "handlers": ["console"]},
     },

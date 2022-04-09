@@ -1,12 +1,6 @@
 import logging
-from typing import List
 
 
-class LevelFilter:
-    def __init__(self, levels: List[str] = []) -> None:
-        self.levels = set([logging.getLevelName(level) for level in levels])
-
+class ErrorFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        if record.levelno in self.levels:
-            return True
-        return False
+        return record.levelno < logging.WARNING
