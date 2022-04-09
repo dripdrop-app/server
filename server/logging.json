@@ -42,7 +42,7 @@
         },
         "uvicorn.access": {
             "level": "INFO",
-            "handlers": ["error_console", "console"]
+            "handlers": ["console"]
         },
         "gunicorn.error": {
             "level": "INFO",
