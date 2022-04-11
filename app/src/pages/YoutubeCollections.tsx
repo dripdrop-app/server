@@ -25,7 +25,11 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 					<CircularProgress />
 				</Stack>
 			);
-		} else if (youtubeAuthStatus.isSuccess && youtubeAuthStatus.currentData.email) {
+		} else if (
+			youtubeAuthStatus.isSuccess &&
+			youtubeAuthStatus.currentData.email &&
+			!youtubeAuthStatus.currentData.refresh
+		) {
 			return (
 				<Stack paddingY={2}>
 					<Typography variant="h6">{props.title}</Typography>
