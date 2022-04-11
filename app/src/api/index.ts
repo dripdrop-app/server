@@ -167,7 +167,7 @@ const api = createApi({
 			providesTags: ['YoutubeAuth'],
 		}),
 		getOauthLink: build.query<string, null>({
-			query: () => ({ url: '/youtube/oauth' }),
+			query: () => ({ url: '/youtube/oauth', responseHandler: (response) => response.text() }),
 		}),
 		youtubeVideoCategories: build.query<YoutubeVideoCategoriesResponse, ChannelBody>({
 			query: ({ channelId }) => {
