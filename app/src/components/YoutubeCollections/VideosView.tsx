@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useReducer, useState, useCallback } from 'react';
 import { Stack, Select, MenuItem, InputLabel, FormControl, Box, Paper, Chip } from '@mui/material';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
 import VideoCard from './VideoCard';
@@ -95,8 +95,6 @@ const VideosView = (props: BaseProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
 	const [videos, setVideos] = useState<YoutubeVideo[]>([]);
 
-	const prevVideoRequestId = useRef<string | undefined>();
-
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
 
@@ -109,12 +107,11 @@ const VideosView = (props: BaseProps) => {
 	);
 
 	useEffect(() => {
-		if (videosStatus.isSuccess && videosStatus.currentData && videosStatus.requestId !== prevVideoRequestId.current) {
+		if (videosStatus.isSuccess && videosStatus.currentData) {
 			const newVideos = videosStatus.currentData.videos;
-			setVideos([...videos, ...newVideos]);
-			prevVideoRequestId.current = videosStatus.requestId;
+			setVideos((videos) => [...videos, ...newVideos]);
 		}
-	}, [videos, videosStatus.currentData, videosStatus.isSuccess, videosStatus.requestId]);
+	}, [videosStatus.currentData, videosStatus.isSuccess]);
 
 	return useMemo(
 		() => (
@@ -123,7 +120,10 @@ const VideosView = (props: BaseProps) => {
 					categories={categories}
 					categoriesLoading={videoCategoriesStatus.isFetching}
 					selectedCategories={filterState.selectedCategories}
-					setSelectedCategories={(categories) => filterDispatch({ selectedCategories: categories })}
+					setSelectedCategories={(categories) => {
+						filterDispatch({ selectedCategories: categories });
+						setVideos([]);
+					}}
 				/>
 				<Stack direction="row" justifyContent="space-between">
 					<Box display={{ md: 'none' }}>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { Stack } from '@mui/material';
 import { useYoutubeSubscriptionsQuery } from '../../api';
 import SubscriptionCard from './SubscriptionCard';
@@ -17,21 +17,14 @@ const SubscriptionsView = () => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
 	const [subscriptions, setSubscriptions] = useState<YoutubeSubscription[]>([]);
 
-	const prevSubscriptionRequestId = useRef<string | undefined>();
-
 	const subscriptionsStatus = useYoutubeSubscriptionsQuery(filterState);
 
 	useEffect(() => {
-		if (
-			subscriptionsStatus.isSuccess &&
-			subscriptionsStatus.currentData &&
-			subscriptionsStatus.requestId !== prevSubscriptionRequestId.current
-		) {
+		if (subscriptionsStatus.isSuccess && subscriptionsStatus.currentData) {
 			const newSubscriptions = subscriptionsStatus.currentData.subscriptions;
-			setSubscriptions([...subscriptions, ...newSubscriptions]);
-			prevSubscriptionRequestId.current = subscriptionsStatus.requestId;
+			setSubscriptions((subscriptions) => [...subscriptions, ...newSubscriptions]);
 		}
-	}, [subscriptions, subscriptionsStatus.currentData, subscriptionsStatus.isSuccess, subscriptionsStatus.requestId]);
+	}, [subscriptionsStatus.currentData, subscriptionsStatus.isSuccess]);
 
 	return useMemo(
 		() => (
