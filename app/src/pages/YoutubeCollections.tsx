@@ -28,7 +28,7 @@ const YoutubeCollections = (props: YoutubeCollectionsProps) => {
 		} else if (
 			youtubeAuthStatus.isSuccess &&
 			youtubeAuthStatus.currentData.email &&
-			!youtubeAuthStatus.currentData.refresh
+			!(process.env.NODE_ENV === 'development' ? false : youtubeAuthStatus.currentData.refresh)
 		) {
 			return (
 				<Stack paddingY={2}>

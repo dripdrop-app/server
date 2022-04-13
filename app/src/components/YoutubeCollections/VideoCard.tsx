@@ -57,8 +57,8 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const VideoModal = useMemo(
 		() => (
-			<Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="lg" fullWidth fullScreen={isSmall}>
-				<Paper sx={{ height: '100%' }}>
+			<Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="xl" fullWidth fullScreen={isSmall}>
+				<Paper>
 					<DialogTitle>
 						<Stack direction="row" justifyContent="space-between" alignItems="center">
 							{video.title}

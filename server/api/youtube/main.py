@@ -26,7 +26,7 @@ from server.redis import (
     RedisChannels,
 )
 from server.tasks.youtube import update_google_access_token
-from sqlalchemy import desc, func, select, update
+from sqlalchemy import desc, select, update
 from typing import List
 
 
@@ -153,11 +153,7 @@ async def get_youtube_videos(
             YoutubeVideos.category_id.in_(video_categories)
         )
     videos_query = videos_query.alias(name="youtube_videos")
-
     query = query.join(videos_query, videos_query.c.channel_id == channel_subquery.c.id)
-    count_query = select(func.count(videos_query.c.id)).select_from(query)
-    count = await db.fetch_val(count_query)
-
     query = (
         select(videos_query, channel_subquery.c.title.label("channel_title"))
         .select_from(query)
@@ -180,7 +176,7 @@ async def get_youtube_videos(
                 channel_title=row["channel_title"],
             )
         )
-    return YoutubeResponses.Videos(videos=videos, total_videos=count).dict()
+    return YoutubeResponses.Videos(videos=videos).dict()
 
 
 @app.get(
@@ -191,24 +187,20 @@ async def get_youtube_subscriptions(
     per_page: int = Path(50, le=50),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
-    main_query = (
+    query = (
         select(GoogleAccounts)
         .where(GoogleAccounts.user_email == user.email)
         .alias(name="google_accounts")
         .join(YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email)
         .join(YoutubeChannels, YoutubeChannels.id == YoutubeSubscriptions.channel_id)
     )
-
-    query = select(func.count(YoutubeSubscriptions.id)).select_from(main_query)
-    count = await db.fetch_val(query)
-
     query = (
         select(
             YoutubeSubscriptions,
             YoutubeChannels.title.label("channel_title"),
             YoutubeChannels.thumbnail.label("channel_thumbnail"),
         )
-        .select_from(main_query)
+        .select_from(query)
         .order_by(YoutubeChannels.title)
         .offset((page - 1) * per_page)
         .limit(per_page)
@@ -216,9 +208,7 @@ async def get_youtube_subscriptions(
     subscriptions = [
         YoutubeSubscriptionResponse.parse_obj(row) for row in await db.fetch_all(query)
     ]
-    return YoutubeResponses.Subscriptions(
-        subscriptions=subscriptions, total_subscriptions=count
-    ).dict()
+    return YoutubeResponses.Subscriptions(subscriptions=subscriptions).dict()
 
 
 @app.websocket("/youtube/subscriptions/listen")

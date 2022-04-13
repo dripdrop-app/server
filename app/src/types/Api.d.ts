@@ -72,14 +72,12 @@ declare global {
 	}
 
 	interface YoutubeVideosResponse {
-		totalVideos: number;
 		videos: YoutubeVideo[];
 	}
 
 	type YoutubeSubscriptionBody = ChannelBody & PageBody;
 
 	interface YoutubeSubscriptionsResponse {
-		totalSubscriptions: number;
 		subscriptions: YoutubeSubscription[];
 	}
 

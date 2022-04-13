@@ -1,26 +1,9 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
-import {
-	Stack,
-	Select,
-	MenuItem,
-	InputLabel,
-	FormControl,
-	Button,
-	Box,
-	Grid,
-	Skeleton,
-	Paper,
-	Chip,
-	Fab,
-} from '@mui/material';
-import { useSelector, useDispatch } from 'react-redux';
+import { useEffect, useMemo, useReducer, useState, useCallback, useRef } from 'react';
+import { Stack, Select, MenuItem, InputLabel, FormControl, Box, Paper, Chip } from '@mui/material';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
-import { addManyVideosToQueue } from '../../state/youtubeCollections';
-import Paginator from '../Paginator';
 import VideoCard from './VideoCard';
 import VideoQueueModal from './VideoQueueModal';
-import { useCallback } from 'react';
-import { ArrowUpward } from '@mui/icons-material';
+import CustomGrid from './CustomGrid';
 
 interface BaseProps {
 	channelID?: string;
@@ -110,20 +93,13 @@ const CategoriesSelect = (props: CategoriesSelectProps) => {
 
 const VideosView = (props: BaseProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
-	const [openQueue, setOpenQueue] = useState(false);
-	const [showScrollButton, setShowScrollButton] = useState(false);
+	const [videos, setVideos] = useState<YoutubeVideo[]>([]);
+
+	const prevVideoRequestId = useRef<string | undefined>();
 
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
 
-	const videos = useMemo(
-		() => (videosStatus.isSuccess && videosStatus.currentData ? videosStatus.currentData.videos : []),
-		[videosStatus.currentData, videosStatus.isSuccess]
-	);
-	const totalVideos = useMemo(
-		() => (videosStatus.isSuccess && videosStatus.currentData ? videosStatus.currentData.totalVideos : 0),
-		[videosStatus.currentData, videosStatus.isSuccess]
-	);
 	const categories = useMemo(
 		() =>
 			videoCategoriesStatus.isSuccess && videoCategoriesStatus.currentData
@@ -132,67 +108,17 @@ const VideosView = (props: BaseProps) => {
 		[videoCategoriesStatus.currentData, videoCategoriesStatus.isSuccess]
 	);
 
-	const dispatch = useDispatch();
-	const videoQueue = useSelector((state: RootState) => ({
-		videos: state.videoQueue.videos,
-	}));
-
-	const Videos = useMemo(() => {
-		if (!videosStatus.isFetching) {
-			return videos.map((video) => (
-				<Grid key={`grid-${video.id}`} item md={2.93} sm={5.93} xs={12}>
-					<VideoCard sx={{ height: '100%' }} video={video} />
-				</Grid>
-			));
-		}
-		return Array(50)
-			.fill(0)
-			.map((v, i) => (
-				<Grid key={`grid-${i}`} item md={2.93} sm={5.93} xs={12}>
-					<Skeleton height="40vh" variant="rectangular" />
-				</Grid>
-			));
-	}, [videos, videosStatus.isFetching]);
-
-	const OpenQueueButton = useMemo(() => {
-		const emptyQueue = videoQueue.videos.length === 0;
-		const text = emptyQueue ? 'Queue Empty' : 'Open Queue';
-		return (
-			<Button variant="contained" disabled={emptyQueue} onClick={() => setOpenQueue(true)}>
-				{text}
-			</Button>
-		);
-	}, [videoQueue.videos.length]);
-
-	const Pager = useMemo(
-		() => (
-			<Paginator
-				page={filterState.page}
-				pageCount={Math.ceil(totalVideos / filterState.perPage)}
-				isFetching={videosStatus.isFetching}
-				onChange={(newPage) => filterDispatch({ page: newPage })}
-			/>
-		),
-		[filterState.page, filterState.perPage, totalVideos, videosStatus.isFetching]
-	);
-
-	const updateScrollButton = useCallback(() => {
-		if (window.scrollY > 0 && !showScrollButton) {
-			setShowScrollButton(true);
-		} else if (window.scrollY === 0 && showScrollButton) {
-			setShowScrollButton(false);
-		}
-	}, [showScrollButton]);
-
 	useEffect(() => {
-		window.addEventListener('scroll', updateScrollButton);
-		return () => window.removeEventListener('scroll', updateScrollButton);
-	}, [updateScrollButton]);
+		if (videosStatus.isSuccess && videosStatus.currentData && videosStatus.requestId !== prevVideoRequestId.current) {
+			const newVideos = videosStatus.currentData.videos;
+			setVideos([...videos, ...newVideos]);
+			prevVideoRequestId.current = videosStatus.requestId;
+		}
+	}, [videos, videosStatus.currentData, videosStatus.isSuccess, videosStatus.requestId]);
 
 	return useMemo(
 		() => (
 			<Stack spacing={2} paddingY={4}>
-				<VideoQueueModal open={openQueue} onClose={() => setOpenQueue(false)} />
 				<CategoriesSelect
 					categories={categories}
 					categoriesLoading={videoCategoriesStatus.isFetching}
@@ -200,53 +126,45 @@ const VideosView = (props: BaseProps) => {
 					setSelectedCategories={(categories) => filterDispatch({ selectedCategories: categories })}
 				/>
 				<Stack direction="row" justifyContent="space-between">
-					<Box display={{ md: 'none' }}>{OpenQueueButton}</Box>
-					<Button variant="contained" onClick={() => dispatch(addManyVideosToQueue(videos))}>
-						Enqueue All
-					</Button>
+					<Box display={{ md: 'none' }}>
+						<VideoQueueModal />
+					</Box>
 				</Stack>
-				<Grid container gap={1}>
-					{Videos}
-				</Grid>
-				<Box display={{ md: 'none' }}>
-					<Stack direction="row" justifyContent="center">
-						{Pager}
-					</Stack>
-				</Box>
-				<Box
-					sx={(theme) => ({
-						position: 'fixed',
-						right: '5vw',
-						bottom: '10vh',
-						[theme.breakpoints.down('md')]: { bottom: '5vh' },
-						display: showScrollButton ? 'block' : 'none',
-					})}
-				>
-					<Fab variant="circular" color="primary" onClick={() => window.scrollTo(0, 0)}>
-						<ArrowUpward />
-					</Fab>
-				</Box>
+				<CustomGrid
+					items={videos}
+					itemKey={(video) => video.id}
+					renderItem={(video) => <VideoCard sx={{ height: '100%' }} video={video} />}
+					perPage={filterState.perPage}
+					isFetching={videosStatus.isFetching}
+					fetchMore={() => {
+						if (
+							videosStatus.isSuccess &&
+							videosStatus.currentData &&
+							videosStatus.currentData.videos.length === filterState.perPage
+						) {
+							filterDispatch({ page: filterState.page + 1 });
+						}
+					}}
+				/>
 				<Box display={{ xs: 'none', md: 'block' }}>
 					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, padding: 2 }}>
 						<Stack justifyContent="space-evenly" direction="row" spacing={4}>
-							{OpenQueueButton}
-							{Pager}
+							<VideoQueueModal />
 						</Stack>
 					</Paper>
 				</Box>
 			</Stack>
 		),
 		[
-			OpenQueueButton,
-			Pager,
-			Videos,
 			categories,
-			dispatch,
+			filterState.page,
+			filterState.perPage,
 			filterState.selectedCategories,
-			openQueue,
 			videoCategoriesStatus.isFetching,
 			videos,
-			showScrollButton,
+			videosStatus.currentData,
+			videosStatus.isFetching,
+			videosStatus.isSuccess,
 		]
 	);
 };

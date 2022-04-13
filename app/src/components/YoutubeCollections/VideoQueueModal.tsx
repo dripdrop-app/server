@@ -32,14 +32,9 @@ import {
 	moveToIndex,
 } from '../../state/youtubeCollections';
 
-interface VideoQueueModalProps {
-	open: boolean;
-	onClose: () => void;
-}
-
-const VideoQueueModal = (props: VideoQueueModalProps) => {
-	const { open, onClose } = props;
-	const [showQueue, setShowQueue] = useState(false);
+const VideoQueueModal = () => {
+	const [openQueue, setOpenQueue] = useState(false);
+	const [showQueueList, setShowQueueList] = useState(false);
 
 	const theme = useTheme();
 	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
@@ -53,11 +48,10 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 	}));
 
 	useEffect(() => {
-		setShowQueue(false);
-		if (!currentVideo) {
-			props.onClose();
+		if (!currentVideo && openQueue) {
+			setOpenQueue(false);
 		}
-	}, [currentVideo, props]);
+	}, [currentVideo, openQueue]);
 
 	const QueueSlide = useMemo(() => {
 		if (currentVideo) {
@@ -110,56 +104,80 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		return null;
 	}, [currentVideo, dispatch]);
 
+	const OpenQueueButton = useMemo(() => {
+		const emptyQueue = videos.length === 0;
+		const text = emptyQueue ? 'Queue Empty' : 'Open Queue';
+		return (
+			<Button variant="contained" disabled={emptyQueue} onClick={() => setOpenQueue(true)}>
+				{text}
+			</Button>
+		);
+	}, [videos.length]);
+
 	return useMemo(
 		() => (
-			<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth fullScreen={isSmall}>
-				<DialogTitle>
-					<Stack direction="row" justifyContent="space-between" alignItems="center">
-						Video Queue
-						<IconButton onClick={onClose}>
-							<Close />
-						</IconButton>
-					</Stack>
-				</DialogTitle>
-				<DialogContent dividers>
-					<Accordion expanded={!showQueue} elevation={0}>
-						<AccordionSummary>{currentVideo?.title}</AccordionSummary>
-						<AccordionDetails>
-							<Box sx={{ height: '60vh' }}>{VideoPlayer}</Box>
-							<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
-								<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
-									Play Previous
-								</Button>
-								<Button
-									variant="contained"
-									disabled={currentIndex + 1 >= videos.length}
-									onClick={() => dispatch(advanceQueue())}
-								>
-									Play Next
-								</Button>
-							</Stack>
-						</AccordionDetails>
-					</Accordion>
-					<Box paddingY={2}>
-						<Button variant="contained" onClick={() => dispatch(clearQueue())}>
-							Clear Queue
-						</Button>
-					</Box>
-					<Accordion expanded={showQueue} elevation={0}>
-						<AccordionSummary onClick={() => setShowQueue(!showQueue)} expandIcon={<ArrowDownward />}>
-							<Stack direction="row" spacing={2}>
-								<Typography>Queue</Typography>
-								<Typography>
-									{currentIndex + 1} / {videos.length}
-								</Typography>
-							</Stack>
-						</AccordionSummary>
-						<AccordionDetails>{QueueSlide}</AccordionDetails>
-					</Accordion>
-				</DialogContent>
-			</Dialog>
+			<Box>
+				{OpenQueueButton}
+				<Dialog open={openQueue} onClose={() => setOpenQueue(false)} maxWidth="xl" fullWidth fullScreen={isSmall}>
+					<DialogTitle>
+						<Stack direction="row" justifyContent="space-between" alignItems="center">
+							Video Queue
+							<IconButton onClick={() => setOpenQueue(false)}>
+								<Close />
+							</IconButton>
+						</Stack>
+					</DialogTitle>
+					<DialogContent dividers>
+						<Accordion expanded={!showQueueList} elevation={0}>
+							<AccordionSummary>{currentVideo?.title}</AccordionSummary>
+							<AccordionDetails>
+								<Box sx={{ height: '60vh' }}>{VideoPlayer}</Box>
+								<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
+									<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
+										Play Previous
+									</Button>
+									<Button
+										variant="contained"
+										disabled={currentIndex + 1 >= videos.length}
+										onClick={() => dispatch(advanceQueue())}
+									>
+										Play Next
+									</Button>
+								</Stack>
+							</AccordionDetails>
+						</Accordion>
+						<Box paddingY={2}>
+							<Button variant="contained" onClick={() => dispatch(clearQueue())}>
+								Clear Queue
+							</Button>
+						</Box>
+						<Accordion expanded={showQueueList} elevation={0}>
+							<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
+								<Stack direction="row" spacing={2}>
+									<Typography>Queue</Typography>
+									<Typography>
+										{currentIndex + 1} / {videos.length}
+									</Typography>
+								</Stack>
+							</AccordionSummary>
+							<AccordionDetails>{QueueSlide}</AccordionDetails>
+						</Accordion>
+					</DialogContent>
+				</Dialog>
+			</Box>
 		),
-		[open, onClose, isSmall, showQueue, currentVideo, VideoPlayer, currentIndex, videos.length, QueueSlide, dispatch]
+		[
+			OpenQueueButton,
+			openQueue,
+			isSmall,
+			showQueueList,
+			currentVideo,
+			VideoPlayer,
+			currentIndex,
+			videos.length,
+			QueueSlide,
+			dispatch,
+		]
 	);
 };
 

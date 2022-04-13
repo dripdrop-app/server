@@ -107,12 +107,10 @@ class YoutubeResponses:
         categories: List[YoutubeVideoCategoryResponse]
 
     class Videos(ResponseBaseModel):
-        total_videos: int
         videos: List[YoutubeVideoResponse]
 
     class Subscriptions(ResponseBaseModel):
         subscriptions: List[YoutubeSubscriptionResponse]
-        total_subscriptions: int
 
     class SubscriptionUpdate(ResponseBaseModel):
         type = "SUBSCRIPITON_STATE"
