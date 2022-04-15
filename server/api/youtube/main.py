@@ -1,5 +1,13 @@
 import server.utils.google_api as google_api
-from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket
+from fastapi import (
+    FastAPI,
+    Depends,
+    HTTPException,
+    Query,
+    Path,
+    WebSocket,
+    Response,
+)
 from fastapi.responses import PlainTextResponse
 from server.config import config
 from server.dependencies import get_authenticated_user
@@ -7,6 +15,7 @@ from server.models.main import (
     db,
     YoutubeVideo,
     YoutubeVideoCategory,
+    YoutubeVideoLikes,
     GoogleAccount,
     GoogleAccounts,
     YoutubeSubscriptions,
@@ -26,7 +35,7 @@ from server.redis import (
     RedisChannels,
 )
 from server.tasks.youtube import update_google_access_token
-from sqlalchemy import desc, select, update
+from sqlalchemy import insert, select, update, delete
 from typing import List
 
 
@@ -41,17 +50,19 @@ async def get_youtube_account(
     google_account = await db.fetch_one(query)
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
+        access_token = google_account.access_token
         if config.env == "production":
-            access_token = await update_google_access_token(google_account.email, db=db)
-            if access_token != google_account.access_token:
+            new_access_token = await update_google_access_token(
+                google_account.email, db=db
+            )
+            if new_access_token != access_token:
+                access_token = new_access_token
                 query = (
                     update(GoogleAccounts)
-                    .values(access_token=access_token)
+                    .values(access_token=new_access_token)
                     .where(GoogleAccounts.user_email == user.email)
                 )
                 await db.execute(query)
-        else:
-            access_token = google_account.access_token
         return YoutubeResponses.Account(
             email=google_account.email, refresh=not bool(access_token)
         ).dict()
@@ -73,31 +84,33 @@ async def get_youtube_video_categories(
 ):
     channel_subquery = select(YoutubeChannels)
     if channel_id:
-        query = channel_subquery.where(YoutubeChannels.id == channel_id)
-    channel_subquery = channel_subquery.alias("yt_channels")
+        channel_subquery = channel_subquery.where(YoutubeChannels.id == channel_id)
+    channel_subquery = channel_subquery.alias(name="youtube_channels")
+
+    videos_query = select(YoutubeVideos).alias(name="youtube_videos")
 
     if channel_id:
-        query = channel_subquery
+        query = channel_subquery.join(
+            videos_query, videos_query.c.channel_id == channel_subquery.c.id
+        )
     else:
-        google_query = (
+        google_account_subquery = (
             select(GoogleAccounts)
             .where(GoogleAccounts.user_email == user.email)
-            .alias(name="g_accounts")
+            .alias(name="google_accounts")
         )
-        query = google_query.join(
-            YoutubeSubscriptions, YoutubeSubscriptions.email == google_query.c.email
-        ).join(
-            channel_subquery,
-            channel_subquery.c.id == YoutubeSubscriptions.channel_id,
+        query = (
+            google_account_subquery.join(
+                YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email
+            )
+            .join(
+                channel_subquery,
+                channel_subquery.c.id == YoutubeSubscriptions.channel_id,
+            )
+            .join(videos_query, videos_query.c.channel_id == channel_subquery.c.id)
         )
 
-    videos_query = select(YoutubeVideos)
-    if channel_id:
-        videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
-    videos_query = videos_query.alias(name="youtube_videos")
     query = query.join(
-        videos_query, videos_query.c.channel_id == channel_subquery.c.id
-    ).join(
         YoutubeVideoCategories, YoutubeVideoCategories.id == videos_query.c.category_id
     )
     query = (
@@ -124,40 +137,61 @@ async def get_youtube_videos(
     per_page: int = Path(50, le=50),
     video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
+    likes_only: bool = Query(False),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
-    channel_subquery = select(YoutubeChannels)
+    channel_query = select(YoutubeChannels)
     if channel_id:
-        query = channel_subquery.where(YoutubeChannels.id == channel_id)
-    channel_subquery = channel_subquery.alias("yt_channels")
+        channel_query = channel_query.where(YoutubeChannels.id == channel_id)
+    channel_query = channel_query.alias(name="youtube_channels")
 
-    if channel_id:
-        query = channel_subquery
-    else:
-        google_query = (
-            select(GoogleAccounts)
-            .where(GoogleAccounts.user_email == user.email)
-            .alias(name="g_accounts")
-        )
-        query = google_query.join(
-            YoutubeSubscriptions, YoutubeSubscriptions.email == google_query.c.email
-        ).join(
-            channel_subquery,
-            channel_subquery.c.id == YoutubeSubscriptions.channel_id,
-        )
     videos_query = select(YoutubeVideos)
-    if channel_id:
-        videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
     if video_categories:
         videos_query = videos_query.where(
             YoutubeVideos.category_id.in_(video_categories)
         )
     videos_query = videos_query.alias(name="youtube_videos")
-    query = query.join(videos_query, videos_query.c.channel_id == channel_subquery.c.id)
+
+    video_likes_query = (
+        select(YoutubeVideoLikes)
+        .where(YoutubeVideoLikes.email == user.email)
+        .alias(name="youtube_video_likes")
+    )
+
+    if channel_id:
+        query = channel_query.join(
+            videos_query, videos_query.c.channel_id == channel_query.c.id
+        )
+    else:
+        google_account_subquery = (
+            select(GoogleAccounts)
+            .where(GoogleAccounts.user_email == user.email)
+            .alias(name="google_accounts")
+        )
+        query = (
+            google_account_subquery.join(
+                YoutubeSubscriptions, YoutubeSubscriptions.email == GoogleAccounts.email
+            )
+            .join(
+                channel_query,
+                channel_query.c.id == YoutubeSubscriptions.channel_id,
+            )
+            .join(videos_query, videos_query.c.channel_id == channel_query.c.id)
+        )
+
+    query = query.join(
+        video_likes_query,
+        video_likes_query.c.video_id == videos_query.c.id,
+        isouter=not likes_only,
+    )
     query = (
-        select(videos_query, channel_subquery.c.title.label("channel_title"))
+        select(
+            videos_query,
+            video_likes_query.c.video_id.label("liked"),
+            channel_query.c.title.label("channel_title"),
+        )
         .select_from(query)
-        .order_by(desc(videos_query.c.published_at))
+        .order_by(videos_query.c.published_at.desc())
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
@@ -174,6 +208,7 @@ async def get_youtube_videos(
                 category_id=video.category_id,
                 created_at=video.created_at,
                 channel_title=row["channel_title"],
+                liked=bool(row["liked"]),
             )
         )
     return YoutubeResponses.Videos(videos=videos).dict()
@@ -211,7 +246,7 @@ async def get_youtube_subscriptions(
     return YoutubeResponses.Subscriptions(subscriptions=subscriptions).dict()
 
 
-@app.websocket("/youtube/subscriptions/listen")
+@app.websocket("/subscriptions/listen")
 async def listen_subscription_job(
     websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
@@ -248,3 +283,25 @@ async def listen_subscription_job(
         channel=RedisChannels.YOUTUBE_SUBSCRIPTION_JOB_CHANNEL,
         handler=handler,
     )
+
+
+@app.put("/videos/like")
+async def add_youtube_video_like(
+    id: str = Query(None),
+    user: AuthenticatedUser = Depends(get_authenticated_user),
+):
+    query = insert(YoutubeVideoLikes).values(email=user.email, video_id=id)
+    await db.execute(query)
+    return Response(None, 200)
+
+
+@app.delete("/videos/like")
+async def delete_youtube_video_like(
+    id: str = Query(None),
+    user: AuthenticatedUser = Depends(get_authenticated_user),
+):
+    query = delete(YoutubeVideoLikes).where(
+        YoutubeVideoLikes.email == user.email, YoutubeVideoLikes.video_id == id
+    )
+    await db.execute(query)
+    return Response(None, 200)

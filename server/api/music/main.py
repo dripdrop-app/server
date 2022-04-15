@@ -33,7 +33,7 @@ from server.redis import (
 )
 from server.rq import queue
 from server.tasks.music import run_job, read_tags, JOB_DIR
-from sqlalchemy import desc, select, insert, delete, update
+from sqlalchemy import select, insert, delete, update
 from typing import Optional
 from yt_dlp.utils import sanitize_filename
 
@@ -77,7 +77,7 @@ async def get_jobs(user: AuthenticatedUser = Depends(get_authenticated_user)):
     query = (
         select(MusicJobs)
         .where(MusicJobs.user_email == user.email)
-        .order_by(desc(MusicJobs.created_at))
+        .order_by(MusicJobs.created_at.desc())
     )
     jobs = []
     for row in await db.fetch_all(query):

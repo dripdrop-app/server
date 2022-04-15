@@ -3,7 +3,7 @@ import traceback
 from asgiref.sync import sync_to_async
 from functools import wraps
 from inspect import iscoroutinefunction
-from server.models.main import create_db
+from server.models.main import init_db
 
 
 def exception_handler(function):
@@ -25,7 +25,7 @@ def worker_task(function):
     @wraps(function)
     async def wrapper(*args, **kwargs):
         if iscoroutinefunction(function):
-            db = create_db()
+            db = init_db()
             await db.connect()
             result = await function(*args, **kwargs, db=db)
             await db.disconnect()

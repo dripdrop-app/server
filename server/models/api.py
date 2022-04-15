@@ -89,13 +89,12 @@ class YoutubeVideoCategoryResponse(ResponseBaseModel, YoutubeVideoCategory):
 
 class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):
     channel_title: str
-    pass
+    liked: bool
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel, YoutubeSubscription):
     channel_title: str
     channel_thumbnail: str
-    pass
 
 
 class YoutubeResponses:

@@ -11,11 +11,11 @@ from typing import Optional
 DATABASE_URL = config.database_url
 
 
-def create_db():
+def init_db():
     return databases.Database(DATABASE_URL)
 
 
-db = create_db()
+db = init_db()
 metadata = sqlalchemy.MetaData()
 Base = declarative_base(metadata=metadata)
 
@@ -250,7 +250,6 @@ class YoutubeVideos(Base):
         ),
         nullable=False,
     )
-    published_at = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=True))
     category_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey(
             YoutubeVideoCategories.id,
@@ -260,6 +259,7 @@ class YoutubeVideos(Base):
         ),
         nullable=False,
     )
+    published_at = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=True))
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
@@ -271,6 +271,40 @@ class YoutubeVideo(BaseModel):
     title: str
     thumbnail: str
     channel_id: str
-    published_at: datetime
     category_id: int
+    published_at: datetime
+    created_at: datetime
+
+
+class YoutubeVideoLikes(Base):
+    __tablename__ = "youtube_video_likes"
+    email = sqlalchemy.Column(
+        sqlalchemy.ForeignKey(
+            GoogleAccounts.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_video_likes_email_fkey",
+        ),
+        primary_key=True,
+        nullable=False,
+    )
+    video_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey(
+            YoutubeVideos.id,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_video_likes_video_id_fkey",
+        ),
+        primary_key=True,
+        nullable=False,
+    )
+    created_at = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
+        server_default=text("NOW()"),
+    )
+
+
+class YoutubeVideoLike(BaseModel):
+    email: str
+    video_id: str
     created_at: datetime

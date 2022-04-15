@@ -18,6 +18,8 @@ base_headers = {
     )
 }
 
+YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3"
+
 
 def create_oauth_url(callback_url: str, user_id: str):
     params = {
@@ -88,7 +90,7 @@ def get_user_email(access_token: str):
 def get_video_categories():
     params = {"key": config.google_api_key, "part": "snippet", "regionCode": "US"}
     response = requests.get(
-        "https://www.googleapis.com/youtube/v3/videoCategories",
+        f"{YOUTUBE_API_URL}/videoCategories",
         params=params,
         headers=base_headers,
     )
@@ -109,7 +111,7 @@ def get_user_subscriptions(access_token: str):
     headers = {"Authorization": f"Bearer {access_token}", **base_headers}
     while params.get("pageToken") is not None:
         response = requests.get(
-            "https://www.googleapis.com/youtube/v3/subscriptions",
+            f"{YOUTUBE_API_URL}/subscriptions",
             params=params,
             headers=headers,
         )
@@ -132,7 +134,7 @@ def get_channels_info(channel_ids: List[str]):
         "maxResults": 50,
     }
     response = requests.get(
-        "https://youtube.googleapis.com/youtube/v3/channels",
+        f"{YOUTUBE_API_URL}/channels",
         params=params,
         headers=base_headers,
     )
@@ -153,7 +155,7 @@ def get_playlist_videos(playlist_id: str):
     }
     while params.get("pageToken") is not None:
         response = requests.get(
-            "https://www.googleapis.com/youtube/v3/playlistItems",
+            f"{YOUTUBE_API_URL}/playlistItems",
             params=params,
             headers=base_headers,
         )
@@ -175,9 +177,7 @@ def get_videos_info(video_ids: str):
         "id": ",".join(video_ids),
         "maxResults": 50,
     }
-    response = requests.get(
-        "https://www.googleapis.com/youtube/v3/videos", params=params
-    )
+    response = requests.get(f"{YOUTUBE_API_URL}/videos", params=params)
     if response.ok:
         json = response.json()
         return json.get("items", [])
