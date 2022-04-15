@@ -55,6 +55,7 @@ const VideoQueueModal = () => {
 	useEffect(() => {
 		if (!currentVideo && openQueue) {
 			setOpenQueue(false);
+			setPlayerState(2);
 		}
 	}, [currentVideo, openQueue]);
 
@@ -75,11 +76,13 @@ const VideoQueueModal = () => {
 								}
 							>
 								<ListItemButton onClick={() => dispatch(moveToIndex(index))}>
-									<Stack direction="row" flexWrap="wrap" spacing={isMobile ? 0 : 2} alignItems="center">
-										<ListItemAvatar>
-											<Avatar alt={video.title} src={video.thumbnail} />
-										</ListItemAvatar>
-										<ListItemText primary={video.title} secondary={video.channelTitle} />
+									<Stack direction="row" flexWrap="wrap" spacing={isMobile ? 0 : 2}>
+										<Stack direction="row" flexWrap="wrap" alignItems="center" spacing={isMobile ? 0 : 2}>
+											<ListItemAvatar>
+												<Avatar alt={video.title} src={video.thumbnail} />
+											</ListItemAvatar>
+											<ListItemText primary={video.title} secondary={video.channelTitle} />
+										</Stack>
 										{video.id === currentVideo.id ? <ListItemText secondary="Now Playing" /> : null}
 									</Stack>
 								</ListItemButton>
