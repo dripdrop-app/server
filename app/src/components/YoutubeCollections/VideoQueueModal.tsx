@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import {
 	Box,
@@ -21,9 +21,9 @@ import {
 	useTheme,
 	useMediaQuery,
 } from '@mui/material';
-import { ArrowDownward, Close, Delete } from '@mui/icons-material';
+import { ArrowDownward, Close, Delete, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import ReactPlayer from 'react-player';
+import ReactPlayer from 'react-player/youtube';
 import {
 	advanceQueue,
 	reverseQueue,
@@ -35,6 +35,11 @@ import {
 const VideoQueueModal = () => {
 	const [openQueue, setOpenQueue] = useState(false);
 	const [showQueueList, setShowQueueList] = useState(false);
+	const [playerState, setPlayerState] = useState(2);
+	const [playerTime, setPlayerTime] = useState(0);
+	const [playerDuration, setPlayerDuration] = useState(0);
+
+	const playerRef = useRef<ReactPlayer>(null);
 
 	const theme = useTheme();
 	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
@@ -87,23 +92,6 @@ const VideoQueueModal = () => {
 		return null;
 	}, [currentVideo, dispatch, isMobile, videos]);
 
-	const VideoPlayer = useMemo(() => {
-		if (currentVideo) {
-			return (
-				<ReactPlayer
-					height="100%"
-					width="100%"
-					pip
-					url={`https://youtube.com/embed/${currentVideo.id}`}
-					controls={true}
-					playing={true}
-					onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
-				/>
-			);
-		}
-		return null;
-	}, [currentVideo, dispatch]);
-
 	const OpenQueueButton = useMemo(() => {
 		const emptyQueue = videos.length === 0;
 		const text = emptyQueue ? 'Queue Empty' : 'Open Queue';
@@ -114,11 +102,84 @@ const VideoQueueModal = () => {
 		);
 	}, [videos.length]);
 
+	const pausePlayVideo = useCallback(() => {
+		if (playerRef.current) {
+			const player = playerRef.current.getInternalPlayer();
+			const state = player.getPlayerState();
+			if (state !== 1) {
+				player.playVideo();
+			} else {
+				player.pauseVideo();
+			}
+			setPlayerState(playerState === 1 ? 2 : 1);
+		}
+	}, [playerState]);
+
+	const generateTime = useCallback((seconds: number) => {
+		const formattedMinutes = Math.floor(seconds / 60)
+			.toString()
+			.padStart(1, '0');
+		const formattedSeconds = Math.floor(seconds % 60)
+			.toString()
+			.padStart(2, '0');
+		return `${formattedMinutes} : ${formattedSeconds}`;
+	}, []);
+
+	const NowPlaying = useMemo(() => {
+		if (currentVideo) {
+			const currentTime = generateTime(playerTime);
+			const durationTime = generateTime(playerDuration);
+			return (
+				<Stack direction="row" spacing={2}>
+					<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
+					<Stack>
+						<Typography variant="subtitle1">{currentVideo.title}</Typography>
+						<Stack direction="row" spacing={2}>
+							<Typography variant="caption">{currentVideo.channelTitle}</Typography>
+							<Typography variant="caption">
+								{currentTime} / {durationTime}
+							</Typography>
+						</Stack>
+					</Stack>
+					<Stack direction="row">
+						<IconButton disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
+							<SkipPrevious />
+						</IconButton>
+						<IconButton onClick={pausePlayVideo}>{playerState === 1 ? <Pause /> : <PlayArrow />}</IconButton>
+						<IconButton disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
+							<SkipNext />
+						</IconButton>
+					</Stack>
+				</Stack>
+			);
+		}
+	}, [
+		currentIndex,
+		currentVideo,
+		dispatch,
+		generateTime,
+		pausePlayVideo,
+		playerDuration,
+		playerState,
+		playerTime,
+		videos.length,
+	]);
+
 	return useMemo(
 		() => (
 			<Box>
-				{OpenQueueButton}
-				<Dialog open={openQueue} onClose={() => setOpenQueue(false)} maxWidth="xl" fullWidth fullScreen={isSmall}>
+				<Stack direction="row" rowGap={1} flexWrap="wrap" justifyContent={isSmall ? '' : 'space-evenly'}>
+					{OpenQueueButton}
+					<Box>{NowPlaying}</Box>
+				</Stack>
+				<Dialog
+					keepMounted
+					open={openQueue}
+					onClose={() => setOpenQueue(false)}
+					maxWidth="xl"
+					fullWidth
+					fullScreen={isSmall}
+				>
 					<DialogTitle>
 						<Stack direction="row" justifyContent="space-between" alignItems="center">
 							Video Queue
@@ -131,7 +192,26 @@ const VideoQueueModal = () => {
 						<Accordion expanded={!showQueueList} elevation={0}>
 							<AccordionSummary>{currentVideo?.title}</AccordionSummary>
 							<AccordionDetails>
-								<Box sx={{ height: '60vh' }}>{VideoPlayer}</Box>
+								<Box sx={{ height: '60vh' }}>
+									<ReactPlayer
+										ref={playerRef}
+										height="100%"
+										width="100%"
+										url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
+										controls={true}
+										onReady={(ref) => {
+											if (playerState === 1) {
+												const player = ref.getInternalPlayer();
+												player.playVideo();
+											}
+										}}
+										onPlay={() => setPlayerState(1)}
+										onPause={() => setPlayerState(2)}
+										onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
+										onDuration={(duration) => setPlayerDuration(duration)}
+										onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
+									/>
+								</Box>
 								<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
 									<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
 										Play Previous
@@ -168,14 +248,16 @@ const VideoQueueModal = () => {
 		),
 		[
 			OpenQueueButton,
+			NowPlaying,
 			openQueue,
 			isSmall,
 			showQueueList,
-			currentVideo,
-			VideoPlayer,
+			currentVideo?.title,
+			currentVideo?.id,
 			currentIndex,
 			videos.length,
 			QueueSlide,
+			playerState,
 			dispatch,
 		]
 	);

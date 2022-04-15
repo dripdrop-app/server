@@ -20,7 +20,7 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 
 	const itemsToRender = useMemo(() => {
 		const elements = items.map((item) => (
-			<Grid key={`grid-${itemKey(item)}`} item md={2.93} sm={5.93} xs={12}>
+			<Grid key={`grid-${itemKey(item)}`} item md={3} sm={6} xs={12} padding={1}>
 				{renderItem(item)}
 			</Grid>
 		));
@@ -30,7 +30,7 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 				...Array(perPage)
 					.fill(0)
 					.map((v, i) => (
-						<Grid key={`grid-${i}`} item md={2.93} sm={5.93} xs={12}>
+						<Grid key={`grid-${i}`} item md={3} sm={6} xs={12} padding={1}>
 							<Skeleton sx={{ height: elements.length > 0 ? '100%' : '30vh' }} variant="rectangular" />
 						</Grid>
 					))
@@ -70,7 +70,7 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 
 	return (
 		<Box>
-			<Grid ref={gridRef} container gap={1}>
+			<Grid ref={gridRef} container>
 				{itemsToRender}
 			</Grid>
 			<Box

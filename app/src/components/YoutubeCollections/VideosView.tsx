@@ -125,11 +125,9 @@ const VideosView = (props: BaseProps) => {
 						setVideos([]);
 					}}
 				/>
-				<Stack direction="row" justifyContent="space-between">
-					<Box display={{ md: 'none' }}>
-						<VideoQueueModal />
-					</Box>
-				</Stack>
+				<Box display={{ md: 'none' }}>
+					<VideoQueueModal />
+				</Box>
 				<CustomGrid
 					items={videos}
 					itemKey={(video) => video.id}
@@ -148,9 +146,7 @@ const VideosView = (props: BaseProps) => {
 				/>
 				<Box display={{ xs: 'none', md: 'block' }}>
 					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, padding: 2 }}>
-						<Stack justifyContent="space-evenly" direction="row" spacing={4}>
-							<VideoQueueModal />
-						</Stack>
+						<VideoQueueModal />
 					</Paper>
 				</Box>
 			</Stack>
