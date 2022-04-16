@@ -21,7 +21,7 @@ import {
 	useTheme,
 	useMediaQuery,
 } from '@mui/material';
-import { ArrowDownward, Close, Delete, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
+import { ArrowDownward, Close, Delete, MenuOpen, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import ReactPlayer from 'react-player/youtube';
 import {
@@ -95,16 +95,6 @@ const VideoQueueModal = () => {
 		return null;
 	}, [currentVideo, dispatch, isMobile, videos]);
 
-	const OpenQueueButton = useMemo(() => {
-		const emptyQueue = videos.length === 0;
-		const text = emptyQueue ? 'Queue Empty' : 'Open Queue';
-		return (
-			<Button variant="contained" disabled={emptyQueue} onClick={() => setOpenQueue(true)}>
-				{text}
-			</Button>
-		);
-	}, [videos.length]);
-
 	const pausePlayVideo = useCallback(() => {
 		if (playerRef.current) {
 			const player = playerRef.current.getInternalPlayer();
@@ -128,52 +118,55 @@ const VideoQueueModal = () => {
 		return `${formattedMinutes} : ${formattedSeconds}`;
 	}, []);
 
-	const NowPlaying = useMemo(() => {
+	const MediaControls = useMemo(
+		() => (
+			<Stack direction="row">
+				<IconButton disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
+					<SkipPrevious />
+				</IconButton>
+				<IconButton onClick={pausePlayVideo}>{playerState === 1 ? <Pause /> : <PlayArrow />}</IconButton>
+				<IconButton disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
+					<SkipNext />
+				</IconButton>
+			</Stack>
+		),
+		[currentIndex, dispatch, pausePlayVideo, playerState, videos.length]
+	);
+
+	const QueueDisplay = useMemo(() => {
 		if (currentVideo) {
 			const currentTime = generateTime(playerTime);
 			const durationTime = generateTime(playerDuration);
 			return (
-				<Stack direction="row" spacing={2}>
-					<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
-					<Stack>
-						<Typography variant="subtitle1">{currentVideo.title}</Typography>
-						<Stack direction="row" spacing={2}>
-							<Typography variant="caption">{currentVideo.channelTitle}</Typography>
-							<Typography variant="caption">
-								{currentTime} / {durationTime}
-							</Typography>
+				<Box>
+					<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+						<Stack direction="row" spacing={2} alignItems="center">
+							<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
+							<Stack>
+								<Typography variant="subtitle1">{currentVideo.title}</Typography>
+								<Stack direction="row" spacing={2} flexWrap="wrap">
+									<Typography variant="caption">{currentVideo.channelTitle}</Typography>
+									<Typography variant="caption">
+										{currentTime} / {durationTime}
+									</Typography>
+								</Stack>
+							</Stack>
 						</Stack>
-					</Stack>
-					<Stack direction="row">
-						<IconButton disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
-							<SkipPrevious />
-						</IconButton>
-						<IconButton onClick={pausePlayVideo}>{playerState === 1 ? <Pause /> : <PlayArrow />}</IconButton>
-						<IconButton disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
-							<SkipNext />
+						<Box>{MediaControls}</Box>
+						<IconButton onClick={() => setOpenQueue(true)}>
+							<MenuOpen />
 						</IconButton>
 					</Stack>
-				</Stack>
+				</Box>
 			);
 		}
-	}, [
-		currentIndex,
-		currentVideo,
-		dispatch,
-		generateTime,
-		pausePlayVideo,
-		playerDuration,
-		playerState,
-		playerTime,
-		videos.length,
-	]);
+	}, [MediaControls, currentVideo, generateTime, playerDuration, playerTime]);
 
 	return useMemo(
 		() => (
 			<Box>
-				<Stack direction="row" rowGap={1} flexWrap="wrap" justifyContent={isSmall ? '' : 'space-evenly'}>
-					{OpenQueueButton}
-					<Box>{NowPlaying}</Box>
+				<Stack direction="row" justifyContent="center">
+					{QueueDisplay}
 				</Stack>
 				<Dialog
 					keepMounted
@@ -250,8 +243,7 @@ const VideoQueueModal = () => {
 			</Box>
 		),
 		[
-			OpenQueueButton,
-			NowPlaying,
+			QueueDisplay,
 			openQueue,
 			isSmall,
 			showQueueList,

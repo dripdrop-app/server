@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { Stack, Select, MenuItem, InputLabel, FormControl, Box, Paper, Chip } from '@mui/material';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
 import VideoCard from './VideoCard';
@@ -95,6 +96,10 @@ const VideosView = (props: BaseProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
 	const [videos, setVideos] = useState<YoutubeVideo[]>([]);
 
+	const { currentVideo } = useSelector((state: RootState) => ({
+		currentVideo: state.videoQueue.currentVideo,
+	}));
+
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
 
@@ -145,14 +150,23 @@ const VideosView = (props: BaseProps) => {
 					}}
 				/>
 				<Box display={{ xs: 'none', md: 'block' }}>
-					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, padding: 2 }}>
-						<VideoQueueModal />
+					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, paddingY: currentVideo ? 1 : 0 }}>
+						<Box
+							sx={(theme) => ({
+								[theme.breakpoints.up('xl')]: {
+									marginX: '30vw',
+								},
+							})}
+						>
+							<VideoQueueModal />
+						</Box>
 					</Paper>
 				</Box>
 			</Stack>
 		),
 		[
 			categories,
+			currentVideo,
 			filterState.page,
 			filterState.perPage,
 			filterState.selectedCategories,

@@ -36,7 +36,7 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const dispatch = useDispatch();
 	const inQueue = useSelector((state: RootState) => {
-		return state.videoQueue.videos.find((video) => video.id === props.video.id);
+		return !!state.videoQueue.videos.find((video) => video.id === props.video.id);
 	});
 
 	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
@@ -89,7 +89,6 @@ const VideoCard = (props: VideoCardProps) => {
 	return useMemo(
 		() => (
 			<Card sx={sx} variant="outlined">
-				{VideoModal}
 				<Stack height="100%">
 					<Link href="#" onClick={() => setOpenModal(true)}>
 						<CardMedia component="img" image={video.thumbnail} />
@@ -100,11 +99,7 @@ const VideoCard = (props: VideoCardProps) => {
 								{video.title}
 							</Link>
 							<Box>
-								<Button
-									onClick={() => dispatch(addVideoToQueue(video))}
-									color={inQueue ? 'success' : 'primary'}
-									variant="contained"
-								>
+								<Button onClick={() => dispatch(addVideoToQueue(video))} disabled={inQueue} variant="contained">
 									{inQueue ? 'Queued' : 'Add To Queue'}
 								</Button>
 							</Box>
@@ -115,6 +110,7 @@ const VideoCard = (props: VideoCardProps) => {
 						<Stack>{VideoInfo}</Stack>
 					</CardContent>
 				</Stack>
+				{VideoModal}
 			</Card>
 		),
 		[VideoInfo, VideoModal, dispatch, inQueue, sx, video]
