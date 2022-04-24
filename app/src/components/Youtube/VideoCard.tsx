@@ -6,7 +6,6 @@ import {
 	Box,
 	Link,
 	Stack,
-	Button,
 	Dialog,
 	DialogTitle,
 	DialogContent,
@@ -17,10 +16,10 @@ import {
 	useTheme,
 	useMediaQuery,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { AddToQueue, Close, RemoveFromQueue } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import ReactPlayer from 'react-player';
-import { addVideoToQueue } from '../../state/youtubeCollections';
+import { addVideoToQueue, removeVideoFromQueue } from '../../state/youtubeCollections';
 
 interface VideoCardProps {
 	video: YoutubeVideo;
@@ -94,18 +93,19 @@ const VideoCard = (props: VideoCardProps) => {
 						<CardMedia component="img" image={video.thumbnail} />
 					</Link>
 					<CardContent>
-						<Stack paddingY={2} spacing={2}>
-							<Link href="#" underline="none" onClick={() => setOpenModal(true)}>
-								{video.title}
-							</Link>
-							<Box>
-								<Button onClick={() => dispatch(addVideoToQueue(video))} disabled={inQueue} variant="contained">
-									{inQueue ? 'Queued' : 'Add To Queue'}
-								</Button>
-							</Box>
-						</Stack>
+						<Link href="#" underline="none" onClick={() => setOpenModal(true)}>
+							{video.title}
+						</Link>
 					</CardContent>
 					<Box flex={1} />
+					<CardContent>
+						<IconButton color="primary" disabled={inQueue} onClick={() => dispatch(addVideoToQueue(video))}>
+							<AddToQueue />
+						</IconButton>
+						<IconButton color="error" disabled={!inQueue} onClick={() => dispatch(removeVideoFromQueue(video.id))}>
+							<RemoveFromQueue />
+						</IconButton>
+					</CardContent>
 					<CardContent>
 						<Stack>{VideoInfo}</Stack>
 					</CardContent>

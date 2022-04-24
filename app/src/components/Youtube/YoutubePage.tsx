@@ -18,6 +18,7 @@ const YoutubePage = (props: YoutubePageProps) => {
 				: 'Log in with Google';
 		return (
 			<YoutubeWrapper
+				showLoading={true}
 				render={props.render}
 				altRender={
 					<Stack padding={10} direction="row" justifyContent="center">

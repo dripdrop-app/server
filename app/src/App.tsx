@@ -20,8 +20,8 @@ const App = () => {
 					<Route path="/music" render={() => <AuthPage render={() => <MusicDownloader />} />} />
 					<Route path="/" render={() => <AuthPage render={() => <MusicDownloader />} />} />
 				</Switch>
-				<AuthWrapper render={() => <YoutubeWrapper render={() => <YoutubeVideoQueue />} />} />
 			</Container>
+			<AuthWrapper render={() => <YoutubeWrapper render={() => <YoutubeVideoQueue />} />} />
 		</Stack>
 	);
 };

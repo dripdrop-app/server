@@ -22,7 +22,16 @@ import {
 	useMediaQuery,
 	Paper,
 } from '@mui/material';
-import { ArrowDownward, Close, Delete, MenuOpen, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
+import {
+	ArrowDownward,
+	Close,
+	MenuOpen,
+	Pause,
+	PlayArrow,
+	RemoveFromQueue,
+	SkipNext,
+	SkipPrevious,
+} from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import ReactPlayer from 'react-player/youtube';
 import {
@@ -72,7 +81,7 @@ const YoutubeVideoQueue = () => {
 								key={video.id}
 								secondaryAction={
 									<IconButton edge="end" onClick={() => dispatch(removeVideoFromQueue(video.id))}>
-										<Delete />
+										<RemoveFromQueue />
 									</IconButton>
 								}
 							>
@@ -139,123 +148,131 @@ const YoutubeVideoQueue = () => {
 			const currentTime = generateTime(playerTime);
 			const durationTime = generateTime(playerDuration);
 			return (
-				<Box>
-					<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-						<Stack direction="row" spacing={2} alignItems="center">
-							<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
-							<Stack>
-								<Typography variant="subtitle1">{currentVideo.title}</Typography>
-								<Stack direction="row" spacing={2} flexWrap="wrap">
-									<Typography variant="caption">{currentVideo.channelTitle}</Typography>
-									<Typography variant="caption">
-										{currentTime} / {durationTime}
-									</Typography>
-								</Stack>
+				<Stack
+					direction="row"
+					spacing={2}
+					alignItems="center"
+					justifyContent={isSmall ? '' : 'center'}
+					paddingX={isSmall ? 1 : 0}
+					paddingY={1}
+					flexWrap="wrap"
+				>
+					<Stack direction="row" spacing={2} alignItems="center">
+						<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
+						<Stack>
+							<Typography variant="subtitle1" sx={{ whiteSpace: 'nowrap' }}>
+								{currentVideo.title}
+							</Typography>
+							<Stack direction="row" spacing={2} flexWrap="wrap">
+								<Typography variant="caption">{currentVideo.channelTitle}</Typography>
+								<Typography variant="caption">
+									{currentTime} / {durationTime}
+								</Typography>
 							</Stack>
 						</Stack>
+					</Stack>
+					<Stack direction="row">
 						<Box>{MediaControls}</Box>
 						<IconButton onClick={() => setOpenQueue(true)}>
 							<MenuOpen />
 						</IconButton>
 					</Stack>
-				</Box>
+				</Stack>
 			);
 		}
-	}, [MediaControls, currentVideo, generateTime, playerDuration, playerTime]);
+	}, [MediaControls, currentVideo, generateTime, isSmall, playerDuration, playerTime]);
 
 	return useMemo(
 		() => (
-			<Box display={{ xs: 'none', md: 'block' }}>
-				<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, paddingY: currentVideo ? 1 : 0 }}>
-					<Box
-						sx={(theme) => ({
-							[theme.breakpoints.up('xl')]: {
-								marginX: '30vw',
-							},
-						})}
+			<Paper
+				sx={{
+					width: '100%',
+					position: 'sticky',
+					left: 0,
+					bottom: 0,
+					borderRadius: 0,
+				}}
+			>
+				<Box sx={{ justifyContent: 'center' }}>
+					{QueueDisplay}
+					<Dialog
+						keepMounted
+						open={openQueue}
+						onClose={() => setOpenQueue(false)}
+						maxWidth="xl"
+						fullWidth
+						fullScreen={isSmall}
 					>
-						<Stack direction="row" justifyContent="center">
-							{QueueDisplay}
-						</Stack>
-						<Dialog
-							keepMounted
-							open={openQueue}
-							onClose={() => setOpenQueue(false)}
-							maxWidth="xl"
-							fullWidth
-							fullScreen={isSmall}
-						>
-							<DialogTitle>
-								<Stack direction="row" justifyContent="space-between" alignItems="center">
-									Video Queue
-									<IconButton onClick={() => setOpenQueue(false)}>
-										<Close />
-									</IconButton>
-								</Stack>
-							</DialogTitle>
-							<DialogContent dividers>
-								<Accordion expanded={!showQueueList} elevation={0}>
-									<AccordionSummary>{currentVideo?.title}</AccordionSummary>
-									<AccordionDetails>
-										<Box sx={{ height: '60vh' }}>
-											<ReactPlayer
-												ref={playerRef}
-												height="100%"
-												width="100%"
-												url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
-												controls={true}
-												onReady={(ref) => {
-													if (playerState === 1) {
-														const player = ref.getInternalPlayer();
-														player.playVideo();
-													}
-												}}
-												onPlay={() => setPlayerState(1)}
-												onPause={() => setPlayerState(2)}
-												onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
-												onDuration={(duration) => setPlayerDuration(duration)}
-												onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
-											/>
-										</Box>
-										<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
-											<Button
-												variant="contained"
-												disabled={currentIndex - 1 < 0}
-												onClick={() => dispatch(reverseQueue())}
-											>
-												Play Previous
-											</Button>
-											<Button
-												variant="contained"
-												disabled={currentIndex + 1 >= videos.length}
-												onClick={() => dispatch(advanceQueue())}
-											>
-												Play Next
-											</Button>
-										</Stack>
-									</AccordionDetails>
-								</Accordion>
-								<Box paddingY={2}>
-									<Button variant="contained" onClick={() => dispatch(clearQueue())}>
-										Clear Queue
-									</Button>
-								</Box>
-								<Accordion expanded={showQueueList} elevation={0}>
-									<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
-										<Stack direction="row" spacing={2}>
-											<Typography>Queue</Typography>
-											<Typography>
-												{currentIndex + 1} / {videos.length}
-											</Typography>
-										</Stack>
-									</AccordionSummary>
-									<AccordionDetails>{QueueSlide}</AccordionDetails>
-								</Accordion>
-							</DialogContent>
-						</Dialog>
-					</Box>
-				</Paper>
-			</Box>
+						<DialogTitle>
+							<Stack direction="row" justifyContent="space-between" alignItems="center">
+								Video Queue
+								<IconButton onClick={() => setOpenQueue(false)}>
+									<Close />
+								</IconButton>
+							</Stack>
+						</DialogTitle>
+						<DialogContent dividers>
+							<Accordion expanded={!showQueueList} elevation={0}>
+								<AccordionSummary>{currentVideo?.title}</AccordionSummary>
+								<AccordionDetails>
+									<Box sx={{ height: '60vh' }}>
+										<ReactPlayer
+											ref={playerRef}
+											height="100%"
+											width="100%"
+											url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
+											controls={true}
+											onReady={(ref) => {
+												if (playerState === 1) {
+													const player = ref.getInternalPlayer();
+													player.playVideo();
+												}
+											}}
+											onPlay={() => setPlayerState(1)}
+											onPause={() => setPlayerState(2)}
+											onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
+											onDuration={(duration) => setPlayerDuration(duration)}
+											onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
+										/>
+									</Box>
+									<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
+										<Button
+											variant="contained"
+											disabled={currentIndex - 1 < 0}
+											onClick={() => dispatch(reverseQueue())}
+										>
+											<SkipPrevious />
+										</Button>
+										<Button
+											variant="contained"
+											disabled={currentIndex + 1 >= videos.length}
+											onClick={() => dispatch(advanceQueue())}
+										>
+											<SkipNext />
+										</Button>
+									</Stack>
+								</AccordionDetails>
+							</Accordion>
+							<Box paddingY={2}>
+								<Button variant="contained" onClick={() => dispatch(clearQueue())}>
+									Clear Queue
+								</Button>
+							</Box>
+							<Accordion expanded={showQueueList} elevation={0}>
+								<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
+									<Stack direction="row" spacing={2}>
+										<Typography>Queue</Typography>
+										<Typography>
+											{currentIndex + 1} / {videos.length}
+										</Typography>
+									</Stack>
+								</AccordionSummary>
+								<AccordionDetails>{QueueSlide}</AccordionDetails>
+							</Accordion>
+						</DialogContent>
+					</Dialog>
+				</Box>
+			</Paper>
 		),
 		[
 			currentVideo,

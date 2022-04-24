@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useReducer, useState, useCallback } from 'react';
-import { Stack, Select, MenuItem, InputLabel, FormControl, Box, Chip, Container, Typography } from '@mui/material';
+import { Stack, Select, MenuItem, InputLabel, FormControl, Chip, Container, Typography } from '@mui/material';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../api';
 import VideoCard from '../components/Youtube/VideoCard';
-import YoutubeVideoQueue from '../components/Youtube/YoutubeVideoQueue';
 import CustomGrid from '../components/Youtube/CustomGrid';
 import YoutubePage from '../components/Youtube/YoutubePage';
 
@@ -126,9 +125,6 @@ const YoutubeVideos = (props: BaseProps) => {
 						setVideos([]);
 					}}
 				/>
-				<Box display={{ md: 'none' }}>
-					<YoutubeVideoQueue />
-				</Box>
 				<CustomGrid
 					items={videos}
 					itemKey={(video) => video.id}
