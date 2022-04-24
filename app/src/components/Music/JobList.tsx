@@ -7,7 +7,7 @@ import Paginator from '../Paginator';
 const JobList = () => {
 	const [page, setPage] = useState(0);
 
-	const jobsStatus = useJobsQuery(null, { refetchOnReconnect: true });
+	const jobsStatus = useJobsQuery({}, { refetchOnReconnect: true });
 
 	const jobs = useMemo(
 		() => (jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.jobs : []),

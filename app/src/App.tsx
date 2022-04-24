@@ -1,59 +1,27 @@
-import { useMemo } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { Stack, CircularProgress, Container } from '@mui/material';
-import { useCheckSessionQuery } from './api';
+import { Stack, Container } from '@mui/material';
 import NavBar from './components/NavBar';
-import Auth from './pages/Auth';
 import MusicDownloader from './pages/MusicDownloader';
-import YoutubeCollections from './pages/YoutubeCollections';
-import SubscriptionsView from './components/YoutubeCollections/SubscriptionsView';
-import VideosView from './components/YoutubeCollections/VideosView';
+import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
+import YoutubeVideos from './pages/YoutubeVideos';
+import YoutubeVideoQueue from './components/Youtube/YoutubeVideoQueue';
+import AuthWrapper from './components/Auth/AuthWrapper';
+import YoutubeWrapper from './components/Youtube/YoutubeWrapper';
+import AuthPage from './components/Auth/AuthPage';
 
 const App = () => {
-	const sessionStatus = useCheckSessionQuery(null);
-
-	const Routes = useMemo(() => {
-		if (sessionStatus.isFetching) {
-			return (
-				<Stack padding={10} direction="row" justifyContent="center">
-					<CircularProgress />
-				</Stack>
-			);
-		} else if (sessionStatus.currentData && sessionStatus.isSuccess) {
-			return (
-				<Switch>
-					<Route
-						path="/youtube/subscriptions"
-						render={() => (
-							<YoutubeCollections title="Subscriptions">
-								<SubscriptionsView />
-							</YoutubeCollections>
-						)}
-					/>
-					<Route
-						path="/youtube/videos"
-						render={() => (
-							<YoutubeCollections title="Videos">
-								<VideosView />
-							</YoutubeCollections>
-						)}
-					/>
-					<Route path="/music" render={() => <MusicDownloader />} />
-					<Route path="/" render={() => <MusicDownloader />} />
-				</Switch>
-			);
-		}
-		return (
-			<Switch>
-				<Route path="/" render={() => <Auth />} />
-			</Switch>
-		);
-	}, [sessionStatus.currentData, sessionStatus.isFetching, sessionStatus.isSuccess]);
-
 	return (
 		<Stack>
 			<NavBar />
-			<Container>{Routes}</Container>
+			<Container>
+				<Switch>
+					<Route path="/youtube/subscriptions" render={() => <AuthPage render={() => <YoutubeSubscriptions />} />} />
+					<Route path="/youtube/videos" render={() => <AuthPage render={() => <YoutubeVideos />} />} />
+					<Route path="/music" render={() => <AuthPage render={() => <MusicDownloader />} />} />
+					<Route path="/" render={() => <AuthPage render={() => <MusicDownloader />} />} />
+				</Switch>
+				<AuthWrapper render={() => <YoutubeWrapper render={() => <YoutubeVideoQueue />} />} />
+			</Container>
 		</Stack>
 	);
 };

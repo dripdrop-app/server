@@ -20,6 +20,7 @@ import {
 	ListItemButton,
 	useTheme,
 	useMediaQuery,
+	Paper,
 } from '@mui/material';
 import { ArrowDownward, Close, Delete, MenuOpen, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
@@ -32,7 +33,7 @@ import {
 	moveToIndex,
 } from '../../state/youtubeCollections';
 
-const VideoQueueModal = () => {
+const YoutubeVideoQueue = () => {
 	const [openQueue, setOpenQueue] = useState(false);
 	const [showQueueList, setShowQueueList] = useState(false);
 	const [playerState, setPlayerState] = useState(2);
@@ -164,91 +165,104 @@ const VideoQueueModal = () => {
 
 	return useMemo(
 		() => (
-			<Box>
-				<Stack direction="row" justifyContent="center">
-					{QueueDisplay}
-				</Stack>
-				<Dialog
-					keepMounted
-					open={openQueue}
-					onClose={() => setOpenQueue(false)}
-					maxWidth="xl"
-					fullWidth
-					fullScreen={isSmall}
-				>
-					<DialogTitle>
-						<Stack direction="row" justifyContent="space-between" alignItems="center">
-							Video Queue
-							<IconButton onClick={() => setOpenQueue(false)}>
-								<Close />
-							</IconButton>
+			<Box display={{ xs: 'none', md: 'block' }}>
+				<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, paddingY: currentVideo ? 1 : 0 }}>
+					<Box
+						sx={(theme) => ({
+							[theme.breakpoints.up('xl')]: {
+								marginX: '30vw',
+							},
+						})}
+					>
+						<Stack direction="row" justifyContent="center">
+							{QueueDisplay}
 						</Stack>
-					</DialogTitle>
-					<DialogContent dividers>
-						<Accordion expanded={!showQueueList} elevation={0}>
-							<AccordionSummary>{currentVideo?.title}</AccordionSummary>
-							<AccordionDetails>
-								<Box sx={{ height: '60vh' }}>
-									<ReactPlayer
-										ref={playerRef}
-										height="100%"
-										width="100%"
-										url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
-										controls={true}
-										onReady={(ref) => {
-											if (playerState === 1) {
-												const player = ref.getInternalPlayer();
-												player.playVideo();
-											}
-										}}
-										onPlay={() => setPlayerState(1)}
-										onPause={() => setPlayerState(2)}
-										onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
-										onDuration={(duration) => setPlayerDuration(duration)}
-										onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
-									/>
+						<Dialog
+							keepMounted
+							open={openQueue}
+							onClose={() => setOpenQueue(false)}
+							maxWidth="xl"
+							fullWidth
+							fullScreen={isSmall}
+						>
+							<DialogTitle>
+								<Stack direction="row" justifyContent="space-between" alignItems="center">
+									Video Queue
+									<IconButton onClick={() => setOpenQueue(false)}>
+										<Close />
+									</IconButton>
+								</Stack>
+							</DialogTitle>
+							<DialogContent dividers>
+								<Accordion expanded={!showQueueList} elevation={0}>
+									<AccordionSummary>{currentVideo?.title}</AccordionSummary>
+									<AccordionDetails>
+										<Box sx={{ height: '60vh' }}>
+											<ReactPlayer
+												ref={playerRef}
+												height="100%"
+												width="100%"
+												url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
+												controls={true}
+												onReady={(ref) => {
+													if (playerState === 1) {
+														const player = ref.getInternalPlayer();
+														player.playVideo();
+													}
+												}}
+												onPlay={() => setPlayerState(1)}
+												onPause={() => setPlayerState(2)}
+												onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
+												onDuration={(duration) => setPlayerDuration(duration)}
+												onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
+											/>
+										</Box>
+										<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
+											<Button
+												variant="contained"
+												disabled={currentIndex - 1 < 0}
+												onClick={() => dispatch(reverseQueue())}
+											>
+												Play Previous
+											</Button>
+											<Button
+												variant="contained"
+												disabled={currentIndex + 1 >= videos.length}
+												onClick={() => dispatch(advanceQueue())}
+											>
+												Play Next
+											</Button>
+										</Stack>
+									</AccordionDetails>
+								</Accordion>
+								<Box paddingY={2}>
+									<Button variant="contained" onClick={() => dispatch(clearQueue())}>
+										Clear Queue
+									</Button>
 								</Box>
-								<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
-									<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
-										Play Previous
-									</Button>
-									<Button
-										variant="contained"
-										disabled={currentIndex + 1 >= videos.length}
-										onClick={() => dispatch(advanceQueue())}
-									>
-										Play Next
-									</Button>
-								</Stack>
-							</AccordionDetails>
-						</Accordion>
-						<Box paddingY={2}>
-							<Button variant="contained" onClick={() => dispatch(clearQueue())}>
-								Clear Queue
-							</Button>
-						</Box>
-						<Accordion expanded={showQueueList} elevation={0}>
-							<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
-								<Stack direction="row" spacing={2}>
-									<Typography>Queue</Typography>
-									<Typography>
-										{currentIndex + 1} / {videos.length}
-									</Typography>
-								</Stack>
-							</AccordionSummary>
-							<AccordionDetails>{QueueSlide}</AccordionDetails>
-						</Accordion>
-					</DialogContent>
-				</Dialog>
+								<Accordion expanded={showQueueList} elevation={0}>
+									<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
+										<Stack direction="row" spacing={2}>
+											<Typography>Queue</Typography>
+											<Typography>
+												{currentIndex + 1} / {videos.length}
+											</Typography>
+										</Stack>
+									</AccordionSummary>
+									<AccordionDetails>{QueueSlide}</AccordionDetails>
+								</Accordion>
+							</DialogContent>
+						</Dialog>
+					</Box>
+				</Paper>
 			</Box>
 		),
 		[
+			currentVideo,
 			QueueDisplay,
 			openQueue,
 			isSmall,
 			showQueueList,
-			currentVideo?.title,
-			currentVideo?.id,
 			currentIndex,
 			videos.length,
 			QueueSlide,
@@ -258,4 +272,4 @@ const VideoQueueModal = () => {
 	);
 };
 
-export default VideoQueueModal;
+export default YoutubeVideoQueue;

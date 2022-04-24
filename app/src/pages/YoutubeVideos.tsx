@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useReducer, useState, useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import { Stack, Select, MenuItem, InputLabel, FormControl, Box, Paper, Chip } from '@mui/material';
-import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../../api';
-import VideoCard from './VideoCard';
-import VideoQueueModal from './VideoQueueModal';
-import CustomGrid from './CustomGrid';
+import { Stack, Select, MenuItem, InputLabel, FormControl, Box, Chip, Container, Typography } from '@mui/material';
+import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../api';
+import VideoCard from '../components/Youtube/VideoCard';
+import YoutubeVideoQueue from '../components/Youtube/YoutubeVideoQueue';
+import CustomGrid from '../components/Youtube/CustomGrid';
+import YoutubePage from '../components/Youtube/YoutubePage';
 
 interface BaseProps {
 	channelID?: string;
@@ -92,13 +92,9 @@ const CategoriesSelect = (props: CategoriesSelectProps) => {
 	);
 };
 
-const VideosView = (props: BaseProps) => {
+const YoutubeVideos = (props: BaseProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
 	const [videos, setVideos] = useState<YoutubeVideo[]>([]);
-
-	const { currentVideo } = useSelector((state: RootState) => ({
-		currentVideo: state.videoQueue.currentVideo,
-	}));
 
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
@@ -118,7 +114,7 @@ const VideosView = (props: BaseProps) => {
 		}
 	}, [videosStatus.currentData, videosStatus.isSuccess]);
 
-	return useMemo(
+	const VideosView = useMemo(
 		() => (
 			<Stack spacing={2} paddingY={4}>
 				<CategoriesSelect
@@ -131,7 +127,7 @@ const VideosView = (props: BaseProps) => {
 					}}
 				/>
 				<Box display={{ md: 'none' }}>
-					<VideoQueueModal />
+					<YoutubeVideoQueue />
 				</Box>
 				<CustomGrid
 					items={videos}
@@ -149,24 +145,10 @@ const VideosView = (props: BaseProps) => {
 						}
 					}}
 				/>
-				<Box display={{ xs: 'none', md: 'block' }}>
-					<Paper sx={{ width: '100vw', position: 'fixed', left: 0, bottom: 0, paddingY: currentVideo ? 1 : 0 }}>
-						<Box
-							sx={(theme) => ({
-								[theme.breakpoints.up('xl')]: {
-									marginX: '30vw',
-								},
-							})}
-						>
-							<VideoQueueModal />
-						</Box>
-					</Paper>
-				</Box>
 			</Stack>
 		),
 		[
 			categories,
-			currentVideo,
 			filterState.page,
 			filterState.perPage,
 			filterState.selectedCategories,
@@ -177,6 +159,25 @@ const VideosView = (props: BaseProps) => {
 			videosStatus.isSuccess,
 		]
 	);
+
+	return useMemo(
+		() => (
+			<Container>
+				<Stack paddingY={2}>
+					<Typography variant="h3">Youtube Collections</Typography>
+					<YoutubePage
+						render={() => (
+							<Stack paddingY={2}>
+								<Typography variant="h6">Youtube Videos</Typography>
+								{VideosView}
+							</Stack>
+						)}
+					/>
+				</Stack>
+			</Container>
+		),
+		[VideosView]
+	);
 };
 
-export default VideosView;
+export default YoutubeVideos;

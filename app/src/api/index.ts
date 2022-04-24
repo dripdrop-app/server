@@ -49,7 +49,7 @@ const api = createApi({
 		'MusicTags',
 	],
 	endpoints: (build) => ({
-		checkSession: build.query<User, null>({
+		checkSession: build.query<User, void>({
 			query: () => ({
 				url: '/auth/session',
 			}),
@@ -64,7 +64,7 @@ const api = createApi({
 			invalidatesTags: (result, error, args) =>
 				args.login && !error ? ['User', 'MusicJob', 'YoutubeSubscription', 'YoutubeVideo', 'YoutubeAuth'] : [],
 		}),
-		logout: build.mutation<undefined, null>({
+		logout: build.mutation<undefined, void>({
 			query: () => ({
 				url: '/auth/logout',
 			}),
@@ -91,7 +91,7 @@ const api = createApi({
 			},
 			providesTags: ['MusicTags'],
 		}),
-		jobs: build.query<JobsResponse, null>({
+		jobs: build.query<JobsResponse, {}>({
 			query: () => '/music/jobs',
 			providesTags: (result) => (result ? result.jobs.map((job) => ({ type: 'MusicJob', id: job.id })) : []),
 			onCacheEntryAdded: async (arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) => {
@@ -162,11 +162,11 @@ const api = createApi({
 				return { url: '/music/jobs/create/youtube', method: 'POST', body: formData };
 			},
 		}),
-		checkYoutubeAuth: build.query<YoutubeAuthState, null>({
+		checkYoutubeAuth: build.query<YoutubeAuthState, void>({
 			query: () => ({ url: '/youtube/account' }),
 			providesTags: ['YoutubeAuth'],
 		}),
-		getOauthLink: build.query<string, null>({
+		getOauthLink: build.query<string, void>({
 			query: () => ({ url: '/youtube/oauth', responseHandler: (response) => response.text() }),
 		}),
 		youtubeVideoCategories: build.query<YoutubeVideoCategoriesResponse, ChannelBody>({

@@ -1,9 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Tabs, Tab, Grid, TextField, Stack, Container, Button, CircularProgress, Alert } from '@mui/material';
-import { useLoginOrCreateMutation } from '../api';
-import { isFetchBaseQueryError } from '../utils/helpers';
+import { Stack, CircularProgress, Alert, Button, Container, Grid, Tab, Tabs, TextField } from '@mui/material';
+import { useCheckSessionQuery, useLoginOrCreateMutation } from '../../api';
+import { isFetchBaseQueryError } from '../../utils/helpers';
+import AuthWrapper from './AuthWrapper';
 
-const Auth = () => {
+interface AuthPageProps {
+	render: (user: User) => JSX.Element;
+}
+
+const AuthForm = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [tab, setTab] = useState(0);
@@ -83,4 +88,20 @@ const Auth = () => {
 	);
 };
 
-export default Auth;
+const AuthPage = (props: AuthPageProps) => {
+	const sessionStatus = useCheckSessionQuery();
+
+	return useMemo(() => {
+		if (sessionStatus.isFetching) {
+			return (
+				<Stack padding={10} direction="row" justifyContent="center">
+					<CircularProgress />
+				</Stack>
+			);
+		}
+
+		return <AuthWrapper render={props.render} altRender={<AuthForm />} />;
+	}, [props.render, sessionStatus.isFetching]);
+};
+
+export default AuthPage;
