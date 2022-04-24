@@ -164,15 +164,8 @@ const YoutubeVideos = (props: BaseProps) => {
 		() => (
 			<Container>
 				<Stack paddingY={2}>
-					<Typography variant="h3">Youtube Collections</Typography>
-					<YoutubePage
-						render={() => (
-							<Stack paddingY={2}>
-								<Typography variant="h6">Youtube Videos</Typography>
-								{VideosView}
-							</Stack>
-						)}
-					/>
+					<Typography variant="h3">Youtube Videos</Typography>
+					<YoutubePage render={() => <Stack paddingY={2}>{VideosView}</Stack>} />
 				</Stack>
 			</Container>
 		),

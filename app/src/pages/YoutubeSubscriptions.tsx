@@ -62,15 +62,8 @@ const YoutubeSubscriptions = () => {
 		() => (
 			<Container>
 				<Stack paddingY={2}>
-					<Typography variant="h3">Youtube Collections</Typography>
-					<YoutubePage
-						render={() => (
-							<Stack paddingY={2}>
-								<Typography variant="h6">Youtube Subscriptions</Typography>
-								{SubscriptionsView}
-							</Stack>
-						)}
-					/>
+					<Typography variant="h3">Youtube Subscriptions</Typography>
+					<YoutubePage render={() => <Stack paddingY={2}>{SubscriptionsView}</Stack>} />
 				</Stack>
 			</Container>
 		),
