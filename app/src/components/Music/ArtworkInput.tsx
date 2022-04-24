@@ -35,14 +35,20 @@ const ArtworkInput = () => {
 	return useMemo(
 		() => (
 			<Grid container spacing={1} alignItems="center">
-				<Grid item md={4}>
+				<Grid item md={6}>
 					{!getArtworkURLStatus.isFetching ? (
-						<Box border={1} component="img" src={validArtwork ? artworkUrl : BlankImage} height="20vh" />
+						<Box
+							border={1}
+							component="img"
+							src={validArtwork ? artworkUrl : BlankImage}
+							height="20vh"
+							maxHeight="300px"
+						/>
 					) : (
-						<Skeleton variant="rectangular" height="20vh" width="100%" />
+						<Skeleton sx={{ maxHeight: '300px' }} variant="rectangular" height="20vh" width="100%" />
 					)}
 				</Grid>
-				<Grid item md={8}>
+				<Grid item md={6}>
 					<TextField
 						fullWidth
 						label="Artwork URL"

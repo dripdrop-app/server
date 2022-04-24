@@ -190,10 +190,11 @@ const YoutubeVideoQueue = () => {
 			<Paper
 				sx={{
 					width: '100%',
-					position: 'sticky',
+					position: 'fixed',
 					left: 0,
 					bottom: 0,
 					borderRadius: 0,
+					zIndex: 99,
 				}}
 			>
 				<Box sx={{ justifyContent: 'center' }}>

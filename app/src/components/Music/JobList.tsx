@@ -33,7 +33,7 @@ const JobList = () => {
 		return (
 			<Grid container gap={1}>
 				{jobs_slice.map((job) => (
-					<Grid item md={2.93} sm={5.93} xs={12}>
+					<Grid key={job.id} item md={2.93} sm={5.93} xs={12}>
 						<JobCard sx={{ height: '100%' }} job={job} />
 					</Grid>
 				))}
