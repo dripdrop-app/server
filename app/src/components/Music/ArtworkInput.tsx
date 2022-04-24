@@ -1,12 +1,11 @@
 import { useEffect, useMemo } from 'react';
-import { Grid, TextField, Skeleton, Button } from '@mui/material';
+import { Grid, TextField, Skeleton, Card, Button, CardMedia, Box } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { debounce } from 'lodash';
 import { isBase64 } from '../../utils/helpers';
 import { useLazyArtworkQuery } from '../../api';
 import { updateForm } from '../../state/music';
 import BlankImage from '../../images/blank_image.jpeg';
-import { Box } from '@mui/system';
 
 const ArtworkInput = () => {
 	const [getArtworkURL, getArtworkURLStatus] = useLazyArtworkQuery();
@@ -36,17 +35,14 @@ const ArtworkInput = () => {
 		() => (
 			<Grid container spacing={1} alignItems="center">
 				<Grid item md={6}>
-					{!getArtworkURLStatus.isFetching ? (
-						<Box
-							border={1}
-							component="img"
-							src={validArtwork ? artworkUrl : BlankImage}
-							height="20vh"
-							maxHeight="300px"
-						/>
-					) : (
-						<Skeleton sx={{ maxHeight: '300px' }} variant="rectangular" height="20vh" width="100%" />
-					)}
+					<Card>
+						<Box sx={{ display: getArtworkURLStatus.isFetching ? 'none' : 'contents' }}>
+							<CardMedia sx={{ border: 1 }} component="img" image={validArtwork ? artworkUrl : BlankImage} />
+						</Box>
+						<Box sx={{ display: getArtworkURLStatus.isFetching ? 'contents' : 'none' }}>
+							<Skeleton sx={{ maxHeight: '300px' }} variant="rectangular" height="20vh" width="100%" />
+						</Box>
+					</Card>
 				</Grid>
 				<Grid item md={6}>
 					<TextField
