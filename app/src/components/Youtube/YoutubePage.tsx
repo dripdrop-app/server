@@ -12,13 +12,6 @@ const YoutubePage = (props: YoutubePageProps) => {
 	const [getOAuthLink, getOAuthLinkStatus] = useLazyGetOauthLinkQuery();
 
 	return useMemo(() => {
-		if (youtubeAuthStatus.isFetching) {
-			return (
-				<Stack padding={10} direction="row" justifyContent="center">
-					<CircularProgress />
-				</Stack>
-			);
-		}
 		const buttonText =
 			youtubeAuthStatus.isSuccess && youtubeAuthStatus.currentData && youtubeAuthStatus.currentData.refresh
 				? 'Reconnect Google Account'
@@ -40,7 +33,6 @@ const YoutubePage = (props: YoutubePageProps) => {
 		getOAuthLinkStatus.isFetching,
 		props.render,
 		youtubeAuthStatus.currentData,
-		youtubeAuthStatus.isFetching,
 		youtubeAuthStatus.isSuccess,
 	]);
 };

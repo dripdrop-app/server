@@ -1,16 +1,24 @@
 import { useMemo } from 'react';
+import { CircularProgress, Stack } from '@mui/material';
 import { useCheckYoutubeAuthQuery } from '../../api';
 
 interface YoutubeWrapperProps {
 	render: (user: YoutubeAuthState) => JSX.Element;
 	altRender?: JSX.Element;
+	showLoading?: boolean;
 }
 
 const YoutubeWrapper = (props: YoutubeWrapperProps) => {
 	const youtubeAuthStatus = useCheckYoutubeAuthQuery();
 
 	return useMemo(() => {
-		if (
+		if (youtubeAuthStatus.isFetching && props.showLoading) {
+			return (
+				<Stack padding={10} direction="row" justifyContent="center">
+					<CircularProgress />
+				</Stack>
+			);
+		} else if (
 			youtubeAuthStatus.isSuccess &&
 			youtubeAuthStatus.currentData &&
 			youtubeAuthStatus.currentData.email &&
@@ -19,7 +27,7 @@ const YoutubeWrapper = (props: YoutubeWrapperProps) => {
 			return props.render(youtubeAuthStatus.currentData);
 		}
 		return props.altRender ?? null;
-	}, [props, youtubeAuthStatus.currentData, youtubeAuthStatus.isSuccess]);
+	}, [props, youtubeAuthStatus.currentData, youtubeAuthStatus.isFetching, youtubeAuthStatus.isSuccess]);
 };
 
 export default YoutubeWrapper;

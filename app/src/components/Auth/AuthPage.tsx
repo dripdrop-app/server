@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Stack, CircularProgress, Alert, Button, Container, Grid, Tab, Tabs, TextField } from '@mui/material';
-import { useCheckSessionQuery, useLoginOrCreateMutation } from '../../api';
+import { useLoginOrCreateMutation } from '../../api';
 import { isFetchBaseQueryError } from '../../utils/helpers';
 import AuthWrapper from './AuthWrapper';
 
@@ -8,7 +8,7 @@ interface AuthPageProps {
 	render: (user: User) => JSX.Element;
 }
 
-const AuthForm = () => {
+const AuthPage = (props: AuthPageProps) => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [tab, setTab] = useState(0);
@@ -51,57 +51,46 @@ const AuthForm = () => {
 		setPassword('');
 	}, []);
 
-	return useMemo(
-		() => (
-			<Container>
-				<Grid container>
-					<Grid item xs={12}>
-						<Tabs value={tab}>
-							<Tab label="Login" onClick={() => setTab(0)} />
-							<Tab label="Sign up" onClick={() => setTab(1)} />
-						</Tabs>
-					</Grid>
-					<Grid item xs={12}>
-						<Stack spacing={2} marginY={3}>
-							{Notice}
-							<TextField value={email} onChange={(e) => setEmail(e.target.value)} label="Email" type="email" />
-							<TextField
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								label="Password"
-								type="password"
-							/>
-							<Stack direction="row" spacing={2}>
-								<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={submitForm}>
-									{loginOrCreateStatus.isLoading ? <CircularProgress sx={{ color: 'white' }} /> : 'Submit'}
-								</Button>
-								<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={clearForm}>
-									Clear
-								</Button>
-							</Stack>
-						</Stack>
-					</Grid>
-				</Grid>
-			</Container>
-		),
-		[Notice, clearForm, email, loginOrCreateStatus.isLoading, password, submitForm, tab]
-	);
-};
-
-const AuthPage = (props: AuthPageProps) => {
-	const sessionStatus = useCheckSessionQuery();
-
 	return useMemo(() => {
-		if (sessionStatus.isFetching) {
-			return (
-				<Stack padding={10} direction="row" justifyContent="center">
-					<CircularProgress />
-				</Stack>
-			);
-		}
-
-		return <AuthWrapper render={props.render} altRender={<AuthForm />} />;
-	}, [props.render, sessionStatus.isFetching]);
+		return (
+			<AuthWrapper
+				showLoading={true}
+				render={props.render}
+				altRender={
+					<Container>
+						<Grid container>
+							<Grid item xs={12}>
+								<Tabs value={tab}>
+									<Tab label="Login" onClick={() => setTab(0)} />
+									<Tab label="Sign up" onClick={() => setTab(1)} />
+								</Tabs>
+							</Grid>
+							<Grid item xs={12}>
+								<Stack spacing={2} marginY={3}>
+									{Notice}
+									<TextField value={email} onChange={(e) => setEmail(e.target.value)} label="Email" type="email" />
+									<TextField
+										value={password}
+										onChange={(e) => setPassword(e.target.value)}
+										label="Password"
+										type="password"
+									/>
+									<Stack direction="row" spacing={2}>
+										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={submitForm}>
+											{loginOrCreateStatus.isLoading ? <CircularProgress sx={{ color: 'white' }} /> : 'Submit'}
+										</Button>
+										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={clearForm}>
+											Clear
+										</Button>
+									</Stack>
+								</Stack>
+							</Grid>
+						</Grid>
+					</Container>
+				}
+			/>
+		);
+	}, [Notice, clearForm, email, loginOrCreateStatus.isLoading, password, props.render, submitForm, tab]);
 };
 
 export default AuthPage;
