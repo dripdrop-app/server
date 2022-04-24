@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Stack, CircularProgress, Button } from '@mui/material';
 import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../../api';
 import YoutubeWrapper from './YoutubeWrapper';
+import ConditionalDisplay from '../ConditionalDisplay';
 
 interface YoutubePageProps {
 	render: (user: YoutubeAuthState) => JSX.Element;
@@ -23,7 +24,10 @@ const YoutubePage = (props: YoutubePageProps) => {
 				altRender={
 					<Stack padding={10} direction="row" justifyContent="center">
 						<Button variant="contained" onClick={() => getOAuthLink()}>
-							{getOAuthLinkStatus.isFetching ? <CircularProgress /> : buttonText}
+							<ConditionalDisplay condition={getOAuthLinkStatus.isFetching}>
+								<CircularProgress />
+							</ConditionalDisplay>
+							<ConditionalDisplay condition={!getOAuthLinkStatus.isFetching}>{buttonText}</ConditionalDisplay>
 						</Button>
 					</Stack>
 				}

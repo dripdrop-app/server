@@ -3,6 +3,7 @@ import { Stack, CircularProgress, Alert, Button, Container, Grid, Tab, Tabs, Tex
 import { useLoginOrCreateMutation } from '../../api';
 import { isFetchBaseQueryError } from '../../utils/helpers';
 import AuthWrapper from './AuthWrapper';
+import ConditionalDisplay from '../ConditionalDisplay';
 
 interface AuthPageProps {
 	render: (user: User) => JSX.Element;
@@ -77,7 +78,10 @@ const AuthPage = (props: AuthPageProps) => {
 									/>
 									<Stack direction="row" spacing={2}>
 										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={submitForm}>
-											{loginOrCreateStatus.isLoading ? <CircularProgress sx={{ color: 'white' }} /> : 'Submit'}
+											<ConditionalDisplay condition={loginOrCreateStatus.isLoading}>
+												<CircularProgress sx={{ color: 'white' }} />
+											</ConditionalDisplay>
+											<ConditionalDisplay condition={!loginOrCreateStatus.isLoading}>Submit</ConditionalDisplay>
 										</Button>
 										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={clearForm}>
 											Clear

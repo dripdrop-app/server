@@ -43,6 +43,7 @@ import {
 	clearQueue,
 	moveToIndex,
 } from '../../state/youtubeCollections';
+import ConditionalDisplay from '../ConditionalDisplay';
 
 const YoutubeVideoQueue = () => {
 	const [openQueue, setOpenQueue] = useState(false);
@@ -96,9 +97,9 @@ const YoutubeVideoQueue = () => {
 											</ListItemAvatar>
 											<ListItemText primary={video.title} secondary={video.channelTitle} />
 										</Stack>
-										<Box display={video.id === currentVideo.id ? 'contents' : 'none'}>
+										<ConditionalDisplay condition={video.id === currentVideo.id}>
 											<ListItemText secondary="Now Playing" />
-										</Box>
+										</ConditionalDisplay>
 									</Stack>
 								</ListItemButton>
 							</ListItem>
@@ -140,12 +141,12 @@ const YoutubeVideoQueue = () => {
 					<SkipPrevious />
 				</IconButton>
 				<IconButton onClick={pausePlayVideo}>
-					<Box display={playerState === 1 ? 'none' : 'contents'}>
+					<ConditionalDisplay condition={playerState !== 1}>
 						<PlayArrow />
-					</Box>
-					<Box display={playerState !== 1 ? 'none' : 'contents'}>
+					</ConditionalDisplay>
+					<ConditionalDisplay condition={playerState === 1}>
 						<Pause />
-					</Box>
+					</ConditionalDisplay>
 				</IconButton>
 				<IconButton disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
 					<SkipNext />

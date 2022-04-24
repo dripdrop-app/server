@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Box, Fab, Grid, Skeleton } from '@mui/material';
 import { ArrowUpward } from '@mui/icons-material';
+import ConditionalDisplay from '../ConditionalDisplay';
 
 interface CustomGridProps<T> {
 	items: T[];
@@ -73,27 +74,28 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 			<Grid ref={gridRef} container>
 				{itemsToRender}
 			</Grid>
-			<Box
-				sx={(theme) => ({
-					position: 'fixed',
-					right: '5vw',
-					bottom: '10vh',
-					[theme.breakpoints.down('md')]: { bottom: '5vh' },
-					display: showScrollButton ? 'block' : 'none',
-				})}
-			>
-				<Fab
-					variant="circular"
-					color="primary"
-					onClick={() => {
-						if (gridRef.current) {
-							window.scrollTo({ top: gridRef.current.offsetTop - 100, behavior: 'smooth' });
-						}
-					}}
+			<ConditionalDisplay condition={showScrollButton}>
+				<Box
+					sx={(theme) => ({
+						position: 'fixed',
+						right: '5vw',
+						bottom: '10vh',
+						[theme.breakpoints.down('md')]: { bottom: '5vh' },
+					})}
 				>
-					<ArrowUpward />
-				</Fab>
-			</Box>
+					<Fab
+						variant="circular"
+						color="primary"
+						onClick={() => {
+							if (gridRef.current) {
+								window.scrollTo({ top: gridRef.current.offsetTop - 100, behavior: 'smooth' });
+							}
+						}}
+					>
+						<ArrowUpward />
+					</Fab>
+				</Box>
+			</ConditionalDisplay>
 		</Box>
 	);
 };

@@ -5,6 +5,7 @@ import { useLazyCreateFileJobQuery, useLazyCreateYoutubeJobQuery } from '../../a
 import { resetForm } from '../../state/music';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
+import ConditionalDisplay from '../ConditionalDisplay';
 
 interface FormActionProps {
 	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
@@ -104,9 +105,9 @@ const FormActions = (props: FormActionProps) => {
 					disabled={!valid || createFileJobStatus.isFetching || createYoutubeJobStatus.isFetching || formLoading}
 					onClick={run}
 				>
-					{fileType === FILE_TYPE.YOUTUBE ? 'Download and Set Tags' : ''}
-					{fileType === FILE_TYPE.MP3_UPLOAD ? 'Update Tags' : ''}
-					{fileType === FILE_TYPE.WAV_UPLOAD ? 'Convert and Update Tags' : ''}
+					<ConditionalDisplay condition={fileType === FILE_TYPE.YOUTUBE}>Download and Set Tags</ConditionalDisplay>
+					<ConditionalDisplay condition={fileType === FILE_TYPE.MP3_UPLOAD}>Update Tags</ConditionalDisplay>
+					<ConditionalDisplay condition={fileType === FILE_TYPE.WAV_UPLOAD}>Convert and Update Tags</ConditionalDisplay>
 				</Button>
 				<Button variant="contained" onClick={() => dispatch(resetForm())}>
 					Reset
