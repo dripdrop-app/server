@@ -96,7 +96,9 @@ const YoutubeVideoQueue = () => {
 											</ListItemAvatar>
 											<ListItemText primary={video.title} secondary={video.channelTitle} />
 										</Stack>
-										{video.id === currentVideo.id ? <ListItemText secondary="Now Playing" /> : null}
+										<Box display={video.id === currentVideo.id ? 'contents' : 'none'}>
+											<ListItemText secondary="Now Playing" />
+										</Box>
 									</Stack>
 								</ListItemButton>
 							</ListItem>
@@ -137,7 +139,14 @@ const YoutubeVideoQueue = () => {
 				<IconButton disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
 					<SkipPrevious />
 				</IconButton>
-				<IconButton onClick={pausePlayVideo}>{playerState === 1 ? <Pause /> : <PlayArrow />}</IconButton>
+				<IconButton onClick={pausePlayVideo}>
+					<Box display={playerState === 1 ? 'none' : 'contents'}>
+						<PlayArrow />
+					</Box>
+					<Box display={playerState !== 1 ? 'none' : 'contents'}>
+						<Pause />
+					</Box>
+				</IconButton>
 				<IconButton disabled={currentIndex + 1 >= videos.length} onClick={() => dispatch(advanceQueue())}>
 					<SkipNext />
 				</IconButton>

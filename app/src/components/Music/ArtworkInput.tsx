@@ -36,10 +36,10 @@ const ArtworkInput = () => {
 			<Grid container spacing={1} alignItems="center">
 				<Grid item md={6}>
 					<Card>
-						<Box sx={{ display: getArtworkURLStatus.isFetching ? 'none' : 'contents' }}>
+						<Box display={getArtworkURLStatus.isFetching ? 'none' : 'contents'}>
 							<CardMedia sx={{ border: 1 }} component="img" image={validArtwork ? artworkUrl : BlankImage} />
 						</Box>
-						<Box sx={{ display: getArtworkURLStatus.isFetching ? 'contents' : 'none' }}>
+						<Box display={!getArtworkURLStatus.isFetching ? 'none' : 'contents'}>
 							<Skeleton sx={{ maxHeight: '300px' }} variant="rectangular" height="20vh" width="100%" />
 						</Box>
 					</Card>
