@@ -80,7 +80,7 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 						position: 'fixed',
 						right: '5vw',
 						bottom: '10vh',
-						[theme.breakpoints.down('md')]: { bottom: '5vh' },
+						[theme.breakpoints.down('md')]: { bottom: '20vh' },
 					})}
 				>
 					<Fab
