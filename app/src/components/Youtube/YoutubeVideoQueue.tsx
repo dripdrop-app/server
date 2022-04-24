@@ -21,6 +21,8 @@ import {
 	useTheme,
 	useMediaQuery,
 	Paper,
+	Switch,
+	FormControlLabel,
 } from '@mui/material';
 import {
 	ArrowDownward,
@@ -45,6 +47,7 @@ import {
 const YoutubeVideoQueue = () => {
 	const [openQueue, setOpenQueue] = useState(false);
 	const [showQueueList, setShowQueueList] = useState(false);
+	const [autoRemove, setAutoRemove] = useState(window.localStorage.getItem('autoRemove') === '1');
 	const [playerState, setPlayerState] = useState(2);
 	const [playerTime, setPlayerTime] = useState(0);
 	const [playerDuration, setPlayerDuration] = useState(0);
@@ -232,16 +235,45 @@ const YoutubeVideoQueue = () => {
 											onPause={() => setPlayerState(2)}
 											onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
 											onDuration={(duration) => setPlayerDuration(duration)}
-											onEnded={() => setTimeout(() => dispatch(advanceQueue()), 3000)}
+											onEnded={() =>
+												setTimeout(() => {
+													if (autoRemove) {
+														dispatch(removeVideoFromQueue(currentVideo?.id || ''));
+													} else {
+														dispatch(advanceQueue());
+													}
+												}, 3000)
+											}
 										/>
 									</Box>
-									<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={2} flexWrap="wrap">
+									<Box padding={1}>
+										<FormControlLabel
+											control={
+												<Switch
+													onChange={(e, checked) => {
+														setAutoRemove(checked);
+														window.localStorage.setItem('autoRemove', checked ? '1' : '0');
+													}}
+													checked={autoRemove}
+												/>
+											}
+											label="Auto Remove"
+										/>
+									</Box>
+									<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={1} flexWrap="wrap">
 										<Button
 											variant="contained"
 											disabled={currentIndex - 1 < 0}
 											onClick={() => dispatch(reverseQueue())}
 										>
 											<SkipPrevious />
+										</Button>
+										<Button
+											variant="contained"
+											color="error"
+											onClick={() => dispatch(removeVideoFromQueue(currentVideo?.id || ''))}
+										>
+											<RemoveFromQueue />
 										</Button>
 										<Button
 											variant="contained"
@@ -275,11 +307,12 @@ const YoutubeVideoQueue = () => {
 			</Paper>
 		),
 		[
-			currentVideo,
 			QueueDisplay,
 			openQueue,
 			isSmall,
 			showQueueList,
+			currentVideo,
+			autoRemove,
 			currentIndex,
 			videos.length,
 			QueueSlide,
