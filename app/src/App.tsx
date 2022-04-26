@@ -1,5 +1,5 @@
 import { Route, Switch } from 'react-router-dom';
-import { Stack, Container } from '@mui/material';
+import { Stack, Container, Box, Paper } from '@mui/material';
 import NavBar from './components/NavBar';
 import MusicDownloader from './pages/MusicDownloader';
 import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
@@ -21,7 +21,28 @@ const App = () => {
 					<Route path="/" render={() => <AuthPage render={() => <MusicDownloader />} />} />
 				</Switch>
 			</Container>
-			<AuthWrapper render={() => <YoutubeWrapper render={() => <YoutubeVideoQueue />} />} />
+			<Box display={{ xs: 'none', sm: 'contents' }}>
+				<AuthWrapper
+					render={() => (
+						<YoutubeWrapper
+							render={() => (
+								<Paper
+									sx={{
+										width: '100%',
+										position: 'fixed',
+										left: 0,
+										bottom: 0,
+										borderRadius: 0,
+										zIndex: 99,
+									}}
+								>
+									<YoutubeVideoQueue />
+								</Paper>
+							)}
+						/>
+					)}
+				/>
+			</Box>
 		</Stack>
 	);
 };

@@ -20,7 +20,6 @@ import {
 	ListItemButton,
 	useTheme,
 	useMediaQuery,
-	Paper,
 	Switch,
 	FormControlLabel,
 } from '@mui/material';
@@ -161,21 +160,11 @@ const YoutubeVideoQueue = () => {
 			const currentTime = generateTime(playerTime);
 			const durationTime = generateTime(playerDuration);
 			return (
-				<Stack
-					direction="row"
-					spacing={2}
-					alignItems="center"
-					justifyContent={isSmall ? '' : 'center'}
-					paddingX={isSmall ? 1 : 0}
-					paddingY={1}
-					flexWrap="wrap"
-				>
+				<Stack direction="row" spacing={2} alignItems="center" justifyContent="center" padding={1} flexWrap="wrap">
 					<Stack direction="row" spacing={2} alignItems="center">
 						<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
 						<Stack>
-							<Typography variant="subtitle1" sx={{ whiteSpace: 'nowrap' }}>
-								{currentVideo.title}
-							</Typography>
+							<Typography variant="subtitle1">{currentVideo.title}</Typography>
 							<Stack direction="row" spacing={2} flexWrap="wrap">
 								<Typography variant="caption">{currentVideo.channelTitle}</Typography>
 								<Typography variant="caption">
@@ -193,129 +182,114 @@ const YoutubeVideoQueue = () => {
 				</Stack>
 			);
 		}
-	}, [MediaControls, currentVideo, generateTime, isSmall, playerDuration, playerTime]);
+	}, [MediaControls, currentVideo, generateTime, playerDuration, playerTime]);
 
 	return useMemo(
 		() => (
-			<Paper
-				sx={{
-					width: '100%',
-					position: 'fixed',
-					left: 0,
-					bottom: 0,
-					borderRadius: 0,
-					zIndex: 99,
-				}}
-			>
-				<Box sx={{ justifyContent: 'center' }}>
-					{QueueDisplay}
-					<Dialog
-						keepMounted
-						open={openQueue}
-						onClose={() => setOpenQueue(false)}
-						maxWidth="xl"
-						fullWidth
-						fullScreen={isSmall}
-					>
-						<DialogTitle>
-							<Stack direction="row" justifyContent="space-between" alignItems="center">
-								Video Queue
-								<IconButton onClick={() => setOpenQueue(false)}>
-									<Close />
-								</IconButton>
-							</Stack>
-						</DialogTitle>
-						<DialogContent dividers>
-							<Accordion expanded={!showQueueList} elevation={0}>
-								<AccordionSummary>{currentVideo?.title}</AccordionSummary>
-								<AccordionDetails>
-									<Box sx={{ height: '60vh' }}>
-										<ReactPlayer
-											ref={playerRef}
-											height="100%"
-											width="100%"
-											url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
-											controls={true}
-											onReady={(ref) => {
-												if (playerState === 1) {
-													const player = ref.getInternalPlayer();
-													player.playVideo();
+			<Box>
+				{QueueDisplay}
+				<Dialog
+					keepMounted
+					open={openQueue}
+					onClose={() => setOpenQueue(false)}
+					maxWidth="xl"
+					fullWidth
+					fullScreen={isSmall}
+				>
+					<DialogTitle>
+						<Stack direction="row" justifyContent="space-between" alignItems="center">
+							Video Queue
+							<IconButton onClick={() => setOpenQueue(false)}>
+								<Close />
+							</IconButton>
+						</Stack>
+					</DialogTitle>
+					<DialogContent dividers>
+						<Accordion expanded={!showQueueList} elevation={0}>
+							<AccordionSummary>{currentVideo?.title}</AccordionSummary>
+							<AccordionDetails>
+								<Box sx={{ height: '60vh' }}>
+									<ReactPlayer
+										ref={playerRef}
+										height="100%"
+										width="100%"
+										url={`https://www.youtube.com/watch?v=${currentVideo?.id}`}
+										controls={true}
+										onReady={(ref) => {
+											if (playerState === 1) {
+												const player = ref.getInternalPlayer();
+												player.playVideo();
+											}
+										}}
+										onPlay={() => setPlayerState(1)}
+										onPause={() => setPlayerState(2)}
+										onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
+										onDuration={(duration) => setPlayerDuration(duration)}
+										onEnded={() =>
+											setTimeout(() => {
+												if (autoRemove) {
+													dispatch(removeVideoFromQueue(currentVideo?.id || ''));
+												} else {
+													dispatch(advanceQueue());
 												}
-											}}
-											onPlay={() => setPlayerState(1)}
-											onPause={() => setPlayerState(2)}
-											onProgress={({ playedSeconds }) => setPlayerTime(playedSeconds)}
-											onDuration={(duration) => setPlayerDuration(duration)}
-											onEnded={() =>
-												setTimeout(() => {
-													if (autoRemove) {
-														dispatch(removeVideoFromQueue(currentVideo?.id || ''));
-													} else {
-														dispatch(advanceQueue());
-													}
-												}, 3000)
-											}
-										/>
-									</Box>
-									<Box padding={1}>
-										<FormControlLabel
-											control={
-												<Switch
-													onChange={(e, checked) => {
-														setAutoRemove(checked);
-														window.localStorage.setItem('autoRemove', checked ? '1' : '0');
-													}}
-													checked={autoRemove}
-												/>
-											}
-											label="Auto Remove"
-										/>
-									</Box>
-									<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={1} flexWrap="wrap">
-										<Button
-											variant="contained"
-											disabled={currentIndex - 1 < 0}
-											onClick={() => dispatch(reverseQueue())}
-										>
-											<SkipPrevious />
-										</Button>
-										<Button
-											variant="contained"
-											color="error"
-											onClick={() => dispatch(removeVideoFromQueue(currentVideo?.id || ''))}
-										>
-											<RemoveFromQueue />
-										</Button>
-										<Button
-											variant="contained"
-											disabled={currentIndex + 1 >= videos.length}
-											onClick={() => dispatch(advanceQueue())}
-										>
-											<SkipNext />
-										</Button>
-									</Stack>
-								</AccordionDetails>
-							</Accordion>
-							<Box paddingY={2}>
-								<Button variant="contained" onClick={() => dispatch(clearQueue())}>
-									Clear Queue
-								</Button>
-							</Box>
-							<Accordion expanded={showQueueList} elevation={0}>
-								<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
-									<Stack direction="row" spacing={2}>
-										<Typography>Queue</Typography>
-										<Typography>
-											{currentIndex + 1} / {videos.length}
-										</Typography>
-									</Stack>
-								</AccordionSummary>
-								<AccordionDetails>{QueueSlide}</AccordionDetails>
-							</Accordion>
-						</DialogContent>
-					</Dialog>
-				</Box>
-			</Paper>
+											}, 3000)
+										}
+									/>
+								</Box>
+								<Box padding={1}>
+									<FormControlLabel
+										control={
+											<Switch
+												onChange={(e, checked) => {
+													setAutoRemove(checked);
+													window.localStorage.setItem('autoRemove', checked ? '1' : '0');
+												}}
+												checked={autoRemove}
+											/>
+										}
+										label="Auto Remove"
+									/>
+								</Box>
+								<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={1} flexWrap="wrap">
+									<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
+										<SkipPrevious />
+									</Button>
+									<Button
+										variant="contained"
+										color="error"
+										onClick={() => dispatch(removeVideoFromQueue(currentVideo?.id || ''))}
+									>
+										<RemoveFromQueue />
+									</Button>
+									<Button
+										variant="contained"
+										disabled={currentIndex + 1 >= videos.length}
+										onClick={() => dispatch(advanceQueue())}
+									>
+										<SkipNext />
+									</Button>
+								</Stack>
+							</AccordionDetails>
+						</Accordion>
+						<Box paddingY={2}>
+							<Button variant="contained" onClick={() => dispatch(clearQueue())}>
+								Clear Queue
+							</Button>
+						</Box>
+						<Accordion expanded={showQueueList} elevation={0}>
+							<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
+								<Stack direction="row" spacing={2}>
+									<Typography>Queue</Typography>
+									<Typography>
+										{currentIndex + 1} / {videos.length}
+									</Typography>
+								</Stack>
+							</AccordionSummary>
+							<AccordionDetails>{QueueSlide}</AccordionDetails>
+						</Accordion>
+					</DialogContent>
+				</Dialog>
+			</Box>
 		),
 		[
 			QueueDisplay,
