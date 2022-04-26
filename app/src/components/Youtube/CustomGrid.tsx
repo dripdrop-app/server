@@ -76,12 +76,11 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 			</Grid>
 			<ConditionalDisplay condition={showScrollButton}>
 				<Box
-					sx={(theme) => ({
+					sx={{
 						position: 'fixed',
 						right: '5vw',
 						bottom: '10vh',
-						[theme.breakpoints.down('md')]: { bottom: '20vh' },
-					})}
+					}}
 				>
 					<Fab
 						variant="circular"
