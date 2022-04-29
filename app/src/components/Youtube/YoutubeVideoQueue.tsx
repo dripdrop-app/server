@@ -250,7 +250,13 @@ const YoutubeVideoQueue = () => {
 										}
 									/>
 								</Box>
-								<Stack padding={2} direction="row" justifyContent="space-between">
+								<Stack
+									padding={2}
+									spacing={1}
+									direction={isMobile ? 'column' : 'row'}
+									justifyContent="space-between"
+									alignItems="center"
+								>
 									<Box>
 										<Button
 											variant="contained"
@@ -313,6 +319,7 @@ const YoutubeVideoQueue = () => {
 			isSmall,
 			showQueueList,
 			currentVideo,
+			isMobile,
 			currentIndex,
 			videos.length,
 			autoRemove,
