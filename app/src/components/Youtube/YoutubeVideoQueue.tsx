@@ -98,9 +98,11 @@ const YoutubeVideoQueue = () => {
 											</ListItemAvatar>
 											<ListItemText primary={video.title} secondary={video.channelTitle} />
 										</Stack>
-										<ConditionalDisplay condition={video.id === currentVideo.id}>
-											<ListItemText secondary="Now Playing" />
-										</ConditionalDisplay>
+										<Box marginX={2}>
+											<ConditionalDisplay condition={video.id === currentVideo.id}>
+												<ListItemText secondary="Now Playing" />
+											</ConditionalDisplay>
+										</Box>
 									</Stack>
 								</ListItemButton>
 							</ListItem>
