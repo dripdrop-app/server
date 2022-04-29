@@ -69,6 +69,7 @@ declare global {
 
 	interface YoutubeVideoBody extends ChannelBody, PageBody {
 		selectedCategories: number[];
+		likedOnly: boolean;
 	}
 
 	interface YoutubeVideosResponse {

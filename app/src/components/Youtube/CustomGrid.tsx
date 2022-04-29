@@ -41,7 +41,7 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 	}, [isFetching, items, itemKey, perPage, renderItem]);
 
 	const onGridBottom = useCallback(() => {
-		if (document.body.offsetHeight - 200 < window.innerHeight + window.scrollY) {
+		if (document.body.offsetHeight - 500 < window.innerHeight + window.scrollY) {
 			if (!isFetching) {
 				fetchMore();
 			}

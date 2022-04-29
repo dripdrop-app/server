@@ -10,6 +10,7 @@ declare global {
 		publishedAt: string;
 		categoryId: number;
 		createdAt: string;
+		liked: boolean;
 	}
 
 	interface YoutubeChannel {

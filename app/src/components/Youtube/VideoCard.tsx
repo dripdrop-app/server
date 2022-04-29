@@ -16,10 +16,9 @@ import {
 	useTheme,
 	useMediaQuery,
 } from '@mui/material';
-import { AddToQueue, Close, RemoveFromQueue } from '@mui/icons-material';
-import { useSelector, useDispatch } from 'react-redux';
+import { Close } from '@mui/icons-material';
 import ReactPlayer from 'react-player';
-import { addVideoToQueue, removeVideoFromQueue } from '../../state/youtubeCollections';
+import VideoButtons from './VideoButtons';
 
 interface VideoCardProps {
 	video: YoutubeVideo;
@@ -32,11 +31,6 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const theme = useTheme();
 	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
-
-	const dispatch = useDispatch();
-	const inQueue = useSelector((state: RootState) => {
-		return !!state.videoQueue.videos.find((video) => video.id === props.video.id);
-	});
 
 	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
 	const channelLink = `https://youtube.com/channel/${video.channelId}`;
@@ -67,7 +61,7 @@ const VideoCard = (props: VideoCardProps) => {
 						</Stack>
 					</DialogTitle>
 					<DialogContent dividers>
-						<Box sx={{ height: '60vh' }}>
+						<Box sx={{ height: '70vh' }}>
 							<ReactPlayer
 								height="100%"
 								width="100%"
@@ -78,11 +72,16 @@ const VideoCard = (props: VideoCardProps) => {
 							/>
 						</Box>
 					</DialogContent>
+					<DialogContent dividers>
+						<Stack direction="row" justifyContent="right">
+							<VideoButtons video={video} />
+						</Stack>
+					</DialogContent>
 					<DialogContent>{VideoInfo}</DialogContent>
 				</Paper>
 			</Dialog>
 		),
-		[VideoInfo, openModal, video.id, video.title, isSmall]
+		[openModal, isSmall, video, VideoInfo]
 	);
 
 	return useMemo(
@@ -99,12 +98,7 @@ const VideoCard = (props: VideoCardProps) => {
 					</CardContent>
 					<Box flex={1} />
 					<CardContent>
-						<IconButton color="primary" disabled={inQueue} onClick={() => dispatch(addVideoToQueue(video))}>
-							<AddToQueue />
-						</IconButton>
-						<IconButton color="error" disabled={!inQueue} onClick={() => dispatch(removeVideoFromQueue(video.id))}>
-							<RemoveFromQueue />
-						</IconButton>
+						<VideoButtons video={video} />
 					</CardContent>
 					<CardContent>
 						<Stack>{VideoInfo}</Stack>
@@ -113,7 +107,7 @@ const VideoCard = (props: VideoCardProps) => {
 				{VideoModal}
 			</Card>
 		),
-		[VideoInfo, VideoModal, dispatch, inQueue, sx, video]
+		[VideoInfo, VideoModal, sx, video]
 	);
 };
 

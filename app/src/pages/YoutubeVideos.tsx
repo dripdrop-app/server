@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useReducer, useState, useCallback } from 'react';
-import { Stack, Select, MenuItem, InputLabel, FormControl, Chip, Container, Typography, Box } from '@mui/material';
+import {
+	Stack,
+	Select,
+	MenuItem,
+	InputLabel,
+	FormControl,
+	Chip,
+	Container,
+	Typography,
+	Box,
+	FormControlLabel,
+	Checkbox,
+} from '@mui/material';
+import { isEqual } from 'lodash';
 import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../api';
 import VideoCard from '../components/Youtube/VideoCard';
 import CustomGrid from '../components/Youtube/CustomGrid';
@@ -10,19 +23,14 @@ interface BaseProps {
 	channelID?: string;
 }
 
-interface FilterState {
-	selectedCategories: number[];
-	page: number;
-	perPage: number;
-}
-
-const initialState: FilterState = {
+const initialState: YoutubeVideoBody = {
 	selectedCategories: [],
 	page: 1,
 	perPage: 50,
+	likedOnly: false,
 };
 
-const reducer = (state = initialState, action: Partial<FilterState>) => {
+const reducer = (state = initialState, action: Partial<YoutubeVideoBody>) => {
 	return { ...state, ...action };
 };
 
@@ -92,9 +100,13 @@ const CategoriesSelect = (props: CategoriesSelectProps) => {
 	);
 };
 
+interface VideoMap {
+	[page: number]: YoutubeVideo[];
+}
+
 const YoutubeVideos = (props: BaseProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
-	const [videos, setVideos] = useState<YoutubeVideo[]>([]);
+	const [videoMap, setVideoMap] = useState<VideoMap>({});
 
 	const videosStatus = useYoutubeVideosQuery(filterState);
 	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
@@ -107,23 +119,62 @@ const YoutubeVideos = (props: BaseProps) => {
 		[videoCategoriesStatus.currentData, videoCategoriesStatus.isSuccess]
 	);
 
+	const videos = useMemo(
+		() =>
+			Object.keys(videoMap)
+				.sort()
+				.flatMap((page) => videoMap[parseInt(page)]),
+		[videoMap]
+	);
+
 	useEffect(() => {
 		if (videosStatus.isSuccess && videosStatus.currentData) {
 			const newVideos = videosStatus.currentData.videos;
-			setVideos((videos) => [...videos, ...newVideos]);
+			setVideoMap((videoMap) => {
+				if (videosStatus.originalArgs) {
+					const currentArgs = { ...filterState } as Partial<YoutubeVideoBody>;
+					delete currentArgs.page;
+					const calledArgs = { ...videosStatus.originalArgs } as Partial<YoutubeVideoBody>;
+					delete calledArgs.page;
+					if (isEqual(currentArgs, calledArgs)) {
+						return { ...videoMap, [filterState.page]: newVideos };
+					}
+				}
+				return videoMap;
+			});
 		}
-	}, [videosStatus.currentData, videosStatus.isSuccess]);
+	}, [
+		filterState,
+		filterState.likedOnly,
+		videosStatus.currentData,
+		videosStatus.isSuccess,
+		videosStatus.originalArgs,
+		videosStatus.requestId,
+	]);
 
 	const VideosView = useMemo(
 		() => (
 			<Stack spacing={2} paddingY={4}>
+				<Stack direction="row" justifyContent="right">
+					<FormControlLabel
+						control={
+							<Checkbox
+								onChange={(e, checked) => {
+									setVideoMap({});
+									filterDispatch({ likedOnly: checked, page: 1 });
+								}}
+							/>
+						}
+						label="Show Liked Videos"
+					/>
+				</Stack>
 				<CategoriesSelect
 					categories={categories}
 					categoriesLoading={videoCategoriesStatus.isFetching}
 					selectedCategories={filterState.selectedCategories}
 					setSelectedCategories={(categories) => {
-						filterDispatch({ selectedCategories: categories });
-						setVideos([]);
+						setVideoMap({});
+						filterDispatch({ selectedCategories: categories, page: 1 });
 					}}
 				/>
 				<Box display={{ xs: 'contents', sm: 'none' }}>

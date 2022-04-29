@@ -1,13 +1,6 @@
 import server.utils.google_api as google_api
-from fastapi import (
-    FastAPI,
-    Depends,
-    HTTPException,
-    Query,
-    Path,
-    WebSocket,
-    Response,
-)
+from asyncpg import UniqueViolationError
+from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket, Response
 from fastapi.responses import PlainTextResponse
 from server.config import config
 from server.dependencies import get_authenticated_user
@@ -133,11 +126,11 @@ async def get_youtube_video_categories(
 
 @app.get("/videos/{page}/{per_page}", response_model=YoutubeResponses.Videos)
 async def get_youtube_videos(
-    page: int = Path(1, ge=1),
-    per_page: int = Path(50, le=50),
+    page: int = Path(..., ge=1),
+    per_page: int = Path(..., le=50, gt=0),
     video_categories: List[int] = Query([]),
     channel_id: str = Query(None),
-    likes_only: bool = Query(False),
+    liked_only: bool = Query(False),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     channel_query = select(YoutubeChannels)
@@ -182,7 +175,7 @@ async def get_youtube_videos(
     query = query.join(
         video_likes_query,
         video_likes_query.c.video_id == videos_query.c.id,
-        isouter=not likes_only,
+        isouter=not liked_only,
     )
     query = (
         select(
@@ -218,8 +211,8 @@ async def get_youtube_videos(
     "/subscriptions/{page}/{per_page}", response_model=YoutubeResponses.Subscriptions
 )
 async def get_youtube_subscriptions(
-    page: int = Path(1, ge=1),
-    per_page: int = Path(50, le=50),
+    page: int = Path(..., ge=1),
+    per_page: int = Path(..., le=50),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     query = (
@@ -287,21 +280,24 @@ async def listen_subscription_job(
 
 @app.put("/videos/like")
 async def add_youtube_video_like(
-    id: str = Query(None),
+    video_id: str = Query(...),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
-    query = insert(YoutubeVideoLikes).values(email=user.email, video_id=id)
-    await db.execute(query)
+    try:
+        query = insert(YoutubeVideoLikes).values(email=user.email, video_id=video_id)
+        await db.execute(query)
+    except UniqueViolationError:
+        raise HTTPException(400)
     return Response(None, 200)
 
 
-@app.delete("/videos/like")
+@app.put("/videos/unlike")
 async def delete_youtube_video_like(
-    id: str = Query(None),
+    video_id: str = Query(...),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     query = delete(YoutubeVideoLikes).where(
-        YoutubeVideoLikes.email == user.email, YoutubeVideoLikes.video_id == id
+        YoutubeVideoLikes.email == user.email, YoutubeVideoLikes.video_id == video_id
     )
     await db.execute(query)
     return Response(None, 200)

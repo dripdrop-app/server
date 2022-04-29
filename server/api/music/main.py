@@ -12,7 +12,6 @@ from fastapi import (
     File,
     Form,
     HTTPException,
-    Path,
 )
 from fastapi.responses import FileResponse
 from server.utils.imgdl import download_image
@@ -34,7 +33,6 @@ from server.redis import (
 from server.rq import queue
 from server.tasks.music import run_job, read_tags, JOB_DIR
 from sqlalchemy import select, insert, delete, update
-from typing import Optional
 from yt_dlp.utils import sanitize_filename
 
 
@@ -42,7 +40,7 @@ app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}
 
 
 @app.get("/grouping", response_model=MusicResponses.Grouping)
-async def get_grouping(youtube_url: str = Query(None, regex=youtube_regex)):
+async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     try:
         loop = asyncio.get_event_loop()
         uploader = await loop.run_in_executor(None, extract_info, youtube_url)
@@ -52,7 +50,7 @@ async def get_grouping(youtube_url: str = Query(None, regex=youtube_regex)):
 
 
 @app.get("/artwork", response_model=MusicResponses.ArtworkURL)
-async def get_artwork(artwork_url: str = Query(None)):
+async def get_artwork(artwork_url: str = Query(...)):
     try:
         loop = asyncio.get_event_loop()
         artwork_url = await loop.run_in_executor(
@@ -64,9 +62,7 @@ async def get_artwork(artwork_url: str = Query(None)):
 
 
 @app.post("/tags", response_model=MusicResponses.Tags)
-async def get_tags(file: UploadFile = File(None)):
-    if not file:
-        raise HTTPException(400)
+async def get_tags(file: UploadFile = File(...)):
     loop = asyncio.get_event_loop()
     tags = await loop.run_in_executor(None, read_tags, await file.read(), file.filename)
     return tags.dict()
@@ -144,12 +140,12 @@ async def listen_jobs(
 
 @app.post("/jobs/create/youtube", status_code=202)
 async def create_job__from_youtube(
-    youtubeUrl: str = Form(None, regex=youtube_regex),
-    artworkUrl: Optional[str] = Form(None),
-    title: str = Form(None),
-    artist: str = Form(None),
-    album: str = Form(None),
-    grouping: Optional[str] = Form(""),
+    youtubeUrl: str = Form(..., regex=youtube_regex),
+    artworkUrl: str = Form(None),
+    title: str = Form(...),
+    artist: str = Form(...),
+    album: str = Form(...),
+    grouping: str = Form(""),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
@@ -180,12 +176,12 @@ async def create_job__from_youtube(
 
 @app.post("/jobs/create/file", status_code=202)
 async def create_job_from_file(
-    file: UploadFile = File(None),
-    artworkUrl: Optional[str] = Form(None),
-    title: str = Form(None),
-    artist: str = Form(None),
-    album: str = Form(None),
-    grouping: Optional[str] = Form(""),
+    file: UploadFile = File(...),
+    artworkUrl: str = Form(None),
+    title: str = Form(...),
+    artist: str = Form(...),
+    album: str = Form(...),
+    grouping: str = Form(""),
     user: AuthenticatedUser = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
@@ -218,7 +214,7 @@ async def create_job_from_file(
 
 @app.delete("/jobs/delete/{job_id}")
 async def delete_job(
-    job_id: str = Path(None), user: AuthenticatedUser = Depends(get_authenticated_user)
+    job_id: str, user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
     query = delete(MusicJobs).where(
         MusicJobs.user_email == user.email, MusicJobs.id == job_id
@@ -233,7 +229,7 @@ async def delete_job(
 
 @app.get("/jobs/download/{job_id}", status_code=200)
 async def download_job(
-    job_id: str = Path(None), user: AuthenticatedUser = Depends(get_authenticated_user)
+    job_id: str, user: AuthenticatedUser = Depends(get_authenticated_user)
 ):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = await db.fetch_one(query)

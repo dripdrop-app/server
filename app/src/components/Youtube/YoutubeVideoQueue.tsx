@@ -26,6 +26,7 @@ import {
 import {
 	ArrowDownward,
 	Close,
+	DeleteSweep,
 	MenuOpen,
 	Pause,
 	PlayArrow,
@@ -43,6 +44,7 @@ import {
 	moveToIndex,
 } from '../../state/youtubeCollections';
 import ConditionalDisplay from '../ConditionalDisplay';
+import VideoButtons from './VideoButtons';
 
 const YoutubeVideoQueue = () => {
 	const [openQueue, setOpenQueue] = useState(false);
@@ -133,6 +135,15 @@ const YoutubeVideoQueue = () => {
 		return `${formattedMinutes} : ${formattedSeconds}`;
 	}, []);
 
+	const ClearQueueButton = useMemo(
+		() => (
+			<IconButton onClick={() => dispatch(clearQueue())}>
+				<DeleteSweep />
+			</IconButton>
+		),
+		[dispatch]
+	);
+
 	const MediaControls = useMemo(
 		() => (
 			<Stack direction="row">
@@ -178,11 +189,12 @@ const YoutubeVideoQueue = () => {
 						<IconButton onClick={() => setOpenQueue(true)}>
 							<MenuOpen />
 						</IconButton>
+						<Box marginLeft={3}>{ClearQueueButton}</Box>
 					</Stack>
 				</Stack>
 			);
 		}
-	}, [MediaControls, currentVideo, generateTime, playerDuration, playerTime]);
+	}, [ClearQueueButton, MediaControls, currentVideo, generateTime, playerDuration, playerTime]);
 
 	return useMemo(
 		() => (
@@ -236,55 +248,57 @@ const YoutubeVideoQueue = () => {
 										}
 									/>
 								</Box>
-								<Box padding={1}>
-									<FormControlLabel
-										control={
-											<Switch
-												onChange={(e, checked) => {
-													setAutoRemove(checked);
-													window.localStorage.setItem('autoRemove', checked ? '1' : '0');
-												}}
-												checked={autoRemove}
-											/>
-										}
-										label="Auto Remove"
-									/>
-								</Box>
-								<Stack direction="row" justifyContent="space-evenly" rowGap={1} padding={1} flexWrap="wrap">
-									<Button variant="contained" disabled={currentIndex - 1 < 0} onClick={() => dispatch(reverseQueue())}>
-										<SkipPrevious />
-									</Button>
-									<Button
-										variant="contained"
-										color="error"
-										onClick={() => dispatch(removeVideoFromQueue(currentVideo?.id || ''))}
-									>
-										<RemoveFromQueue />
-									</Button>
-									<Button
-										variant="contained"
-										disabled={currentIndex + 1 >= videos.length}
-										onClick={() => dispatch(advanceQueue())}
-									>
-										<SkipNext />
-									</Button>
+								<Stack padding={2} direction="row" justifyContent="space-between">
+									<Box>
+										<Button
+											variant="contained"
+											disabled={currentIndex - 1 < 0}
+											onClick={() => dispatch(reverseQueue())}
+										>
+											<SkipPrevious />
+										</Button>
+										<Button
+											variant="contained"
+											disabled={currentIndex + 1 >= videos.length}
+											onClick={() => dispatch(advanceQueue())}
+										>
+											<SkipNext />
+										</Button>
+									</Box>
+									{currentVideo ? <VideoButtons video={currentVideo} /> : null}
 								</Stack>
 							</AccordionDetails>
 						</Accordion>
-						<Box paddingY={2}>
-							<Button variant="contained" onClick={() => dispatch(clearQueue())}>
-								Clear Queue
-							</Button>
+						<Box padding={1}>
+							<FormControlLabel
+								control={
+									<Switch
+										onChange={(e, checked) => {
+											setAutoRemove(checked);
+											window.localStorage.setItem('autoRemove', checked ? '1' : '0');
+										}}
+										checked={autoRemove}
+									/>
+								}
+								label="Auto Remove"
+							/>
 						</Box>
 						<Accordion expanded={showQueueList} elevation={0}>
-							<AccordionSummary onClick={() => setShowQueueList(!showQueueList)} expandIcon={<ArrowDownward />}>
-								<Stack direction="row" spacing={2}>
-									<Typography>Queue</Typography>
-									<Typography>
-										{currentIndex + 1} / {videos.length}
-									</Typography>
-								</Stack>
-							</AccordionSummary>
+							<Stack direction="row">
+								<AccordionSummary
+									sx={{ flex: 1 }}
+									onClick={() => setShowQueueList(!showQueueList)}
+									expandIcon={<ArrowDownward />}
+								>
+									<Stack direction="row" spacing={2}>
+										<Typography>Queue</Typography>
+										<Typography>
+											{currentIndex + 1} / {videos.length}
+										</Typography>
+									</Stack>
+								</AccordionSummary>
+								<Box>{ClearQueueButton}</Box>
+							</Stack>
 							<AccordionDetails>{QueueSlide}</AccordionDetails>
 						</Accordion>
 					</DialogContent>
@@ -297,9 +311,10 @@ const YoutubeVideoQueue = () => {
 			isSmall,
 			showQueueList,
 			currentVideo,
-			autoRemove,
 			currentIndex,
 			videos.length,
+			autoRemove,
+			ClearQueueButton,
 			QueueSlide,
 			playerState,
 			dispatch,

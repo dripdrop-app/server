@@ -34,20 +34,23 @@ const customBaseQuery = (options?: FetchBaseQueryArgs) => {
 	};
 };
 
+const tags = [
+	'User',
+	'MusicJob',
+	'YoutubeAuth',
+	'YoutubeVideo',
+	'YoutubeLikedVideo',
+	'YoutubeVideoCategory',
+	'YoutubeVideoQueue',
+	'YoutubeSubscription',
+	'MusicGrouping',
+	'MusicArtwork',
+	'MusicTags',
+];
+
 const api = createApi({
 	baseQuery: customBaseQuery({ baseUrl: '/' }),
-	tagTypes: [
-		'User',
-		'MusicJob',
-		'YoutubeAuth',
-		'YoutubeVideo',
-		'YoutubeVideoCategory',
-		'YoutubeVideoQueue',
-		'YoutubeSubscription',
-		'MusicGrouping',
-		'MusicArtwork',
-		'MusicTags',
-	],
+	tagTypes: tags,
 	endpoints: (build) => ({
 		checkSession: build.query<User, void>({
 			query: () => ({
@@ -61,15 +64,13 @@ const api = createApi({
 				method: 'POST',
 				body: { email, password },
 			}),
-			invalidatesTags: (result, error, args) =>
-				args.login && !error ? ['User', 'MusicJob', 'YoutubeSubscription', 'YoutubeVideo', 'YoutubeAuth'] : [],
+			invalidatesTags: (result, error, args) => (args.login && !error ? tags : []),
 		}),
 		logout: build.mutation<undefined, void>({
 			query: () => ({
 				url: '/auth/logout',
 			}),
-			invalidatesTags: (result, error) =>
-				!error ? ['User', 'MusicJob', 'YoutubeSubscription', 'YoutubeVideo', 'YoutubeAuth'] : [],
+			invalidatesTags: (result, error) => (!error ? tags : []),
 		}),
 		grouping: build.query<GroupingResponse, string>({
 			query: (youtubeUrl) => ({ url: `/music/grouping`, params: { youtube_url: youtubeUrl } }),
@@ -181,11 +182,15 @@ const api = createApi({
 				}
 				return { url };
 			},
-			providesTags: (result) =>
-				result?.categories.map((category) => ({ type: 'YoutubeVideoCategory', id: category.id })) ?? [],
+			providesTags: (result) => {
+				if (result) {
+					result.categories.map((category) => ({ type: 'YoutubeVideoCategory', id: category.id }));
+				}
+				return [];
+			},
 		}),
 		youtubeVideos: build.query<YoutubeVideosResponse, YoutubeVideoBody>({
-			query: ({ perPage, page, channelId, selectedCategories }) => {
+			query: ({ perPage, page, channelId, selectedCategories, likedOnly }) => {
 				let url = `/youtube/videos/${page}/${perPage}`;
 				const searchParams = new URLSearchParams();
 				if (channelId) {
@@ -194,12 +199,27 @@ const api = createApi({
 				if (selectedCategories) {
 					selectedCategories.forEach((category) => searchParams.append('video_categories', category.toString()));
 				}
+				if (likedOnly) {
+					searchParams.append('liked_only', likedOnly.toString());
+				}
 				if (searchParams.toString()) {
 					url += `?${searchParams}`;
 				}
 				return { url };
 			},
-			providesTags: (result) => result?.videos.map((video) => ({ type: 'YoutubeVideo', id: video.id })) ?? [],
+			providesTags: (result, error, args) => {
+				if (result) {
+					return result.videos.flatMap((video) =>
+						video.liked
+							? [
+									{ type: 'YoutubeVideo', id: video.id },
+									{ type: 'YoutubeLikedVideo', id: video.id },
+							  ]
+							: [{ type: 'YoutubeVideo', id: video.id }]
+					);
+				}
+				return [];
+			},
 		}),
 		youtubeSubscriptions: build.query<YoutubeSubscriptionsResponse, YoutubeSubscriptionBody>({
 			query: ({ perPage, page, channelId }) => {
@@ -213,8 +233,27 @@ const api = createApi({
 				}
 				return { url };
 			},
-			providesTags: (result) =>
-				result?.subscriptions.map((subscription) => ({ type: 'YoutubeSubscription', id: subscription.id })) ?? [],
+			providesTags: (result) => {
+				if (result) {
+					result.subscriptions.map((subscription) => ({ type: 'YoutubeSubscription', id: subscription.id }));
+				}
+				return [];
+			},
+		}),
+		createYoutubeVideoLike: build.mutation<undefined, string>({
+			query: (videoId) => ({ url: `/youtube/videos/like?video_id=${videoId}`, method: 'PUT' }),
+			invalidatesTags: (result, error, videoId) =>
+				!error ? [{ type: 'YoutubeVideo', id: videoId }, 'YoutubeLikedVideo'] : [],
+		}),
+		deleteYoutubeVideoLike: build.mutation<undefined, string>({
+			query: (videoId) => ({ url: `/youtube/videos/unlike?video_id=${videoId}`, method: 'PUT' }),
+			invalidatesTags: (result, error, videoId) =>
+				!error
+					? [
+							{ type: 'YoutubeVideo', id: videoId },
+							{ type: 'YoutubeLikedVideo', id: videoId },
+					  ]
+					: [],
 		}),
 	}),
 });
@@ -237,4 +276,6 @@ export const {
 	useYoutubeVideoCategoriesQuery,
 	useYoutubeVideosQuery,
 	useYoutubeSubscriptionsQuery,
+	useCreateYoutubeVideoLikeMutation,
+	useDeleteYoutubeVideoLikeMutation,
 } = api;

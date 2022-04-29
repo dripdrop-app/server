@@ -2,7 +2,7 @@ import bcrypt
 import server.utils.google_api as google_api
 import uuid
 from asyncpg.exceptions import UniqueViolationError
-from fastapi import Body, FastAPI, Depends, Response, HTTPException
+from fastapi import Body, FastAPI, Depends, Query, Response, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import EmailStr
 from sqlalchemy.sql.expression import true
@@ -17,7 +17,6 @@ from server.tasks.youtube import (
     update_user_youtube_subscriptions_job,
 )
 from sqlalchemy import select, insert, update
-from typing import Optional
 
 app = FastAPI()
 
@@ -28,7 +27,7 @@ async def check_session(user: AuthenticatedUser = Depends(get_authenticated_user
 
 
 @app.post("/login", response_model=AuthResponses.User, responses={401: {}, 404: {}})
-async def login(email: str = Body(None), password: str = Body(None)):
+async def login(email: str = Body(...), password: str = Body(...)):
     query = select(Users).where(Users.email == email)
     account = await db.fetch_one(query)
     if not account:
@@ -83,7 +82,7 @@ async def create_new_account(email: str, password: str):
 
 @app.post("/create", response_model=AuthResponses.User, status_code=201)
 async def create_account(
-    email: EmailStr = Body(None), password: str = Body(None, min_length=8)
+    email: EmailStr = Body(...), password: str = Body(..., min_length=8)
 ):
     await create_new_account(email, password)
     return AuthResponses.User(email=email, admin=False)
@@ -102,7 +101,9 @@ async def create_account(
 @app.get(
     "/googleoauth2", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
 )
-async def google_oauth2(state: str, code: str, error: Optional[str] = None):
+async def google_oauth2(
+    state: str = Query(...), code: str = Query(...), error: str = Query(None)
+):
     if error:
         raise HTTPException(400)
 
