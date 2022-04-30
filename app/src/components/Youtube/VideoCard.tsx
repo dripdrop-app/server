@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Card, CardMedia, CardContent, Box, Link as MuiLink, Stack, SxProps, Theme } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Card, CardMedia, CardContent, Box, Link, Stack, SxProps, Theme } from '@mui/material';
+import { useHistory } from 'react-router-dom';
 import VideoButtons from './VideoButtons';
 
 interface VideoCardProps {
@@ -11,6 +11,8 @@ interface VideoCardProps {
 const VideoCard = (props: VideoCardProps) => {
 	const { video, sx } = props;
 
+	const history = useHistory();
+
 	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
 	const channelLink = `https://youtube.com/channel/${video.channelId}`;
 	const videoLink = `/youtube/video/${video.id}`;
@@ -18,9 +20,9 @@ const VideoCard = (props: VideoCardProps) => {
 	const VideoInfo = useMemo(
 		() => (
 			<Stack alignItems="center" direction="row" flexWrap="wrap">
-				<MuiLink href={channelLink} underline="none">
+				<Link href={channelLink} underline="none">
 					{video.channelTitle}
-				</MuiLink>
+				</Link>
 				<Box flex={1} />
 				{publishedAt}
 			</Stack>
@@ -32,12 +34,12 @@ const VideoCard = (props: VideoCardProps) => {
 		() => (
 			<Card sx={sx} variant="outlined">
 				<Stack height="100%">
-					<Link to={videoLink}>
+					<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(videoLink)}>
 						<CardMedia component="img" image={video.thumbnail} />
 					</Link>
 					<CardContent>
-						<Link to={videoLink} style={{ textDecoration: 'none' }}>
-							<MuiLink underline="none">{video.title}</MuiLink>
+						<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(videoLink)} underline="none">
+							{video.title}
 						</Link>
 					</CardContent>
 					<Box flex={1} />

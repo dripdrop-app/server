@@ -24,7 +24,7 @@ const YoutubeWrapper = (props: YoutubeWrapperProps) => {
 			youtubeAuthStatus.currentData.email &&
 			!(process.env.NODE_ENV === 'development' ? false : youtubeAuthStatus.currentData.refresh)
 		) {
-			return React.cloneElement(props.children, { youtubeUser: youtubeAuthStatus.currentData });
+			return React.cloneElement(props.children, { youtubeuser: youtubeAuthStatus.currentData });
 		}
 		return props.altRender ?? null;
 	}, [props, youtubeAuthStatus.currentData, youtubeAuthStatus.isFetching, youtubeAuthStatus.isSuccess]);
