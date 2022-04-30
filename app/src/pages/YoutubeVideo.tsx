@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Box, CircularProgress, Container, Divider, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import ReactPlayer from 'react-player';
-import { useYoutubeVideoQuery } from '../api';
+import { useYoutubeVideoQuery } from '../api/youtube';
 import CustomGrid from '../components/Youtube/CustomGrid';
 import YoutubeVideoCard from '../components/Youtube/VideoCard';
 import VideoButtons from '../components/Youtube/VideoButtons';

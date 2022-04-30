@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CircularProgress, Stack, Typography, Grid } from '@mui/material';
-import { useJobsQuery } from '../../api';
+import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
 import Paginator from '../Paginator';
 

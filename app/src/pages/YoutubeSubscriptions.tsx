@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import { Container, Stack, Typography } from '@mui/material';
-import { useYoutubeSubscriptionsQuery } from '../api';
+import { useYoutubeSubscriptionsQuery } from '../api/youtube';
 import SubscriptionCard from '../components/Youtube/SubscriptionCard';
 import CustomGrid from '../components/Youtube/CustomGrid';
 import YoutubePage from '../components/Youtube/YoutubePage';

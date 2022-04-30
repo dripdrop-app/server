@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Snackbar, Stack, Alert } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLazyCreateFileJobQuery, useLazyCreateYoutubeJobQuery } from '../../api';
+import { useLazyCreateFileJobQuery, useLazyCreateYoutubeJobQuery } from '../../api/music';
 import { resetForm } from '../../state/music';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';

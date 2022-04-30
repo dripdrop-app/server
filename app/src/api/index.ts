@@ -1,7 +1,6 @@
 import { BaseQueryApi } from '@reduxjs/toolkit/dist/query/baseQueryTypes';
 import { FetchBaseQueryArgs } from '@reduxjs/toolkit/dist/query/fetchBaseQuery';
 import { createApi, fetchBaseQuery, FetchArgs } from '@reduxjs/toolkit/query/react';
-import { buildWebsocketURL } from '../config';
 
 export const errorParser = (error: ErrorResponse | undefined) => {
 	if (error && typeof error.detail === 'string') {
@@ -39,7 +38,6 @@ const tags = [
 	'MusicJob',
 	'YoutubeAuth',
 	'YoutubeVideo',
-	'YoutubeLikedVideo',
 	'YoutubeVideoCategory',
 	'YoutubeVideoQueue',
 	'YoutubeSubscription',
@@ -49,7 +47,7 @@ const tags = [
 ];
 
 const api = createApi({
-	baseQuery: customBaseQuery({ baseUrl: '/' }),
+	baseQuery: customBaseQuery({ baseUrl: '/api' }),
 	tagTypes: tags,
 	endpoints: (build) => ({
 		checkSession: build.query<User, void>({
@@ -72,200 +70,8 @@ const api = createApi({
 			}),
 			invalidatesTags: (result, error) => (!error ? tags : []),
 		}),
-		grouping: build.query<GroupingResponse, string>({
-			query: (youtubeUrl) => ({ url: `/music/grouping`, params: { youtube_url: youtubeUrl } }),
-			providesTags: ['MusicGrouping'],
-		}),
-		artwork: build.query<Artwork, string>({
-			query: (artworkUrl) => {
-				const searchParams = new URLSearchParams();
-				searchParams.append('artwork_url', artworkUrl);
-				return { url: `/music/artwork?${searchParams}` };
-			},
-			providesTags: ['MusicArtwork'],
-		}),
-		tags: build.query<TagsResponse, File>({
-			query: (file) => {
-				const formData = new FormData();
-				formData.append('file', file);
-				return { url: '/music/tags', method: 'POST', body: formData };
-			},
-			providesTags: ['MusicTags'],
-		}),
-		jobs: build.query<JobsResponse, {}>({
-			query: () => '/music/jobs',
-			providesTags: (result) => (result ? result.jobs.map((job) => ({ type: 'MusicJob', id: job.id })) : []),
-			onCacheEntryAdded: async (arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) => {
-				const url = buildWebsocketURL('/music/jobs/listen');
-				const ws = new WebSocket(url);
-				try {
-					await cacheDataLoaded;
-					ws.onmessage = (event) => {
-						const json = JSON.parse(event.data);
-						const type = json.type;
-						if (type === 'STARTED') {
-							updateCachedData(({ jobs }) => {
-								jobs.splice(0, 0, json.job);
-							});
-						} else if (type === 'COMPLETED') {
-							updateCachedData(({ jobs }) => {
-								const jobIndex = jobs.findIndex((job) => job.id === json.job.id);
-								if (jobIndex !== -1) {
-									jobs.splice(jobIndex, 1, json.job);
-								}
-							});
-						}
-					};
-				} finally {
-					await cacheEntryRemoved;
-					ws.close();
-				}
-			},
-		}),
-		removeJob: build.mutation<undefined, string>({
-			query: (jobID) => ({
-				url: `/music/jobs/delete/${jobID}`,
-				method: 'DELETE',
-			}),
-			invalidatesTags: (result, error, jobID) => (!error ? [{ type: 'MusicJob', id: jobID }] : []),
-		}),
-		downloadJob: build.query<Response, string>({
-			query: (jobID) => ({
-				url: `/music/jobs/download/${jobID}`,
-				responseHandler: (response) => Promise.resolve(response),
-			}),
-		}),
-		createFileJob: build.query<undefined, CreateFileJobBody>({
-			query: (args) => {
-				const formData = new FormData();
-				formData.append('file', args.file);
-				formData.append('artworkUrl', args.artworkUrl);
-				formData.append('title', args.title);
-				formData.append('artist', args.artist);
-				formData.append('album', args.album);
-				if (args.grouping) {
-					formData.append('grouping', args.grouping);
-				}
-				return { url: '/music/jobs/create/file', method: 'POST', body: formData };
-			},
-		}),
-		createYoutubeJob: build.query<undefined, CreateYoutubeJobBody>({
-			query: (args) => {
-				const formData = new FormData();
-				formData.append('youtubeUrl', args.youtubeUrl);
-				formData.append('artworkUrl', args.artworkUrl);
-				formData.append('title', args.title);
-				formData.append('artist', args.artist);
-				formData.append('album', args.album);
-				if (args.grouping) {
-					formData.append('grouping', args.grouping);
-				}
-				return { url: '/music/jobs/create/youtube', method: 'POST', body: formData };
-			},
-		}),
-		checkYoutubeAuth: build.query<YoutubeAuthState, void>({
-			query: () => ({ url: '/youtube/account' }),
-			providesTags: ['YoutubeAuth'],
-		}),
-		getOauthLink: build.query<string, void>({
-			query: () => ({ url: '/youtube/oauth', responseHandler: (response) => response.text() }),
-		}),
-		youtubeVideoCategories: build.query<YoutubeVideoCategoriesResponse, ChannelBody>({
-			query: ({ channelId }) => {
-				let url = '/youtube/videos/categories';
-				const searchParams = new URLSearchParams();
-				if (channelId) {
-					searchParams.append('channel_id', channelId);
-				}
-				if (searchParams.toString()) {
-					url += `?${searchParams}`;
-				}
-				return { url };
-			},
-			providesTags: (result) =>
-				result ? result.categories.map((category) => ({ type: 'YoutubeVideoCategory', id: category.id })) : [],
-		}),
-		youtubeVideo: build.query<YoutubeVideoResponse, YoutubeVideoBody>({
-			query: ({ videoId, relatedLength }) => ({
-				url: `/youtube/video/${videoId}?related_videos_length=${relatedLength}`,
-			}),
-			providesTags: (result, error, args) =>
-				result
-					? [{ type: 'YoutubeVideo', id: result.video.id }].concat(
-							result.relatedVideos.map((video) => ({ type: 'YoutubeVideo', id: video.id }))
-					  )
-					: [],
-		}),
-		youtubeVideos: build.query<YoutubeVideosResponse, YoutubeVideosBody>({
-			query: ({ perPage, page, channelId, selectedCategories, likedOnly }) => {
-				let url = `/youtube/videos/${page}/${perPage}`;
-				const searchParams = new URLSearchParams();
-				if (channelId) {
-					searchParams.append('channel_id', channelId);
-				}
-				if (selectedCategories) {
-					selectedCategories.forEach((category) => searchParams.append('video_categories', category.toString()));
-				}
-				if (likedOnly) {
-					searchParams.append('liked_only', likedOnly.toString());
-				}
-				if (searchParams.toString()) {
-					url += `?${searchParams}`;
-				}
-				return { url };
-			},
-			providesTags: (result, error, args) =>
-				result ? result.videos.map((video) => ({ type: 'YoutubeVideo', id: video.id })) : [],
-		}),
-		youtubeSubscriptions: build.query<YoutubeSubscriptionsResponse, YoutubeSubscriptionBody>({
-			query: ({ perPage, page, channelId }) => {
-				let url = `/youtube/subscriptions/${page}/${perPage}`;
-				const searchParams = new URLSearchParams();
-				if (channelId) {
-					searchParams.append('channel_id', channelId);
-				}
-				if (searchParams.toString()) {
-					url += `?${searchParams}`;
-				}
-				return { url };
-			},
-			providesTags: (result) => {
-				if (result) {
-					result.subscriptions.map((subscription) => ({ type: 'YoutubeSubscription', id: subscription.id }));
-				}
-				return [];
-			},
-		}),
-		createYoutubeVideoLike: build.mutation<undefined, string>({
-			query: (videoId) => ({ url: `/youtube/videos/like?video_id=${videoId}`, method: 'PUT' }),
-			invalidatesTags: (result, error, videoId) => (!error ? [{ type: 'YoutubeVideo', id: videoId }] : []),
-		}),
-		deleteYoutubeVideoLike: build.mutation<undefined, string>({
-			query: (videoId) => ({ url: `/youtube/videos/unlike?video_id=${videoId}`, method: 'PUT' }),
-			invalidatesTags: (result, error, videoId) => (!error ? [{ type: 'YoutubeVideo', id: videoId }] : []),
-		}),
 	}),
 });
 
 export default api;
-export const {
-	useCheckSessionQuery,
-	useLoginOrCreateMutation,
-	useLogoutMutation,
-	useLazyArtworkQuery,
-	useLazyGroupingQuery,
-	useLazyTagsQuery,
-	useLazyCreateFileJobQuery,
-	useLazyCreateYoutubeJobQuery,
-	useJobsQuery,
-	useRemoveJobMutation,
-	useLazyDownloadJobQuery,
-	useCheckYoutubeAuthQuery,
-	useLazyGetOauthLinkQuery,
-	useYoutubeVideoCategoriesQuery,
-	useYoutubeVideoQuery,
-	useYoutubeVideosQuery,
-	useYoutubeSubscriptionsQuery,
-	useCreateYoutubeVideoLikeMutation,
-	useDeleteYoutubeVideoLikeMutation,
-} = api;
+export const { useCheckSessionQuery, useLoginOrCreateMutation, useLogoutMutation } = api;

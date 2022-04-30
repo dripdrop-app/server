@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { Error } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
-import { useRemoveJobMutation, useLazyDownloadJobQuery } from '../../api';
+import { useRemoveJobMutation, useLazyDownloadJobQuery } from '../../api/music';
 import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
 import { updateForm } from '../../state/music';

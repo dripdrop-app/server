@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from 'react';
 import { Stack, CircularProgress, Button } from '@mui/material';
-import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../../api';
+import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../../api/youtube';
 import YoutubeWrapper from './YoutubeWrapper';
 import ConditionalDisplay from '../ConditionalDisplay';
 

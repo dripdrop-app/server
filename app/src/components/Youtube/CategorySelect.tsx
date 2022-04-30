@@ -1,6 +1,6 @@
 import { Chip, FormControl, InputLabel, MenuItem, Select, Stack } from '@mui/material';
 import { useCallback, useMemo, useState } from 'react';
-import { useYoutubeVideoCategoriesQuery } from '../../api';
+import { useYoutubeVideoCategoriesQuery } from '../../api/youtube';
 
 interface CategorySelectProps {
 	channelID?: string;

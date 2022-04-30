@@ -3,7 +3,7 @@ import { Grid, TextField, Switch, Button } from '@mui/material';
 import { debounce } from 'lodash';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateForm } from '../../state/music';
-import { useLazyGroupingQuery, useLazyTagsQuery } from '../../api';
+import { useLazyGroupingQuery, useLazyTagsQuery } from '../../api/music';
 import { FILE_TYPE } from '../../utils/enums';
 
 interface SourceSelectorProps {

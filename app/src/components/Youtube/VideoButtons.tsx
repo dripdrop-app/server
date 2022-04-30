@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Box, IconButton, Snackbar } from '@mui/material';
 import { AddToQueue, RemoveFromQueue, ThumbUp, Link, YouTube } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import { useCreateYoutubeVideoLikeMutation, useDeleteYoutubeVideoLikeMutation } from '../../api';
+import { useCreateYoutubeVideoLikeMutation, useDeleteYoutubeVideoLikeMutation } from '../../api/youtube';
 import { addVideoToQueue, removeVideoFromQueue } from '../../state/youtubeCollections';
 import ConditionalDisplay from '../ConditionalDisplay';
 

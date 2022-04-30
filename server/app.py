@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Depends, Request
+from fastapi import APIRouter, FastAPI, Depends, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from server.api.auth.main import app as auth_app
@@ -10,17 +10,19 @@ from server.dependencies import get_user
 from server.models.main import db
 
 
+api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_app.router, prefix="/auth")
+api_router.include_router(music_app.router, prefix="/music")
+api_router.include_router(youtube_app.router, prefix="/youtube")
+
 app = FastAPI(
     title="DripDrop",
     on_startup=[db.connect, cron_start],
     on_shutdown=[cron_end, db.disconnect],
     responses={400: {}},
     dependencies=[Depends(get_user)],
+    routes=api_router.routes,
 )
-
-app.router.include_router(auth_app.router, prefix="/auth")
-app.router.include_router(music_app.router, prefix="/music")
-app.router.include_router(youtube_app.router, prefix="/youtube")
 
 
 app.mount(

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import { Stack, Container, Typography, Box } from '@mui/material';
 import { isEqual } from 'lodash';
-import { useYoutubeVideosQuery } from '../api';
+import { useYoutubeVideosQuery } from '../api/youtube';
 import VideoCard from '../components/Youtube/VideoCard';
 import CustomGrid from '../components/Youtube/CustomGrid';
 import YoutubePage from '../components/Youtube/YoutubePage';

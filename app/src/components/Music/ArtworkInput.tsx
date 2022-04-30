@@ -3,7 +3,7 @@ import { Grid, TextField, Skeleton, Card, Button, CardMedia } from '@mui/materia
 import { useDispatch, useSelector } from 'react-redux';
 import { debounce } from 'lodash';
 import { isBase64 } from '../../utils/helpers';
-import { useLazyArtworkQuery } from '../../api';
+import { useLazyArtworkQuery } from '../../api/music';
 import { updateForm } from '../../state/music';
 import BlankImage from '../../images/blank_image.jpeg';
 import ConditionalDisplay from '../ConditionalDisplay';
