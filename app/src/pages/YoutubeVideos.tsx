@@ -1,123 +1,37 @@
-import { useEffect, useMemo, useReducer, useState, useCallback } from 'react';
-import {
-	Stack,
-	Select,
-	MenuItem,
-	InputLabel,
-	FormControl,
-	Chip,
-	Container,
-	Typography,
-	Box,
-	FormControlLabel,
-	Checkbox,
-} from '@mui/material';
+import { useEffect, useMemo, useReducer, useState } from 'react';
+import { Stack, Container, Typography, Box } from '@mui/material';
 import { isEqual } from 'lodash';
-import { useYoutubeVideoCategoriesQuery, useYoutubeVideosQuery } from '../api';
+import { useYoutubeVideosQuery } from '../api';
 import VideoCard from '../components/Youtube/VideoCard';
 import CustomGrid from '../components/Youtube/CustomGrid';
 import YoutubePage from '../components/Youtube/YoutubePage';
 import YoutubeVideoQueue from '../components/Youtube/YoutubeVideoQueue';
+import CategorySelect from '../components/Youtube/CategorySelect';
 
-interface BaseProps {
+interface YoutubeVideosProps {
 	channelID?: string;
 }
 
-const initialState: YoutubeVideoBody = {
+interface VideoMap {
+	[page: number]: YoutubeVideo[];
+}
+
+const initialState: YoutubeVideosBody = {
 	selectedCategories: [],
 	page: 1,
 	perPage: 50,
 	likedOnly: false,
 };
 
-const reducer = (state = initialState, action: Partial<YoutubeVideoBody>) => {
+const reducer = (state = initialState, action: Partial<YoutubeVideosBody>) => {
 	return { ...state, ...action };
 };
 
-interface CategoriesSelectProps {
-	categoriesLoading: boolean;
-	categories: YoutubeVideoCategory[];
-	selectedCategories: number[];
-	setSelectedCategories: (categories: number[]) => void;
-}
-
-const CategoriesSelect = (props: CategoriesSelectProps) => {
-	// NOTE: USE MODAL SELECT ON MOBILE
-	const CategoryList = useMemo(() => {
-		return [...props.categories]
-			.sort((a, b) => (a.name > b.name ? 1 : -1))
-			.map((category) => ({
-				key: category.id,
-				text: category.name,
-				value: category.id,
-			}));
-	}, [props.categories]);
-
-	const getCategory = useCallback(
-		(categoryId: number) => {
-			return CategoryList.find((category) => category.value === categoryId);
-		},
-		[CategoryList]
-	);
-
-	return useMemo(
-		() => (
-			<FormControl fullWidth>
-				<InputLabel id="categories">Categories</InputLabel>
-				<Select
-					labelId="categories"
-					label="Categories"
-					renderValue={(selected) => (
-						<Stack direction="row" flexWrap="wrap" spacing={1}>
-							{selected.map((s) => {
-								const category = getCategory(s);
-								if (category) {
-									return <Chip key={s} label={category.text} />;
-								}
-								return null;
-							})}
-						</Stack>
-					)}
-					multiple
-					value={props.selectedCategories}
-					onChange={(e) => {
-						if (typeof e.target.value === 'string') {
-							props.setSelectedCategories(e.target.value.split(',').map(parseInt));
-						} else {
-							props.setSelectedCategories(e.target.value);
-						}
-					}}
-				>
-					{CategoryList.map((category) => (
-						<MenuItem key={category.key} value={category.value}>
-							{category.text}
-						</MenuItem>
-					))}
-				</Select>
-			</FormControl>
-		),
-		[CategoryList, getCategory, props]
-	);
-};
-
-interface VideoMap {
-	[page: number]: YoutubeVideo[];
-}
-
-const YoutubeVideos = (props: BaseProps) => {
+const YoutubeVideos = (props: YoutubeVideosProps) => {
 	const [filterState, filterDispatch] = useReducer(reducer, initialState);
 	const [videoMap, setVideoMap] = useState<VideoMap>({});
 
 	const videosStatus = useYoutubeVideosQuery(filterState);
-	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: props.channelID });
-
-	const categories = useMemo(
-		() =>
-			videoCategoriesStatus.isSuccess && videoCategoriesStatus.currentData
-				? videoCategoriesStatus.currentData.categories
-				: [],
-		[videoCategoriesStatus.currentData, videoCategoriesStatus.isSuccess]
-	);
 
 	const videos = useMemo(
 		() =>
@@ -132,9 +46,9 @@ const YoutubeVideos = (props: BaseProps) => {
 			const newVideos = videosStatus.currentData.videos;
 			setVideoMap((videoMap) => {
 				if (videosStatus.originalArgs) {
-					const currentArgs = { ...filterState } as Partial<YoutubeVideoBody>;
+					const currentArgs = { ...filterState } as Partial<YoutubeVideosBody>;
 					delete currentArgs.page;
-					const calledArgs = { ...videosStatus.originalArgs } as Partial<YoutubeVideoBody>;
+					const calledArgs = { ...videosStatus.originalArgs } as Partial<YoutubeVideosBody>;
 					delete calledArgs.page;
 					if (isEqual(currentArgs, calledArgs)) {
 						return { ...videoMap, [filterState.page]: newVideos };
@@ -155,24 +69,9 @@ const YoutubeVideos = (props: BaseProps) => {
 	const VideosView = useMemo(
 		() => (
 			<Stack spacing={2} paddingY={4}>
-				<Stack direction="row" justifyContent="right">
-					<FormControlLabel
-						control={
-							<Checkbox
-								onChange={(e, checked) => {
-									setVideoMap({});
-									filterDispatch({ likedOnly: checked, page: 1 });
-								}}
-							/>
-						}
-						label="Show Liked Videos"
-					/>
-				</Stack>
-				<CategoriesSelect
-					categories={categories}
-					categoriesLoading={videoCategoriesStatus.isFetching}
-					selectedCategories={filterState.selectedCategories}
-					setSelectedCategories={(categories) => {
+				<CategorySelect
+					channelID={props.channelID}
+					onChange={(categories) => {
 						setVideoMap({});
 						filterDispatch({ selectedCategories: categories, page: 1 });
 					}}
@@ -195,15 +94,18 @@ const YoutubeVideos = (props: BaseProps) => {
 							filterDispatch({ page: filterState.page + 1 });
 						}
 					}}
+					layout={{
+						md: 3,
+						sm: 6,
+						xs: 12,
+					}}
 				/>
 			</Stack>
 		),
 		[
-			categories,
 			filterState.page,
 			filterState.perPage,
-			filterState.selectedCategories,
-			videoCategoriesStatus.isFetching,
+			props.channelID,
 			videos,
 			videosStatus.currentData,
 			videosStatus.isFetching,
@@ -214,9 +116,11 @@ const YoutubeVideos = (props: BaseProps) => {
 	return useMemo(
 		() => (
 			<Container>
-				<Stack paddingY={2}>
+				<Stack>
 					<Typography variant="h3">Youtube Videos</Typography>
-					<YoutubePage render={() => <Stack paddingY={2}>{VideosView}</Stack>} />
+					<YoutubePage>
+						<Stack paddingY={2}>{VideosView}</Stack>
+					</YoutubePage>
 				</Stack>
 			</Container>
 		),

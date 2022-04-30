@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { CircularProgress, Stack } from '@mui/material';
 import { useCheckSessionQuery } from '../../api';
 
 interface AuthWrapperProps {
-	render: (user: User) => JSX.Element;
+	children: JSX.Element;
 	altRender?: JSX.Element;
 	showLoading?: boolean;
 }
@@ -19,7 +19,7 @@ const AuthWrapper = (props: AuthWrapperProps) => {
 				</Stack>
 			);
 		} else if (sessionStatus.isSuccess && sessionStatus.currentData) {
-			return props.render(sessionStatus.currentData);
+			return React.cloneElement(props.children, { user: sessionStatus.currentData });
 		}
 		return props.altRender ?? null;
 	}, [props, sessionStatus.currentData, sessionStatus.isFetching, sessionStatus.isSuccess]);

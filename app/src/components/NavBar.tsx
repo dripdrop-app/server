@@ -118,14 +118,13 @@ const NavBar = () => {
 				<Box display={{ xs: 'none', md: 'contents' }}>
 					<Toolbar>
 						<Avatar alt="Dripdrop" src={DripDrop} />
-						<AuthWrapper render={() => NavButtons} />
+						<AuthWrapper>{NavButtons}</AuthWrapper>
 					</Toolbar>
 				</Box>
 				<Box display={{ md: 'none' }}>
-					<AuthWrapper
-						render={() => <Toolbar disableGutters>{MobileMenu}</Toolbar>}
-						altRender={<Avatar alt="Dripdrop" src={DripDrop} />}
-					/>
+					<AuthWrapper altRender={<Avatar alt="Dripdrop" src={DripDrop} />}>
+						<Toolbar disableGutters>{MobileMenu}</Toolbar>
+					</AuthWrapper>
 				</Box>
 			</AppBar>
 		),

@@ -108,6 +108,10 @@ class YoutubeResponses:
     class Videos(ResponseBaseModel):
         videos: List[YoutubeVideoResponse]
 
+    class Video(ResponseBaseModel):
+        video: YoutubeVideoResponse
+        relatedVideos: List[YoutubeVideoResponse]
+
     class Subscriptions(ResponseBaseModel):
         subscriptions: List[YoutubeSubscriptionResponse]
 

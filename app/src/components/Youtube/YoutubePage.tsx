@@ -5,7 +5,7 @@ import YoutubeWrapper from './YoutubeWrapper';
 import ConditionalDisplay from '../ConditionalDisplay';
 
 interface YoutubePageProps {
-	render: (user: YoutubeAuthState) => JSX.Element;
+	children: JSX.Element;
 }
 
 const YoutubePage = (props: YoutubePageProps) => {
@@ -27,7 +27,6 @@ const YoutubePage = (props: YoutubePageProps) => {
 		return (
 			<YoutubeWrapper
 				showLoading={true}
-				render={props.render}
 				altRender={
 					<Stack padding={10} direction="row" justifyContent="center">
 						<Button variant="contained" onClick={() => getOAuthLink()}>
@@ -38,12 +37,14 @@ const YoutubePage = (props: YoutubePageProps) => {
 						</Button>
 					</Stack>
 				}
-			/>
+			>
+				{props.children}
+			</YoutubeWrapper>
 		);
 	}, [
 		getOAuthLink,
 		getOAuthLinkStatus.isFetching,
-		props.render,
+		props.children,
 		youtubeAuthStatus.currentData,
 		youtubeAuthStatus.isSuccess,
 	]);

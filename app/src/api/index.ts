@@ -182,14 +182,21 @@ const api = createApi({
 				}
 				return { url };
 			},
-			providesTags: (result) => {
-				if (result) {
-					result.categories.map((category) => ({ type: 'YoutubeVideoCategory', id: category.id }));
-				}
-				return [];
-			},
+			providesTags: (result) =>
+				result ? result.categories.map((category) => ({ type: 'YoutubeVideoCategory', id: category.id })) : [],
 		}),
-		youtubeVideos: build.query<YoutubeVideosResponse, YoutubeVideoBody>({
+		youtubeVideo: build.query<YoutubeVideoResponse, YoutubeVideoBody>({
+			query: ({ videoId, relatedLength }) => ({
+				url: `/youtube/video/${videoId}?related_videos_length=${relatedLength}`,
+			}),
+			providesTags: (result, error, args) =>
+				result
+					? [{ type: 'YoutubeVideo', id: result.video.id }].concat(
+							result.relatedVideos.map((video) => ({ type: 'YoutubeVideo', id: video.id }))
+					  )
+					: [],
+		}),
+		youtubeVideos: build.query<YoutubeVideosResponse, YoutubeVideosBody>({
 			query: ({ perPage, page, channelId, selectedCategories, likedOnly }) => {
 				let url = `/youtube/videos/${page}/${perPage}`;
 				const searchParams = new URLSearchParams();
@@ -207,19 +214,8 @@ const api = createApi({
 				}
 				return { url };
 			},
-			providesTags: (result, error, args) => {
-				if (result) {
-					return result.videos.flatMap((video) =>
-						video.liked
-							? [
-									{ type: 'YoutubeVideo', id: video.id },
-									{ type: 'YoutubeLikedVideo', id: video.id },
-							  ]
-							: [{ type: 'YoutubeVideo', id: video.id }]
-					);
-				}
-				return [];
-			},
+			providesTags: (result, error, args) =>
+				result ? result.videos.map((video) => ({ type: 'YoutubeVideo', id: video.id })) : [],
 		}),
 		youtubeSubscriptions: build.query<YoutubeSubscriptionsResponse, YoutubeSubscriptionBody>({
 			query: ({ perPage, page, channelId }) => {
@@ -242,18 +238,11 @@ const api = createApi({
 		}),
 		createYoutubeVideoLike: build.mutation<undefined, string>({
 			query: (videoId) => ({ url: `/youtube/videos/like?video_id=${videoId}`, method: 'PUT' }),
-			invalidatesTags: (result, error, videoId) =>
-				!error ? [{ type: 'YoutubeVideo', id: videoId }, 'YoutubeLikedVideo'] : [],
+			invalidatesTags: (result, error, videoId) => (!error ? [{ type: 'YoutubeVideo', id: videoId }] : []),
 		}),
 		deleteYoutubeVideoLike: build.mutation<undefined, string>({
 			query: (videoId) => ({ url: `/youtube/videos/unlike?video_id=${videoId}`, method: 'PUT' }),
-			invalidatesTags: (result, error, videoId) =>
-				!error
-					? [
-							{ type: 'YoutubeVideo', id: videoId },
-							{ type: 'YoutubeLikedVideo', id: videoId },
-					  ]
-					: [],
+			invalidatesTags: (result, error, videoId) => (!error ? [{ type: 'YoutubeVideo', id: videoId }] : []),
 		}),
 	}),
 });
@@ -274,6 +263,7 @@ export const {
 	useCheckYoutubeAuthQuery,
 	useLazyGetOauthLinkQuery,
 	useYoutubeVideoCategoriesQuery,
+	useYoutubeVideoQuery,
 	useYoutubeVideosQuery,
 	useYoutubeSubscriptionsQuery,
 	useCreateYoutubeVideoLikeMutation,

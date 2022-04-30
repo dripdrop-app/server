@@ -1,5 +1,5 @@
 import { Route, Switch } from 'react-router-dom';
-import { Stack, Container, Box, Paper } from '@mui/material';
+import { Stack, Box, Paper } from '@mui/material';
 import NavBar from './components/NavBar';
 import MusicDownloader from './pages/MusicDownloader';
 import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
@@ -8,40 +8,73 @@ import YoutubeVideoQueue from './components/Youtube/YoutubeVideoQueue';
 import AuthWrapper from './components/Auth/AuthWrapper';
 import YoutubeWrapper from './components/Youtube/YoutubeWrapper';
 import AuthPage from './components/Auth/AuthPage';
+import YoutubeVideo from './pages/YoutubeVideo';
 
 const App = () => {
 	return (
 		<Stack>
 			<NavBar />
-			<Container>
+			<Box paddingY={4}>
 				<Switch>
-					<Route path="/youtube/subscriptions" render={() => <AuthPage render={() => <YoutubeSubscriptions />} />} />
-					<Route path="/youtube/videos" render={() => <AuthPage render={() => <YoutubeVideos />} />} />
-					<Route path="/music" render={() => <AuthPage render={() => <MusicDownloader />} />} />
-					<Route path="/" render={() => <AuthPage render={() => <MusicDownloader />} />} />
+					<Route
+						path="/youtube/subscriptions"
+						render={() => (
+							<AuthPage>
+								<YoutubeSubscriptions />
+							</AuthPage>
+						)}
+					/>
+					<Route
+						path="/youtube/video/:id"
+						render={(props) => (
+							<AuthPage>
+								<YoutubeVideo id={props.match.params.id} />
+							</AuthPage>
+						)}
+					/>
+					<Route
+						path="/youtube/videos"
+						render={() => (
+							<AuthPage>
+								<YoutubeVideos />
+							</AuthPage>
+						)}
+					/>
+					<Route
+						path="/music"
+						render={() => (
+							<AuthPage>
+								<MusicDownloader />
+							</AuthPage>
+						)}
+					/>
+					<Route
+						path="/"
+						render={() => (
+							<AuthPage>
+								<MusicDownloader />
+							</AuthPage>
+						)}
+					/>
 				</Switch>
-			</Container>
+			</Box>
 			<Box display={{ xs: 'none', sm: 'contents' }}>
-				<AuthWrapper
-					render={() => (
-						<YoutubeWrapper
-							render={() => (
-								<Paper
-									sx={{
-										width: '100%',
-										position: 'fixed',
-										left: 0,
-										bottom: 0,
-										borderRadius: 0,
-										zIndex: 99,
-									}}
-								>
-									<YoutubeVideoQueue />
-								</Paper>
-							)}
-						/>
-					)}
-				/>
+				<AuthWrapper>
+					<YoutubeWrapper>
+						<Paper
+							sx={{
+								width: '100%',
+								position: 'fixed',
+								left: 0,
+								bottom: 0,
+								borderRadius: 0,
+								zIndex: 99,
+							}}
+						>
+							<YoutubeVideoQueue />
+						</Paper>
+					</YoutubeWrapper>
+				</AuthWrapper>
 			</Box>
 		</Stack>
 	);

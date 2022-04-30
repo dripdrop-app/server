@@ -8,20 +8,24 @@ interface CustomGridProps<T> {
 	itemKey: (item: T) => any;
 	renderItem: (item: T) => JSX.Element;
 	perPage: number;
-	isFetching: boolean;
-	fetchMore: () => void;
+	isFetching?: boolean;
+	fetchMore?: () => void;
+	layout: {
+		md?: number;
+		sm?: number;
+		xs?: number;
+	};
 }
 
 const CustomGrid = <T,>(props: CustomGridProps<T>) => {
+	const { items, renderItem, isFetching, perPage, fetchMore, itemKey, layout } = props;
 	const [showScrollButton, setShowScrollButton] = useState(false);
 
 	const gridRef = useRef<HTMLDivElement | null>(null);
 
-	const { items, renderItem, isFetching, perPage, fetchMore, itemKey } = props;
-
 	const itemsToRender = useMemo(() => {
 		const elements = items.map((item) => (
-			<Grid key={`grid-${itemKey(item)}`} item md={3} sm={6} xs={12} padding={1}>
+			<Grid key={`grid-${itemKey(item)}`} item {...layout} padding={1}>
 				{renderItem(item)}
 			</Grid>
 		));
@@ -31,18 +35,18 @@ const CustomGrid = <T,>(props: CustomGridProps<T>) => {
 				...Array(perPage)
 					.fill(0)
 					.map((v, i) => (
-						<Grid key={`grid-${i}`} item md={3} sm={6} xs={12} padding={1}>
+						<Grid key={`grid-${i}`} item {...layout} padding={1}>
 							<Skeleton sx={{ height: elements.length > 0 ? '100%' : '30vh' }} variant="rectangular" />
 						</Grid>
 					))
 			);
 		}
 		return elements;
-	}, [isFetching, items, itemKey, perPage, renderItem]);
+	}, [items, isFetching, itemKey, layout, renderItem, perPage]);
 
 	const onGridBottom = useCallback(() => {
 		if (document.body.offsetHeight - 500 < window.innerHeight + window.scrollY) {
-			if (!isFetching) {
+			if (!isFetching && fetchMore) {
 				fetchMore();
 			}
 		}

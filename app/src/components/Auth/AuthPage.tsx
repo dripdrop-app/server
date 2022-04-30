@@ -6,7 +6,7 @@ import AuthWrapper from './AuthWrapper';
 import ConditionalDisplay from '../ConditionalDisplay';
 
 interface AuthPageProps {
-	render: (user: User) => JSX.Element;
+	children: JSX.Element;
 }
 
 const AuthPage = (props: AuthPageProps) => {
@@ -56,7 +56,6 @@ const AuthPage = (props: AuthPageProps) => {
 		return (
 			<AuthWrapper
 				showLoading={true}
-				render={props.render}
 				altRender={
 					<Container>
 						<Grid container>
@@ -92,9 +91,11 @@ const AuthPage = (props: AuthPageProps) => {
 						</Grid>
 					</Container>
 				}
-			/>
+			>
+				{props.children}
+			</AuthWrapper>
 		);
-	}, [Notice, clearForm, email, loginOrCreateStatus.isLoading, password, props.render, submitForm, tab]);
+	}, [Notice, clearForm, email, loginOrCreateStatus.isLoading, password, props.children, submitForm, tab]);
 };
 
 export default AuthPage;

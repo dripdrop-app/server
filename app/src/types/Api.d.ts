@@ -67,13 +67,23 @@ declare global {
 		page: number;
 	}
 
-	interface YoutubeVideoBody extends ChannelBody, PageBody {
+	interface YoutubeVideosBody extends ChannelBody, PageBody {
 		selectedCategories: number[];
 		likedOnly: boolean;
 	}
 
 	interface YoutubeVideosResponse {
 		videos: YoutubeVideo[];
+	}
+
+	interface YoutubeVideoBody {
+		videoId: string;
+		relatedLength: number;
+	}
+
+	interface YoutubeVideoResponse {
+		video: YoutubeVideo;
+		relatedVideos: YoutubeVideo[];
 	}
 
 	type YoutubeSubscriptionBody = ChannelBody & PageBody;

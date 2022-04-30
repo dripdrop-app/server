@@ -45,6 +45,11 @@ const YoutubeSubscriptions = () => {
 							filterDispatch({ page: filterState.page + 1 });
 						}
 					}}
+					layout={{
+						md: 3,
+						sm: 6,
+						xs: 12,
+					}}
 				/>
 			</Stack>
 		),
@@ -61,9 +66,11 @@ const YoutubeSubscriptions = () => {
 	return useMemo(
 		() => (
 			<Container>
-				<Stack paddingY={2}>
+				<Stack>
 					<Typography variant="h3">Youtube Subscriptions</Typography>
-					<YoutubePage render={() => <Stack paddingY={2}>{SubscriptionsView}</Stack>} />
+					<YoutubePage>
+						<Stack paddingY={2}>{SubscriptionsView}</Stack>
+					</YoutubePage>
 				</Stack>
 			</Container>
 		),
