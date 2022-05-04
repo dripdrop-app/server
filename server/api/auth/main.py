@@ -1,23 +1,15 @@
-import logging
 import bcrypt
-import server.utils.google_api as google_api
 import uuid
-from asyncpg.exceptions import UniqueViolationError
-from fastapi import Body, FastAPI, Depends, Query, Response, HTTPException
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import Body, FastAPI, Depends, Response, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 from sqlalchemy.sql.expression import true
 from server.dependencies import SessionHandler, get_authenticated_user
 from server.models.main import AuthenticatedUser
 from server.models.api import AuthResponses
 from server.config import config
-from server.models.main import db, GoogleAccounts, Users, Sessions, User
-from server.rq import queue
-from server.tasks.youtube import (
-    update_youtube_video_categories,
-    update_user_youtube_subscriptions_job,
-)
-from sqlalchemy import select, insert, update
+from server.models.main import db, Users, Sessions, User
+from sqlalchemy import select, insert
 
 app = FastAPI()
 
@@ -97,57 +89,3 @@ async def create_account(
 #         return JSONResponse({'error': e.message}, 400)
 
 #     return Response({'email': email, 'admin': False}, 201)
-
-
-@app.get(
-    "/googleoauth2", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
-)
-async def google_oauth2(
-    state: str = Query(...), code: str = Query(...), error: str = Query(None)
-):
-    if error:
-        raise HTTPException(400)
-
-    email = state
-    query = select(Users).where(Users.email == email)
-    user = await db.fetch_one(query)
-    if not user:
-        return RedirectResponse("/")
-
-    tokens = await google_api.get_oauth_tokens(
-        f"{config.server_url}/auth/googleoauth2", code
-    )
-    if tokens:
-        google_email = await google_api.get_user_email(tokens.get("access_token"))
-        if google_email:
-            try:
-                query = insert(GoogleAccounts).values(
-                    email=google_email,
-                    user_email=email,
-                    access_token=tokens["access_token"],
-                    refresh_token=tokens["refresh_token"],
-                    expires=tokens["expires_in"],
-                )
-                await db.execute(query)
-            except UniqueViolationError:
-                query = (
-                    update(GoogleAccounts)
-                    .values(
-                        access_token=tokens["access_token"],
-                        refresh_token=tokens["refresh_token"],
-                        expires=tokens["expires_in"],
-                    )
-                    .where(GoogleAccounts.email == google_email)
-                )
-                await db.execute(query)
-            except Exception:
-                return RedirectResponse("/youtube/videos")
-            job = queue.enqueue(update_youtube_video_categories, False)
-            queue.enqueue_call(
-                update_user_youtube_subscriptions_job,
-                args=(email,),
-                depends_on=job,
-            )
-    else:
-        logging.warning("Could not retrieve tokens")
-    return RedirectResponse("/youtube/videos")

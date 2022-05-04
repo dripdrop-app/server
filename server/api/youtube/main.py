@@ -1,11 +1,13 @@
+import logging
 import server.utils.google_api as google_api
 from asyncpg import UniqueViolationError
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, WebSocket, Response
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from server.config import config
 from server.dependencies import get_authenticated_user
 from server.models.main import (
     db,
+    Users,
     YoutubeVideo,
     YoutubeVideoCategory,
     YoutubeVideoLikes,
@@ -27,7 +29,12 @@ from server.redis import (
     create_websocket_redis_channel_listener,
     RedisChannels,
 )
-from server.tasks.youtube import update_google_access_token
+from server.rq import queue
+from server.tasks.youtube import (
+    update_google_access_token,
+    update_user_youtube_subscriptions_job,
+    update_youtube_video_categories,
+)
 from sqlalchemy import insert, select, update, delete
 from typing import List
 
@@ -47,6 +54,60 @@ def convertVideoToResponse(video: YoutubeVideo, row):
         channel_title=row["channel_title"],
         liked=bool(row["liked"]),
     )
+
+
+@app.get(
+    "/googleoauth2", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
+)
+async def google_oauth2(
+    state: str = Query(...), code: str = Query(...), error: str = Query(None)
+):
+    if error:
+        raise HTTPException(400)
+
+    email = state
+    query = select(Users).where(Users.email == email)
+    user = await db.fetch_one(query)
+    if not user:
+        return RedirectResponse("/")
+
+    tokens = await google_api.get_oauth_tokens(
+        f"{config.server_url}/api/youtube/googleoauth2", code
+    )
+    if tokens:
+        google_email = await google_api.get_user_email(tokens.get("access_token"))
+        if google_email:
+            try:
+                query = insert(GoogleAccounts).values(
+                    email=google_email,
+                    user_email=email,
+                    access_token=tokens["access_token"],
+                    refresh_token=tokens["refresh_token"],
+                    expires=tokens["expires_in"],
+                )
+                await db.execute(query)
+            except UniqueViolationError:
+                query = (
+                    update(GoogleAccounts)
+                    .values(
+                        access_token=tokens["access_token"],
+                        refresh_token=tokens["refresh_token"],
+                        expires=tokens["expires_in"],
+                    )
+                    .where(GoogleAccounts.email == google_email)
+                )
+                await db.execute(query)
+            except Exception:
+                return RedirectResponse("/youtube/videos")
+            job = queue.enqueue(update_youtube_video_categories, False)
+            queue.enqueue_call(
+                update_user_youtube_subscriptions_job,
+                args=(email,),
+                depends_on=job,
+            )
+    else:
+        logging.warning("Could not retrieve tokens")
+    return RedirectResponse("/youtube/videos")
 
 
 @app.get("/account", response_model=YoutubeResponses.Account)
@@ -81,7 +142,7 @@ async def get_youtube_account(
 @app.get("/oauth", response_class=PlainTextResponse)
 async def create_oauth_link(user: AuthenticatedUser = Depends(get_authenticated_user)):
     oauth = google_api.create_oauth_url(
-        f"{config.server_url}/auth/googleoauth2", user.email
+        f"{config.server_url}/api/youtube/googleoauth2", user.email
     )
     return PlainTextResponse(oauth["url"])
 
