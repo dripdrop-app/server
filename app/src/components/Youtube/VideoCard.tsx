@@ -52,7 +52,7 @@ const VideoCard = (props: VideoCardProps) => {
 				</Stack>
 			</Card>
 		),
-		[VideoInfo, sx, video, videoLink]
+		[VideoInfo, history, sx, video, videoLink]
 	);
 };
 

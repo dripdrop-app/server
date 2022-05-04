@@ -58,11 +58,13 @@ async def get_youtube_account(
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
         access_token = google_account.access_token
-        if config.env == "production":
+        if config.env == "development":
             new_access_token = await update_google_access_token(
                 google_account.email, db=db
             )
-            if new_access_token != access_token:
+            if not new_access_token:
+                return YoutubeResponses.Account(email="", refresh=False)
+            elif new_access_token != access_token:
                 access_token = new_access_token
                 query = (
                     update(GoogleAccounts)

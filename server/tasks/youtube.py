@@ -42,8 +42,7 @@ async def update_google_access_token(google_email: str, db: Database):
             )
             await db.execute(query)
             return new_access_token["access_token"]
-        else:
-            return ""
+        return ""
     return access_token
 
 
