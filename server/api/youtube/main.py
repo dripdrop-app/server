@@ -123,9 +123,7 @@ async def get_youtube_account(
             new_access_token = await update_google_access_token(
                 google_account.email, db=db
             )
-            if not new_access_token:
-                return YoutubeResponses.Account(email="", refresh=False)
-            elif new_access_token != access_token:
+            if new_access_token != access_token:
                 access_token = new_access_token
                 query = (
                     update(GoogleAccounts)
