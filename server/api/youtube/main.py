@@ -58,7 +58,7 @@ async def get_youtube_account(
     if google_account:
         google_account = GoogleAccount.parse_obj(google_account)
         access_token = google_account.access_token
-        if config.env == "development":
+        if config.env == "production":
             new_access_token = await update_google_access_token(
                 google_account.email, db=db
             )
