@@ -1,3 +1,4 @@
+import logging
 import bcrypt
 import server.utils.google_api as google_api
 import uuid
@@ -140,11 +141,13 @@ async def google_oauth2(
                 )
                 await db.execute(query)
             except Exception:
-                return RedirectResponse("/youtubeCollections")
+                return RedirectResponse("/youtube/videos")
             job = queue.enqueue(update_youtube_video_categories, False)
             queue.enqueue_call(
                 update_user_youtube_subscriptions_job,
                 args=(email,),
                 depends_on=job,
             )
-    return RedirectResponse("/youtubeCollections")
+    else:
+        logging.warning("Could not retrieve tokens")
+    return RedirectResponse("/youtube/videos")
