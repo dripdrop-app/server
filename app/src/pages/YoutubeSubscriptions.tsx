@@ -1,63 +1,63 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
-import { Container, Stack, Typography } from '@mui/material';
-import { useYoutubeSubscriptionsQuery } from '../api/youtube';
-import SubscriptionCard from '../components/Youtube/Content/SubscriptionCard';
+import { useMemo, useRef, useState } from 'react';
+import { Container, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import InfiniteScroll from '../components/InfiniteScroll';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-
-const initialState: PageState = {
-	page: 1,
-	perPage: 48,
-};
-
-const reducer = (state = initialState, action: Partial<PageState>) => {
-	return { ...state, ...action };
-};
+import YoutubeSubscriptionsPage from '../components/Youtube/Content/YoutubeSubscriptionsPage';
+import YoutubeSubscriptionCard from '../components/Youtube/Content/YoutubeSubscriptionCard';
 
 const YoutubeSubscriptions = () => {
-	const [filterState, filterDispatch] = useReducer(reducer, initialState);
-	const [subscriptions, setSubscriptions] = useState<YoutubeSubscription[]>([]);
-
-	const subscriptionsStatus = useYoutubeSubscriptionsQuery(filterState);
-
-	useEffect(() => {
-		if (subscriptionsStatus.isSuccess && subscriptionsStatus.currentData) {
-			const newSubscriptions = subscriptionsStatus.currentData.subscriptions;
-			setSubscriptions((subscriptions) => [...subscriptions, ...newSubscriptions]);
-		}
-	}, [subscriptionsStatus.currentData, subscriptionsStatus.isSuccess]);
+	const [pages, setPages] = useState(1);
+	const pagesLoaded = useRef<Record<number, boolean>>({});
 
 	const SubscriptionsView = useMemo(
 		() => (
 			<Stack spacing={2} paddingY={2}>
 				<InfiniteScroll
-					items={subscriptions}
-					renderItem={(subscription) => (
-						<SubscriptionCard
-							key={'subscription' + subscription.id}
-							sx={{ height: '100%' }}
-							subscription={subscription}
-						/>
+					items={Array(pages).fill(1)}
+					renderItem={(page, index) => (
+						<Grid container>
+							<YoutubeSubscriptionsPage
+								page={index + 1}
+								perPage={48}
+								onLoading={(page) => {
+									pagesLoaded.current[page] = false;
+								}}
+								onLoaded={(page, subscriptions) => {
+									if (subscriptions.length === 48) {
+										pagesLoaded.current[page] = true;
+									}
+								}}
+								renderLoadingItem={() => (
+									<Grid item xs={12} sm={6} md={3} padding={1}>
+										<Skeleton
+											sx={(theme) => ({
+												height: '40vh',
+												[theme.breakpoints.only('xs')]: { width: '80vw' },
+												[theme.breakpoints.only('sm')]: { width: '40vw' },
+												[theme.breakpoints.up('md')]: { width: '20vw' },
+												[theme.breakpoints.only('xl')]: { width: '10vw' },
+											})}
+											variant="rectangular"
+										/>
+									</Grid>
+								)}
+								renderItem={(subscription) => (
+									<Grid item xs={12} sm={6} md={3} padding={1}>
+										<YoutubeSubscriptionCard sx={{ height: '100%' }} subscription={subscription} />
+									</Grid>
+								)}
+							/>
+						</Grid>
 					)}
 					onEndReached={() => {
-						if (
-							subscriptionsStatus.isSuccess &&
-							subscriptionsStatus.currentData &&
-							subscriptionsStatus.currentData.subscriptions.length === filterState.perPage
-						) {
-							filterDispatch({ page: filterState.page + 1 });
+						if (pagesLoaded.current[pages]) {
+							setPages((page) => page + 1);
 						}
 					}}
 				/>
 			</Stack>
 		),
-		[
-			filterState.page,
-			filterState.perPage,
-			subscriptions,
-			subscriptionsStatus.currentData,
-			subscriptionsStatus.isSuccess,
-		]
+		[pages]
 	);
 
 	return useMemo(

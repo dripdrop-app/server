@@ -15,7 +15,7 @@ const VideoCard = (props: VideoCardProps) => {
 
 	return useMemo(() => {
 		const publishedAt = new Date(video.publishedAt).toLocaleDateString();
-		const channelLink = `https://youtube.com/channel/${video.channelId}`;
+		const channelLink = `/youtube/channel/${video.channelId}`;
 		const videoLink = `/youtube/video/${video.id}`;
 
 		return (
@@ -36,7 +36,7 @@ const VideoCard = (props: VideoCardProps) => {
 					<CardContent>
 						<Stack>
 							<Stack alignItems="center" direction="row" flexWrap="wrap">
-								<Link href={channelLink} underline="none">
+								<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(channelLink)} underline="none">
 									{video.channelTitle}
 								</Link>
 								<Box flex={1} />

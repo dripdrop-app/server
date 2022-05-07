@@ -27,7 +27,7 @@ import {
 } from '../state/youtube';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
 import { useDeleteYoutubeVideoQueueMutation, useYoutubeVideoQueueQuery } from '../api/youtube';
-import YoutubeVideosPage from '../components/Youtube/YoutubeVideosPage';
+import YoutubeVideosPage from '../components/Youtube/Content/YoutubeVideosPage';
 import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
 import VideoButtons from '../components/Youtube/Content/VideoButtons';
 
@@ -75,8 +75,10 @@ const YoutubeVideoQueue = () => {
 								onLoading={(page) => {
 									pagesLoaded.current[page] = false;
 								}}
-								onLoaded={(page) => {
-									pagesLoaded.current[page] = true;
+								onLoaded={(page, videos) => {
+									if (videos.length === 50) {
+										pagesLoaded.current[page] = true;
+									}
 								}}
 								renderLoadingItem={() => (
 									<ListItem>
@@ -151,17 +153,19 @@ const YoutubeVideoQueue = () => {
 		() => (
 			<YoutubePage>
 				<Stack>
-					<Box height="80vh">
+					<Box marginBottom={2} height="80vh">
 						<YoutubeVideoQueuePlayer playing={true} />
 					</Box>
 					<Box margin={1}>{VideoPlayerButtons}</Box>
 					<Divider />
-					<Container>
-						<Box margin={2}>
-							<Typography variant="h5">Queue</Typography>
-						</Box>
-						<Box>{QueueSlide}</Box>
-					</Container>
+					<Box margin={1}>
+						<Container>
+							<Box margin={2}>
+								<Typography variant="h5">Queue</Typography>
+							</Box>
+							<Box>{QueueSlide}</Box>
+						</Container>
+					</Box>
 				</Stack>
 			</YoutubePage>
 		),

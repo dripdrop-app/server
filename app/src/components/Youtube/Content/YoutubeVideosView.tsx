@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Checkbox, FormControlLabel, Grid, Skeleton, Stack } from '@mui/material';
 import CategorySelect from './CategorySelect';
 import InfiniteScroll from '../../InfiniteScroll';
-import YoutubeVideosPage from '../YoutubeVideosPage';
+import YoutubeVideosPage from './YoutubeVideosPage';
 import YoutubeVideoCard from './YoutubeVideoCard';
 
 interface YoutubeVideosViewProps {
@@ -49,8 +49,10 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 								onLoading={(page) => {
 									pagesLoaded.current[page] = false;
 								}}
-								onLoaded={(page) => {
-									pagesLoaded.current[page] = true;
+								onLoaded={(page, videos) => {
+									if (videos.length === 48) {
+										pagesLoaded.current[page] = true;
+									}
 								}}
 								renderLoadingItem={() => (
 									<Grid item xs={12} sm={6} md={3} padding={1}>

@@ -1,8 +1,17 @@
 import { useEffect, useMemo } from 'react';
-import { Box, CircularProgress, Container, Divider, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+	Box,
+	CircularProgress,
+	Container,
+	Divider,
+	Grid,
+	Stack,
+	Typography,
+	useMediaQuery,
+	useTheme,
+} from '@mui/material';
 import ReactPlayer from 'react-player';
 import { useYoutubeVideoQuery } from '../api/youtube';
-import InfiniteScroll from '../components/InfiniteScroll';
 import YoutubeVideoCard from '../components/Youtube/Content/YoutubeVideoCard';
 import VideoButtons from '../components/Youtube/Content/VideoButtons';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
@@ -25,7 +34,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 		if (videoStatus.data) {
 			const { video, relatedVideos } = videoStatus.data;
 			return (
-				<Stack marginBottom={4}>
+				<Stack>
 					<Box marginBottom={2} height="80vh">
 						<ReactPlayer
 							height="100%"
@@ -54,12 +63,13 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 							<Box margin={1}>
 								<Typography variant="h5">Related Videos</Typography>
 							</Box>
-							<InfiniteScroll
-								items={relatedVideos}
-								renderItem={(video) => (
-									<YoutubeVideoCard key={'video' + video.id} sx={{ height: '100%' }} video={video} />
-								)}
-							/>
+							<Grid container>
+								{relatedVideos.map((video) => (
+									<Grid item xs={12} sm={6} md={12 / 5} padding={1}>
+										<YoutubeVideoCard sx={{ height: '100%' }} video={video} />
+									</Grid>
+								))}
+							</Grid>
 						</Container>
 					</Box>
 				</Stack>
@@ -70,12 +80,12 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 					<CircularProgress />
 				</Stack>
 			);
-		} else
-			return (
-				<Stack padding={10} direction="row" justifyContent="center">
-					Failed to load video
-				</Stack>
-			);
+		}
+		return (
+			<Stack padding={10} direction="row" justifyContent="center">
+				Failed to load video
+			</Stack>
+		);
 	}, [isMobile, videoStatus.data, videoStatus.isLoading]);
 
 	useEffect(() => {

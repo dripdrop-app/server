@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { isEqual } from 'lodash';
-import { useYoutubeVideosQuery } from '../../api/youtube';
+import { useYoutubeVideosQuery } from '../../../api/youtube';
 
 interface YoutubeVideosPageProps extends YoutubeVideosBody {
 	renderLoadingItem: () => JSX.Element;
 	renderItem: (video: YoutubeVideo, index: number) => JSX.Element;
 	onLoading?: (page: number) => void;
-	onLoaded?: (page: number) => void;
+	onLoaded?: (page: number, videos: YoutubeVideo[]) => void;
 }
 
 const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
@@ -27,20 +27,6 @@ const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
 		[videosStatus.currentData, videosStatus.isSuccess]
 	);
 
-	useEffect(() => {
-		const selectedProps = {
-			perPage: props.perPage,
-			page: props.page,
-			channelID: props.channelID,
-			selectedCategories: props.selectedCategories,
-			queuedOnly: props.queuedOnly,
-			likedOnly: props.likedOnly,
-		};
-		if (!isEqual(selectedProps, args)) {
-			setArgs(selectedProps);
-		}
-	}, [args, props]);
-
 	const itemsToRender = useMemo(() => {
 		if (videosStatus.isLoading) {
 			return Array(props.perPage)
@@ -54,16 +40,30 @@ const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
 	}, [videosStatus.isLoading, videos, props.perPage, args.page, renderLoadingItem, renderItem]);
 
 	useEffect(() => {
-		if (onLoaded && videosStatus.isSuccess) {
-			onLoaded(args.page);
+		if (onLoaded && videosStatus.isSuccess && videosStatus.currentData) {
+			onLoaded(args.page, videosStatus.currentData.videos);
 		}
-	}, [args.page, onLoaded, videosStatus.isSuccess]);
+	}, [args.page, onLoaded, videosStatus.currentData, videosStatus.isSuccess]);
 
 	useEffect(() => {
 		if (onLoading && (videosStatus.isLoading || videosStatus.isFetching)) {
 			onLoading(args.page);
 		}
 	}, [args.page, onLoading, videosStatus.isFetching, videosStatus.isLoading]);
+
+	useEffect(() => {
+		const selectedProps = {
+			perPage: props.perPage,
+			page: props.page,
+			channelID: props.channelID,
+			selectedCategories: props.selectedCategories,
+			queuedOnly: props.queuedOnly,
+			likedOnly: props.likedOnly,
+		};
+		if (!isEqual(selectedProps, args)) {
+			setArgs(selectedProps);
+		}
+	}, [args, props]);
 
 	return <React.Fragment>{itemsToRender}</React.Fragment>;
 };

@@ -10,6 +10,7 @@ import YoutubeWrapper from './components/Youtube/Auth/YoutubeWrapper';
 import AuthPage from './components/Auth/AuthPage';
 import YoutubeVideo from './pages/YoutubeVideo';
 import YoutubeVideoQueue from './pages/YoutubeVideoQueue';
+import YoutubeChannel from './pages/YoutubeChannel';
 
 const App = () => {
 	return (
@@ -17,6 +18,14 @@ const App = () => {
 			<NavBar />
 			<Box paddingY={4}>
 				<Switch>
+					<Route
+						path="/youtube/channel/:id"
+						render={(props) => (
+							<AuthPage>
+								<YoutubeChannel channelID={props.match.params.id} />
+							</AuthPage>
+						)}
+					/>
 					<Route
 						path="/youtube/subscriptions"
 						render={() => (

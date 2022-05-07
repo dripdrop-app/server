@@ -42,6 +42,7 @@ export const tags = [
 	'YoutubeVideoQueue',
 	'YoutubeVideoLike',
 	'YoutubeSubscription',
+	'YoutubeChannel',
 	'MusicGrouping',
 	'MusicArtwork',
 	'MusicTags',

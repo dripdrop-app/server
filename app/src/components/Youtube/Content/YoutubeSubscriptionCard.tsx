@@ -1,25 +1,28 @@
 import { useMemo } from 'react';
 import { SxProps, Theme, Card, CardMedia, CardContent, Link, Stack, Box } from '@mui/material';
+import { useHistory } from 'react-router-dom';
 
 interface SubscriptionCardProps {
 	subscription: YoutubeSubscription;
 	sx?: SxProps<Theme>;
 }
 
-const SubscriptionCard = (props: SubscriptionCardProps) => {
+const YoutubeSubscriptionCard = (props: SubscriptionCardProps) => {
 	const { subscription, sx } = props;
 	const publishedAt = new Date(subscription.publishedAt).toLocaleDateString();
-	const channelLink = `https://youtube.com/channel/${subscription.channelId}`;
+	const channelLink = `/youtube/channel/${subscription.channelId}`;
+
+	const history = useHistory();
 
 	return useMemo(
 		() => (
 			<Card sx={sx} variant="outlined">
 				<Stack height="100%">
-					<Link href={channelLink} target="_blank" rel="noreferrer">
+					<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(channelLink)}>
 						<CardMedia component="img" image={subscription.channelThumbnail} />
 					</Link>
 					<CardContent>
-						<Link href={channelLink} target="_blank" rel="noreferrer" underline="none">
+						<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(channelLink)} underline="none">
 							{subscription.channelTitle}
 						</Link>
 					</CardContent>
@@ -30,8 +33,8 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
 				</Stack>
 			</Card>
 		),
-		[channelLink, publishedAt, subscription.channelThumbnail, subscription.channelTitle, sx]
+		[channelLink, history, publishedAt, subscription.channelThumbnail, subscription.channelTitle, sx]
 	);
 };
 
-export default SubscriptionCard;
+export default YoutubeSubscriptionCard;

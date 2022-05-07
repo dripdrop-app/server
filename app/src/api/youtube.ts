@@ -140,6 +140,15 @@ const youtubeApi = api.injectEndpoints({
 				return [];
 			},
 		}),
+		youtubeChannel: build.query<YoutubeChannel, string>({
+			query: (channelID) => ({ url: `/youtube/channel/${channelID}`, method: 'GET' }),
+			providesTags: (result) => {
+				if (result) {
+					return [{ type: 'YoutubeChannel', id: result.id }];
+				}
+				return [];
+			},
+		}),
 	}),
 });
 
@@ -156,4 +165,5 @@ export const {
 	useDeleteYoutubeVideoLikeMutation,
 	useAddYoutubeVideoQueueMutation,
 	useDeleteYoutubeVideoQueueMutation,
+	useYoutubeChannelQuery,
 } = youtubeApi;
