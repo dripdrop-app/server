@@ -4,11 +4,12 @@ import NavBar from './components/NavBar';
 import MusicDownloader from './pages/MusicDownloader';
 import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
 import YoutubeVideos from './pages/YoutubeVideos';
-import YoutubeVideoQueue from './components/Youtube/YoutubeVideoQueue';
+import YoutubeVideoQueueDisplay from './components/Youtube/Queue/YoutubeVideoQueueDisplay';
 import AuthWrapper from './components/Auth/AuthWrapper';
-import YoutubeWrapper from './components/Youtube/YoutubeWrapper';
+import YoutubeWrapper from './components/Youtube/Auth/YoutubeWrapper';
 import AuthPage from './components/Auth/AuthPage';
 import YoutubeVideo from './pages/YoutubeVideo';
+import YoutubeVideoQueue from './pages/YoutubeVideoQueue';
 
 const App = () => {
 	return (
@@ -21,6 +22,14 @@ const App = () => {
 						render={() => (
 							<AuthPage>
 								<YoutubeSubscriptions />
+							</AuthPage>
+						)}
+					/>
+					<Route
+						path="/youtube/videos/queue"
+						render={(props) => (
+							<AuthPage>
+								<YoutubeVideoQueue />
 							</AuthPage>
 						)}
 					/>
@@ -58,7 +67,7 @@ const App = () => {
 					/>
 				</Switch>
 			</Box>
-			<Box display={{ xs: 'none', sm: 'contents' }}>
+			<Box>
 				<AuthWrapper>
 					<YoutubeWrapper>
 						<Paper
@@ -71,7 +80,7 @@ const App = () => {
 								zIndex: 99,
 							}}
 						>
-							<YoutubeVideoQueue />
+							<YoutubeVideoQueueDisplay />
 						</Paper>
 					</YoutubeWrapper>
 				</AuthWrapper>

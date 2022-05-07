@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Stack, CircularProgress, Alert, Button, Container, Grid, Tab, Tabs, TextField } from '@mui/material';
-import { useLoginOrCreateMutation } from '../../api';
+import { useLoginOrCreateMutation } from '../../api/auth';
 import { isFetchBaseQueryError } from '../../utils/helpers';
 import AuthWrapper from './AuthWrapper';
 import ConditionalDisplay from '../ConditionalDisplay';

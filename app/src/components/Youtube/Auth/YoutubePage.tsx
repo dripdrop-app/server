@@ -1,8 +1,8 @@
 import { useMemo, useEffect } from 'react';
 import { Stack, CircularProgress, Button } from '@mui/material';
-import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../../api/youtube';
+import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../../../api/youtube';
 import YoutubeWrapper from './YoutubeWrapper';
-import ConditionalDisplay from '../ConditionalDisplay';
+import ConditionalDisplay from '../../ConditionalDisplay';
 
 interface YoutubePageProps {
 	children: JSX.Element;

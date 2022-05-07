@@ -18,9 +18,9 @@ import {
 } from '@mui/material';
 import { Menu as MenuIcon, ArrowDropDown, AccountCircle } from '@mui/icons-material';
 import { useHistory } from 'react-router';
-import { useLogoutMutation } from '../api';
-import DripDrop from '../images/dripdrop.png';
+import { useLogoutMutation } from '../api/auth';
 import AuthWrapper from './Auth/AuthWrapper';
+import DripDrop from '../images/dripdrop.png';
 
 const NavBar = () => {
 	const [openMobileMenu, setOpenMobileMenu] = useState(false);
@@ -79,6 +79,7 @@ const NavBar = () => {
 				<Menu anchorEl={ytMenu.current} open={openYTMenu} onClose={() => setOpenYTMenu(false)}>
 					<CustomMenuItem onClick={() => history.push('/youtube/videos')}>Videos</CustomMenuItem>
 					<CustomMenuItem onClick={() => history.push('/youtube/subscriptions')}>Subscriptions</CustomMenuItem>
+					<CustomMenuItem onClick={() => history.push('/youtube/videos/queue')}>Video Queue</CustomMenuItem>
 				</Menu>
 				<Menu anchorEl={userMenu.current} open={openUserMenu} onClose={() => setOpenUserMenu(false)}>
 					<CustomMenuItem onClick={() => logout()}>Logout</CustomMenuItem>
@@ -101,6 +102,7 @@ const NavBar = () => {
 					<Box marginLeft={1}>
 						<CustomMenuItem onClick={() => history.push('/youtube/videos')}>Videos</CustomMenuItem>
 						<CustomMenuItem onClick={() => history.push('/youtube/subscriptions')}>Subscriptions</CustomMenuItem>
+						<CustomMenuItem onClick={() => history.push('/youtube/videos/queue')}>Video Queue</CustomMenuItem>
 					</Box>
 					<CustomMenuItem sx={{ justifyContent: 'space-between' }} onClick={() => logout()}>
 						<AccountCircle />

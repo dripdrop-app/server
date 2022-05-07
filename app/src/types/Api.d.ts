@@ -59,7 +59,7 @@ declare global {
 	}
 
 	interface ChannelBody {
-		channelId?: string;
+		channelID?: string;
 	}
 
 	interface PageBody {
@@ -68,8 +68,9 @@ declare global {
 	}
 
 	interface YoutubeVideosBody extends ChannelBody, PageBody {
-		selectedCategories: number[];
-		likedOnly: boolean;
+		selectedCategories?: number[];
+		likedOnly?: boolean;
+		queuedOnly?: boolean;
 	}
 
 	interface YoutubeVideosResponse {
@@ -77,8 +78,8 @@ declare global {
 	}
 
 	interface YoutubeVideoBody {
-		videoId: string;
-		relatedLength: number;
+		videoID: string;
+		relatedLength?: number;
 	}
 
 	interface YoutubeVideoResponse {
@@ -93,7 +94,8 @@ declare global {
 	}
 
 	interface YoutubeVideoQueueResponse {
-		videos: YoutubeVideo[];
-		currentIndex: number;
+		prev: boolean;
+		next: boolean;
+		currentVideo: YoutubeVideo;
 	}
 }

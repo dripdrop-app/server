@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { CircularProgress, Stack } from '@mui/material';
-import { useCheckSessionQuery } from '../../api';
+import { useCheckSessionQuery } from '../../api/auth';
 
 interface AuthWrapperProps {
 	children: JSX.Element;

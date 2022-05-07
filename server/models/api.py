@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field
 from server.models.main import YoutubeVideoCategory, YoutubeSubscription, YoutubeVideo
 from typing import Literal, Optional, List
@@ -89,7 +90,8 @@ class YoutubeVideoCategoryResponse(ResponseBaseModel, YoutubeVideoCategory):
 
 class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):
     channel_title: str
-    liked: bool
+    liked: Optional[datetime]
+    queued: Optional[datetime]
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel, YoutubeSubscription):
@@ -110,7 +112,12 @@ class YoutubeResponses:
 
     class Video(ResponseBaseModel):
         video: YoutubeVideoResponse
-        relatedVideos: List[YoutubeVideoResponse]
+        related_videos: List[YoutubeVideoResponse]
+
+    class VideoQueue(ResponseBaseModel):
+        prev: bool
+        next: bool
+        current_video: YoutubeVideoResponse
 
     class Subscriptions(ResponseBaseModel):
         subscriptions: List[YoutubeSubscriptionResponse]

@@ -9,29 +9,16 @@ interface VideoCardProps {
 }
 
 const VideoCard = (props: VideoCardProps) => {
-	const { video, sx } = props;
+	const { sx, video } = props;
 
 	const history = useHistory();
 
-	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
-	const channelLink = `https://youtube.com/channel/${video.channelId}`;
-	const videoLink = `/youtube/video/${video.id}`;
+	return useMemo(() => {
+		const publishedAt = new Date(video.publishedAt).toLocaleDateString();
+		const channelLink = `https://youtube.com/channel/${video.channelId}`;
+		const videoLink = `/youtube/video/${video.id}`;
 
-	const VideoInfo = useMemo(
-		() => (
-			<Stack alignItems="center" direction="row" flexWrap="wrap">
-				<Link href={channelLink} underline="none">
-					{video.channelTitle}
-				</Link>
-				<Box flex={1} />
-				{publishedAt}
-			</Stack>
-		),
-		[channelLink, publishedAt, video.channelTitle]
-	);
-
-	return useMemo(
-		() => (
+		return (
 			<Card sx={sx} variant="outlined">
 				<Stack height="100%">
 					<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(videoLink)}>
@@ -47,13 +34,20 @@ const VideoCard = (props: VideoCardProps) => {
 						<VideoButtons video={video} />
 					</CardContent>
 					<CardContent>
-						<Stack>{VideoInfo}</Stack>
+						<Stack>
+							<Stack alignItems="center" direction="row" flexWrap="wrap">
+								<Link href={channelLink} underline="none">
+									{video.channelTitle}
+								</Link>
+								<Box flex={1} />
+								{publishedAt}
+							</Stack>
+						</Stack>
 					</CardContent>
 				</Stack>
 			</Card>
-		),
-		[VideoInfo, history, sx, video, videoLink]
-	);
+		);
+	}, [history, sx, video]);
 };
 
 export default VideoCard;

@@ -6,14 +6,14 @@ from fastapi import Request, HTTPException, WebSocket
 from fastapi.param_functions import Depends
 from server.config import config
 from server.models.main import (
+    GoogleAccount,
+    GoogleAccounts,
     db,
-    AuthenticatedUser,
     Session,
     User,
     Users,
     Sessions,
     SessionUser,
-    AdminUser,
 )
 from sqlalchemy import select
 
@@ -71,11 +71,19 @@ get_user = GetUser()
 
 def get_authenticated_user(user: SessionUser = Depends(get_user)):
     if user:
-        return AuthenticatedUser(**user.dict(), authenticated=True)
+        return user
     raise HTTPException(401)
 
 
 def get_admin_user(user: SessionUser = Depends(get_user)):
     if user and user.admin:
-        return AdminUser(**user.dict(), authenticated=True)
+        return user
+    raise HTTPException(401)
+
+
+async def get_google_user(user: User = Depends(get_authenticated_user)):
+    query = select(GoogleAccounts).where(GoogleAccounts.user_email == user.email)
+    google_account = await db.fetch_one(query)
+    if google_account:
+        return GoogleAccount.parse_obj(google_account)
     raise HTTPException(401)

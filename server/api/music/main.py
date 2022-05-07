@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 from server.utils.imgdl import download_image
 from server.utils.mp3dl import extract_info
 from server.dependencies import get_authenticated_user
-from server.models.main import db, MusicJobs, AuthenticatedUser, MusicJob
+from server.models.main import db, MusicJobs, User, MusicJob
 from server.models.api import (
     youtube_regex,
     JobInfo,
@@ -69,7 +69,7 @@ async def get_tags(file: UploadFile = File(...)):
 
 
 @app.get("/jobs", response_model=MusicResponses.AllJobs)
-async def get_jobs(user: AuthenticatedUser = Depends(get_authenticated_user)):
+async def get_jobs(user: User = Depends(get_authenticated_user)):
     query = (
         select(MusicJobs)
         .where(MusicJobs.user_email == user.email)
@@ -97,7 +97,7 @@ async def get_jobs(user: AuthenticatedUser = Depends(get_authenticated_user)):
 
 @app.websocket("/jobs/listen")
 async def listen_jobs(
-    websocket: WebSocket, user: AuthenticatedUser = Depends(get_authenticated_user)
+    websocket: WebSocket, user: User = Depends(get_authenticated_user)
 ):
     async def handler(msg):
         message = json.loads(msg.get("data").decode())
@@ -146,7 +146,7 @@ async def create_job__from_youtube(
     artist: str = Form(...),
     album: str = Form(...),
     grouping: str = Form(""),
-    user: AuthenticatedUser = Depends(get_authenticated_user),
+    user: User = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
     job_info = JobInfo(
@@ -182,7 +182,7 @@ async def create_job_from_file(
     artist: str = Form(...),
     album: str = Form(...),
     grouping: str = Form(""),
-    user: AuthenticatedUser = Depends(get_authenticated_user),
+    user: User = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
     filename = file.filename
@@ -213,9 +213,7 @@ async def create_job_from_file(
 
 
 @app.delete("/jobs/delete/{job_id}")
-async def delete_job(
-    job_id: str, user: AuthenticatedUser = Depends(get_authenticated_user)
-):
+async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
     query = delete(MusicJobs).where(
         MusicJobs.user_email == user.email, MusicJobs.id == job_id
     )
@@ -228,9 +226,7 @@ async def delete_job(
 
 
 @app.get("/jobs/download/{job_id}", status_code=200)
-async def download_job(
-    job_id: str, user: AuthenticatedUser = Depends(get_authenticated_user)
-):
+async def download_job(job_id: str, user: User = Depends(get_authenticated_user)):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = await db.fetch_one(query)
     filename = sanitize_filename(f'{job.get("title")} {job.get("artist")}.mp3')

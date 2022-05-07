@@ -43,14 +43,6 @@ class User(BaseModel):
 SessionUser = Optional[User]
 
 
-class AuthenticatedUser(User):
-    authenticated: bool
-
-
-class AdminUser(AuthenticatedUser):
-    admin: bool
-
-
 class Sessions(Base):
     __tablename__ = "sessions"
     id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
@@ -305,6 +297,40 @@ class YoutubeVideoLikes(Base):
 
 
 class YoutubeVideoLike(BaseModel):
+    email: str
+    video_id: str
+    created_at: datetime
+
+
+class YoutubeVideoQueues(Base):
+    __tablename__ = "youtube_video_queues"
+    email = sqlalchemy.Column(
+        sqlalchemy.ForeignKey(
+            GoogleAccounts.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_video_queues_email_fkey",
+        ),
+        primary_key=True,
+        nullable=False,
+    )
+    video_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey(
+            YoutubeVideos.id,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_video_queues_video_id_fkey",
+        ),
+        primary_key=True,
+        nullable=False,
+    )
+    created_at = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
+        server_default=text("NOW()"),
+    )
+
+
+class YoutubeVideoQueue(BaseModel):
     email: str
     video_id: str
     created_at: datetime

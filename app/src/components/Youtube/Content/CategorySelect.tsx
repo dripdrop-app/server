@@ -1,6 +1,6 @@
 import { Chip, FormControl, InputLabel, MenuItem, Select, Stack } from '@mui/material';
 import { useCallback, useMemo, useState } from 'react';
-import { useYoutubeVideoCategoriesQuery } from '../../api/youtube';
+import { useYoutubeVideoCategoriesQuery } from '../../../api/youtube';
 
 interface CategorySelectProps {
 	channelID?: string;
@@ -11,7 +11,7 @@ const CategorySelect = (props: CategorySelectProps) => {
 	const { onChange, channelID } = props;
 	const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
-	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: channelID });
+	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelID });
 
 	const categories = useMemo(
 		() =>

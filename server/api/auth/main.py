@@ -5,7 +5,6 @@ from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 from sqlalchemy.sql.expression import true
 from server.dependencies import SessionHandler, get_authenticated_user
-from server.models.main import AuthenticatedUser
 from server.models.api import AuthResponses
 from server.config import config
 from server.models.main import db, Users, Sessions, User
@@ -15,7 +14,7 @@ app = FastAPI()
 
 
 @app.get("/session", response_model=AuthResponses.User, responses={401: {}})
-async def check_session(user: AuthenticatedUser = Depends(get_authenticated_user)):
+async def check_session(user: User = Depends(get_authenticated_user)):
     return AuthResponses.User(email=user.email, admin=user.admin).dict()
 
 

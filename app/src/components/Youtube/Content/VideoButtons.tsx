@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Alert, Box, IconButton, Snackbar } from '@mui/material';
 import { AddToQueue, RemoveFromQueue, ThumbUp, Link, YouTube } from '@mui/icons-material';
-import { useDispatch, useSelector } from 'react-redux';
-import { useCreateYoutubeVideoLikeMutation, useDeleteYoutubeVideoLikeMutation } from '../../api/youtube';
-import { addVideoToQueue, removeVideoFromQueue } from '../../state/youtubeCollections';
-import ConditionalDisplay from '../ConditionalDisplay';
+import {
+	useAddYoutubeVideoLikeMutation,
+	useAddYoutubeVideoQueueMutation,
+	useDeleteYoutubeVideoLikeMutation,
+	useDeleteYoutubeVideoQueueMutation,
+} from '../../../api/youtube';
+import ConditionalDisplay from '../../ConditionalDisplay';
 
 interface VideoButtonsProps {
 	video: YoutubeVideo;
@@ -14,13 +17,10 @@ const VideoButtons = (props: VideoButtonsProps) => {
 	const { video } = props;
 	const [open, setOpen] = useState(false);
 
-	const dispatch = useDispatch();
-	const inQueue = useSelector((state: RootState) => {
-		return !!state.videoQueue.videos.find((video) => video.id === props.video.id);
-	});
-
-	const [likeVideo, likedVideoStatus] = useCreateYoutubeVideoLikeMutation();
+	const [likeVideo, likedVideoStatus] = useAddYoutubeVideoLikeMutation();
 	const [unLikeVideo, unLikedVideoStatus] = useDeleteYoutubeVideoLikeMutation();
+	const [queueVideo, queuedVideoStatus] = useAddYoutubeVideoQueueMutation();
+	const [unQueueVideo, unQueuedVideoStatus] = useDeleteYoutubeVideoQueueMutation();
 
 	const videoLink = `https://www.youtube.com/watch?v=${video.id}`;
 
@@ -40,13 +40,21 @@ const VideoButtons = (props: VideoButtonsProps) => {
 				>
 					<ThumbUp />
 				</IconButton>
-				<ConditionalDisplay condition={!inQueue}>
-					<IconButton color="primary" disabled={inQueue} onClick={() => dispatch(addVideoToQueue(video))}>
+				<ConditionalDisplay condition={!video.queued}>
+					<IconButton
+						color="primary"
+						disabled={!!video.queued || queuedVideoStatus.isLoading}
+						onClick={() => queueVideo(video.id)}
+					>
 						<AddToQueue />
 					</IconButton>
 				</ConditionalDisplay>
-				<ConditionalDisplay condition={inQueue}>
-					<IconButton color="error" disabled={!inQueue} onClick={() => dispatch(removeVideoFromQueue(video.id))}>
+				<ConditionalDisplay condition={!!video.queued}>
+					<IconButton
+						color="error"
+						disabled={!video.queued || unQueuedVideoStatus.isLoading}
+						onClick={() => unQueueVideo(video.id)}
+					>
 						<RemoveFromQueue />
 					</IconButton>
 				</ConditionalDisplay>
@@ -64,14 +72,18 @@ const VideoButtons = (props: VideoButtonsProps) => {
 			</Box>
 		),
 		[
-			dispatch,
-			inQueue,
 			likeVideo,
 			likedVideoStatus.isLoading,
 			open,
+			queueVideo,
+			queuedVideoStatus.isLoading,
 			unLikeVideo,
 			unLikedVideoStatus.isLoading,
-			video,
+			unQueueVideo,
+			unQueuedVideoStatus.isLoading,
+			video.id,
+			video.liked,
+			video.queued,
 			videoLink,
 		]
 	);

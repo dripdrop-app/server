@@ -1,21 +1,25 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Box, CircularProgress, Container, Divider, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import ReactPlayer from 'react-player';
 import { useYoutubeVideoQuery } from '../api/youtube';
-import CustomGrid from '../components/Youtube/CustomGrid';
-import YoutubeVideoCard from '../components/Youtube/VideoCard';
-import VideoButtons from '../components/Youtube/VideoButtons';
-import YoutubePage from '../components/Youtube/YoutubePage';
+import InfiniteScroll from '../components/InfiniteScroll';
+import YoutubeVideoCard from '../components/Youtube/Content/YoutubeVideoCard';
+import VideoButtons from '../components/Youtube/Content/VideoButtons';
+import YoutubePage from '../components/Youtube/Auth/YoutubePage';
+import { useDispatch } from 'react-redux';
+import { hideVideoQueueDisplay, showVideoQueueDisplay } from '../state/youtube';
 
 interface YoutubeVideoProps {
 	id: string;
 }
 
 const YoutubeVideo = (props: YoutubeVideoProps) => {
-	const videoStatus = useYoutubeVideoQuery({ videoId: props.id, relatedLength: 5 });
+	const videoStatus = useYoutubeVideoQuery({ videoID: props.id });
 
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
+
+	const dispatch = useDispatch();
 
 	const Content = useMemo(() => {
 		if (videoStatus.data) {
@@ -50,17 +54,11 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 							<Box margin={1}>
 								<Typography variant="h5">Related Videos</Typography>
 							</Box>
-							<CustomGrid
+							<InfiniteScroll
 								items={relatedVideos}
-								itemKey={(video) => video.id}
-								renderItem={(video) => <YoutubeVideoCard sx={{ height: '100%' }} video={video} />}
-								perPage={5}
-								isFetching={false}
-								layout={{
-									md: 12 / 5,
-									sm: 6,
-									xs: 12,
-								}}
+								renderItem={(video) => (
+									<YoutubeVideoCard key={'video' + video.id} sx={{ height: '100%' }} video={video} />
+								)}
 							/>
 						</Container>
 					</Box>
@@ -79,6 +77,13 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 				</Stack>
 			);
 	}, [isMobile, videoStatus.data, videoStatus.isLoading]);
+
+	useEffect(() => {
+		dispatch(hideVideoQueueDisplay());
+		return () => {
+			dispatch(showVideoQueueDisplay());
+		};
+	}, [dispatch]);
 
 	return <YoutubePage>{Content}</YoutubePage>;
 };

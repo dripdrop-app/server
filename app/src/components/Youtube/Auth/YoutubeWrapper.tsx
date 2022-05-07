@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { CircularProgress, Stack } from '@mui/material';
-import { useCheckYoutubeAuthQuery } from '../../api/youtube';
+import { useCheckYoutubeAuthQuery } from '../../../api/youtube';
 
 interface YoutubeWrapperProps {
 	children: JSX.Element;

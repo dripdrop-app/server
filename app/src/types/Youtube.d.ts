@@ -10,7 +10,8 @@ declare global {
 		publishedAt: string;
 		categoryId: number;
 		createdAt: string;
-		liked: boolean;
+		liked: string | null;
+		queued: string | null;
 	}
 
 	interface YoutubeChannel {
@@ -36,5 +37,9 @@ declare global {
 		id: number;
 		name: string;
 		createdAt: string;
+	}
+
+	interface VideoMap {
+		[page: number]: YoutubeVideo[];
 	}
 }

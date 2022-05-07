@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import { Container, Stack, Typography } from '@mui/material';
 import { useYoutubeSubscriptionsQuery } from '../api/youtube';
-import SubscriptionCard from '../components/Youtube/SubscriptionCard';
-import CustomGrid from '../components/Youtube/CustomGrid';
-import YoutubePage from '../components/Youtube/YoutubePage';
+import SubscriptionCard from '../components/Youtube/Content/SubscriptionCard';
+import InfiniteScroll from '../components/InfiniteScroll';
+import YoutubePage from '../components/Youtube/Auth/YoutubePage';
 
 const initialState: PageState = {
 	page: 1,
-	perPage: 50,
+	perPage: 48,
 };
 
 const reducer = (state = initialState, action: Partial<PageState>) => {
@@ -30,13 +30,16 @@ const YoutubeSubscriptions = () => {
 	const SubscriptionsView = useMemo(
 		() => (
 			<Stack spacing={2} paddingY={2}>
-				<CustomGrid
+				<InfiniteScroll
 					items={subscriptions}
-					itemKey={(subscription) => subscription.id}
-					renderItem={(subscription) => <SubscriptionCard sx={{ height: '100%' }} subscription={subscription} />}
-					perPage={filterState.perPage}
-					isFetching={subscriptionsStatus.isFetching}
-					fetchMore={() => {
+					renderItem={(subscription) => (
+						<SubscriptionCard
+							key={'subscription' + subscription.id}
+							sx={{ height: '100%' }}
+							subscription={subscription}
+						/>
+					)}
+					onEndReached={() => {
 						if (
 							subscriptionsStatus.isSuccess &&
 							subscriptionsStatus.currentData &&
@@ -44,11 +47,6 @@ const YoutubeSubscriptions = () => {
 						) {
 							filterDispatch({ page: filterState.page + 1 });
 						}
-					}}
-					layout={{
-						md: 3,
-						sm: 6,
-						xs: 12,
 					}}
 				/>
 			</Stack>
@@ -58,7 +56,6 @@ const YoutubeSubscriptions = () => {
 			filterState.perPage,
 			subscriptions,
 			subscriptionsStatus.currentData,
-			subscriptionsStatus.isFetching,
 			subscriptionsStatus.isSuccess,
 		]
 	);

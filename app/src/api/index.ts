@@ -33,13 +33,14 @@ const customBaseQuery = (options?: FetchBaseQueryArgs) => {
 	};
 };
 
-const tags = [
+export const tags = [
 	'User',
 	'MusicJob',
 	'YoutubeAuth',
 	'YoutubeVideo',
 	'YoutubeVideoCategory',
 	'YoutubeVideoQueue',
+	'YoutubeVideoLike',
 	'YoutubeSubscription',
 	'MusicGrouping',
 	'MusicArtwork',
@@ -49,29 +50,7 @@ const tags = [
 const api = createApi({
 	baseQuery: customBaseQuery({ baseUrl: '/api' }),
 	tagTypes: tags,
-	endpoints: (build) => ({
-		checkSession: build.query<User, void>({
-			query: () => ({
-				url: '/auth/session',
-			}),
-			providesTags: ['User'],
-		}),
-		loginOrCreate: build.mutation<User | undefined, { email: string; password: string; login: boolean }>({
-			query: ({ email, password, login }) => ({
-				url: `/auth/${login ? 'login' : 'create'}`,
-				method: 'POST',
-				body: { email, password },
-			}),
-			invalidatesTags: (result, error, args) => (args.login && !error ? tags : []),
-		}),
-		logout: build.mutation<undefined, void>({
-			query: () => ({
-				url: '/auth/logout',
-			}),
-			invalidatesTags: (result, error) => (!error ? tags : []),
-		}),
-	}),
+	endpoints: (build) => ({}),
 });
 
 export default api;
-export const { useCheckSessionQuery, useLoginOrCreateMutation, useLogoutMutation } = api;
