@@ -6,13 +6,13 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from server.config import config
 from server.dependencies import get_authenticated_user, get_google_user
 from server.models.main import (
-    YoutubeChannel,
     db,
     Users,
     YoutubeVideo,
     YoutubeVideoCategory,
     YoutubeVideoLikes,
     YoutubeVideoQueues,
+    YoutubeChannel,
     GoogleAccount,
     GoogleAccounts,
     YoutubeSubscriptions,
