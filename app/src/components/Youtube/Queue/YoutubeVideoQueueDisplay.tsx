@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Avatar, Box, IconButton, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Avatar, Box, Container, Grid, IconButton, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { MenuOpen, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useYoutubeVideoQueueQuery } from '../../../api/youtube';
@@ -84,32 +84,40 @@ const YoutubeVideoQueueDisplay = () => {
 	return useMemo(() => {
 		if (currentVideo && !hide && !isMobile) {
 			return (
-				<Stack direction="row" spacing={2} alignItems="center" justifyContent="center" padding={1} flexWrap="wrap">
-					<Stack direction="row" spacing={2} alignItems="center">
-						<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
-						<Stack>
-							<Typography variant="subtitle1">{currentVideo.title}</Typography>
-							<Stack direction="row" spacing={2} flexWrap="wrap">
-								<Typography variant="caption">{currentVideo.channelTitle}</Typography>
-								<Typography variant="caption">
-									{progress} / {duration}
-								</Typography>
+				<Container>
+					<Grid container spacing={2} padding={1}>
+						<Grid item sm={12} md={7}>
+							<Stack direction="row" spacing={2} alignItems="center">
+								<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
+								<Stack overflow="hidden" textOverflow="ellipsis">
+									<Typography noWrap variant="subtitle1">
+										{currentVideo.title}
+									</Typography>
+									<Stack direction="row" spacing={2} flexWrap="wrap">
+										<Typography variant="caption">{currentVideo.channelTitle}</Typography>
+										<Typography variant="caption">
+											{progress} / {duration}
+										</Typography>
+									</Stack>
+								</Stack>
 							</Stack>
-						</Stack>
-					</Stack>
-					<Stack direction="row">
-						<Box>{MediaControls}</Box>
-						<IconButton onClick={() => history.push('/youtube/videos/queue')}>
-							<MenuOpen />
-						</IconButton>
-						<Box marginLeft={3}>
+						</Grid>
+						<Grid item md={2}>
+							{MediaControls}
+						</Grid>
+						<Grid item md={2}>
 							<VideoButtons video={currentVideo} />
+						</Grid>
+						<Grid item md={1}>
+							<IconButton onClick={() => history.push('/youtube/videos/queue')}>
+								<MenuOpen />
+							</IconButton>
+						</Grid>
+						<Box display="none">
+							<YoutubeVideoQueuePlayer playing={false} />
 						</Box>
-					</Stack>
-					<Box display="none">
-						<YoutubeVideoQueuePlayer playing={false} />
-					</Box>
-				</Stack>
+					</Grid>
+				</Container>
 			);
 		}
 		return null;
