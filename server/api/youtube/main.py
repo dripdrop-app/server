@@ -312,7 +312,7 @@ async def add_youtube_video_queue(
 
 @app.delete("/videos/queue")
 async def delete_youtube_video_queue(
-    video_id: str = Query(None),
+    video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
 ):
     query = delete(YoutubeVideoQueues).where(

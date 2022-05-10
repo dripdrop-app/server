@@ -5,6 +5,7 @@ import {
 	Container,
 	Divider,
 	Grid,
+	Link,
 	Stack,
 	Typography,
 	useMediaQuery,
@@ -17,6 +18,7 @@ import VideoButtons from '../components/Youtube/Content/VideoButtons';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
 import { useDispatch } from 'react-redux';
 import { hideVideoQueueDisplay, showVideoQueueDisplay } from '../state/youtube';
+import { useHistory } from 'react-router-dom';
 
 interface YoutubeVideoProps {
 	id: string;
@@ -27,6 +29,8 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
+
+	const history = useHistory();
 
 	const dispatch = useDispatch();
 
@@ -47,12 +51,15 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 					</Box>
 					<Box margin={1}>
 						<Container>
+							<Typography variant="h5">{video.title}</Typography>
 							<Stack
 								direction={isMobile ? 'column' : 'row'}
 								justifyContent="space-between"
 								alignItems={isMobile ? 'center' : ''}
 							>
-								<Typography variant="h6">{video.channelTitle}</Typography>
+								<Link underline="none" onClick={() => history.push(`/youtube/channel/${video.channelId}`)}>
+									<Typography variant="h6">{video.channelTitle}</Typography>
+								</Link>
 								<VideoButtons video={video} />
 							</Stack>
 						</Container>
@@ -86,7 +93,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 				Failed to load video
 			</Stack>
 		);
-	}, [isMobile, videoStatus.data, videoStatus.isLoading]);
+	}, [history, isMobile, videoStatus.data, videoStatus.isLoading]);
 
 	useEffect(() => {
 		dispatch(hideVideoQueueDisplay());

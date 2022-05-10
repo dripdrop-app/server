@@ -139,7 +139,7 @@ async def listen_jobs(
 
 
 @app.post("/jobs/create/youtube", status_code=202)
-async def create_job__from_youtube(
+async def create_job_from_youtube(
     youtubeUrl: str = Form(..., regex=youtube_regex),
     artworkUrl: str = Form(None),
     title: str = Form(...),

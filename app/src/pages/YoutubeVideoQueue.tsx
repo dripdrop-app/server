@@ -16,6 +16,7 @@ import {
 	Skeleton,
 	Divider,
 	Container,
+	Link,
 } from '@mui/material';
 import { RemoveFromQueue } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
@@ -30,6 +31,7 @@ import { useDeleteYoutubeVideoQueueMutation, useYoutubeVideoQueueQuery } from '.
 import YoutubeVideosPage from '../components/Youtube/Content/YoutubeVideosPage';
 import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
 import VideoButtons from '../components/Youtube/Content/VideoButtons';
+import { useHistory } from 'react-router-dom';
 
 const YoutubeVideoQueue = () => {
 	const [pages, setPagesState] = useState(1);
@@ -39,6 +41,8 @@ const YoutubeVideoQueue = () => {
 		queueIndex: state.youtube.queue.index,
 	}));
 	const dispatch = useDispatch();
+
+	const history = useHistory();
 
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
@@ -122,19 +126,22 @@ const YoutubeVideoQueue = () => {
 		if (currentVideo) {
 			return (
 				<Container>
+					<Typography variant="h5">{currentVideo.title}</Typography>
 					<Stack
 						direction={isMobile ? 'column' : 'row'}
 						justifyContent="space-between"
 						alignItems={isMobile ? 'center' : ''}
 					>
-						<Typography variant="h6">{currentVideo.channelTitle}</Typography>
+						<Link underline="none" onClick={() => history.push(`/youtube/channel/${currentVideo.channelId}`)}>
+							<Typography variant="h6">{currentVideo.channelTitle}</Typography>
+						</Link>
 						<VideoButtons video={currentVideo} />
 					</Stack>
 				</Container>
 			);
 		}
 		return null;
-	}, [currentVideo, isMobile]);
+	}, [currentVideo, history, isMobile]);
 
 	useEffect(() => {
 		if (currentVideo) {
