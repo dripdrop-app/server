@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Card, CardMedia, CardContent, Box, Link, Stack, SxProps, Theme } from '@mui/material';
+import { Card, CardMedia, CardContent, Box, Link, Stack, SxProps, Theme, Grid } from '@mui/material';
 import { useHistory } from 'react-router-dom';
 import VideoButtons from './VideoButtons';
 
@@ -34,15 +34,14 @@ const VideoCard = (props: VideoCardProps) => {
 						<VideoButtons video={video} />
 					</CardContent>
 					<CardContent>
-						<Stack>
-							<Stack alignItems="center" direction="row" flexWrap="wrap">
+						<Grid container spacing={1} justifyContent="space-between">
+							<Grid item>
 								<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(channelLink)} underline="none">
 									{video.channelTitle}
 								</Link>
-								<Box flex={1} />
-								{publishedAt}
-							</Stack>
-						</Stack>
+							</Grid>
+							<Grid item>{publishedAt}</Grid>
+						</Grid>
 					</CardContent>
 				</Stack>
 			</Card>
