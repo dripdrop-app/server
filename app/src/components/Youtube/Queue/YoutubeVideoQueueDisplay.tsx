@@ -32,7 +32,7 @@ const YoutubeVideoQueueDisplay = () => {
 	const videoQueueStatus = useYoutubeVideoQueueQuery(queueIndex);
 
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
+	const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
 	const { currentVideo, prev, next } = useMemo(() => {
 		if (videoQueueStatus.isSuccess && videoQueueStatus.currentData) {
@@ -82,7 +82,7 @@ const YoutubeVideoQueueDisplay = () => {
 	}, [dispatch, ended, next]);
 
 	return useMemo(() => {
-		if (currentVideo && !hide && !isMobile) {
+		if (currentVideo && !hide && !isSmall) {
 			return (
 				<Container>
 					<Grid container spacing={2} padding={1}>
@@ -121,7 +121,7 @@ const YoutubeVideoQueueDisplay = () => {
 			);
 		}
 		return null;
-	}, [MediaControls, currentVideo, duration, hide, history, isMobile, progress]);
+	}, [MediaControls, currentVideo, duration, hide, history, isSmall, progress]);
 };
 
 export default YoutubeVideoQueueDisplay;

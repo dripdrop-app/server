@@ -66,10 +66,10 @@ const youtubeApi = api.injectEndpoints({
 				if (result) {
 					const tags = [];
 					if (args.likedOnly) {
-						tags.push({ type: 'YoutubeVideoLike' });
+						tags.push({ type: 'YoutubeVideoLike', id: `page-${args.page}` });
 					}
 					if (args.queuedOnly) {
-						tags.push({ type: 'YoutubeVideoQueue' });
+						tags.push({ type: 'YoutubeVideoQueue', id: `page-${args.page}` });
 					}
 					return tags.concat(result.videos.map((video) => ({ type: 'YoutubeVideo', id: video.id })));
 				}
