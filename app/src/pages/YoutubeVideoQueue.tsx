@@ -66,7 +66,6 @@ const YoutubeVideoQueue = () => {
 					parentRef={boxRef}
 					items={Array(pages).fill(1)}
 					onEndReached={() => {
-						console.log('O', pagesLoaded.current[pages]);
 						if (pagesLoaded.current[pages]) {
 							setPagesState((pages) => pages + 1);
 						}
