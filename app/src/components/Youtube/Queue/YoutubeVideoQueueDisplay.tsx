@@ -14,7 +14,7 @@ import { generateTime } from '../../../utils/helpers';
 import ConditionalDisplay from '../../ConditionalDisplay';
 import YoutubeVideoQueuePlayer from './YoutubeVideoQueuePlayer';
 import VideoButtons from '../Content/VideoButtons';
-import { useHistory } from 'react-router-dom';
+import RouterLink from '../../RouterLink';
 
 const YoutubeVideoQueueDisplay = () => {
 	const { playing, duration, progress, hide, ended, queueIndex } = useSelector((state: RootState) => ({
@@ -26,8 +26,6 @@ const YoutubeVideoQueueDisplay = () => {
 		queueIndex: state.youtube.queue.index,
 	}));
 	const dispatch = useDispatch();
-
-	const history = useHistory();
 
 	const videoQueueStatus = useYoutubeVideoQueueQuery(queueIndex);
 
@@ -109,8 +107,10 @@ const YoutubeVideoQueueDisplay = () => {
 							<VideoButtons video={currentVideo} />
 						</Grid>
 						<Grid item md={1}>
-							<IconButton onClick={() => history.push('/youtube/videos/queue')}>
-								<MenuOpen />
+							<IconButton>
+								<RouterLink to="/youtube/videos/queue">
+									<MenuOpen />
+								</RouterLink>
 							</IconButton>
 						</Grid>
 						<Box display="none">
@@ -121,7 +121,7 @@ const YoutubeVideoQueueDisplay = () => {
 			);
 		}
 		return null;
-	}, [MediaControls, currentVideo, duration, hide, history, isSmall, progress]);
+	}, [MediaControls, currentVideo, duration, hide, isSmall, progress]);
 };
 
 export default YoutubeVideoQueueDisplay;
