@@ -7,19 +7,27 @@ interface InfiniteScrollProps<T> {
 	items: T[];
 	renderItem: (item: T, index: number) => JSX.Element | JSX.Element[];
 	onEndReached?: () => void;
+	parentRef?: React.RefObject<HTMLElement>;
 }
 
 const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
-	const { items, renderItem, onEndReached } = props;
+	const { items, renderItem, onEndReached, parentRef } = props;
 	const [showScrollButton, setShowScrollButton] = useState(false);
 
 	const boxRef = useRef<HTMLDivElement>();
 
 	const onGridBottom = useCallback(() => {
-		if (document.body.offsetHeight - 500 < window.innerHeight + window.scrollY && onEndReached) {
-			onEndReached();
+		if (parentRef && parentRef.current) {
+			const parent = parentRef.current;
+			if (parent.offsetHeight + parent.scrollTop > parent.scrollHeight - 500 && onEndReached) {
+				onEndReached();
+			}
+		} else {
+			if (document.body.offsetHeight - 500 < window.innerHeight + window.scrollY && onEndReached) {
+				onEndReached();
+			}
 		}
-	}, [onEndReached]);
+	}, [onEndReached, parentRef]);
 
 	const updateScrollButton = useCallback(() => {
 		if (boxRef.current) {
@@ -34,13 +42,16 @@ const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
 	}, [showScrollButton]);
 
 	useEffect(() => {
-		window.addEventListener('scroll', updateScrollButton);
-		window.addEventListener('scroll', onGridBottom);
-		return () => {
-			window.removeEventListener('scroll', onGridBottom);
-			window.removeEventListener('scroll', updateScrollButton);
-		};
-	}, [onGridBottom, updateScrollButton]);
+		const parent = parentRef && parentRef.current ? parentRef.current : window;
+		if (parent) {
+			parent.addEventListener('scroll', updateScrollButton);
+			parent.addEventListener('scroll', onGridBottom);
+			return () => {
+				parent.removeEventListener('scroll', onGridBottom);
+				parent.removeEventListener('scroll', updateScrollButton);
+			};
+		}
+	}, [onGridBottom, parentRef, updateScrollButton]);
 
 	return (
 		<Box>
@@ -62,7 +73,8 @@ const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
 						color="primary"
 						onClick={() => {
 							if (boxRef.current) {
-								window.scrollTo({ top: boxRef.current.offsetTop - 100, behavior: 'smooth' });
+								const parent = parentRef && parentRef.current ? parentRef.current : window;
+								parent.scrollTo({ top: 0, behavior: 'smooth' });
 							}
 						}}
 					>

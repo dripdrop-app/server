@@ -6,7 +6,7 @@ import FormActions from './FormActions';
 import TagInputs from './TagInputs';
 
 const MusicForm = () => {
-	const fileInputRef: React.MutableRefObject<null | HTMLInputElement> = useRef(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	return useMemo(
 		() => (

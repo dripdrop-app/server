@@ -5,12 +5,13 @@ import { CircularProgress } from '@mui/material';
 
 interface YoutubeVideosPageProps extends YoutubeVideosBody {
 	renderItem: (video: YoutubeVideo, index: number) => JSX.Element;
+	loadingRenderItem?: () => JSX.Element;
 	onLoading?: (page: number) => void;
 	onLoaded?: (page: number, videos: YoutubeVideo[]) => void;
 }
 
 const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
-	const { renderItem, onLoaded, onLoading } = props;
+	const { renderItem, onLoaded, onLoading, loadingRenderItem } = props;
 	const [args, setArgs] = useState<YoutubeVideosBody>({
 		perPage: props.perPage,
 		page: props.page,
@@ -29,13 +30,18 @@ const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
 
 	const itemsToRender = useMemo(() => {
 		if (videosStatus.isLoading) {
+			if (loadingRenderItem) {
+				return new Array(args.perPage)
+					.fill(1)
+					.map((v, i) => <React.Fragment key={`loading-item-${args.page}-${i}`}>{loadingRenderItem()}</React.Fragment>);
+			}
 			return <CircularProgress />;
 		}
 
 		return videos.map((video, i) => (
 			<React.Fragment key={`item-${args.page}-${i}`}>{renderItem(video, i)}</React.Fragment>
 		));
-	}, [videosStatus.isLoading, videos, args.page, renderItem]);
+	}, [videosStatus.isLoading, videos, loadingRenderItem, args.perPage, args.page, renderItem]);
 
 	useEffect(() => {
 		if (onLoaded && videosStatus.isSuccess && videosStatus.currentData) {

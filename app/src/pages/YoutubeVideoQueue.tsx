@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Virtuoso } from 'react-virtuoso';
 import {
 	Box,
 	Stack,
@@ -31,10 +30,12 @@ import YoutubeVideosPage from '../components/Youtube/Content/YoutubeVideosPage';
 import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
 import VideoButtons from '../components/Youtube/Content/VideoButtons';
 import { useHistory } from 'react-router-dom';
+import InfiniteScroll from '../components/InfiniteScroll';
 
 const YoutubeVideoQueue = () => {
 	const [pages, setPagesState] = useState(1);
 	const pagesLoaded = useRef<Record<number, boolean>>({});
+	const boxRef = useRef<HTMLDivElement>(null);
 
 	const { queueIndex } = useSelector((state: RootState) => ({
 		queueIndex: state.youtube.queue.index,
@@ -60,16 +61,17 @@ const YoutubeVideoQueue = () => {
 
 	const QueueSlide = useMemo(() => {
 		return (
-			<List>
-				<Virtuoso
-					style={{ height: '30vh' }}
-					endReached={() => {
+			<Box ref={boxRef} height="30vh" sx={{ overflowY: 'scroll' }}>
+				<InfiniteScroll
+					parentRef={boxRef}
+					items={Array(pages).fill(1)}
+					onEndReached={() => {
+						console.log('O', pagesLoaded.current[pages]);
 						if (pagesLoaded.current[pages]) {
 							setPagesState((pages) => pages + 1);
 						}
 					}}
-					data={Array(pages).fill(1)}
-					itemContent={(index) => (
+					renderItem={(page, index) => (
 						<List>
 							<YoutubeVideosPage
 								page={index + 1}
@@ -112,7 +114,7 @@ const YoutubeVideoQueue = () => {
 						</List>
 					)}
 				/>
-			</List>
+			</Box>
 		);
 	}, [dispatch, isMobile, pages, unQueueVideo, unQueuedVideoStatus.isLoading]);
 

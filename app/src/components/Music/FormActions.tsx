@@ -8,7 +8,7 @@ import BlankImage from '../../images/blank_image.jpeg';
 import ConditionalDisplay from '../ConditionalDisplay';
 
 interface FormActionProps {
-	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
+	fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
 const FormActions = (props: FormActionProps) => {

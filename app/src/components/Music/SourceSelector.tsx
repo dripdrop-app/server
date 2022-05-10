@@ -7,7 +7,7 @@ import { useLazyGroupingQuery, useLazyTagsQuery } from '../../api/music';
 import { FILE_TYPE } from '../../utils/enums';
 
 interface SourceSelectorProps {
-	fileInputRef: React.MutableRefObject<null | HTMLInputElement>;
+	fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
 const SourceSelector = (props: SourceSelectorProps) => {
