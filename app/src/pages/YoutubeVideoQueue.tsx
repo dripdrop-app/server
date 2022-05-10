@@ -13,7 +13,6 @@ import {
 	ListItemButton,
 	useTheme,
 	useMediaQuery,
-	Skeleton,
 	Divider,
 	Container,
 	Link,
@@ -84,11 +83,6 @@ const YoutubeVideoQueue = () => {
 										pagesLoaded.current[page] = true;
 									}
 								}}
-								renderLoadingItem={() => (
-									<ListItem>
-										<Skeleton variant="rectangular" />
-									</ListItem>
-								)}
 								renderItem={(video, videoIndex) => (
 									<ListItem
 										secondaryAction={

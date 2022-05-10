@@ -78,7 +78,7 @@ const AuthPage = (props: AuthPageProps) => {
 									<Stack direction="row" spacing={2}>
 										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={submitForm}>
 											<ConditionalDisplay condition={loginOrCreateStatus.isLoading}>
-												<CircularProgress sx={{ color: 'white' }} />
+												<CircularProgress />
 											</ConditionalDisplay>
 											<ConditionalDisplay condition={!loginOrCreateStatus.isLoading}>Submit</ConditionalDisplay>
 										</Button>
