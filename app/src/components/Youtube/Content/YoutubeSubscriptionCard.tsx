@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SxProps, Theme, Card, CardMedia, CardContent, Link, Stack, Box } from '@mui/material';
+import { SxProps, Theme, Card, CardMedia, CardContent, Stack, Box, Typography } from '@mui/material';
 import RouterLink from '../../RouterLink';
 
 interface SubscriptionCardProps {
@@ -20,9 +20,9 @@ const YoutubeSubscriptionCard = (props: SubscriptionCardProps) => {
 						<CardMedia component="img" image={subscription.channelThumbnail} />
 					</RouterLink>
 					<CardContent>
-						<Link underline="none">
+						<Typography color="primary">
 							<RouterLink to={channelLink}>{subscription.channelTitle}</RouterLink>
-						</Link>
+						</Typography>
 					</CardContent>
 					<Box flex={1} />
 					<CardContent>

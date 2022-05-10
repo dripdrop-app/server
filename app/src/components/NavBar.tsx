@@ -60,12 +60,12 @@ const NavBar = () => {
 	const NavButtons = useMemo(
 		() => (
 			<Fragment>
-				<Button color="inherit">
-					<RouterLink to="/">Home</RouterLink>
-				</Button>
-				<Button color="inherit">
-					<RouterLink to="/music">Music Downloader</RouterLink>
-				</Button>
+				<RouterLink to="/">
+					<Button color="inherit">Home</Button>
+				</RouterLink>
+				<RouterLink to="/music">
+					<Button color="inherit">Music Downloader</Button>
+				</RouterLink>
 				<Button color="inherit" ref={ytMenu} onClick={() => setOpenYTMenu(true)}>
 					Youtube
 					<ArrowDropDown />
@@ -75,15 +75,15 @@ const NavBar = () => {
 					<AccountCircle />
 				</IconButton>
 				<Menu anchorEl={ytMenu.current} open={openYTMenu} onClose={() => setOpenYTMenu(false)}>
-					<CustomMenuItem>
-						<RouterLink to="/youtube/videos">Videos</RouterLink>
-					</CustomMenuItem>
-					<CustomMenuItem>
-						<RouterLink to="/youtube/subscriptions">Subscriptions</RouterLink>
-					</CustomMenuItem>
-					<CustomMenuItem>
-						<RouterLink to="/youtube/videos/queue">Video Queue</RouterLink>
-					</CustomMenuItem>
+					<RouterLink to="/youtube/videos">
+						<CustomMenuItem>Videos</CustomMenuItem>
+					</RouterLink>
+					<RouterLink to="/youtube/subscriptions">
+						<CustomMenuItem>Subscriptions</CustomMenuItem>
+					</RouterLink>
+					<RouterLink to="/youtube/videos/queue">
+						<CustomMenuItem>Video Queue</CustomMenuItem>
+					</RouterLink>
 				</Menu>
 				<Menu anchorEl={userMenu.current} open={openUserMenu} onClose={() => setOpenUserMenu(false)}>
 					<CustomMenuItem onClick={() => logout()}>Logout</CustomMenuItem>
@@ -100,23 +100,23 @@ const NavBar = () => {
 					<Avatar alt="Dripdrop" src={DripDrop} />
 				</AccordionSummary>
 				<AccordionDetails>
-					<CustomMenuItem>
-						<RouterLink to="/">Home</RouterLink>
-					</CustomMenuItem>
-					<CustomMenuItem>
-						<RouterLink to="/music">Music Downloader</RouterLink>
-					</CustomMenuItem>
+					<RouterLink to="/">
+						<CustomMenuItem>Home</CustomMenuItem>
+					</RouterLink>
+					<RouterLink to="/music">
+						<CustomMenuItem>Music Downloader</CustomMenuItem>
+					</RouterLink>
 					<MenuItem>Youtube</MenuItem>
 					<Box marginLeft={1}>
-						<CustomMenuItem>
-							<RouterLink to="/youtube/videos">Videos</RouterLink>
-						</CustomMenuItem>
-						<CustomMenuItem>
-							<RouterLink to="/youtube/subscriptions">Subscriptions</RouterLink>
-						</CustomMenuItem>
-						<CustomMenuItem>
-							<RouterLink to="/youtube/videos/queue">Video Queue</RouterLink>
-						</CustomMenuItem>
+						<RouterLink to="/youtube/videos">
+							<CustomMenuItem>Videos</CustomMenuItem>
+						</RouterLink>
+						<RouterLink to="/youtube/subscriptions">
+							<CustomMenuItem>Subscriptions</CustomMenuItem>
+						</RouterLink>
+						<RouterLink to="/youtube/videos/queue">
+							<CustomMenuItem>Video Queue</CustomMenuItem>
+						</RouterLink>
 					</Box>
 					<CustomMenuItem sx={{ justifyContent: 'space-between' }} onClick={() => logout()}>
 						<AccountCircle />

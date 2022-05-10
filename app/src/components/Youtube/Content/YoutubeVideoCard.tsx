@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Card, CardMedia, CardContent, Box, Link, Stack, SxProps, Theme, Grid } from '@mui/material';
+import { Card, CardMedia, CardContent, Box, Stack, SxProps, Theme, Grid, Typography } from '@mui/material';
 import VideoButtons from './VideoButtons';
 import RouterLink from '../../RouterLink';
 
@@ -23,9 +23,9 @@ const VideoCard = (props: VideoCardProps) => {
 						<CardMedia component="img" image={video.thumbnail} />
 					</RouterLink>
 					<CardContent>
-						<Link underline="none">
+						<Typography color="primary">
 							<RouterLink to={videoLink}>{video.title}</RouterLink>
-						</Link>
+						</Typography>
 					</CardContent>
 					<Box flex={1} />
 					<CardContent>
@@ -34,9 +34,9 @@ const VideoCard = (props: VideoCardProps) => {
 					<CardContent>
 						<Grid container spacing={1} justifyContent="space-between">
 							<Grid item>
-								<Link underline="none">
+								<Typography color="primary">
 									<RouterLink to={channelLink}>{video.channelTitle}</RouterLink>
-								</Link>
+								</Typography>
 							</Grid>
 							<Grid item>{publishedAt}</Grid>
 						</Grid>

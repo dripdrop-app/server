@@ -14,7 +14,6 @@ import {
 	useMediaQuery,
 	Divider,
 	Container,
-	Link,
 } from '@mui/material';
 import { RemoveFromQueue } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
@@ -125,11 +124,11 @@ const YoutubeVideoQueue = () => {
 						justifyContent="space-between"
 						alignItems={isMobile ? 'center' : ''}
 					>
-						<Link underline="none">
+						<Typography color="primary">
 							<RouterLink to={`/youtube/channel/${currentVideo.channelId}`}>
 								<Typography variant="h6">{currentVideo.channelTitle}</Typography>
 							</RouterLink>
-						</Link>
+						</Typography>
 						<VideoButtons video={currentVideo} />
 					</Stack>
 				</Container>

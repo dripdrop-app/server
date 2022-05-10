@@ -5,7 +5,6 @@ import {
 	Container,
 	Divider,
 	Grid,
-	Link,
 	Stack,
 	Typography,
 	useMediaQuery,
@@ -55,11 +54,11 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 								justifyContent="space-between"
 								alignItems={isMobile ? 'center' : ''}
 							>
-								<Link underline="none">
+								<Typography color="primary">
 									<RouterLink to={`/youtube/channel/${video.channelId}`}>
 										<Typography variant="h6">{video.channelTitle}</Typography>
 									</RouterLink>
-								</Link>
+								</Typography>
 								<VideoButtons video={video} />
 							</Stack>
 						</Container>
