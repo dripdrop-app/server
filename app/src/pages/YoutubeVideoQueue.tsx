@@ -29,8 +29,8 @@ import { useDeleteYoutubeVideoQueueMutation, useYoutubeVideoQueueQuery } from '.
 import YoutubeVideosPage from '../components/Youtube/Content/YoutubeVideosPage';
 import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
 import VideoButtons from '../components/Youtube/Content/VideoButtons';
-import { useHistory } from 'react-router-dom';
 import InfiniteScroll from '../components/InfiniteScroll';
+import RouterLink from '../components/RouterLink';
 
 const YoutubeVideoQueue = () => {
 	const [pages, setPagesState] = useState(1);
@@ -41,8 +41,6 @@ const YoutubeVideoQueue = () => {
 		queueIndex: state.youtube.queue.index,
 	}));
 	const dispatch = useDispatch();
-
-	const history = useHistory();
 
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
@@ -127,8 +125,10 @@ const YoutubeVideoQueue = () => {
 						justifyContent="space-between"
 						alignItems={isMobile ? 'center' : ''}
 					>
-						<Link underline="none" onClick={() => history.push(`/youtube/channel/${currentVideo.channelId}`)}>
-							<Typography variant="h6">{currentVideo.channelTitle}</Typography>
+						<Link underline="none">
+							<RouterLink to={`/youtube/channel/${currentVideo.channelId}`}>
+								<Typography variant="h6">{currentVideo.channelTitle}</Typography>
+							</RouterLink>
 						</Link>
 						<VideoButtons video={currentVideo} />
 					</Stack>
@@ -136,7 +136,7 @@ const YoutubeVideoQueue = () => {
 			);
 		}
 		return null;
-	}, [currentVideo, history, isMobile]);
+	}, [currentVideo, isMobile]);
 
 	useEffect(() => {
 		if (currentVideo) {

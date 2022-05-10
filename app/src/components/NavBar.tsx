@@ -17,10 +17,10 @@ import {
 	useMediaQuery,
 } from '@mui/material';
 import { Menu as MenuIcon, ArrowDropDown, AccountCircle } from '@mui/icons-material';
-import { useHistory } from 'react-router';
 import { useLogoutMutation } from '../api/auth';
 import AuthWrapper from './Auth/AuthWrapper';
 import DripDrop from '../images/dripdrop.png';
+import RouterLink from './RouterLink';
 
 const NavBar = () => {
 	const [openMobileMenu, setOpenMobileMenu] = useState(false);
@@ -34,8 +34,6 @@ const NavBar = () => {
 	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
 
 	const [logout] = useLogoutMutation();
-
-	const history = useHistory();
 
 	const CustomMenuItem = useCallback(
 		({ children, sx, onClick }: { children: React.ReactNode; sx?: SxProps<Theme>; onClick?: () => void }) => (
@@ -62,11 +60,11 @@ const NavBar = () => {
 	const NavButtons = useMemo(
 		() => (
 			<Fragment>
-				<Button color="inherit" onClick={() => history.push('/')}>
-					Home
+				<Button color="inherit">
+					<RouterLink to="/">Home</RouterLink>
 				</Button>
-				<Button color="inherit" onClick={() => history.push('/music')}>
-					Music Downloader
+				<Button color="inherit">
+					<RouterLink to="/music">Music Downloader</RouterLink>
 				</Button>
 				<Button color="inherit" ref={ytMenu} onClick={() => setOpenYTMenu(true)}>
 					Youtube
@@ -77,16 +75,22 @@ const NavBar = () => {
 					<AccountCircle />
 				</IconButton>
 				<Menu anchorEl={ytMenu.current} open={openYTMenu} onClose={() => setOpenYTMenu(false)}>
-					<CustomMenuItem onClick={() => history.push('/youtube/videos')}>Videos</CustomMenuItem>
-					<CustomMenuItem onClick={() => history.push('/youtube/subscriptions')}>Subscriptions</CustomMenuItem>
-					<CustomMenuItem onClick={() => history.push('/youtube/videos/queue')}>Video Queue</CustomMenuItem>
+					<CustomMenuItem>
+						<RouterLink to="/youtube/videos">Videos</RouterLink>
+					</CustomMenuItem>
+					<CustomMenuItem>
+						<RouterLink to="/youtube/subscriptions">Subscriptions</RouterLink>
+					</CustomMenuItem>
+					<CustomMenuItem>
+						<RouterLink to="/youtube/videos/queue">Video Queue</RouterLink>
+					</CustomMenuItem>
 				</Menu>
 				<Menu anchorEl={userMenu.current} open={openUserMenu} onClose={() => setOpenUserMenu(false)}>
 					<CustomMenuItem onClick={() => logout()}>Logout</CustomMenuItem>
 				</Menu>
 			</Fragment>
 		),
-		[CustomMenuItem, history, logout, openUserMenu, openYTMenu]
+		[CustomMenuItem, logout, openUserMenu, openYTMenu]
 	);
 
 	const MobileMenu = useMemo(
@@ -96,13 +100,23 @@ const NavBar = () => {
 					<Avatar alt="Dripdrop" src={DripDrop} />
 				</AccordionSummary>
 				<AccordionDetails>
-					<CustomMenuItem onClick={() => history.push('/')}>Home</CustomMenuItem>
-					<CustomMenuItem onClick={() => history.push('/music')}>Music Downloader</CustomMenuItem>
+					<CustomMenuItem>
+						<RouterLink to="/">Home</RouterLink>
+					</CustomMenuItem>
+					<CustomMenuItem>
+						<RouterLink to="/music">Music Downloader</RouterLink>
+					</CustomMenuItem>
 					<MenuItem>Youtube</MenuItem>
 					<Box marginLeft={1}>
-						<CustomMenuItem onClick={() => history.push('/youtube/videos')}>Videos</CustomMenuItem>
-						<CustomMenuItem onClick={() => history.push('/youtube/subscriptions')}>Subscriptions</CustomMenuItem>
-						<CustomMenuItem onClick={() => history.push('/youtube/videos/queue')}>Video Queue</CustomMenuItem>
+						<CustomMenuItem>
+							<RouterLink to="/youtube/videos">Videos</RouterLink>
+						</CustomMenuItem>
+						<CustomMenuItem>
+							<RouterLink to="/youtube/subscriptions">Subscriptions</RouterLink>
+						</CustomMenuItem>
+						<CustomMenuItem>
+							<RouterLink to="/youtube/videos/queue">Video Queue</RouterLink>
+						</CustomMenuItem>
 					</Box>
 					<CustomMenuItem sx={{ justifyContent: 'space-between' }} onClick={() => logout()}>
 						<AccountCircle />
@@ -111,7 +125,7 @@ const NavBar = () => {
 				</AccordionDetails>
 			</Accordion>
 		),
-		[CustomMenuItem, history, logout, openMobileMenu]
+		[CustomMenuItem, logout, openMobileMenu]
 	);
 
 	return useMemo(

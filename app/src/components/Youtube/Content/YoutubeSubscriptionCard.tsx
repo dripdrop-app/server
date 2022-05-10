@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { SxProps, Theme, Card, CardMedia, CardContent, Link, Stack, Box } from '@mui/material';
-import { useHistory } from 'react-router-dom';
+import RouterLink from '../../RouterLink';
 
 interface SubscriptionCardProps {
 	subscription: YoutubeSubscription;
@@ -12,18 +12,16 @@ const YoutubeSubscriptionCard = (props: SubscriptionCardProps) => {
 	const publishedAt = new Date(subscription.publishedAt).toLocaleDateString();
 	const channelLink = `/youtube/channel/${subscription.channelId}`;
 
-	const history = useHistory();
-
 	return useMemo(
 		() => (
 			<Card sx={sx} variant="outlined">
 				<Stack height="100%">
-					<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(channelLink)}>
+					<RouterLink to={channelLink}>
 						<CardMedia component="img" image={subscription.channelThumbnail} />
-					</Link>
+					</RouterLink>
 					<CardContent>
-						<Link sx={{ cursor: 'pointer' }} onClick={() => history.push(channelLink)} underline="none">
-							{subscription.channelTitle}
+						<Link underline="none">
+							<RouterLink to={channelLink}>{subscription.channelTitle}</RouterLink>
 						</Link>
 					</CardContent>
 					<Box flex={1} />
@@ -33,7 +31,7 @@ const YoutubeSubscriptionCard = (props: SubscriptionCardProps) => {
 				</Stack>
 			</Card>
 		),
-		[channelLink, history, publishedAt, subscription.channelThumbnail, subscription.channelTitle, sx]
+		[channelLink, publishedAt, subscription.channelThumbnail, subscription.channelTitle, sx]
 	);
 };
 
