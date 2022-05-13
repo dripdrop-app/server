@@ -24,10 +24,17 @@ const customBaseQuery = (options?: FetchBaseQueryArgs) => {
 	return async (args: string | FetchArgs, api: BaseQueryApi, extraOptions: {}) => {
 		const response = await fetch(args, api, extraOptions);
 		let error;
-		if (response.error && response.error.data) {
-			error = response.error.data as ErrorResponse;
-			error = errorParser(error);
-			response.error.data = error;
+		if (response.error) {
+			if (response.error.status && response.error.status === 401) {
+				if (typeof args === 'object' && args.url !== '/auth/session') {
+					window.location.reload();
+				}
+			}
+			if (response.error.data) {
+				error = response.error.data as ErrorResponse;
+				error = errorParser(error);
+				response.error.data = error;
+			}
 		}
 		return response;
 	};
