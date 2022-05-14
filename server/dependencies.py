@@ -78,7 +78,7 @@ def get_authenticated_user(user: SessionUser = Depends(get_user)):
 def get_admin_user(user: SessionUser = Depends(get_user)):
     if user and user.admin:
         return user
-    raise HTTPException(401)
+    raise HTTPException(403)
 
 
 async def get_google_user(user: User = Depends(get_authenticated_user)):
