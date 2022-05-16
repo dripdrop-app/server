@@ -1,23 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CircularProgress, Stack, Typography, Grid } from '@mui/material';
 import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
 import Paginator from '../Paginator';
+import { useSelector } from 'react-redux';
 
 const JobList = () => {
-	const [page, setPage] = useState(0);
+	const [page, setPage] = useState(1);
 
 	const jobsStatus = useJobsQuery({}, { refetchOnReconnect: true });
 
-	const jobs = useMemo(
-		() => (jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.jobs : []),
-		[jobsStatus.currentData, jobsStatus.isSuccess]
-	);
+	const jobs = useSelector((state: RootState) => {
+		const jobIDs = state.music.jobs.ids;
+		return jobIDs.map((id) => state.music.jobs.entities[id]) as Job[];
+	});
+
 	const PAGE_SIZE = useMemo(() => 4, []);
-	const jobs_slice = useMemo(() => jobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [PAGE_SIZE, jobs, page]);
+	const jobs_slice = useMemo(() => jobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [PAGE_SIZE, jobs, page]);
+
+	const pageCount = useMemo(() => Math.ceil(jobs.length / PAGE_SIZE), [PAGE_SIZE, jobs.length]);
 
 	const Jobs = useMemo(() => {
-		if (jobsStatus.isFetching) {
+		if (jobsStatus.isFetching || jobsStatus.isLoading) {
 			return (
 				<Stack paddingY={5} direction="row" justifyContent="center">
 					<CircularProgress />
@@ -31,15 +35,15 @@ const JobList = () => {
 			);
 		}
 		return (
-			<Grid container gap={1}>
+			<Grid container>
 				{jobs_slice.map((job) => (
-					<Grid key={job.id} item md={2.93} sm={5.93} xs={12}>
+					<Grid key={job.id} item md={3} sm={6} xs={12} padding={1}>
 						<JobCard sx={{ height: '100%' }} job={job} />
 					</Grid>
 				))}
 			</Grid>
 		);
-	}, [jobs.length, jobsStatus.isFetching, jobs_slice]);
+	}, [jobs.length, jobsStatus.isFetching, jobsStatus.isLoading, jobs_slice]);
 
 	const JobsDisplay = useMemo(
 		() => (
@@ -47,16 +51,22 @@ const JobList = () => {
 				{Jobs}
 				<Stack direction="row" justifyContent="center">
 					<Paginator
-						page={page + 1}
-						pageCount={Math.ceil(jobs.length / PAGE_SIZE)}
+						page={page}
+						pageCount={pageCount}
 						onChange={(newPage) => setPage(newPage)}
-						isFetching={jobsStatus.isFetching}
+						isFetching={jobsStatus.isFetching || jobsStatus.isLoading}
 					/>
 				</Stack>
 			</Stack>
 		),
-		[Jobs, PAGE_SIZE, jobs.length, jobsStatus.isFetching, page]
+		[Jobs, jobsStatus.isFetching, jobsStatus.isLoading, page, pageCount]
 	);
+
+	useEffect(() => {
+		if (page > pageCount && page !== 1) {
+			setPage(page - 1);
+		}
+	}, [page, pageCount]);
 
 	return useMemo(
 		() => (

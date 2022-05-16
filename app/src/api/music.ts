@@ -1,5 +1,6 @@
 import api from '.';
 import { buildWebsocketURL } from '../config';
+import { addJob, addJobs, removeJob, updateJob } from '../state/music';
 
 const musicApi = api.injectEndpoints({
 	endpoints: (build) => ({
@@ -25,26 +26,21 @@ const musicApi = api.injectEndpoints({
 		}),
 		jobs: build.query<JobsResponse, {}>({
 			query: () => '/music/jobs',
-			providesTags: (result) => (result ? result.jobs.map((job) => ({ type: 'MusicJob', id: job.id })) : []),
-			onCacheEntryAdded: async (arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) => {
+			onCacheEntryAdded: async (arg, { cacheDataLoaded, cacheEntryRemoved, dispatch }) => {
 				const url = buildWebsocketURL('/music/jobs/listen');
 				const ws = new WebSocket(url);
 				try {
-					await cacheDataLoaded;
+					const response = await cacheDataLoaded;
+					const jobs = response.data.jobs;
+					dispatch(addJobs(jobs));
+
 					ws.onmessage = (event) => {
 						const json = JSON.parse(event.data);
 						const type = json.type;
 						if (type === 'STARTED') {
-							updateCachedData(({ jobs }) => {
-								jobs.splice(0, 0, json.job);
-							});
+							dispatch(addJob(json.job));
 						} else if (type === 'COMPLETED') {
-							updateCachedData(({ jobs }) => {
-								const jobIndex = jobs.findIndex((job) => job.id === json.job.id);
-								if (jobIndex !== -1) {
-									jobs.splice(jobIndex, 1, json.job);
-								}
-							});
+							dispatch(updateJob(json.job));
 						}
 					};
 				} finally {
@@ -58,7 +54,12 @@ const musicApi = api.injectEndpoints({
 				url: `/music/jobs/delete/${jobID}`,
 				method: 'DELETE',
 			}),
-			invalidatesTags: (result, error, jobID) => (!error ? [{ type: 'MusicJob', id: jobID }] : []),
+			onQueryStarted: async (jobID, { queryFulfilled, dispatch }) => {
+				try {
+					await queryFulfilled;
+					dispatch(removeJob(jobID));
+				} catch {}
+			},
 		}),
 		downloadJob: build.query<Response, string>({
 			query: (jobID) => ({

@@ -18,11 +18,11 @@ const SourceSelector = (props: SourceSelectorProps) => {
 
 	const dispatch = useDispatch();
 	const { grouping, youtubeUrl, filename, fileType, validYoutubeLink } = useSelector((state: RootState) => ({
-		youtubeUrl: state.music.youtubeUrl,
-		grouping: state.music.grouping,
-		filename: state.music.filename,
-		fileType: state.music.fileType,
-		validYoutubeLink: state.music.validYoutubeLink,
+		youtubeUrl: state.music.form.youtubeUrl,
+		grouping: state.music.form.grouping,
+		filename: state.music.form.filename,
+		fileType: state.music.form.fileType,
+		validYoutubeLink: state.music.form.validYoutubeLink,
 	}));
 
 	const debouncedGetGrouping = useMemo(() => debounce(getGrouping, 1000), [getGrouping]);

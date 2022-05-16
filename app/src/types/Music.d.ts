@@ -12,6 +12,7 @@ declare global {
 		grouping?: string;
 		completed: boolean;
 		failed: boolean;
+		createdAt: string;
 	}
 	interface MusicFormState {
 		fileType: keyof typeof FILE_TYPE;

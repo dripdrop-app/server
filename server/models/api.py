@@ -1,9 +1,13 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
-from server.models.main import YoutubeVideoCategory, YoutubeSubscription, YoutubeVideo
+from pydantic import BaseModel
+from server.models.main import (
+    MusicJob,
+    YoutubeVideoCategory,
+    YoutubeSubscription,
+    YoutubeVideo,
+)
 from typing import Literal, Optional, List
 
-email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
 youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
 
 
@@ -30,20 +34,7 @@ class RedisResponses:
         type: Literal["STARTED", "COMPLETED"]
 
 
-class JobInfo(BaseModel):
-    id: str
-    filename: Optional[str]
-    youtube_url: Optional[str] = Field(None, regex=youtube_regex)
-    artwork_url: Optional[str]
-    title: str
-    artist: str
-    album: str
-    grouping: Optional[str]
-    completed: bool
-    failed: bool
-
-
-class JobInfoResponse(ResponseBaseModel, JobInfo):
+class MusicJobResponse(ResponseBaseModel, MusicJob):
     pass
 
 
@@ -70,18 +61,15 @@ class MusicResponses:
         grouping: Optional[str]
         artwork_url: Optional[str]
 
-    class Download(JobInfoResponse):
+    class Download(MusicJobResponse):
         pass
 
     class AllJobs(ResponseBaseModel):
-        jobs: List[JobInfoResponse]
+        jobs: List[MusicJobResponse]
 
     class JobUpdate(ResponseBaseModel):
         type: Literal["COMPLETED", "STARTED"]
-        job: JobInfoResponse
-
-    class CreateJob(ResponseBaseModel):
-        job: JobInfoResponse
+        job: MusicJobResponse
 
 
 class YoutubeVideoCategoryResponse(ResponseBaseModel, YoutubeVideoCategory):

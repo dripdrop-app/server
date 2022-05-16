@@ -13,8 +13,8 @@ const ArtworkInput = () => {
 
 	const dispatch = useDispatch();
 	const { artworkUrl, validArtwork } = useSelector((state: RootState) => ({
-		validArtwork: state.music.validArtwork,
-		artworkUrl: state.music.artworkUrl,
+		validArtwork: state.music.form.validArtwork,
+		artworkUrl: state.music.form.artworkUrl,
 	}));
 
 	const debouncedGetArtworkURL = useMemo(() => debounce(getArtworkURL, 1000), [getArtworkURL]);

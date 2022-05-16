@@ -29,7 +29,7 @@ const FormActions = (props: FormActionProps) => {
 					formLoading = formLoading || (call?.status === 'pending' ?? formLoading);
 				}
 			}
-			return { formLoading, ...state.music };
+			return { formLoading, ...state.music.form };
 		});
 
 	const run = useCallback(async () => {
@@ -60,22 +60,32 @@ const FormActions = (props: FormActionProps) => {
 	]);
 
 	useEffect(() => {
-		if (createYoutubeJobStatus.isSuccess) {
-			setOpenSuccess(true);
-			dispatch(resetForm());
-		} else if (createYoutubeJobStatus.isError) {
-			setOpenFailed(true);
+		if (!createYoutubeJobStatus.isLoading && !createYoutubeJobStatus.isFetching) {
+			if (createYoutubeJobStatus.isSuccess) {
+				setOpenSuccess(true);
+				dispatch(resetForm());
+			} else if (createYoutubeJobStatus.isError) {
+				setOpenFailed(true);
+			}
 		}
-	}, [createYoutubeJobStatus.isError, createYoutubeJobStatus.isSuccess, dispatch]);
+	}, [
+		createYoutubeJobStatus.isError,
+		createYoutubeJobStatus.isFetching,
+		createYoutubeJobStatus.isLoading,
+		createYoutubeJobStatus.isSuccess,
+		dispatch,
+	]);
 
 	useEffect(() => {
-		if (createFileJobStatus.isSuccess) {
-			setOpenSuccess(true);
-			dispatch(resetForm());
-		} else if (createFileJobStatus.isError) {
-			setOpenFailed(true);
+		if (!createFileJobStatus.isLoading || !createFileJobStatus.isFetching) {
+			if (createFileJobStatus.isSuccess) {
+				setOpenSuccess(true);
+				dispatch(resetForm());
+			} else if (createFileJobStatus.isError) {
+				setOpenFailed(true);
+			}
 		}
-	}, [dispatch, createFileJobStatus.isSuccess, createFileJobStatus.isError]);
+	}, [dispatch, createFileJobStatus]);
 
 	return useMemo(
 		() => (

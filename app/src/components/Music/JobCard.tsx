@@ -22,6 +22,7 @@ import { FILE_TYPE } from '../../utils/enums';
 import BlankImage from '../../images/blank_image.jpeg';
 import { updateForm } from '../../state/music';
 import { CopyAll, Delete, Download } from '@mui/icons-material';
+import ConditionalDisplay from '../ConditionalDisplay';
 
 interface JobCardProps {
 	job: Job;
@@ -65,27 +66,6 @@ const JobCard = (props: JobCardProps) => {
 			handleDownload(downloadJobStatus.currentData);
 		}
 	}, [downloadJobStatus.currentData, downloadJobStatus.isSuccess]);
-
-	const DownloadButton = useMemo(() => {
-		if (!job.completed && !job.failed) {
-			return (
-				<Button>
-					<CircularProgress />
-				</Button>
-			);
-		} else if (!job.completed) {
-			return (
-				<Button color="error" disabled>
-					<Error />
-				</Button>
-			);
-		}
-		return (
-			<Button color="success" onClick={() => downloadJob(job.id)}>
-				<Download />
-			</Button>
-		);
-	}, [downloadJob, job.completed, job.failed, job.id]);
 
 	return useMemo(
 		() => (
@@ -136,7 +116,21 @@ const JobCard = (props: JobCardProps) => {
 					<CardActions>
 						<Stack direction="row" justifyContent="center">
 							<ButtonGroup>
-								{DownloadButton}
+								<ConditionalDisplay condition={!job.completed && !job.failed}>
+									<Button>
+										<CircularProgress />
+									</Button>
+								</ConditionalDisplay>
+								<ConditionalDisplay condition={job.failed}>
+									<Button color="error" disabled>
+										<Error />
+									</Button>
+								</ConditionalDisplay>
+								<ConditionalDisplay condition={job.completed}>
+									<Button color="success" onClick={() => downloadJob(job.id)}>
+										<Download />
+									</Button>
+								</ConditionalDisplay>
 								<Button onClick={() => copyJob()}>
 									<CopyAll />
 								</Button>
@@ -150,11 +144,13 @@ const JobCard = (props: JobCardProps) => {
 			</Card>
 		),
 		[
-			DownloadButton,
 			copyJob,
+			downloadJob,
 			job.album,
 			job.artist,
 			job.artworkUrl,
+			job.completed,
+			job.failed,
 			job.filename,
 			job.grouping,
 			job.id,

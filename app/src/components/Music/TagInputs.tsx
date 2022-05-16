@@ -14,10 +14,10 @@ const TagInputs = () => {
 			}
 		}
 		return {
-			title: state.music.title,
-			artist: state.music.artist,
-			album: state.music.album,
-			grouping: state.music.grouping,
+			title: state.music.form.title,
+			artist: state.music.form.artist,
+			album: state.music.form.album,
+			grouping: state.music.form.grouping,
 			groupingLoading,
 		};
 	});

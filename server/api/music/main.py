@@ -1,7 +1,9 @@
 import asyncio
-import uuid
-import os
 import json
+import logging
+import os
+import traceback
+import uuid
 from fastapi import (
     FastAPI,
     Query,
@@ -13,18 +15,13 @@ from fastapi import (
     Form,
     HTTPException,
 )
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse
 from server.utils.imgdl import download_image
 from server.utils.mp3dl import extract_info
 from server.dependencies import get_authenticated_user
 from server.models.main import db, MusicJobs, User, MusicJob
-from server.models.api import (
-    youtube_regex,
-    JobInfo,
-    JobInfoResponse,
-    MusicResponses,
-    RedisResponses,
-)
+from server.models.api import MusicResponses, RedisResponses, youtube_regex
 from server.redis import (
     redis,
     RedisChannels,
@@ -44,7 +41,7 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     try:
         loop = asyncio.get_event_loop()
         uploader = await loop.run_in_executor(None, extract_info, youtube_url)
-        return MusicResponses.Grouping(grouping=uploader).dict()
+        return MusicResponses.Grouping(grouping=uploader).dict(by_alias=True)
     except Exception:
         raise HTTPException(400)
 
@@ -56,7 +53,7 @@ async def get_artwork(artwork_url: str = Query(...)):
         artwork_url = await loop.run_in_executor(
             None, download_image, artwork_url, False
         )
-        return MusicResponses.ArtworkURL(artwork_url=artwork_url).dict()
+        return MusicResponses.ArtworkURL(artwork_url=artwork_url).dict(by_alias=True)
     except Exception:
         raise HTTPException(400)
 
@@ -65,7 +62,7 @@ async def get_artwork(artwork_url: str = Query(...)):
 async def get_tags(file: UploadFile = File(...)):
     loop = asyncio.get_event_loop()
     tags = await loop.run_in_executor(None, read_tags, await file.read(), file.filename)
-    return tags.dict()
+    return tags.dict(by_alias=True)
 
 
 @app.get("/jobs", response_model=MusicResponses.AllJobs)
@@ -77,22 +74,9 @@ async def get_jobs(user: User = Depends(get_authenticated_user)):
     )
     jobs = []
     for row in await db.fetch_all(query):
-        job = JobInfo.parse_obj(row)
-        jobs.append(
-            JobInfoResponse(
-                id=job.id,
-                filename=job.filename,
-                youtube_url=job.youtube_url,
-                artwork_url=job.artwork_url,
-                title=job.title,
-                artist=job.artist,
-                album=job.album,
-                grouping=job.grouping,
-                completed=job.completed,
-                failed=job.failed,
-            )
-        )
-    return MusicResponses.AllJobs(jobs=jobs).dict()
+        job = MusicJob.parse_obj(row)
+        jobs.append(job)
+    return MusicResponses.AllJobs(jobs=jobs).dict(by_alias=True)
 
 
 @app.websocket("/jobs/listen")
@@ -112,24 +96,15 @@ async def listen_jobs(
             try:
                 job = MusicJob.parse_obj(job)
                 await websocket.send_json(
-                    MusicResponses.JobUpdate(
-                        type=type,
-                        job=JobInfoResponse(
-                            id=job.id,
-                            filename=job.filename,
-                            youtube_url=job.youtube_url,
-                            artwork_url=job.artwork_url,
-                            title=job.title,
-                            artist=job.artist,
-                            album=job.album,
-                            grouping=job.grouping,
-                            completed=job.completed,
-                            failed=job.failed,
-                        ),
-                    ).dict(by_alias=True)
+                    jsonable_encoder(
+                        MusicResponses.JobUpdate(
+                            type=type,
+                            job=job,
+                        ).dict(by_alias=True)
+                    )
                 )
             except Exception:
-                pass
+                logging.exception(traceback.format_exc())
         return
 
     await websocket.accept()
@@ -149,7 +124,7 @@ async def create_job_from_youtube(
     user: User = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
-    job_info = JobInfo(
+    query = insert(MusicJobs).values(
         id=job_id,
         youtube_url=youtubeUrl,
         artwork_url=artworkUrl,
@@ -160,9 +135,6 @@ async def create_job_from_youtube(
         filename=None,
         completed=False,
         failed=False,
-    )
-    query = insert(MusicJobs).values(
-        **job_info.dict(),
         user_email=user.email,
     )
     await db.execute(query)
@@ -186,7 +158,7 @@ async def create_job_from_file(
 ):
     job_id = str(uuid.uuid4())
     filename = file.filename
-    job_info = JobInfo(
+    query = insert(MusicJobs).values(
         id=job_id,
         youtube_url=None,
         artwork_url=artworkUrl,
@@ -197,9 +169,6 @@ async def create_job_from_file(
         filename=filename,
         completed=False,
         failed=False,
-    )
-    query = insert(MusicJobs).values(
-        **job_info.dict(),
         user_email=user.email,
     )
     await db.execute(query)
