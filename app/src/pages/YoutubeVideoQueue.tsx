@@ -14,6 +14,7 @@ import {
 	useMediaQuery,
 	Divider,
 	Container,
+	Grid,
 } from '@mui/material';
 import { RemoveFromQueue } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
@@ -116,26 +117,32 @@ const YoutubeVideoQueue = () => {
 
 	const VideoPlayerButtons = useMemo(() => {
 		if (currentVideo) {
+			const publishedAt = new Date(currentVideo.publishedAt).toLocaleDateString();
 			return (
 				<Container>
-					<Typography variant="h5">{currentVideo.title}</Typography>
-					<Stack
-						direction={isMobile ? 'column' : 'row'}
-						justifyContent="space-between"
-						alignItems={isMobile ? 'center' : ''}
-					>
-						<Typography color="primary">
-							<RouterLink to={`/youtube/channel/${currentVideo.channelId}`}>
-								<Typography variant="h6">{currentVideo.channelTitle}</Typography>
-							</RouterLink>
-						</Typography>
-						<VideoButtons video={currentVideo} />
-					</Stack>
+					<Grid container>
+						<Grid item md={8}>
+							<Typography variant="h5">{currentVideo.title}</Typography>
+						</Grid>
+						<Grid item md={4} textAlign="right">
+							<VideoButtons video={currentVideo} />
+						</Grid>
+					</Grid>
+					<Grid container>
+						<Grid item md={8}>
+							<Typography color="primary" variant="h6">
+								<RouterLink to={`/youtube/channel/${currentVideo.channelId}`}>{currentVideo.channelTitle}</RouterLink>
+							</Typography>
+						</Grid>
+						<Grid item md={4} textAlign="right">
+							<Typography variant="h6">{publishedAt}</Typography>
+						</Grid>
+					</Grid>
 				</Container>
 			);
 		}
 		return null;
-	}, [currentVideo, isMobile]);
+	}, [currentVideo]);
 
 	useEffect(() => {
 		if (currentVideo) {

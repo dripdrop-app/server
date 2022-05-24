@@ -7,6 +7,8 @@ from server.config import config
 from server.dependencies import get_authenticated_user, get_google_user
 from server.models.main import (
     db,
+    YoutubeVideoLike,
+    YoutubeVideoQueue,
     Users,
     YoutubeVideo,
     YoutubeVideoCategory,
@@ -36,11 +38,33 @@ from server.tasks.youtube import (
 from sqlalchemy import insert, select, update, delete
 from typing import List
 
-
 app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
 
 
-def convertVideoToResponse(video: YoutubeVideo, row):
+async def convertVideoToResponse(video: YoutubeVideo, google_account: GoogleAccount):
+    query = select(YoutubeChannels).where(YoutubeChannels.id == video.channel_id)
+    channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
+
+    query = select(YoutubeVideoLikes).where(
+        YoutubeVideoLikes.email == google_account.email,
+        YoutubeVideoLikes.video_id == video.id,
+    )
+    video_like = await db.fetch_one(query)
+    liked = None
+    if video_like:
+        video_like = YoutubeVideoLike.parse_obj(video_like)
+        liked = video_like.created_at
+
+    query = select(YoutubeVideoQueues).where(
+        YoutubeVideoQueues.email == google_account.email,
+        YoutubeVideoQueues.video_id == video.id,
+    )
+    video_queue = await db.fetch_one(query)
+    queued = None
+    if video_queue:
+        video_queue = YoutubeVideoQueue.parse_obj(video_queue)
+        queued = video_queue.created_at
+
     return YoutubeVideoResponse(
         id=video.id,
         title=video.title,
@@ -49,9 +73,9 @@ def convertVideoToResponse(video: YoutubeVideo, row):
         category_id=video.category_id,
         published_at=video.published_at,
         created_at=video.created_at,
-        channel_title=row["channel_title"],
-        liked=row.get("liked"),
-        queued=row.get("queued"),
+        channel_title=channel.title,
+        liked=liked,
+        queued=queued,
     )
 
 
@@ -126,7 +150,7 @@ async def get_youtube_account(
             await db.execute(query)
     return YoutubeResponses.Account(
         email=google_account.email, refresh=not bool(access_token)
-    ).dict()
+    ).dict(by_alias=True)
 
 
 @app.get("/oauth", response_class=PlainTextResponse)
@@ -182,7 +206,7 @@ async def get_youtube_video_categories(
                 created_at=category.created_at,
             )
         )
-    return YoutubeResponses.VideoCategories(categories=categories).dict()
+    return YoutubeResponses.VideoCategories(categories=categories).dict(by_alias=True)
 
 
 @app.get("/videos/{page}/{per_page}", response_model=YoutubeResponses.Videos)
@@ -195,16 +219,13 @@ async def get_youtube_videos(
     queued_only: bool = Query(False),
     google_account: GoogleAccount = Depends(get_google_user),
 ):
-    channel_query = select(YoutubeChannels)
-    if channel_id:
-        channel_query = channel_query.where(YoutubeChannels.id == channel_id)
-    channel_query = channel_query.alias(name="youtube_channels")
-
     videos_query = select(YoutubeVideos)
     if video_categories:
         videos_query = videos_query.where(
             YoutubeVideos.category_id.in_(video_categories)
         )
+    if channel_id:
+        videos_query = videos_query.where(YoutubeVideos.channel_id == channel_id)
     videos_query = videos_query.alias(name="youtube_videos")
 
     video_likes_query = (
@@ -219,38 +240,27 @@ async def get_youtube_videos(
         .alias(name="youtube_video_queues")
     )
 
-    if channel_id:
-        query = channel_query.join(
-            videos_query, videos_query.c.channel_id == channel_query.c.id
+    query = (
+        select(YoutubeSubscriptions)
+        .where(YoutubeSubscriptions.email == google_account.email)
+        .alias(name="youtube_subscriptions")
+        .join(
+            videos_query,
+            videos_query.c.channel_id == YoutubeSubscriptions.channel_id,
         )
-    else:
-        query = (
-            select(YoutubeSubscriptions)
-            .where(YoutubeSubscriptions.email == google_account.email)
-            .alias(name="youtube_subscriptions")
-            .join(
-                channel_query,
-                channel_query.c.id == YoutubeSubscriptions.channel_id,
-            )
-            .join(videos_query, videos_query.c.channel_id == channel_query.c.id)
+        .join(
+            video_likes_query,
+            video_likes_query.c.video_id == videos_query.c.id,
+            isouter=not liked_only,
         )
-
-    query = query.join(
-        video_likes_query,
-        video_likes_query.c.video_id == videos_query.c.id,
-        isouter=not liked_only,
-    ).join(
-        video_queues_query,
-        video_queues_query.c.video_id == videos_query.c.id,
-        isouter=not queued_only,
+        .join(
+            video_queues_query,
+            video_queues_query.c.video_id == videos_query.c.id,
+            isouter=not queued_only,
+        )
     )
 
-    query = select(
-        videos_query,
-        video_likes_query.c.created_at.label("liked"),
-        video_queues_query.c.created_at.label("queued"),
-        channel_query.c.title.label("channel_title"),
-    ).select_from(query)
+    query = select(videos_query).select_from(query)
     if liked_only:
         query = query.order_by(video_likes_query.c.created_at.asc())
     elif queued_only:
@@ -262,9 +272,10 @@ async def get_youtube_videos(
     videos = []
     rows = await db.fetch_all(query)
     for row in rows:
-        video = YoutubeVideo.parse_obj(row)
-        videos.append(convertVideoToResponse(video, row))
-    return YoutubeResponses.Videos(videos=videos).dict()
+        videos.append(
+            await convertVideoToResponse(YoutubeVideo.parse_obj(row), google_account)
+        )
+    return YoutubeResponses.Videos(videos=videos).dict(by_alias=True)
 
 
 @app.put("/videos/like")
@@ -329,69 +340,31 @@ async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
     google_account: GoogleAccount = Depends(get_google_user),
 ):
-    index = index - 1
-    video_queues_query = (
-        select(YoutubeVideoQueues)
-        .where(YoutubeVideoQueues.email == google_account.email)
-        .alias(name="youtube_video_queues")
-    )
-    video_likes_query = (
-        select(YoutubeVideoLikes)
-        .where(YoutubeVideoLikes.email == google_account.email)
-        .alias(name="youtube_video_likes")
-    )
-    query = (
-        video_queues_query.join(
-            YoutubeVideos, YoutubeVideos.id == video_queues_query.c.video_id
-        )
-        .join(
-            video_likes_query,
-            video_likes_query.c.video_id == video_queues_query.c.video_id,
-            isouter=True,
-        )
-        .join(YoutubeChannels, YoutubeChannels.id == YoutubeVideos.channel_id)
-    )
-
-    def create_video_query(index: int):
-        return (
-            select(
-                YoutubeVideos,
-                video_likes_query.c.created_at.label("liked"),
-                video_queues_query.c.created_at.label("queued"),
-                YoutubeChannels.title.label("channel_title"),
-            )
-            .select_from(query)
-            .order_by(YoutubeVideoQueues.created_at.asc())
+    async def get_video_queue(index):
+        query = (
+            select(YoutubeVideoQueues)
+            .where(YoutubeVideoQueues.email == google_account.email)
             .offset(index)
-            .limit(1)
         )
+        video_queue = await db.fetch_one(query)
+        if not video_queue:
+            return None
+        video_queue = YoutubeVideoQueue.parse_obj(video_queue)
 
-    current_video_row = await db.fetch_one(create_video_query(index))
-    if not current_video_row:
+        query = select(YoutubeVideos).where(YoutubeVideos.id == video_queue.video_id)
+        video = YoutubeVideo.parse_obj(await db.fetch_one(query))
+        return await convertVideoToResponse(video, google_account)
+
+    index = index - 1
+    current_video = await get_video_queue(index)
+    if not current_video:
         raise HTTPException(404)
-    current_video = convertVideoToResponse(
-        YoutubeVideo.parse_obj(current_video_row), current_video_row
-    )
 
-    prev_video = None
-    prev_video_row = (
-        None if index == 0 else await db.fetch_one(create_video_query(index - 1))
-    )
-    if prev_video_row:
-        prev_video = convertVideoToResponse(
-            YoutubeVideo.parse_obj(prev_video_row), prev_video_row
-        )
-
-    next_video = None
-    next_video_row = await db.fetch_one(create_video_query(index + 1))
-    if next_video_row:
-        next_video = convertVideoToResponse(
-            YoutubeVideo.parse_obj(next_video_row), next_video_row
-        )
-
+    prev_video = None if index == 0 else await get_video_queue(index - 1)
+    next_video = await get_video_queue(index + 1)
     return YoutubeResponses.VideoQueue(
         current_video=current_video, prev=bool(prev_video), next=bool(next_video)
-    )
+    ).dict(by_alias=True)
 
 
 @app.get(
@@ -404,98 +377,36 @@ async def get_youtube_video(
     related_videos_length: int = Query(5, le=5),
     google_account: GoogleAccount = Depends(get_google_user),
 ):
-    video_query = (
-        select(YoutubeVideos)
-        .where(YoutubeVideos.id == video_id)
-        .alias(name="youtube_videos")
-    )
-    video_likes_query = (
-        select(YoutubeVideoLikes)
-        .where(YoutubeVideoLikes.email == google_account.email)
-        .alias(name="youtube_video_likes")
-    )
-    video_queues_query = (
-        select(YoutubeVideoQueues)
-        .where(YoutubeVideoQueues.email == google_account.email)
-        .alias(name="youtube_video_queues")
-    )
-    query = (
-        video_query.join(
-            YoutubeChannels, YoutubeChannels.id == video_query.c.channel_id
-        )
-        .join(
-            video_queues_query,
-            video_queues_query.c.video_id == video_query.c.id,
-            isouter=True,
-        )
-        .join(
-            video_likes_query,
-            video_likes_query.c.video_id == video_query.c.id,
-            isouter=True,
-        )
-    )
-    query = select(
-        video_query,
-        video_likes_query.c.created_at.label("liked"),
-        video_queues_query.c.created_at.label("queued"),
-        YoutubeChannels.title.label("channel_title"),
-    ).select_from(query)
+    query = select(YoutubeVideos).where(YoutubeVideos.id == video_id)
+    video = await db.fetch_one(query)
+    if not video:
+        return HTTPException(404)
+    video = await convertVideoToResponse(YoutubeVideo.parse_obj(video), google_account)
+    related_videos = []
 
-    row = await db.fetch_one(query)
-    if row:
-        video = YoutubeVideo.parse_obj(row)
-        video = convertVideoToResponse(video, row)
-        related_videos = []
-
-        if related_videos_length > 0:
-            related_videos_query = (
-                select(YoutubeVideos)
-                .where(
-                    YoutubeVideos.id != video.id,
-                    (YoutubeVideos.category_id == video.category_id)
-                    | (YoutubeVideos.channel_id == video.channel_id),
+    if related_videos_length > 0:
+        query = (
+            select(YoutubeVideos)
+            .where(
+                YoutubeVideos.id != video.id,
+                (YoutubeVideos.category_id == video.category_id)
+                | (YoutubeVideos.channel_id == video.channel_id),
+            )
+            .order_by(YoutubeVideos.published_at.desc())
+            .limit(related_videos_length)
+        )
+        videos = await db.fetch_all(query)
+        for related_video in videos:
+            related_videos.append(
+                await convertVideoToResponse(
+                    YoutubeVideo.parse_obj(related_video), google_account
                 )
-                .alias(name="related_youtube_videos")
             )
 
-            query = (
-                related_videos_query.join(
-                    YoutubeChannels,
-                    YoutubeChannels.id == related_videos_query.c.channel_id,
-                )
-                .join(
-                    video_likes_query,
-                    video_likes_query.c.video_id == related_videos_query.c.id,
-                    isouter=True,
-                )
-                .join(
-                    video_queues_query,
-                    video_queues_query.c.video_id == related_videos_query.c.id,
-                    isouter=True,
-                )
-            )
-            query = (
-                select(
-                    related_videos_query,
-                    video_likes_query.c.created_at.label("liked"),
-                    video_queues_query.c.created_at.label("queued"),
-                    YoutubeChannels.title.label("channel_title"),
-                )
-                .select_from(query)
-                .order_by(related_videos_query.c.published_at.desc())
-                .limit(related_videos_length)
-            )
-
-            rows = await db.fetch_all(query)
-            for row in rows:
-                related_video = YoutubeVideo.parse_obj(row)
-                related_videos.append(convertVideoToResponse(related_video, row))
-
-        return YoutubeResponses.Video(
-            video=video,
-            related_videos=related_videos,
-        )
-    raise HTTPException(404)
+    return YoutubeResponses.Video(
+        video=video,
+        related_videos=related_videos,
+    ).dict(by_alias=True)
 
 
 @app.get(
@@ -528,14 +439,15 @@ async def get_youtube_subscriptions(
     subscriptions = [
         YoutubeSubscriptionResponse.parse_obj(row) for row in await db.fetch_all(query)
     ]
-    return YoutubeResponses.Subscriptions(subscriptions=subscriptions).dict()
+    return YoutubeResponses.Subscriptions(subscriptions=subscriptions).dict(
+        by_alias=True
+    )
 
 
 @app.get("/channel/{channel_id}", response_model=YoutubeChannel)
 async def get_youtube_channel(channel_id: str):
     query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     channel = await db.fetch_one(query)
-    if channel:
-        channel = YoutubeChannel.parse_obj(channel)
-        return channel
-    raise HTTPException(404)
+    if not channel:
+        raise HTTPException(404)
+    return YoutubeChannel.parse_obj(channel).dict(by_alias=True)

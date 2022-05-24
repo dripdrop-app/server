@@ -1,15 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import {
-	Box,
-	CircularProgress,
-	Container,
-	Divider,
-	Grid,
-	Stack,
-	Typography,
-	useMediaQuery,
-	useTheme,
-} from '@mui/material';
+import { Box, CircularProgress, Container, Divider, Grid, Stack, Typography } from '@mui/material';
 import ReactPlayer from 'react-player';
 import { useYoutubeVideoQuery } from '../api/youtube';
 import YoutubeVideoCard from '../components/Youtube/Content/YoutubeVideoCard';
@@ -26,14 +16,12 @@ interface YoutubeVideoProps {
 const YoutubeVideo = (props: YoutubeVideoProps) => {
 	const videoStatus = useYoutubeVideoQuery({ videoID: props.id });
 
-	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
-
 	const dispatch = useDispatch();
 
 	const Content = useMemo(() => {
 		if (videoStatus.data) {
 			const { video, relatedVideos } = videoStatus.data;
+			const publishedAt = new Date(video.publishedAt).toLocaleDateString();
 			return (
 				<Stack>
 					<Box marginBottom={2} height="80vh">
@@ -48,19 +36,24 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 					</Box>
 					<Box margin={1}>
 						<Container>
-							<Typography variant="h5">{video.title}</Typography>
-							<Stack
-								direction={isMobile ? 'column' : 'row'}
-								justifyContent="space-between"
-								alignItems={isMobile ? 'center' : ''}
-							>
-								<Typography color="primary">
-									<RouterLink to={`/youtube/channel/${video.channelId}`}>
-										<Typography variant="h6">{video.channelTitle}</Typography>
-									</RouterLink>
-								</Typography>
-								<VideoButtons video={video} />
-							</Stack>
+							<Grid container>
+								<Grid item md={8}>
+									<Typography variant="h5">{video.title}</Typography>
+								</Grid>
+								<Grid item md={4} textAlign="right">
+									<VideoButtons video={video} />
+								</Grid>
+							</Grid>
+							<Grid container>
+								<Grid item md={8}>
+									<Typography color="primary" variant="h6">
+										<RouterLink to={`/youtube/channel/${video.channelId}`}>{video.channelTitle}</RouterLink>
+									</Typography>
+								</Grid>
+								<Grid item md={4} textAlign="right">
+									<Typography variant="h6">{publishedAt}</Typography>
+								</Grid>
+							</Grid>
 						</Container>
 					</Box>
 					<Divider />
@@ -92,7 +85,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 				Failed to load video
 			</Stack>
 		);
-	}, [isMobile, videoStatus.data, videoStatus.isLoading]);
+	}, [videoStatus.data, videoStatus.isLoading]);
 
 	useEffect(() => {
 		dispatch(hideVideoQueueDisplay());
