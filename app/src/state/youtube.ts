@@ -5,7 +5,7 @@ export const youtubeSlice = createSlice({
 	initialState: {
 		queue: {
 			player: null as Record<string, any> | null,
-			videoID: '',
+			video: null as YoutubeVideo | null,
 			index: 1,
 			playing: false,
 			ended: false,
@@ -18,14 +18,14 @@ export const youtubeSlice = createSlice({
 		setVideoQueuePlayer: (state, action: PayloadAction<Record<string, any>>) => {
 			const player = action.payload;
 			if (player) {
-				if (state.queue.playing && state.queue.videoID) {
-					player.loadVideoById(state.queue.videoID, 0);
+				if (state.queue.playing && state.queue.video) {
+					player.loadVideoById(state.queue.video.id, 0);
 				}
 			}
 			state.queue.player = player;
 		},
-		setVideoQueuePlayerVideoID: (state, action: PayloadAction<string>) => {
-			state.queue.videoID = action.payload;
+		setVideoQueuePlayerVideo: (state, action: PayloadAction<YoutubeVideo>) => {
+			state.queue.video = action.payload;
 			state.queue.ended = false;
 			state.queue.progress = 0;
 			state.queue.duration = 0;
@@ -79,7 +79,7 @@ export const youtubeSlice = createSlice({
 
 export const {
 	setVideoQueuePlayer,
-	setVideoQueuePlayerVideoID,
+	setVideoQueuePlayerVideo,
 	pauseVideoQueue,
 	playVideoQueue,
 	endVideoQueue,

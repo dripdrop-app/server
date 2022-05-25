@@ -131,6 +131,15 @@ const youtubeApi = api.injectEndpoints({
 				return [];
 			},
 		}),
+		addYoutubeVideoWatch: build.mutation<undefined, string>({
+			query: (videoID) => ({ url: `/youtube/videos/watch?video_id=${videoID}`, method: 'PUT' }),
+			invalidatesTags: (result, error, videoID) => {
+				if (!error) {
+					return [{ type: 'YoutubeVideo', id: videoID }];
+				}
+				return [];
+			},
+		}),
 		youtubeVideoQueue: build.query<YoutubeVideoQueueResponse, number>({
 			query: (index) => ({ url: `/youtube/videos/queue?index=${index}`, method: 'GET' }),
 			providesTags: (result) => {
@@ -166,4 +175,5 @@ export const {
 	useAddYoutubeVideoQueueMutation,
 	useDeleteYoutubeVideoQueueMutation,
 	useYoutubeChannelQuery,
+	useAddYoutubeVideoWatchMutation,
 } = youtubeApi;

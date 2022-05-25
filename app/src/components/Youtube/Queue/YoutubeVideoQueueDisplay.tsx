@@ -6,7 +6,7 @@ import { useYoutubeVideoQueueQuery } from '../../../api/youtube';
 import {
 	playVideoQueue,
 	pauseVideoQueue,
-	setVideoQueuePlayerVideoID,
+	setVideoQueuePlayerVideo,
 	reverseVideoQueue,
 	advanceVideoQueue,
 } from '../../../state/youtube';
@@ -67,7 +67,7 @@ const YoutubeVideoQueueDisplay = () => {
 
 	useEffect(() => {
 		if (currentVideo) {
-			dispatch(setVideoQueuePlayerVideoID(currentVideo.id));
+			dispatch(setVideoQueuePlayerVideo(currentVideo));
 		} else if (queueIndex > 1) {
 			dispatch(reverseVideoQueue());
 		}
@@ -84,7 +84,7 @@ const YoutubeVideoQueueDisplay = () => {
 			return (
 				<Container>
 					<Grid container spacing={2} padding={1}>
-						<Grid item sm={12} md={7}>
+						<Grid item sm={12} md={6}>
 							<Stack direction="row" spacing={2} alignItems="center">
 								<Avatar alt={currentVideo.title} src={currentVideo.thumbnail} />
 								<Stack overflow="hidden" textOverflow="ellipsis">
@@ -103,7 +103,7 @@ const YoutubeVideoQueueDisplay = () => {
 						<Grid item md={2}>
 							{MediaControls}
 						</Grid>
-						<Grid item md={2}>
+						<Grid item md={3}>
 							<VideoButtons video={currentVideo} />
 						</Grid>
 						<Grid item md={1}>

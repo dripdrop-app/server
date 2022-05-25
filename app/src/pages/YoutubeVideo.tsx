@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Box, CircularProgress, Container, Divider, Grid, Stack, Typography } from '@mui/material';
 import ReactPlayer from 'react-player';
-import { useYoutubeVideoQuery } from '../api/youtube';
+import { useYoutubeVideoQuery, useAddYoutubeVideoWatchMutation } from '../api/youtube';
 import YoutubeVideoCard from '../components/Youtube/Content/YoutubeVideoCard';
 import VideoButtons from '../components/Youtube/Content/VideoButtons';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
@@ -15,6 +15,7 @@ interface YoutubeVideoProps {
 
 const YoutubeVideo = (props: YoutubeVideoProps) => {
 	const videoStatus = useYoutubeVideoQuery({ videoID: props.id });
+	const [watchVideo] = useAddYoutubeVideoWatchMutation();
 
 	const dispatch = useDispatch();
 
@@ -32,6 +33,11 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 							url={`https://youtube.com/embed/${video.id}`}
 							controls={true}
 							playing={true}
+							onProgress={({ playedSeconds }) => {
+								if (playedSeconds > 20 && !video.watched) {
+									watchVideo(video.id);
+								}
+							}}
 						/>
 					</Box>
 					<Box margin={1}>
@@ -64,7 +70,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 							</Box>
 							<Grid container>
 								{relatedVideos.map((video) => (
-									<Grid item xs={12} sm={6} md={12 / 5} padding={1}>
+									<Grid item xs={12} sm={6} md={12 / 5} padding={1} key={video.id}>
 										<YoutubeVideoCard sx={{ height: '100%' }} video={video} />
 									</Grid>
 								))}
@@ -85,7 +91,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 				Failed to load video
 			</Stack>
 		);
-	}, [videoStatus.data, videoStatus.isLoading]);
+	}, [videoStatus.data, videoStatus.isLoading, watchVideo]);
 
 	useEffect(() => {
 		dispatch(hideVideoQueueDisplay());

@@ -7,6 +7,8 @@ from server.config import config
 from server.dependencies import get_authenticated_user, get_google_user
 from server.models.main import (
     db,
+    YoutubeVideoWatch,
+    YoutubeVideoWatches,
     YoutubeVideoLike,
     YoutubeVideoQueue,
     Users,
@@ -65,6 +67,16 @@ async def convertVideoToResponse(video: YoutubeVideo, google_account: GoogleAcco
         video_queue = YoutubeVideoQueue.parse_obj(video_queue)
         queued = video_queue.created_at
 
+    query = select(YoutubeVideoWatches).where(
+        YoutubeVideoWatches.email == google_account.email,
+        YoutubeVideoWatches.video_id == video.id,
+    )
+    video_watch = await db.fetch_one(query)
+    watched = None
+    if video_watch:
+        video_watch = YoutubeVideoWatch.parse_obj(video_watch)
+        watched = video_watch.created_at
+
     return YoutubeVideoResponse(
         id=video.id,
         title=video.title,
@@ -76,6 +88,7 @@ async def convertVideoToResponse(video: YoutubeVideo, google_account: GoogleAcco
         channel_title=channel.title,
         liked=liked,
         queued=queued,
+        watched=watched,
     )
 
 
@@ -276,6 +289,20 @@ async def get_youtube_videos(
             await convertVideoToResponse(YoutubeVideo.parse_obj(row), google_account)
         )
     return YoutubeResponses.Videos(videos=videos).dict(by_alias=True)
+
+
+@app.put("/videos/watch")
+async def add_youtube_video_watch(
+    video_id: str = Query(...), google_account: GoogleAccount = Depends(get_google_user)
+):
+    try:
+        query = insert(YoutubeVideoWatches).values(
+            email=google_account.email, video_id=video_id
+        )
+        await db.execute(query)
+    except UniqueViolationError:
+        raise HTTPException(400)
+    return Response(None, 200)
 
 
 @app.put("/videos/like")

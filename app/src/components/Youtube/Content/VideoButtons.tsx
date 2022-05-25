@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Alert, Box, IconButton, Snackbar } from '@mui/material';
-import { AddToQueue, RemoveFromQueue, ThumbUp, Link, YouTube } from '@mui/icons-material';
+import { useMemo, useRef, useState } from 'react';
+import { Alert, Box, IconButton, Popover, Snackbar, Typography } from '@mui/material';
+import { AddToQueue, RemoveFromQueue, ThumbUp, Link, YouTube, RemoveRedEye } from '@mui/icons-material';
 import {
 	useAddYoutubeVideoLikeMutation,
 	useAddYoutubeVideoQueueMutation,
@@ -15,7 +15,9 @@ interface VideoButtonsProps {
 
 const VideoButtons = (props: VideoButtonsProps) => {
 	const { video } = props;
-	const [open, setOpen] = useState(false);
+	const [openCopied, setOpenCopied] = useState(false);
+	const [openWatched, setOpenWatched] = useState(false);
+	const watchIconRef = useRef<HTMLDivElement>(null);
 
 	const [likeVideo, likedVideoStatus] = useAddYoutubeVideoLikeMutation();
 	const [unLikeVideo, unLikedVideoStatus] = useDeleteYoutubeVideoLikeMutation();
@@ -23,6 +25,9 @@ const VideoButtons = (props: VideoButtonsProps) => {
 	const [unQueueVideo, unQueuedVideoStatus] = useDeleteYoutubeVideoQueueMutation();
 
 	const videoLink = `https://www.youtube.com/watch?v=${video.id}`;
+	const watchedDate = video.watched ? new Date(video.watched).toLocaleDateString() : '';
+
+	console.log(openWatched);
 
 	return useMemo(
 		() => (
@@ -58,7 +63,7 @@ const VideoButtons = (props: VideoButtonsProps) => {
 						<RemoveFromQueue />
 					</IconButton>
 				</ConditionalDisplay>
-				<IconButton onClick={() => navigator.clipboard.writeText(videoLink).then(() => setOpen(true))}>
+				<IconButton onClick={() => navigator.clipboard.writeText(videoLink).then(() => setOpenCopied(true))}>
 					<Link />
 				</IconButton>
 				<a href={videoLink} target="_blank" rel="noopener noreferrer">
@@ -66,7 +71,22 @@ const VideoButtons = (props: VideoButtonsProps) => {
 						<YouTube />
 					</IconButton>
 				</a>
-				<Snackbar open={open} autoHideDuration={5000} onClose={() => setOpen(false)}>
+				<ConditionalDisplay condition={!!video.watched}>
+					<Box display="inline" ref={watchIconRef}>
+						<IconButton onClick={() => setOpenWatched(true)}>
+							<RemoveRedEye />
+						</IconButton>
+					</Box>
+					<Popover
+						open={openWatched}
+						onClose={() => setOpenWatched(false)}
+						anchorEl={watchIconRef.current}
+						anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+					>
+						<Typography padding={1}>Viewed on {watchedDate}</Typography>
+					</Popover>
+				</ConditionalDisplay>
+				<Snackbar open={openCopied} autoHideDuration={5000} onClose={() => setOpenCopied(false)}>
 					<Alert severity="success">Video Link Copied.</Alert>
 				</Snackbar>
 			</Box>
@@ -74,7 +94,8 @@ const VideoButtons = (props: VideoButtonsProps) => {
 		[
 			likeVideo,
 			likedVideoStatus.isLoading,
-			open,
+			openCopied,
+			openWatched,
 			queueVideo,
 			queuedVideoStatus.isLoading,
 			unLikeVideo,
@@ -84,7 +105,9 @@ const VideoButtons = (props: VideoButtonsProps) => {
 			video.id,
 			video.liked,
 			video.queued,
+			video.watched,
 			videoLink,
+			watchedDate,
 		]
 	);
 };

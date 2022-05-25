@@ -12,6 +12,7 @@ declare global {
 		createdAt: string;
 		liked: string | null;
 		queued: string | null;
+		watched: string | null;
 	}
 
 	interface YoutubeChannel {
@@ -37,9 +38,5 @@ declare global {
 		id: number;
 		name: string;
 		createdAt: string;
-	}
-
-	interface VideoMap {
-		[page: number]: YoutubeVideo[];
 	}
 }

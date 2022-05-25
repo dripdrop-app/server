@@ -20,7 +20,7 @@ import { RemoveFromQueue } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import {
 	hideVideoQueueDisplay,
-	setVideoQueuePlayerVideoID,
+	setVideoQueuePlayerVideo,
 	showVideoQueueDisplay,
 	setVideoQueueIndex,
 } from '../state/youtube';
@@ -146,7 +146,7 @@ const YoutubeVideoQueue = () => {
 
 	useEffect(() => {
 		if (currentVideo) {
-			dispatch(setVideoQueuePlayerVideoID(currentVideo.id));
+			dispatch(setVideoQueuePlayerVideo(currentVideo));
 		}
 	}, [currentVideo, dispatch]);
 

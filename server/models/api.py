@@ -80,6 +80,7 @@ class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):
     channel_title: str
     liked: Optional[datetime]
     queued: Optional[datetime]
+    watched: Optional[datetime]
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel, YoutubeSubscription):

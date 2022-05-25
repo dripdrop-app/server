@@ -130,6 +130,7 @@ class GoogleAccounts(Base):
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
     last_updated = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
@@ -157,6 +158,7 @@ class YoutubeChannels(Base):
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
     last_updated = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
@@ -196,11 +198,13 @@ class YoutubeSubscriptions(Base):
         nullable=False,
     )
     published_at = sqlalchemy.Column(
-        sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True)
+        sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
+        nullable=False,
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -219,6 +223,7 @@ class YoutubeVideoCategories(Base):
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -251,10 +256,14 @@ class YoutubeVideos(Base):
         ),
         nullable=False,
     )
-    published_at = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=True))
+    published_at = sqlalchemy.Column(
+        sqlalchemy.TIMESTAMP(timezone=True),
+        nullable=False,
+    )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -293,6 +302,7 @@ class YoutubeVideoLikes(Base):
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -327,10 +337,46 @@ class YoutubeVideoQueues(Base):
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
+        nullable=False,
     )
 
 
 class YoutubeVideoQueue(BaseModel):
+    email: str
+    video_id: str
+    created_at: datetime
+
+
+class YoutubeVideoWatches(Base):
+    __tablename__ = "youtube_video_watches"
+    email = sqlalchemy.Column(
+        sqlalchemy.ForeignKey(
+            GoogleAccounts.email,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_video_watches_email_fkey",
+        ),
+        primary_key=True,
+        nullable=False,
+    )
+    video_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey(
+            YoutubeVideos.id,
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            name="youtube_video_watches_video_id_fkey",
+        ),
+        primary_key=True,
+        nullable=False,
+    )
+    created_at = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
+        server_default=text("NOW()"),
+        nullable=False,
+    )
+
+
+class YoutubeVideoWatch(BaseModel):
     email: str
     video_id: str
     created_at: datetime
