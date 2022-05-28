@@ -77,11 +77,11 @@ async def add_youtube_channel(channel, db: Database):
             title=channel_title,
             thumbnail=channel_thumbnail,
             upload_playlist_id=channel_upload_playlist_id,
-            last_updated=datetime.now(timezone.utc) - timedelta(days=30),
+            last_updated=datetime.now(timezone.utc) - timedelta(days=32),
         )
         await db.execute(query)
         queue.enqueue(
-            "server.tasks.youtube.add_new_channel_videos_job",
+            add_new_channel_videos_job,
             channel_id,
         )
     except UniqueViolationError:
@@ -284,7 +284,7 @@ async def update_active_channels(db: Database = None):
     async for subscription in db.iterate(query):
         channel_id = subscription.get("channel_id")
         queue.enqueue(
-            "server.tasks.youtube.add_new_channel_videos_job",
+            add_new_channel_videos_job,
             channel_id,
         )
         channels.append(channel_id)
@@ -302,25 +302,24 @@ async def update_subscriptions(db: Database = None):
     async for google_account in db.iterate(query):
         google_account = GoogleAccount.parse_obj(google_account)
         queue.enqueue(
-            "server.tasks.youtube.update_user_youtube_subscriptions_job",
+            update_user_youtube_subscriptions_job,
             google_account.user_email,
         )
 
 
 @worker_task
 @exception_handler
-async def channel_cleanup(db: Database = None):
-    query = select(YoutubeChannels).join(
-        YoutubeSubscriptions,
-        YoutubeSubscriptions.channel_id == YoutubeChannels.id,
-        isouter=True,
-    )
-    query = (
-        select(YoutubeChannels.id)
-        .select_from(query)
-        .where(YoutubeSubscriptions.id.isnot(None))
-    )
-    hanging_channels = [row.get("id") for row in await db.fetch_all(query)]
-
-    query = delete(YoutubeChannels).where(YoutubeChannels.id.in_(hanging_channels))
+async def delete_channel(channel_id: str, db: Database = None):
+    query = delete(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     await db.execute(query)
+
+
+@worker_task
+@exception_handler
+async def channel_cleanup(db: Database = None):
+    limit = datetime.now(timezone.utc) - timedelta(days=32)
+    query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
+
+    for row in await db.fetch_all(query):
+        channel = YoutubeChannel.parse_obj(row)
+        queue.enqueue(delete_channel, channel.id)
