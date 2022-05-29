@@ -318,8 +318,9 @@ async def delete_channel(channel_id: str, db: Database = None):
 @exception_handler
 async def channel_cleanup(db: Database = None):
     limit = datetime.now(timezone.utc) - timedelta(days=32)
-    query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
+    query = select(YoutubeChannels)
 
     for row in await db.fetch_all(query):
         channel = YoutubeChannel.parse_obj(row)
-        queue.enqueue(delete_channel, channel.id)
+        if channel.last_updated < limit:
+            queue.enqueue(delete_channel, channel.id)
