@@ -8,6 +8,7 @@ from server.models.main import (
     GoogleAccount,
     YoutubeChannel,
     GoogleAccounts,
+    YoutubeSubscription,
     YoutubeSubscriptions,
     YoutubeChannels,
     YoutubeVideoCategories,
@@ -183,7 +184,6 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
     if not access_token:
         return
 
-    current_subscriptions = []
     for subscriptions in google_api.get_user_subscriptions(access_token):
         youtube_subscription_channels = [
             subscription["snippet"]["resourceId"]["channelId"]
@@ -208,14 +208,7 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
                 for subscription in subscriptions
             ]
         )
-        current_subscriptions.extend(
-            [subscription["id"] for subscription in subscriptions]
-        )
 
-    query = delete(YoutubeSubscriptions).where(
-        YoutubeSubscriptions.id.notin_(current_subscriptions)
-    )
-    await db.execute(query)
     query = (
         update(GoogleAccounts)
         .values(subscriptions_loading=False)
@@ -281,13 +274,13 @@ async def add_new_channel_videos_job(channel_id: str, db: Database = None):
 async def update_active_channels(db: Database = None):
     query = select(distinct(YoutubeSubscriptions.channel_id))
     channels = []
-    async for subscription in db.iterate(query):
-        channel_id = subscription.get("channel_id")
+    async for row in db.iterate(query):
+        subscription = YoutubeSubscription.parse_obj(row)
         queue.enqueue(
             add_new_channel_videos_job,
-            channel_id,
+            subscription.channel_id,
         )
-        channels.append(channel_id)
+        channels.append(subscription.channel_id)
         if len(channels) == 50:
             await update_channels(channels, db)
             channels = []
@@ -299,8 +292,8 @@ async def update_active_channels(db: Database = None):
 @exception_handler
 async def update_subscriptions(db: Database = None):
     query = select(GoogleAccounts)
-    async for google_account in db.iterate(query):
-        google_account = GoogleAccount.parse_obj(google_account)
+    async for row in db.iterate(query):
+        google_account = GoogleAccount.parse_obj(row)
         queue.enqueue(
             update_user_youtube_subscriptions_job,
             google_account.user_email,
@@ -317,10 +310,9 @@ async def delete_channel(channel_id: str, db: Database = None):
 @worker_task
 @exception_handler
 async def channel_cleanup(db: Database = None):
-    limit = datetime.now(timezone.utc) - timedelta(days=32)
-    query = select(YoutubeChannels)
+    limit = datetime.now(timezone.utc) - timedelta(days=7)
+    query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
 
     for row in await db.fetch_all(query):
         channel = YoutubeChannel.parse_obj(row)
-        if channel.last_updated < limit:
-            queue.enqueue(delete_channel, channel.id)
+        queue.enqueue(delete_channel, channel.id)
