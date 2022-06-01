@@ -1,12 +1,13 @@
+import asyncio
 import os
-from fastapi import APIRouter, FastAPI, Depends, Request
+from fastapi import APIRouter, FastAPI, Depends, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from server.api.auth.main import app as auth_app
 from server.api.music.main import app as music_app
 from server.api.youtube.main import app as youtube_app
-from server.cron import cron_start, cron_end
-from server.dependencies import get_user
+from server.cron import cron_start, cron_end, run_crons
+from server.dependencies import get_admin_user, get_user
 from server.models.main import db
 
 
@@ -33,6 +34,13 @@ app.mount(
     ),
     name="static",
 )
+
+
+@app.get("/cron/run", dependencies=[Depends(get_admin_user)], responses={403: {}})
+async def run_cronjobs():
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, run_crons)
+    return Response(None, 200)
 
 
 @app.get("/{path:path}")

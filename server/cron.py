@@ -16,6 +16,17 @@ from server.tasks.youtube import (
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 
 
+def run_crons():
+    video_categories_job = queue.enqueue(update_youtube_video_categories, args=(True,))
+    active_channels_job = queue.enqueue_call(
+        update_active_channels, depends_on=video_categories_job
+    )
+    update_subscriptions_job = queue.enqueue_call(
+        update_subscriptions, depends_on=active_channels_job
+    )
+    queue.enqueue_call(channel_cleanup, depends_on=update_subscriptions_job)
+
+
 def cron_job(cron_string: str, function: Callable, args=(), kwargs={}):
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est))

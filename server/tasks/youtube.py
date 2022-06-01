@@ -17,7 +17,7 @@ from server.models.main import (
 from server.rq import queue
 from server.redis import redis, RedisChannels
 from server.utils.decorators import exception_handler, worker_task
-from sqlalchemy import delete, distinct, select, func, update, insert
+from sqlalchemy import delete, select, func, update, insert
 
 
 async def update_google_access_token(google_email: str, db: Database):
@@ -272,7 +272,7 @@ async def add_new_channel_videos_job(channel_id: str, db: Database = None):
 @worker_task
 @exception_handler
 async def update_active_channels(db: Database = None):
-    query = select(distinct(YoutubeSubscriptions.channel_id))
+    query = select(YoutubeSubscriptions).distinct(YoutubeSubscriptions.channel_id)
     channels = []
     async for row in db.iterate(query):
         subscription = YoutubeSubscription.parse_obj(row)
