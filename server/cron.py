@@ -6,6 +6,7 @@ from rq.registry import ScheduledJobRegistry
 from server.config import config
 from server.redis import redis
 from server.rq import queue
+from server.tasks.music import cleanup_jobs
 from server.tasks.youtube import (
     update_active_channels,
     update_youtube_video_categories,
@@ -62,6 +63,7 @@ async def cron_start():
                 update_youtube_video_categories,
                 args=(True,),
             )
+            cron_job("0 0 * * *", cleanup_jobs)
             cron_job("0 1 * * *", update_active_channels)
             cron_job("0 3 * * *", update_subscriptions)
             cron_job("0 5 * * sun", channel_cleanup)

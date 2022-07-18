@@ -28,11 +28,7 @@ const AuthPage = (props: AuthPageProps) => {
 
 	const Notice = useMemo(() => {
 		if (loginOrCreateStatus.isSuccess && !loginOrCreateStatus.originalArgs?.login) {
-			return (
-				<Alert severity="info">
-					Account successfully created. You can login once your account has been approved by the adminstrator.
-				</Alert>
-			);
+			return <Alert severity="info">Account successfully created. You can login to your account now.</Alert>;
 		} else if (error) {
 			return <Alert severity="error">{error}</Alert>;
 		}

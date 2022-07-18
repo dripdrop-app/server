@@ -51,4 +51,7 @@ async def index(request: Request):
     filepath = os.path.join(os.path.dirname(__file__), f"../build/{path}")
     if os.path.exists(filepath):
         return FileResponse(filepath)
-    return FileResponse(os.path.join(os.path.dirname(__file__), "../build/index.html"))
+    index_page = os.path.join(os.path.dirname(__file__), "../build/index.html")
+    if os.path.exists(index_page):
+        return FileResponse(index_page)
+    return Response(None, 500)

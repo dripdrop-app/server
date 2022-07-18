@@ -10,6 +10,7 @@ import subprocess
 import traceback
 import uuid
 from databases import Database
+from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
@@ -18,7 +19,7 @@ from server.utils.mp3dl import yt_download
 from server.models.main import MusicJob, MusicJobs
 from server.models.api import MusicResponses, RedisResponses
 from server.redis import redis, RedisChannels
-from server.utils.decorators import worker_task
+from server.utils.decorators import exception_handler, worker_task
 from sqlalchemy import select, update
 
 JOB_DIR = "music_jobs"
@@ -149,14 +150,17 @@ def read_tags(file: Union[str, bytes, None], filename):
             mimeType = audio_file[imageKeys[0]].mime
             buffer = io.BytesIO(audio_file[imageKeys[0]].data)
         subprocess.run(["rm", "-rf", tag_path])
+        artwork_url = None
+        if buffer:
+            artwork_url = (
+                f"data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}"
+            )
         return MusicResponses.Tags(
             title=title,
             artist=artist,
             album=album,
             grouping=grouping,
-            artwork_url=f"data:{mimeType};base64,{base64.b64encode(buffer.getvalue()).decode()}"
-            if buffer
-            else None,
+            artwork_url=artwork_url,
         )
     except Exception:
         subprocess.run(["rm", "-rf", tag_path])
@@ -164,3 +168,21 @@ def read_tags(file: Union[str, bytes, None], filename):
         return MusicResponses.Tags(
             title=None, artist=None, album=None, grouping=None, artwork_url=None
         )
+
+
+@worker_task
+@exception_handler
+async def clean_job(job_id: str, db: Database = None):
+    await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
+    query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
+    await db.execute(query)
+
+
+@worker_task
+@exception_handler
+async def cleanup_jobs(db: Database = None):
+    limit = datetime.now(timezone.utc) - timedelta(days=14)
+    query = select(MusicJobs).where(MusicJobs.created_at < limit)
+    for row in await db.fetch_all(query):
+        job = MusicJob.parse_obj(row)
+        await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job.id}")

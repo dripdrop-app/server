@@ -31,9 +31,6 @@ async def login(email: str = Body(...), password: str = Body(...)):
     ):
         raise HTTPException(400, "Email or Password is incorrect.")
 
-    if not account.approved:
-        raise HTTPException(401, "User has not been approved.")
-
     session_id = str(uuid.uuid4())
     query = insert(Sessions).values(id=session_id, user_email=email)
     await db.execute(query)
@@ -67,7 +64,7 @@ async def create_new_account(email: str, password: str):
 
     hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     query = insert(Users).values(
-        email=email, password=hashed_pw.decode("utf-8"), admin=False, approved=False
+        email=email, password=hashed_pw.decode("utf-8"), admin=False
     )
     await db.execute(query)
 

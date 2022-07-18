@@ -25,7 +25,6 @@ class Users(Base):
     email = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     admin = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
-    approved = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
         server_default=text("NOW()"),
@@ -36,7 +35,6 @@ class User(BaseModel):
     email: str
     password: SecretStr
     admin: bool
-    approved: bool
     created_at: datetime
 
 
