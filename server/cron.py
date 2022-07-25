@@ -25,7 +25,10 @@ def run_crons():
     update_subscriptions_job = queue.enqueue_call(
         update_subscriptions, depends_on=active_channels_job
     )
-    queue.enqueue_call(channel_cleanup, depends_on=update_subscriptions_job)
+    channel_cleanup_job = queue.enqueue_call(
+        channel_cleanup, depends_on=update_subscriptions_job
+    )
+    queue.enqueue_call(cleanup_jobs, depends_on=channel_cleanup_job)
 
 
 def cron_job(cron_string: str, function: Callable, args=(), kwargs={}):

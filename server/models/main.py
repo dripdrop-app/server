@@ -2,7 +2,6 @@ import databases
 import sqlalchemy
 from datetime import datetime
 from pydantic import BaseModel, SecretStr
-from sqlalchemy.sql.expression import text
 from sqlalchemy.ext.declarative import declarative_base
 from server.config import config
 from typing import Optional
@@ -27,7 +26,7 @@ class Users(Base):
     admin = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -55,7 +54,7 @@ class Sessions(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -88,7 +87,7 @@ class MusicJobs(Base):
     failed = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
+        nullable=False,
     )
 
 
@@ -127,12 +126,10 @@ class GoogleAccounts(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
     last_updated = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
     )
 
 
@@ -155,13 +152,10 @@ class YoutubeChannels(Base):
     upload_playlist_id = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
     last_updated = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
-        server_onupdate=text("NOW()"),
     )
 
 
@@ -201,7 +195,6 @@ class YoutubeSubscriptions(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
 
@@ -220,7 +213,6 @@ class YoutubeVideoCategories(Base):
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
 
@@ -260,7 +252,6 @@ class YoutubeVideos(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
 
@@ -299,7 +290,6 @@ class YoutubeVideoLikes(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
 
@@ -334,7 +324,6 @@ class YoutubeVideoQueues(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
 
@@ -369,7 +358,6 @@ class YoutubeVideoWatches(Base):
     )
     created_at = sqlalchemy.Column(
         sqlalchemy.dialects.postgresql.TIMESTAMP(timezone=True),
-        server_default=text("NOW()"),
         nullable=False,
     )
 

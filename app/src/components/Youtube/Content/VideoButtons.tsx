@@ -27,8 +27,6 @@ const VideoButtons = (props: VideoButtonsProps) => {
 	const videoLink = `https://www.youtube.com/watch?v=${video.id}`;
 	const watchedDate = video.watched ? new Date(video.watched).toLocaleDateString() : '';
 
-	console.log(openWatched);
-
 	return useMemo(
 		() => (
 			<Box>

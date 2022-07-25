@@ -59,6 +59,7 @@ async def add_youtube_subscription(google_email: str, subscription, db: Database
             channel_id=subscription_channel_id,
             email=google_email,
             published_at=subscription_published_at,
+            created_at=datetime.now(timezone.utc),
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -78,6 +79,7 @@ async def add_youtube_channel(channel, db: Database):
             title=channel_title,
             thumbnail=channel_thumbnail,
             upload_playlist_id=channel_upload_playlist_id,
+            created_at=datetime.now(timezone.utc),
             last_updated=datetime.now(timezone.utc) - timedelta(days=32),
         )
         await db.execute(query)
@@ -104,6 +106,7 @@ async def add_youtube_video(video, db: Database):
             channel_id=video_channel_id,
             published_at=video_published_at,
             category_id=video_category_id,
+            created_at=datetime.now(timezone.utc),
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -117,7 +120,9 @@ async def update_channels(channels: list, db: Database = None):
             channel_thumbnail = channel_info["snippet"]["thumbnails"]["high"]["url"]
             query = (
                 update(YoutubeChannel)
-                .values(thumbnail=channel_thumbnail)
+                .values(
+                    thumbnail=channel_thumbnail, last_updated=datetime.now(timezone.utc)
+                )
                 .where(YoutubeChannel.id == channel_id)
             )
             await db.execute(query)
@@ -138,7 +143,9 @@ async def update_youtube_video_categories(cron: bool, db: Database = None):
         category_title = category["snippet"]["title"]
         try:
             query = insert(YoutubeVideoCategories).values(
-                id=category_id, name=category_title
+                id=category_id,
+                name=category_title,
+                created_at=datetime.now(timezone.utc),
             )
             await db.execute(query)
         except UniqueViolationError:
@@ -172,7 +179,7 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
 
     query = (
         update(GoogleAccounts)
-        .values(subscriptions_loading=True)
+        .values(subscriptions_loading=True, last_updated=datetime.now(timezone.utc))
         .where(GoogleAccounts.user_email == user_email)
     )
     await db.execute(query)
@@ -211,7 +218,7 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
 
     query = (
         update(GoogleAccounts)
-        .values(subscriptions_loading=False)
+        .values(subscriptions_loading=False, last_updated=datetime.now(timezone.utc))
         .where(GoogleAccounts.user_email == user_email)
     )
     await db.execute(query)

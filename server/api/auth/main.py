@@ -1,5 +1,6 @@
 import bcrypt
 import uuid
+from datetime import datetime, timezone
 from fastapi import Body, FastAPI, Depends, Response, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
@@ -32,7 +33,9 @@ async def login(email: str = Body(...), password: str = Body(...)):
         raise HTTPException(400, "Email or Password is incorrect.")
 
     session_id = str(uuid.uuid4())
-    query = insert(Sessions).values(id=session_id, user_email=email)
+    query = insert(Sessions).values(
+        id=session_id, user_email=email, created_at=datetime.now(timezone.utc)
+    )
     await db.execute(query)
 
     response = JSONResponse(AuthResponses.User(email=email, admin=account.admin).dict())
@@ -64,7 +67,10 @@ async def create_new_account(email: str, password: str):
 
     hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     query = insert(Users).values(
-        email=email, password=hashed_pw.decode("utf-8"), admin=False
+        email=email,
+        password=hashed_pw.decode("utf-8"),
+        admin=False,
+        created_at=datetime.now(timezone.utc),
     )
     await db.execute(query)
 
