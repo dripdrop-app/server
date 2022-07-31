@@ -37,7 +37,6 @@ async def update_google_access_token(google_email: str, db: Database):
                 .values(
                     access_token=new_access_token["access_token"],
                     expires=new_access_token["expires_in"],
-                    last_updated=datetime.now(timezone.utc),
                 )
                 .where(GoogleAccounts.email == google_email)
             )
@@ -59,7 +58,6 @@ async def add_youtube_subscription(google_email: str, subscription, db: Database
             channel_id=subscription_channel_id,
             email=google_email,
             published_at=subscription_published_at,
-            created_at=datetime.now(timezone.utc),
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -79,7 +77,6 @@ async def add_youtube_channel(channel, db: Database):
             title=channel_title,
             thumbnail=channel_thumbnail,
             upload_playlist_id=channel_upload_playlist_id,
-            created_at=datetime.now(timezone.utc),
             last_updated=datetime.now(timezone.utc) - timedelta(days=32),
         )
         await db.execute(query)
@@ -120,9 +117,7 @@ async def update_channels(channels: list, db: Database = None):
             channel_thumbnail = channel_info["snippet"]["thumbnails"]["high"]["url"]
             query = (
                 update(YoutubeChannel)
-                .values(
-                    thumbnail=channel_thumbnail, last_updated=datetime.now(timezone.utc)
-                )
+                .values(thumbnail=channel_thumbnail)
                 .where(YoutubeChannel.id == channel_id)
             )
             await db.execute(query)
@@ -145,7 +140,6 @@ async def update_youtube_video_categories(cron: bool, db: Database = None):
             query = insert(YoutubeVideoCategories).values(
                 id=category_id,
                 name=category_title,
-                created_at=datetime.now(timezone.utc),
             )
             await db.execute(query)
         except UniqueViolationError:
@@ -179,7 +173,7 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
 
     query = (
         update(GoogleAccounts)
-        .values(subscriptions_loading=True, last_updated=datetime.now(timezone.utc))
+        .values(subscriptions_loading=True)
         .where(GoogleAccounts.user_email == user_email)
     )
     await db.execute(query)
@@ -218,7 +212,7 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
 
     query = (
         update(GoogleAccounts)
-        .values(subscriptions_loading=False, last_updated=datetime.now(timezone.utc))
+        .values(subscriptions_loading=False)
         .where(GoogleAccounts.user_email == user_email)
     )
     await db.execute(query)

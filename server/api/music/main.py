@@ -4,7 +4,6 @@ import logging
 import os
 import traceback
 import uuid
-from datetime import datetime, timezone
 from fastapi import (
     FastAPI,
     Query,
@@ -137,7 +136,6 @@ async def create_job_from_youtube(
         completed=False,
         failed=False,
         user_email=user.email,
-        created_at=datetime.now(timezone.utc),
     )
     await db.execute(query)
     queue.enqueue(run_job, job_id, None)
@@ -172,7 +170,6 @@ async def create_job_from_file(
         completed=False,
         failed=False,
         user_email=user.email,
-        created_at=datetime.now(timezone.utc),
     )
     await db.execute(query)
     file = await file.read()

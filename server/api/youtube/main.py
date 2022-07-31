@@ -1,7 +1,6 @@
 import logging
 import server.utils.google_api as google_api
 from asyncpg import UniqueViolationError
-from datetime import datetime, timezone
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from server.config import config
@@ -121,7 +120,6 @@ async def google_oauth2(
                     access_token=tokens["access_token"],
                     refresh_token=tokens["refresh_token"],
                     expires=tokens["expires_in"],
-                    created_at=datetime.now(timezone.utc),
                 )
                 await db.execute(query)
             except UniqueViolationError:
@@ -131,7 +129,6 @@ async def google_oauth2(
                         access_token=tokens["access_token"],
                         refresh_token=tokens["refresh_token"],
                         expires=tokens["expires_in"],
-                        last_updated=datetime.now(timezone.utc),
                     )
                     .where(GoogleAccounts.email == google_email)
                 )
@@ -162,7 +159,6 @@ async def get_youtube_account(
                 update(GoogleAccounts)
                 .values(
                     access_token=new_access_token,
-                    last_updated=datetime.now(timezone.utc),
                 )
                 .where(GoogleAccounts.email == google_account.email)
             )
@@ -305,7 +301,6 @@ async def add_youtube_video_watch(
         query = insert(YoutubeVideoWatches).values(
             email=google_account.email,
             video_id=video_id,
-            created_at=datetime.now(timezone.utc),
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -322,7 +317,6 @@ async def add_youtube_video_like(
         query = insert(YoutubeVideoLikes).values(
             email=google_account.email,
             video_id=video_id,
-            created_at=datetime.now(timezone.utc),
         )
         await db.execute(query)
     except UniqueViolationError:
@@ -352,7 +346,6 @@ async def add_youtube_video_queue(
         query = insert(YoutubeVideoQueues).values(
             email=google_account.email,
             video_id=video_id,
-            created_at=datetime.now(timezone.utc),
         )
         await db.execute(query)
     except UniqueViolationError:
