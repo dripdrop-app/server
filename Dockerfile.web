@@ -6,7 +6,6 @@ RUN apt-get -y update && \
 RUN mkdir -p /src
 ADD . /src
 WORKDIR /src
-RUN ls -la
 RUN pip install -r requirements.txt
 RUN export NVM_DIR="$HOME/.nvm" && \
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
@@ -14,4 +13,3 @@ RUN export NVM_DIR="$HOME/.nvm" && \
     nvm install --lts && \
     npm --prefix app install && \
     npm --prefix app run build
-ENTRYPOINT ["gunicorn", "server.app:app", "-w", "2" ,"-k", "uvicorn.workers.UvicornWorker"]
