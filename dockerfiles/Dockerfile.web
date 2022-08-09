@@ -3,9 +3,6 @@ RUN apt-get -y update && \
     apt-get -y upgrade && \
     apt-get install -y ffmpeg && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
-RUN mkdir -p /src
-ADD . /src
-WORKDIR /src
 RUN pip install -r requirements.txt
 RUN export NVM_DIR="$HOME/.nvm" && \
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
