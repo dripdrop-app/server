@@ -1,4 +1,5 @@
 version: '2.4'
+name: dripdrop
 services:
   postgres:
     image: postgres:14
