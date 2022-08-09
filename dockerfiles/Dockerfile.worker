@@ -2,6 +2,9 @@ FROM python:3.10
 RUN apt-get -y update && \
     apt-get -y upgrade && \
     apt-get install -y ffmpeg
+RUN mkdir -p /src
+ADD . /src
+WORKDIR /src
 RUN ls -la
 RUN pip install -r requirements.txt
 ENTRYPOINT [ "rq", "worker", "--with-scheduler" ]
