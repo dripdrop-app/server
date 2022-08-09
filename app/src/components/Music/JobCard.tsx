@@ -51,19 +51,11 @@ const JobCard = (props: JobCardProps) => {
 	}, [dispatch, job]);
 
 	useEffect(() => {
-		const handleDownload = async (response: Response) => {
-			const data = await response.blob();
-			const contentDisposition = response.headers.get('content-disposition') || '';
-			const groups = contentDisposition.match(/filename\*?=(?:utf-8''|")(.+)(?:"|;)?/);
-			const filename = decodeURIComponent(groups && groups.length > 1 ? groups[1] : 'downloaded.mp3');
-			const url = URL.createObjectURL(data);
+		if (downloadJobStatus.isSuccess && downloadJobStatus.currentData) {
+			const url = downloadJobStatus.currentData.url;
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = filename;
 			a.click();
-		};
-		if (downloadJobStatus.isSuccess && downloadJobStatus.currentData) {
-			handleDownload(downloadJobStatus.currentData);
 		}
 	}, [downloadJobStatus.currentData, downloadJobStatus.isSuccess]);
 

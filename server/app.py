@@ -1,5 +1,5 @@
-import asyncio
 import os
+from asgiref.sync import sync_to_async
 from fastapi import APIRouter, FastAPI, Depends, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -38,8 +38,8 @@ app.mount(
 
 @app.get("/cron/run", dependencies=[Depends(get_admin_user)], responses={403: {}})
 async def run_cronjobs():
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, run_crons)
+    run_crons_async = sync_to_async(run_crons)
+    await run_crons_async()
     return Response(None, 200)
 
 

@@ -1,6 +1,8 @@
 import asyncio
 import dateutil.parser
+import server.utils.decorators as decorators
 import server.utils.google_api as google_api
+from asgiref.sync import sync_to_async
 from asyncpg.exceptions import UniqueViolationError
 from databases import Database
 from datetime import datetime, timedelta, timezone
@@ -16,7 +18,6 @@ from server.models.main import (
 )
 from server.rq import queue
 from server.redis import redis, RedisChannels
-from server.utils.decorators import exception_handler, worker_task
 from sqlalchemy import delete, select, func, update, insert
 
 
@@ -28,9 +29,8 @@ async def update_google_access_token(google_email: str, db: Database):
     if (
         datetime.now(timezone.utc) - google_account.last_updated
     ).seconds >= google_account.expires:
-        new_access_token = await google_api.refresh_access_token(
-            google_account.refresh_token
-        )
+        refresh_access_token = sync_to_async(google_api.refresh_access_token)
+        new_access_token = await refresh_access_token(google_account.refresh_token)
         if new_access_token:
             query = (
                 update(GoogleAccounts)
@@ -110,7 +110,7 @@ async def add_youtube_video(video, db: Database):
         pass
 
 
-async def update_channels(channels: list, db: Database = None):
+async def update_channels(channels: list, db: Database):
     async def update_channel(channel_info: dict):
         try:
             channel_id = channel_info["id"]
@@ -124,14 +124,15 @@ async def update_channels(channels: list, db: Database = None):
         except Exception:
             pass
 
-    channels_info = await google_api.get_channels_info(channels)
+    get_channels_info = await sync_to_async(google_api.get_channels_info(channels))
+    channels_info = await get_channels_info(channels)
     await asyncio.gather(
         *[update_channel(channel_info) for channel_info in channels_info]
     )
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def update_youtube_video_categories(cron: bool, db: Database = None):
     async def update_youtube_video_category(category):
         category_id = int(category["id"])
@@ -154,15 +155,18 @@ async def update_youtube_video_categories(cron: bool, db: Database = None):
         count = await db.fetch_val(query)
         if count > 0:
             return
-    video_categories = await google_api.get_video_categories()
+    get_video_categories = sync_to_async(google_api.get_video_categories)
+    video_categories = await get_video_categories()
     await asyncio.gather(
         *[update_youtube_video_category(category) for category in video_categories]
     )
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def update_user_youtube_subscriptions_job(user_email: str, db: Database = None):
+    get_channels_info = sync_to_async(google_api.get_channels_info)
+
     query = select(GoogleAccounts).where(GoogleAccounts.user_email == user_email)
     google_account = await db.fetch_one(query)
     if not google_account:
@@ -196,9 +200,7 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
         existing_channels = await db.fetch_all(query)
 
         if len(existing_channels) != len(youtube_subscription_channels):
-            channels_info = await google_api.get_channels_info(
-                youtube_subscription_channels
-            )
+            channels_info = await get_channels_info(youtube_subscription_channels)
             await asyncio.gather(
                 *[add_youtube_channel(channel, db) for channel in channels_info]
             )
@@ -221,9 +223,11 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
     )
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def add_new_channel_videos_job(channel_id: str, db: Database = None):
+    get_videos_info = sync_to_async(google_api.get_videos_info)
+
     query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
     last_updated = youtube_channel.last_updated
@@ -252,9 +256,8 @@ async def add_new_channel_videos_job(channel_id: str, db: Database = None):
         existing_videos = await db.fetch_all(query)
 
         if len(existing_videos) < len(recent_uploaded_playlist_videos):
-            videos_info = await google_api.get_videos_info(
-                recent_uploaded_playlist_video_ids
-            )
+            videos_info = await get_videos_info(recent_uploaded_playlist_video_ids)
+
             await asyncio.gather(
                 *[add_youtube_video(video, db) for video in videos_info]
             )
@@ -270,8 +273,8 @@ async def add_new_channel_videos_job(channel_id: str, db: Database = None):
     await db.execute(query)
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def update_active_channels(db: Database = None):
     query = select(YoutubeSubscriptions).distinct(YoutubeSubscriptions.channel_id)
     channels = []
@@ -289,8 +292,8 @@ async def update_active_channels(db: Database = None):
         await update_channels(channels, db)
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def update_subscriptions(db: Database = None):
     query = select(GoogleAccounts)
     async for row in db.iterate(query):
@@ -301,15 +304,15 @@ async def update_subscriptions(db: Database = None):
         )
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def delete_channel(channel_id: str, db: Database = None):
     query = delete(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     await db.execute(query)
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def channel_cleanup(db: Database = None):
     limit = datetime.now(timezone.utc) - timedelta(days=7)
     query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)

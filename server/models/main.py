@@ -1,4 +1,6 @@
 import databases
+import re
+import server.utils.boto3 as boto3
 import sqlalchemy
 from datetime import datetime
 from pydantic import BaseModel, SecretStr
@@ -80,6 +82,7 @@ class MusicJobs(Base):
     )
     filename = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     youtube_url = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    download_url = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     artwork_url = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     title = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     artist = sqlalchemy.Column(sqlalchemy.String, nullable=False)
@@ -99,6 +102,7 @@ class MusicJob(BaseModel):
     user_email: str
     filename: Optional[str] = ""
     youtube_url: Optional[str]
+    download_url: Optional[str]
     artwork_url: Optional[str]
     title: str
     artist: str
@@ -107,6 +111,15 @@ class MusicJob(BaseModel):
     completed: bool
     failed: bool
     created_at: datetime
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        if data.get("artwork_url") and not re.search(
+            "^http(s)+://", data["artwork_url"]
+        ):
+            self.artwork_url = boto3.resolve_artwork_url(data["artwork_url"])
+        if data.get("download_url"):
+            self.download_url = boto3.resolve_music_url(data["download_url"])
 
 
 class GoogleAccounts(Base):

@@ -61,10 +61,10 @@ const musicApi = api.injectEndpoints({
 				} catch {}
 			},
 		}),
-		downloadJob: build.query<Response, string>({
+		downloadJob: build.query<DownloadResponse, string>({
 			query: (jobID) => ({
 				url: `/music/jobs/download/${jobID}`,
-				responseHandler: (response) => Promise.resolve(response),
+				providesTags: ['MusicDownload'],
 			}),
 		}),
 		createFileJob: build.query<undefined, CreateFileJobBody>({

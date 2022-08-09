@@ -1,5 +1,6 @@
 import logging
 import server.utils.google_api as google_api
+from asgiref.sync import sync_to_async
 from asyncpg import UniqueViolationError
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response
 from fastapi.responses import PlainTextResponse, RedirectResponse
@@ -107,11 +108,14 @@ async def google_oauth2(
     if not user:
         return RedirectResponse("/")
 
-    tokens = await google_api.get_oauth_tokens(
+    get_oauth_tokens = sync_to_async(google_api.get_oauth_tokens)
+    tokens = await get_oauth_tokens(
         f"{config.server_url}/api/youtube/googleoauth2", code
     )
+
     if tokens:
-        google_email = await google_api.get_user_email(tokens.get("access_token"))
+        get_user_email = sync_to_async(google_api.get_user_email)
+        google_email = await get_user_email(tokens.get("access_token"))
         if google_email:
             try:
                 query = insert(GoogleAccounts).values(

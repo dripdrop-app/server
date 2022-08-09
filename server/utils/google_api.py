@@ -2,7 +2,6 @@ import logging
 import requests
 from typing import List
 from urllib import parse
-from asgiref.sync import sync_to_async
 from server.config import config
 
 scopes = [
@@ -37,7 +36,6 @@ def create_oauth_url(callback_url: str, user_id: str):
     }
 
 
-@sync_to_async
 def get_oauth_tokens(callback_url: str, code: str):
     params = {
         "code": code,
@@ -55,7 +53,6 @@ def get_oauth_tokens(callback_url: str, code: str):
     return None
 
 
-@sync_to_async
 def refresh_access_token(refresh_token: str):
     params = {
         "client_id": config.google_client_id,
@@ -72,7 +69,6 @@ def refresh_access_token(refresh_token: str):
     return None
 
 
-@sync_to_async
 def get_user_email(access_token: str):
     params = {"fields": "email"}
     headers = {"Authorization": f"Bearer {access_token}", **base_headers}
@@ -86,7 +82,6 @@ def get_user_email(access_token: str):
     return None
 
 
-@sync_to_async
 def get_video_categories():
     params = {"key": config.google_api_key, "part": "snippet", "regionCode": "US"}
     response = requests.get(
@@ -125,7 +120,6 @@ def get_user_subscriptions(access_token: str):
             params["pageToken"] = None
 
 
-@sync_to_async
 def get_channels_info(channel_ids: List[str]):
     params = {
         "key": config.google_api_key,
@@ -169,7 +163,6 @@ def get_playlist_videos(playlist_id: str):
             params["pageToken"] = None
 
 
-@sync_to_async
 def get_videos_info(video_ids: str):
     params = {
         "key": config.google_api_key,

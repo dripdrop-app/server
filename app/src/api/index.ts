@@ -53,6 +53,7 @@ export const tags = [
 	'MusicGrouping',
 	'MusicArtwork',
 	'MusicTags',
+	'MusicDownload',
 ];
 
 const api = createApi({

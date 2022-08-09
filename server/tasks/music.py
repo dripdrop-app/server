@@ -6,6 +6,11 @@ import logging
 import mutagen
 import os
 import re
+import requests
+import server.utils.boto3 as boto3
+import server.utils.decorators as decorators
+import server.utils.imgdl as imgdl
+import server.utils.mp3dl as mp3dl
 import subprocess
 import traceback
 import uuid
@@ -14,19 +19,16 @@ from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
-from server.utils.imgdl import download_image
-from server.utils.mp3dl import yt_download
 from server.models.main import MusicJob, MusicJobs
 from server.models.api import MusicResponses, RedisResponses
 from server.redis import redis, RedisChannels
-from server.utils.decorators import exception_handler, worker_task
 from sqlalchemy import select, update
 
 JOB_DIR = "music_jobs"
 
 
-@worker_task
-async def run_job(job_id: str, file, db: Database = None):
+@decorators.worker_task
+async def run_job(job_id: str, db: Database = None):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = MusicJob.parse_obj(await db.fetch_one(query))
     try:
@@ -47,11 +49,14 @@ async def run_job(job_id: str, file, db: Database = None):
                 pass
             os.mkdir(job_path)
 
-            if filename and file:
+            if job.filename:
+                res = requests.get(boto3.resolve_music_url(job.filename))
+                filename = job.filename.split("/")[-1]
                 file_path = os.path.join(job_path, filename)
                 f = open(file_path, "wb")
-                f.write(file)
+                f.write(res.content)
                 f.close()
+                boto3.delete_file(bucket=boto3.S3_MUSIC_BUCKET, key=job.filename)
                 file_path = os.path.join(job_path, filename)
                 new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
                 AudioSegment.from_file(file_path).export(
@@ -65,27 +70,24 @@ async def run_job(job_id: str, file, db: Database = None):
                     if d["status"] == "finished":
                         filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
 
-                yt_download(youtube_url, [updateProgress], job_path)
+                mp3dl.yt_download(youtube_url, [updateProgress], job_path)
 
             audio_file = mutagen.File(filename)
 
             if artwork_url:
-                isBase64 = re.search("^data:image/", artwork_url)
-                if isBase64:
-                    dataString = ",".join(artwork_url.split(",")[1:])
-                    data = dataString.encode()
-                    data_bytes = base64.b64decode(data)
+                try:
+                    if not re.search("^http(s)+://", artwork_url):
+                        artwork_url = boto3.resolve_artwork_url(artwork_url)
+                    imageData = imgdl.download_image(artwork_url)
+                    extension = artwork_url.split(".")[-1]
                     audio_file.tags.add(
-                        mutagen.id3.APIC(mimetype="image/png", data=data_bytes)
+                        mutagen.id3.APIC(mimetype=f"image/{extension}", data=imageData)
                     )
-                else:
-                    try:
-                        imageData = download_image(artwork_url)
-                        audio_file.tags.add(
-                            mutagen.id3.APIC(mimetype="image/png", data=imageData)
-                        )
-                    except Exception:
-                        logging.exception(traceback.format_exc())
+                    boto3.delete_file(
+                        bucket=boto3.S3_ARTWORK_BUCKET, filename=artwork_url
+                    )
+                except Exception:
+                    logging.exception(traceback.format_exc())
 
             audio_file.tags.add(mutagen.id3.TIT2(text=title))
             audio_file.tags.add(mutagen.id3.TPE1(text=artist))
@@ -93,13 +95,20 @@ async def run_job(job_id: str, file, db: Database = None):
             audio_file.tags.add(mutagen.id3.TIT1(text=grouping))
             audio_file.save()
 
-            new_filename = os.path.join(
-                job_path, sanitize_filename(f"{title} {artist}") + ".mp3"
+            new_filename = (
+                f"{job_id}/" + sanitize_filename(f"{title} {artist}") + ".mp3"
             )
-            os.rename(filename, new_filename)
+            file = open(filename, "rb")
+            boto3.upload_file(
+                bucket=boto3.S3_MUSIC_BUCKET,
+                filename=new_filename,
+                body=file.read(),
+            )
 
             query = (
-                update(MusicJobs).where(MusicJobs.id == job_id).values(completed=True)
+                update(MusicJobs)
+                .where(MusicJobs.id == job_id)
+                .values(completed=True, download_url=new_filename)
             )
             await db.execute(query)
             await redis.publish(
@@ -108,6 +117,7 @@ async def run_job(job_id: str, file, db: Database = None):
                     RedisResponses.MusicChannel(job_id=job_id, type="COMPLETED").dict()
                 ),
             )
+            await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
     except Exception as e:
         if job:
             query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
@@ -170,16 +180,16 @@ def read_tags(file: Union[str, bytes, None], filename):
         )
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def clean_job(job_id: str, db: Database = None):
     await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
     query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
     await db.execute(query)
 
 
-@worker_task
-@exception_handler
+@decorators.worker_task
+@decorators.exception_handler
 async def cleanup_jobs(db: Database = None):
     limit = datetime.now(timezone.utc) - timedelta(days=14)
     query = select(MusicJobs).where(MusicJobs.created_at < limit)

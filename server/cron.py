@@ -1,34 +1,31 @@
 import logging
-from typing import Callable
+import server.tasks.music as music_tasks
+import server.tasks.youtube as youtube_tasks
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from rq.registry import ScheduledJobRegistry
 from server.config import config
 from server.redis import redis
 from server.rq import queue
-from server.tasks.music import cleanup_jobs
-from server.tasks.youtube import (
-    update_active_channels,
-    update_youtube_video_categories,
-    update_subscriptions,
-    channel_cleanup,
-)
+from typing import Callable
 
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 
 
 def run_crons():
-    video_categories_job = queue.enqueue(update_youtube_video_categories, args=(True,))
+    video_categories_job = queue.enqueue(
+        youtube_tasks.update_youtube_video_categories, args=(True,)
+    )
     active_channels_job = queue.enqueue_call(
-        update_active_channels, depends_on=video_categories_job
+        youtube_tasks.update_active_channels, depends_on=video_categories_job
     )
     update_subscriptions_job = queue.enqueue_call(
-        update_subscriptions, depends_on=active_channels_job
+        youtube_tasks.update_subscriptions, depends_on=active_channels_job
     )
     channel_cleanup_job = queue.enqueue_call(
-        channel_cleanup, depends_on=update_subscriptions_job
+        youtube_tasks.channel_cleanup, depends_on=update_subscriptions_job
     )
-    queue.enqueue_call(cleanup_jobs, depends_on=channel_cleanup_job)
+    queue.enqueue_call(music_tasks.cleanup_jobs, depends_on=channel_cleanup_job)
 
 
 def cron_job(cron_string: str, function: Callable, args=(), kwargs={}):
@@ -63,13 +60,13 @@ async def cron_start():
 
             cron_job(
                 "0 0 * * *",
-                update_youtube_video_categories,
+                youtube_tasks.update_youtube_video_categories,
                 args=(True,),
             )
-            cron_job("0 0 * * *", cleanup_jobs)
-            cron_job("0 1 * * *", update_active_channels)
-            cron_job("0 3 * * *", update_subscriptions)
-            cron_job("0 5 * * sun", channel_cleanup)
+            cron_job("0 0 * * *", music_tasks.cleanup_jobs)
+            cron_job("0 1 * * *", youtube_tasks.update_active_channels)
+            cron_job("0 3 * * *", youtube_tasks.update_subscriptions)
+            cron_job("0 5 * * sun", youtube_tasks.channel_cleanup)
 
 
 async def cron_end():

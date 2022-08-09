@@ -49,6 +49,10 @@ declare global {
 		grouping?: string;
 	}
 
+	interface DownloadResponse {
+		url: string;
+	}
+
 	interface YoutubeAuthState {
 		email: string;
 		refresh: boolean;

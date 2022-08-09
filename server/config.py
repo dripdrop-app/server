@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     google_client_id: str
     google_client_secret: str
     google_api_key: str
+    aws_secret_access_key: str
     server_url: str
 
     class Config:

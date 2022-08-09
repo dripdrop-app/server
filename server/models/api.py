@@ -61,8 +61,8 @@ class MusicResponses:
         grouping: Optional[str]
         artwork_url: Optional[str]
 
-    class Download(MusicJobResponse):
-        pass
+    class Download(ResponseBaseModel):
+        url: str
 
     class AllJobs(ResponseBaseModel):
         jobs: List[MusicJobResponse]
