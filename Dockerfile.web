@@ -13,3 +13,4 @@ RUN export NVM_DIR="$HOME/.nvm" && \
     nvm install --lts && \
     npm --prefix app install && \
     npm --prefix app run build
+RUN mv app/build .
