@@ -7,11 +7,10 @@ RUN mkdir -p /src
 ADD . /src
 WORKDIR /src
 RUN pip install -r requirements.txt
-RUN alembic upgrade head
 RUN export NVM_DIR="$HOME/.nvm" && \
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" && \
     nvm install --lts && \
     npm --prefix app install && \
-    npm --prefix app run build
+    NODE_ENV=production npm --prefix app run build
 RUN mv app/build .
