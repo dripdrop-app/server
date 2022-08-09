@@ -4,4 +4,4 @@ build:
     worker: Dockerfile.worker
 run:
   web: gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornWorker -b $PORT
-  worker: rq worker --with-scheduler
+  worker: rq worker --with-scheduler -u $REDIS_URL
