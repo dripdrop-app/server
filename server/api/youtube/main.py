@@ -112,7 +112,7 @@ async def google_oauth2(
     tokens = await get_oauth_tokens(
         f"{config.server_url}/api/youtube/googleoauth2", code
     )
-    logging.log(tokens)
+    logging.info(tokens)
     if tokens:
         get_user_email = sync_to_async(google_api.get_user_email)
         google_email = await get_user_email(tokens.get("access_token"))
