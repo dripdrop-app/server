@@ -9,7 +9,7 @@ from server.config import config
 from typing import Optional
 
 
-DATABASE_URL = config.database_url
+DATABASE_URL = config.database_uri
 
 
 def init_db():
