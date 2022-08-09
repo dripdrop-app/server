@@ -25,11 +25,6 @@ const customBaseQuery = (options?: FetchBaseQueryArgs) => {
 		const response = await fetch(args, api, extraOptions);
 		let error;
 		if (response.error) {
-			if (response.error.status && response.error.status === 401) {
-				if (typeof args === 'object' && args.url !== '/auth/session') {
-					window.location.reload();
-				}
-			}
 			if (response.error.data) {
 				error = response.error.data as ErrorResponse;
 				error = errorParser(error);
