@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     google_client_id: str
     google_client_secret: str
     google_api_key: str
+    aws_endpoint_url: str
+    aws_region_name: str
+    aws_access_key_id: str
     aws_secret_access_key: str
+    aws_s3_artwork_bucket: str
+    aws_s3_music_bucket: str
     server_url: str
 
     class Config:

@@ -2,9 +2,11 @@ import boto3
 from server.config import config
 
 
-AWS_ENDPOINT_URL = "https://dripdrop-space.nyc3.digitaloceanspaces.com"
-AWS_REGION_NAME = "nyc3"
-AWS_ACCESS_KEY_ID = "DO00QBYAFGTD3EDXDRVH"
+AWS_ENDPOINT_URL = config.aws_endpoint_url
+AWS_REGION_NAME = config.aws_region_name
+AWS_ACCESS_KEY_ID = config.aws_access_key_id
+S3_ARTWORK_BUCKET = config.aws_s3_artwork_bucket
+S3_MUSIC_BUCKET = config.aws_s3_music_bucket
 
 
 session = boto3.Session()
@@ -15,9 +17,6 @@ client = session.client(
     aws_access_key_id=AWS_ACCESS_KEY_ID,
     aws_secret_access_key=config.aws_secret_access_key,
 )
-
-S3_ARTWORK_BUCKET = "artwork"
-S3_MUSIC_BUCKET = "music"
 
 
 def upload_file(bucket: str, filename: str, body: bytes, acl="public-read"):
