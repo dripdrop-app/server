@@ -6,4 +6,5 @@ RUN mkdir -p /src
 ADD . /src
 WORKDIR /src
 RUN pip install -r requirements.txt
+RUN ECHO $REDIS_URL
 ENTRYPOINT rq worker --with-scheduler $REDIS_URL
