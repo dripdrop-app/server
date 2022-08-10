@@ -4,6 +4,8 @@ RUN apt-get -y update && \
     apt-get install -y ffmpeg && \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
+RUN mkdir -p /src
+ADD . /src
+WORKDIR /src
 RUN pip install -r requirements.txt
-RUN npm --prefix app install && NODE_ENV=production npm --prefix app run build
-RUN mv app/build .
+RUN npm --prefix app install && NODE_ENV=production npm --prefix app run build && mv app/build .
