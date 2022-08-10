@@ -6,7 +6,5 @@ RUN mkdir -p /src
 ADD . /src
 WORKDIR /src
 RUN pip install -r requirements.txt
-RUN curl -L https://git.io/n-install | bash
-RUN n lts
 RUN npm --prefix app install && NODE_ENV=production npm --prefix app run build
 RUN mv app/build .
