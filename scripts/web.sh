@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 alembic upgrade head
 
 if [[ $ENV == 'production' ]]; then
@@ -7,6 +9,8 @@ if [[ $ENV == 'production' ]]; then
     gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornH11Worker -b :$SERVER_PORT -c config.py
     exit
 fi
+
+set +e
 
 uvicorn server.app:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT &
 SERVER_PID=$!
