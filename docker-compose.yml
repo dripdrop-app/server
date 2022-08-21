@@ -1,21 +1,74 @@
 version: '2.4'
 name: dripdrop
 services:
+  web:
+    container_name: web
+    restart: always
+    env_file: .env
+    build:
+      dockerfile: Dockerfile.web
+    entrypoint: ./scripts/web.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  worker:
+    container_name: worker
+    restart: always
+    env_file: .env
+    build:
+      dockerfile: Dockerfile.worker
+    entrypoint: rq worker --with-scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    user: root
+    mem_limit: 500m
+    restart: always
+    volumes:
+      - ./data/pgadmin:/var/lib/pgadmin
+    env_file: .env
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dripdrop.icu
+      PGADMIN_DEFAULT_PASSWORD: $POSTGRES_PASSWORD
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 8000:80
   postgres:
     image: postgres:14
     container_name: postgres
+    mem_limit: 100m
     restart: always
-    ports:
-      - '5432:5432'
+    healthcheck:
+      test: pg_isready -U $POSTGRES_USER
+      interval: 10s
+      start_period: 1s
+      timeout: 1m30s
     volumes:
-      - ./setup:/docker-entrypoint-initdb.d
+      - ./data/postgresql:/var/lib/postgresql/data
+    env_file: .env
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
-
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_HOST_AUTH_METHOD: md5
   redis:
     image: redis
     container_name: redis
+    mem_limit: 50m
     restart: always
-    ports:
-      - '6379:6379'
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      start_period: 1s
+      timeout: 1m30s
+    env_file: '.env'

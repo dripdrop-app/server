@@ -4,9 +4,14 @@ RUN apt-get -y update && \
     apt-get install -y ffmpeg && \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
+RUN pip install -U pip
+RUN npm install -g npm
 RUN mkdir -p /src
-ADD . /src
+ADD ./requirements.txt /src/requirements.txt
+ADD ./app/package.json /src/package.json
+ADD ./app/package-lock.json /src/package-lock.json
 WORKDIR /src
 RUN pip install -r requirements.txt
-RUN npm --prefix app install && NODE_ENV=production npm --prefix app run build && mv app/build .
-CMD alembic upgrade head
+RUN npm install -g
+RUN chmod +x run.sh
+EXPOSE $SERVER_PORT $PORT

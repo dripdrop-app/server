@@ -2,7 +2,7 @@ import logging
 import server.utils.google_api as google_api
 from asgiref.sync import sync_to_async
 from asyncpg import UniqueViolationError
-from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response
+from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response, Request
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from server.config import config
 from server.dependencies import get_authenticated_user, get_google_user
@@ -97,7 +97,10 @@ async def convertVideoToResponse(video: YoutubeVideo, google_account: GoogleAcco
     "/googleoauth2", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
 )
 async def google_oauth2(
-    state: str = Query(...), code: str = Query(...), error: str = Query(None)
+    request: Request,
+    state: str = Query(...),
+    code: str = Query(...),
+    error: str = Query(None),
 ):
     if error:
         raise HTTPException(400)
@@ -109,9 +112,7 @@ async def google_oauth2(
         return RedirectResponse("/")
 
     get_oauth_tokens = sync_to_async(google_api.get_oauth_tokens)
-    tokens = await get_oauth_tokens(
-        f"{config.server_url}/api/youtube/googleoauth2", code
-    )
+    tokens = await get_oauth_tokens(f"{request.base_url}api/youtube/googleoauth2", code)
     if tokens:
         get_user_email = sync_to_async(google_api.get_user_email)
         google_email = await get_user_email(tokens.get("access_token"))
@@ -172,9 +173,11 @@ async def get_youtube_account(
 
 
 @app.get("/oauth", response_class=PlainTextResponse)
-async def create_oauth_link(user: User = Depends(get_authenticated_user)):
+async def create_oauth_link(
+    request: Request, user: User = Depends(get_authenticated_user)
+):
     oauth = google_api.create_oauth_url(
-        f"{config.server_url}/api/youtube/googleoauth2", user.email
+        f"{request.base_url}api/youtube/googleoauth2", user.email
     )
     return PlainTextResponse(oauth["url"])
 
