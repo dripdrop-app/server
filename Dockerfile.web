@@ -13,5 +13,3 @@ ADD ./app/package-lock.json /src/package-lock.json
 WORKDIR /src
 RUN pip install -r requirements.txt
 RUN npm install -g
-RUN chmod +x run.sh
-EXPOSE $SERVER_PORT $PORT

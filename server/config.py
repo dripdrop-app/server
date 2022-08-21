@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     aws_secret_access_key: str
     aws_s3_artwork_bucket: str
     aws_s3_music_bucket: str
-    server_url: str
 
     class Config:
         env_file = ".env"

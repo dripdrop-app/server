@@ -4,6 +4,8 @@ services:
   web:
     container_name: web
     restart: always
+    volumes:
+      - ./:/src
     env_file: .env
     build:
       dockerfile: Dockerfile.web
@@ -13,9 +15,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    ports:
+      - $SERVER_PORT:$SERVER_PORT
+      - $PORT:$PORT
   worker:
     container_name: worker
     restart: always
+    volumes:
+      - ./:/src
     env_file: .env
     build:
       dockerfile: Dockerfile.worker
