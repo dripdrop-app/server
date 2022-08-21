@@ -5,8 +5,9 @@ set -e
 alembic upgrade head
 
 if [[ $ENV == 'production' ]]; then
+    npm --prefix app install
     NODE_ENV=$ENV npm --prefix app run build && mv app/build .
-    gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornH11Worker -b :$SERVER_PORT -c config.py
+    gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c config.py
     exit
 fi
 

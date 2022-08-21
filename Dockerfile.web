@@ -8,8 +8,5 @@ RUN pip install -U pip
 RUN npm install -g npm
 RUN mkdir -p /src
 ADD ./requirements.txt /src/requirements.txt
-ADD ./app/package.json /src/package.json
-ADD ./app/package-lock.json /src/package-lock.json
 WORKDIR /src
 RUN pip install -r requirements.txt
-RUN npm install -g
