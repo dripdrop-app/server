@@ -25,7 +25,7 @@ services:
       - ./:/src
     env_file: .env
     build:
-      dockerfile: dockerfiles/Dockerfile.worker
+      dockerfile: dockerfiles/Dockerfile.dev.worker
     entrypoint: rq worker --with-scheduler
     depends_on:
       postgres:
