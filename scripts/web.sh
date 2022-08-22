@@ -1,17 +1,14 @@
 #!/bin/bash
 
-set -e
 
 alembic upgrade head
-npm --prefix app install 
 
 if [[ $ENV == 'production' ]]; then
-    NODE_ENV=$ENV npm --prefix app run build -- --max_old_space_size=512 && mv app/build .
+    NODE_ENV=$ENV npm --prefix app run build && mv app/build .
     gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c config.py
     exit
 fi
 
-set +e
 
 uvicorn server.app:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT &
 SERVER_PID=$!
