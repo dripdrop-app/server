@@ -1,7 +1,7 @@
 #!/bin/bash
 
-
 alembic upgrade head
+npm --prefix app install
 
 if [[ $ENV == 'production' ]]; then
     NODE_ENV=$ENV npm --prefix app run build && mv app/build .
