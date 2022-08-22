@@ -14,6 +14,7 @@ import server.utils.mp3dl as mp3dl
 import subprocess
 import traceback
 import uuid
+from asgiref.sync import sync_to_async
 from databases import Database
 from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
@@ -195,4 +196,7 @@ async def cleanup_jobs(db: Database = None):
     query = select(MusicJobs).where(MusicJobs.created_at < limit)
     for row in await db.fetch_all(query):
         job = MusicJob.parse_obj(row)
-        await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job.id}")
+        if job.completed:
+            delete_file = sync_to_async(boto3.delete_file)
+            await delete_file(boto3.S3_ARTWORK_BUCKET, job.artwork_url)
+            await delete_file(boto3.S3_MUSIC_BUCKET, job.filename)

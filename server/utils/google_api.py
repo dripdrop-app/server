@@ -22,7 +22,7 @@ YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3"
 
 def create_oauth_url(callback_url: str, user_id: str):
     if config.env == "production":
-        callback_url = callback_url.replace("http", "https", count=1)
+        callback_url = callback_url.replace("http", "https", 1)
     params = {
         "client_id": config.google_client_id,
         "redirect_uri": callback_url,
@@ -40,7 +40,7 @@ def create_oauth_url(callback_url: str, user_id: str):
 
 def get_oauth_tokens(callback_url: str, code: str):
     if config.env == "production":
-        callback_url = callback_url.replace("http", "https", count=1)
+        callback_url = callback_url.replace("http", "https", 1)
     params = {
         "code": code,
         "client_id": config.google_client_id,
