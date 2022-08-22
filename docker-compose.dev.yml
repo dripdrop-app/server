@@ -4,10 +4,12 @@ services:
   web:
     container_name: web
     restart: always
+    volumes:
+      - ./:/src
     env_file: .env
     build:
-      dockerfile: dockerfiles/Dockerfile.web
-    entrypoint: ./scripts/web.sh
+      dockerfile: dockerfiles/Dockerfile.dev.web
+    entrypoint: ./scripts/web.dev.sh
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,6 +21,8 @@ services:
   worker:
     container_name: worker
     restart: always
+    volumes:
+      - ./:/src
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.worker
@@ -36,7 +40,6 @@ services:
     volumes:
       - ./data/pgadmin:/var/lib/pgadmin
     env_file: .env
-
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@dripdrop.icu
       PGADMIN_DEFAULT_PASSWORD: $POSTGRES_PASSWORD
