@@ -104,7 +104,6 @@ async def google_oauth2(
 ):
     if error:
         raise HTTPException(400)
-
     email = state
     query = select(Users).where(Users.email == email)
     user = await db.fetch_one(query)

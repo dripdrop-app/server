@@ -37,6 +37,8 @@ def create_oauth_url(callback_url: str, user_id: str):
 
 
 def get_oauth_tokens(callback_url: str, code: str):
+    if config.env == "production":
+        callback_url = callback_url.replace("http", "https", count=1)
     params = {
         "code": code,
         "client_id": config.google_client_id,
