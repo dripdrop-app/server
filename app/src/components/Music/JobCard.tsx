@@ -19,7 +19,6 @@ import { Error } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
 import { useRemoveJobMutation, useLazyDownloadJobQuery } from '../../api/music';
 import { FILE_TYPE } from '../../utils/enums';
-import BlankImage from '../../images/blank_image.jpeg';
 import { updateForm } from '../../state/music';
 import { CopyAll, Delete, Download } from '@mui/icons-material';
 import ConditionalDisplay from '../ConditionalDisplay';
@@ -63,7 +62,10 @@ const JobCard = (props: JobCardProps) => {
 		() => (
 			<Card sx={sx}>
 				<Stack height="100%" alignItems="center">
-					<CardMedia component="img" image={job.artworkUrl || BlankImage} />
+					<CardMedia
+						component="img"
+						image={job.artworkUrl || 'https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/blank_image.jpeg'}
+					/>
 					<CardContent>
 						<List>
 							<ListItem>

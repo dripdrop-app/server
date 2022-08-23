@@ -28,77 +28,92 @@ from sqlalchemy import select, update
 JOB_DIR = "music_jobs"
 
 
+async def create_job_folder(job: MusicJob):
+    job_path = os.path.join(JOB_DIR, job.id)
+    try:
+        os.mkdir(JOB_DIR)
+    except FileExistsError:
+        pass
+    os.mkdir(job_path)
+
+
+async def retrieve_audio_file(job: MusicJob):
+    job_path = os.path.join(JOB_DIR, job.id)
+    filename = None
+    if job.filename:
+        res = requests.get(boto3.resolve_music_url(job.filename))
+        filename = job.filename.split("/")[-1]
+        file_path = os.path.join(job_path, filename)
+        f = open(file_path, "wb")
+        f.write(res.content)
+        f.close()
+        boto3.delete_file(bucket=boto3.S3_MUSIC_BUCKET, key=job.filename)
+        file_path = os.path.join(job_path, filename)
+        new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
+        AudioSegment.from_file(file_path).export(
+            new_filename, format="mp3", bitrate="320k"
+        )
+        filename = new_filename
+    elif job.youtube_url:
+
+        def updateProgress(d):
+            nonlocal filename
+            if d["status"] == "finished":
+                filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
+
+        mp3dl.yt_download(job.youtube_url, [updateProgress], job_path)
+    return filename
+
+
+async def retrieve_artwork(job: MusicJob):
+    artwork_url = job.artwork_url
+    if artwork_url:
+        try:
+            if not re.search("^http(s)?://", artwork_url):
+                artwork_url = boto3.resolve_artwork_url(artwork_url)
+            imageData = imgdl.download_image(artwork_url)
+            extension = artwork_url.split(".")[-1]
+            boto3.delete_file(bucket=boto3.S3_ARTWORK_BUCKET, filename=artwork_url)
+            return {"image": imageData, "extension": extension}
+        except Exception:
+            logging.exception(traceback.format_exc())
+    return None
+
+
+async def update_audio_tags(
+    job: MusicJob, filename: str, artwork_info: Union[dict, None]
+):
+    audio_file = mutagen.File(filename)
+    if artwork_info:
+        audio_file.tags.add(
+            mutagen.id3.APIC(
+                mimetype=f"image/{artwork_info['extension']}",
+                data=artwork_info["image"],
+            )
+        )
+    audio_file.tags.add(mutagen.id3.TIT2(text=job.title))
+    audio_file.tags.add(mutagen.id3.TPE1(text=job.artist))
+    audio_file.tags.add(mutagen.id3.TALB(text=job.album))
+    audio_file.tags.add(mutagen.id3.TIT1(text=job.grouping))
+    audio_file.save()
+
+    new_filename: str = (
+        f"{job.id}/" + sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
+    )
+    return new_filename
+
+
 @decorators.worker_task
 async def run_job(job_id: str, db: Database = None):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = MusicJob.parse_obj(await db.fetch_one(query))
     try:
         if job:
-            job_path = os.path.join(JOB_DIR, job_id)
-            youtube_url = job.youtube_url
-            filename = job.filename
-            artwork_url = job.artwork_url
-            title = job.title
-            artist = job.artist
-            album = job.album
-            grouping = job.grouping
+            await create_job_folder(job)
+            filename = await retrieve_audio_file(job)
+            artwork_info = await retrieve_artwork(job)
+            new_filename = await update_audio_tags(job, filename, artwork_info)
 
-            job_path = os.path.join(JOB_DIR, job_id)
-            try:
-                os.mkdir(JOB_DIR)
-            except FileExistsError:
-                pass
-            os.mkdir(job_path)
-
-            if job.filename:
-                res = requests.get(boto3.resolve_music_url(job.filename))
-                filename = job.filename.split("/")[-1]
-                file_path = os.path.join(job_path, filename)
-                f = open(file_path, "wb")
-                f.write(res.content)
-                f.close()
-                boto3.delete_file(bucket=boto3.S3_MUSIC_BUCKET, key=job.filename)
-                file_path = os.path.join(job_path, filename)
-                new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
-                AudioSegment.from_file(file_path).export(
-                    new_filename, format="mp3", bitrate="320k"
-                )
-                filename = new_filename
-            elif youtube_url:
-
-                def updateProgress(d):
-                    nonlocal filename
-                    if d["status"] == "finished":
-                        filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
-
-                mp3dl.yt_download(youtube_url, [updateProgress], job_path)
-
-            audio_file = mutagen.File(filename)
-
-            if artwork_url:
-                try:
-                    if not re.search("^http(s)+://", artwork_url):
-                        artwork_url = boto3.resolve_artwork_url(artwork_url)
-                    imageData = imgdl.download_image(artwork_url)
-                    extension = artwork_url.split(".")[-1]
-                    audio_file.tags.add(
-                        mutagen.id3.APIC(mimetype=f"image/{extension}", data=imageData)
-                    )
-                    boto3.delete_file(
-                        bucket=boto3.S3_ARTWORK_BUCKET, filename=artwork_url
-                    )
-                except Exception:
-                    logging.exception(traceback.format_exc())
-
-            audio_file.tags.add(mutagen.id3.TIT2(text=title))
-            audio_file.tags.add(mutagen.id3.TPE1(text=artist))
-            audio_file.tags.add(mutagen.id3.TALB(text=album))
-            audio_file.tags.add(mutagen.id3.TIT1(text=grouping))
-            audio_file.save()
-
-            new_filename = (
-                f"{job_id}/" + sanitize_filename(f"{title} {artist}") + ".mp3"
-            )
             file = open(filename, "rb")
             boto3.upload_file(
                 bucket=boto3.S3_MUSIC_BUCKET,

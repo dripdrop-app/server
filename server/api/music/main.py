@@ -222,7 +222,7 @@ async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
         await delete_file(boto3.S3_ARTWORK_BUCKET, job.artwork_url)
         await delete_file(boto3.S3_MUSIC_BUCKET, job.filename)
     except Exception:
-        raise HTTPException(404)
+        pass
     return Response(None)
 
 

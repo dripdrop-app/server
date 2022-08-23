@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLazyCreateFileJobQuery, useLazyCreateYoutubeJobQuery } from '../../api/music';
 import { resetForm } from '../../state/music';
 import { FILE_TYPE } from '../../utils/enums';
-import BlankImage from '../../images/blank_image.jpeg';
 import ConditionalDisplay from '../ConditionalDisplay';
 
 interface FormActionProps {
@@ -33,7 +32,9 @@ const FormActions = (props: FormActionProps) => {
 		});
 
 	const run = useCallback(async () => {
-		let artwork = validArtwork ? artworkUrl : (await fetch(BlankImage)).url;
+		let artwork = validArtwork
+			? artworkUrl
+			: 'https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/blank_image.jpeg';
 		if (
 			fileType !== FILE_TYPE.YOUTUBE &&
 			fileInputRef.current &&

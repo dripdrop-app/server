@@ -19,7 +19,6 @@ import {
 import { Menu as MenuIcon, ArrowDropDown, AccountCircle } from '@mui/icons-material';
 import { useLogoutMutation } from '../api/auth';
 import AuthWrapper from './Auth/AuthWrapper';
-import DripDrop from '../images/dripdrop.png';
 import RouterLink from './RouterLink';
 
 const NavBar = () => {
@@ -97,7 +96,7 @@ const NavBar = () => {
 		() => (
 			<Accordion expanded={openMobileMenu} sx={{ flexGrow: 1, background: 'transparent' }}>
 				<AccordionSummary onClick={() => setOpenMobileMenu(!openMobileMenu)} expandIcon={<MenuIcon />}>
-					<Avatar alt="Dripdrop" src={DripDrop} />
+					<Avatar alt="Dripdrop" src="https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png" />
 				</AccordionSummary>
 				<AccordionDetails>
 					<RouterLink to="/">
@@ -133,12 +132,16 @@ const NavBar = () => {
 			<AppBar position="sticky">
 				<Box display={{ xs: 'none', md: 'contents' }}>
 					<Toolbar>
-						<Avatar alt="Dripdrop" src={DripDrop} />
+						<Avatar alt="Dripdrop" src="https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png" />
 						<AuthWrapper>{NavButtons}</AuthWrapper>
 					</Toolbar>
 				</Box>
 				<Box display={{ md: 'none' }}>
-					<AuthWrapper altRender={<Avatar alt="Dripdrop" src={DripDrop} />}>
+					<AuthWrapper
+						altRender={
+							<Avatar alt="Dripdrop" src="https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png" />
+						}
+					>
 						<Toolbar disableGutters>{MobileMenu}</Toolbar>
 					</AuthWrapper>
 				</Box>

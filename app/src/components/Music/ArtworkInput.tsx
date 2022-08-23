@@ -5,7 +5,6 @@ import { debounce } from 'lodash';
 import { isBase64 } from '../../utils/helpers';
 import { useLazyArtworkQuery } from '../../api/music';
 import { updateForm } from '../../state/music';
-import BlankImage from '../../images/blank_image.jpeg';
 import ConditionalDisplay from '../ConditionalDisplay';
 
 const ArtworkInput = () => {
@@ -38,7 +37,15 @@ const ArtworkInput = () => {
 				<Grid item md={6}>
 					<Card>
 						<ConditionalDisplay condition={!getArtworkURLStatus.isFetching}>
-							<CardMedia sx={{ border: 1 }} component="img" image={validArtwork ? artworkUrl : BlankImage} />
+							<CardMedia
+								sx={{ border: 1 }}
+								component="img"
+								image={
+									validArtwork
+										? artworkUrl
+										: 'https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/blank_image.jpeg'
+								}
+							/>
 						</ConditionalDisplay>
 						<ConditionalDisplay condition={getArtworkURLStatus.isFetching}>
 							<Skeleton sx={{ maxHeight: '300px' }} variant="rectangular" height="20vh" width="100%" />
