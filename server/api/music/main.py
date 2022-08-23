@@ -238,8 +238,7 @@ async def download_job(job_id: str, user: User = Depends(get_authenticated_user)
     if not job:
         raise HTTPException(404)
     job = MusicJob.parse_obj(job)
-    job_url = boto3.resolve_music_url(job.download_url)
-    res = await sync_to_async(requests.get)(job_url)
+    res = await sync_to_async(requests.get)(job.download_url)
     if res.status_code != 200:
         query = (
             update(MusicJobs)
@@ -249,4 +248,4 @@ async def download_job(job_id: str, user: User = Depends(get_authenticated_user)
         await db.execute(query)
         await redis.publish(RedisChannels.MUSIC_JOB_CHANNEL.value, job_id)
         raise HTTPException(404)
-    return MusicResponses.Download(url=job_url)
+    return MusicResponses.Download(url=job.download_url)
