@@ -115,10 +115,12 @@ class MusicJob(BaseModel):
     def __init__(self, **data) -> None:
         super().__init__(**data)
         if data.get("artwork_url") and not re.search(
-            "^http(s)+://", data["artwork_url"]
+            "^http(s)?://", data["artwork_url"]
         ):
             self.artwork_url = boto3.resolve_artwork_url(data["artwork_url"])
-        if data.get("download_url"):
+        if data.get("download_url") and not re.search(
+            "^http(s)?://", data["download_url"]
+        ):
             self.download_url = boto3.resolve_music_url(data["download_url"])
 
 
