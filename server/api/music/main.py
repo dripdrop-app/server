@@ -125,6 +125,7 @@ async def handle_artwork_url(job_id: str, artwork_url: str):
             bucket=boto3.S3_ARTWORK_BUCKET,
             filename=artwork_filename,
             body=data_bytes,
+            content_type=f"image/{extension}",
         )
         artwork_url = artwork_filename
     return artwork_url
@@ -176,13 +177,17 @@ async def create_job_from_file(
 ):
     job_id = str(uuid.uuid4())
     filename = f"{job_id}/{file.filename}"
-    await sync_to_async(
-        boto3.upload_file(
+    try:
+        upload_file = sync_to_async(boto3.upload_file)
+        await upload_file(
             bucket=boto3.S3_MUSIC_BUCKET,
             filename=filename,
             body=await file.read(),
+            content_type=file.content_type,
         )
-    )
+    except Exception:
+        logging.exception(traceback.format_exc())
+        return Response(None, 500)
     query = insert(MusicJobs).values(
         id=job_id,
         youtube_url=None,
@@ -219,10 +224,10 @@ async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
     await db.execute(query)
     try:
         delete_file = sync_to_async(boto3.delete_file)
-        await delete_file(boto3.S3_ARTWORK_BUCKET, job.artwork_url)
-        await delete_file(boto3.S3_MUSIC_BUCKET, job.filename)
+        await delete_file(bucket=boto3.S3_ARTWORK_BUCKET, filename=job.artwork_url)
+        await delete_file(bucket=boto3.S3_MUSIC_BUCKET, filename=job.filename)
     except Exception:
-        pass
+        logging.exception(traceback.format_exc())
     return Response(None)
 
 

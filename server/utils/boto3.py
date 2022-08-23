@@ -19,8 +19,12 @@ client = session.client(
 )
 
 
-def upload_file(bucket: str, filename: str, body: bytes, acl="public-read"):
-    client.put_object(Bucket=bucket, Key=filename, Body=body, ACL=acl)
+def upload_file(
+    bucket: str, filename: str, body: bytes, content_type: str, acl="public-read"
+):
+    client.put_object(
+        Bucket=bucket, Key=filename, Body=body, ACL=acl, ContentType=content_type
+    )
 
 
 def delete_file(bucket: str, filename: str):

@@ -23,6 +23,7 @@ from yt_dlp.utils import sanitize_filename
 from server.models.main import MusicJob, MusicJobs
 from server.models.api import MusicResponses, RedisResponses
 from server.redis import redis, RedisChannels
+from server.rq import queue
 from sqlalchemy import select, update
 
 JOB_DIR = "music_jobs"
@@ -33,7 +34,7 @@ async def create_job_folder(job: MusicJob):
     try:
         os.mkdir(JOB_DIR)
     except FileExistsError:
-        pass
+        logging.exception(traceback.format_exc())
     os.mkdir(job_path)
 
 
@@ -47,7 +48,7 @@ async def retrieve_audio_file(job: MusicJob):
         f = open(file_path, "wb")
         f.write(res.content)
         f.close()
-        boto3.delete_file(bucket=boto3.S3_MUSIC_BUCKET, key=job.filename)
+        boto3.delete_file(bucket=boto3.S3_MUSIC_BUCKET, filename=job.filename)
         file_path = os.path.join(job_path, filename)
         new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
         AudioSegment.from_file(file_path).export(
@@ -106,40 +107,42 @@ async def update_audio_tags(
 @decorators.worker_task
 async def run_job(job_id: str, db: Database = None):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
-    job = MusicJob.parse_obj(await db.fetch_one(query))
+    row = await db.fetch_one(query)
+    if not row:
+        return
     try:
-        if job:
-            await create_job_folder(job)
-            filename = await retrieve_audio_file(job)
-            artwork_info = await retrieve_artwork(job)
-            new_filename = await update_audio_tags(job, filename, artwork_info)
+        job = MusicJob.parse_obj(row)
+        await create_job_folder(job)
+        filename = await retrieve_audio_file(job)
+        artwork_info = await retrieve_artwork(job)
+        new_filename = await update_audio_tags(job, filename, artwork_info)
 
-            file = open(filename, "rb")
-            boto3.upload_file(
-                bucket=boto3.S3_MUSIC_BUCKET,
-                filename=new_filename,
-                body=file.read(),
-            )
+        file = open(filename, "rb")
+        boto3.upload_file(
+            bucket=boto3.S3_MUSIC_BUCKET,
+            filename=new_filename,
+            body=file.read(),
+            content_type="audio/mpeg",
+        )
 
-            query = (
-                update(MusicJobs)
-                .where(MusicJobs.id == job_id)
-                .values(completed=True, download_url=new_filename)
-            )
-            await db.execute(query)
-            await redis.publish(
-                RedisChannels.MUSIC_JOB_CHANNEL.value,
-                json.dumps(
-                    RedisResponses.MusicChannel(job_id=job_id, type="COMPLETED").dict()
-                ),
-            )
-            await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
-    except Exception as e:
-        if job:
-            query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
-            await db.execute(query)
-            await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
-        raise e
+        query = (
+            update(MusicJobs)
+            .where(MusicJobs.id == job_id)
+            .values(completed=True, download_url=new_filename)
+        )
+        await db.execute(query)
+    except Exception:
+        query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
+        await db.execute(query)
+        logging.exception(traceback.format_exc())
+    finally:
+        await redis.publish(
+            RedisChannels.MUSIC_JOB_CHANNEL.value,
+            json.dumps(
+                RedisResponses.MusicChannel(job_id=job_id, type="COMPLETED").dict()
+            ),
+        )
+        await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
 
 
 def read_tags(file: Union[str, bytes, None], filename):
@@ -150,7 +153,7 @@ def read_tags(file: Union[str, bytes, None], filename):
         try:
             os.mkdir("tags")
         except FileExistsError:
-            pass
+            logging.exception(traceback.format_exc())
         os.mkdir(tag_path)
 
         filepath = os.path.join(tag_path, filename)
@@ -198,9 +201,16 @@ def read_tags(file: Union[str, bytes, None], filename):
 
 @decorators.worker_task
 @decorators.exception_handler
-async def clean_job(job_id: str, db: Database = None):
-    await asyncio.create_subprocess_shell(f"rm -rf {JOB_DIR}/{job_id}")
-    query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
+async def clean_job(job: MusicJob, db: Database = None):
+    try:
+        delete_file = sync_to_async(boto3.delete_file)
+        await delete_file(
+            boto3.S3_ARTWORK_BUCKET, boto3.resolve_artwork_url(job.artwork_url)
+        )
+        await delete_file(boto3.S3_MUSIC_BUCKET, boto3.resolve_music_url(job.filename))
+    except Exception:
+        logging.exception(traceback.format_exc())
+    query = update(MusicJobs).where(MusicJobs.id == job.id).values(failed=True)
     await db.execute(query)
 
 
@@ -211,7 +221,4 @@ async def cleanup_jobs(db: Database = None):
     query = select(MusicJobs).where(MusicJobs.created_at < limit)
     for row in await db.fetch_all(query):
         job = MusicJob.parse_obj(row)
-        if job.completed:
-            delete_file = sync_to_async(boto3.delete_file)
-            await delete_file(boto3.S3_ARTWORK_BUCKET, job.artwork_url)
-            await delete_file(boto3.S3_MUSIC_BUCKET, job.filename)
+        queue.enqueue(clean_job, job)

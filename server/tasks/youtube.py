@@ -1,7 +1,9 @@
 import asyncio
 import dateutil.parser
+import logging
 import server.utils.decorators as decorators
 import server.utils.google_api as google_api
+import traceback
 from asgiref.sync import sync_to_async
 from asyncpg.exceptions import UniqueViolationError
 from databases import Database
@@ -61,7 +63,7 @@ async def add_youtube_subscription(google_email: str, subscription, db: Database
         )
         await db.execute(query)
     except UniqueViolationError:
-        pass
+        logging.exception(traceback.format_exc())
 
 
 async def add_youtube_channel(channel, db: Database):
@@ -85,7 +87,7 @@ async def add_youtube_channel(channel, db: Database):
             channel_id,
         )
     except UniqueViolationError:
-        pass
+        logging.exception(traceback.format_exc())
 
 
 async def add_youtube_video(video, db: Database):
@@ -107,7 +109,7 @@ async def add_youtube_video(video, db: Database):
         )
         await db.execute(query)
     except UniqueViolationError:
-        pass
+        logging.exception(traceback.format_exc())
 
 
 async def update_channels(channels: list, db: Database):
@@ -122,7 +124,7 @@ async def update_channels(channels: list, db: Database):
             )
             await db.execute(query)
         except Exception:
-            pass
+            logging.exception(traceback.format_exc())
 
     get_channels_info = await sync_to_async(google_api.get_channels_info(channels))
     channels_info = await get_channels_info(channels)

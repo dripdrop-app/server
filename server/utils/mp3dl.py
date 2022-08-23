@@ -8,7 +8,6 @@ class Logger(object):
 
     def warning(self, msg):
         logging.warn(msg)
-        pass
 
     def error(self, msg):
         logging.error(msg)

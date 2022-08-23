@@ -1,7 +1,0 @@
-build:
-  docker: 
-    web: Dockerfile.web
-    worker: Dockerfile.worker
-run:
-  web: alembic upgrade head && gunicorn server.app:app -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT
-  worker: rq worker --with-scheduler -u $REDIS_URL
