@@ -11,5 +11,5 @@ COPY . /src
 WORKDIR /src
 RUN pip install -r requirements.txt
 RUN npm --prefix app install
-RUN NODE_ENV=$ENV npm --prefix app run build && mv app/build .
+RUN npm --prefix app run build && mv app/build .
 RUN chmod +x ./scripts/web.sh
