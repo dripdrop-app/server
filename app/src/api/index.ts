@@ -25,7 +25,9 @@ const customBaseQuery = (options?: FetchBaseQueryArgs) => {
 		const response = await fetch(args, api, extraOptions);
 		let error;
 		if (response.error) {
-			if (response.error.data) {
+			if (response.error.status === 401 && api.endpoint !== 'checkSession') {
+				window.location.reload();
+			} else if (response.error.data) {
 				error = response.error.data as ErrorResponse;
 				error = errorParser(error);
 				response.error.data = error;
@@ -42,6 +44,7 @@ export const tags = [
 	'YoutubeVideo',
 	'YoutubeVideoCategory',
 	'YoutubeVideoQueue',
+	'YoutubeVideoQueueIndex',
 	'YoutubeVideoLike',
 	'YoutubeSubscription',
 	'YoutubeChannel',

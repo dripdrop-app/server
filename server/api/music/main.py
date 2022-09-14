@@ -71,10 +71,7 @@ async def get_jobs(user: User = Depends(get_authenticated_user)):
         .where(MusicJobs.user_email == user.email)
         .order_by(MusicJobs.created_at.desc())
     )
-    jobs = []
-    for row in await db.fetch_all(query):
-        job = MusicJob.parse_obj(row)
-        jobs.append(job)
+    jobs = [MusicJob.parse_obj(row) for row in await db.fetch_all(query)]
     return MusicResponses.AllJobs(jobs=jobs).dict(by_alias=True)
 
 

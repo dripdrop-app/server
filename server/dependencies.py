@@ -86,4 +86,4 @@ async def get_google_user(user: User = Depends(get_authenticated_user)):
     google_account = await db.fetch_one(query)
     if google_account:
         return GoogleAccount.parse_obj(google_account)
-    raise HTTPException(401)
+    raise HTTPException(403)

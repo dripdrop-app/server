@@ -77,13 +77,3 @@ async def create_account(
 ):
     await create_new_account(email, password)
     return AuthResponses.User(email=email, admin=False)
-
-
-# @requires([AuthScopes.ADMIN])
-# async def admin_create_account(email: str, password: str):
-#     try:
-#         await create_new_account(email, password)
-#     except ValueError as e:
-#         return JSONResponse({'error': e.message}, 400)
-
-#     return Response({'email': email, 'admin': False}, 201)
