@@ -27,7 +27,6 @@ async def update_google_access_token(google_email: str, db: Database):
     query = select(GoogleAccounts).where(GoogleAccounts.email == google_email)
     google_account = GoogleAccount.parse_obj(await db.fetch_one(query))
     access_token = google_account.access_token
-
     if (
         datetime.now(timezone.utc) - google_account.last_updated
     ).seconds >= google_account.expires:
@@ -168,15 +167,12 @@ async def update_youtube_video_categories(cron: bool, db: Database = None):
 @decorators.exception_handler
 async def update_user_youtube_subscriptions_job(user_email: str, db: Database = None):
     get_channels_info = sync_to_async(google_api.get_channels_info)
-
     query = select(GoogleAccounts).where(GoogleAccounts.user_email == user_email)
     google_account = await db.fetch_one(query)
     if not google_account:
         return
-
     google_account = GoogleAccount.parse_obj(google_account)
     google_email = google_account.email
-
     query = (
         update(GoogleAccounts)
         .values(subscriptions_loading=True)
@@ -186,11 +182,9 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
     await redis.publish(
         RedisChannels.YOUTUBE_SUBSCRIPTION_JOB_CHANNEL.value, user_email
     )
-
     access_token = await update_google_access_token(google_email, db)
     if not access_token:
         return
-
     for subscriptions in google_api.get_user_subscriptions(access_token):
         youtube_subscription_channels = [
             subscription["snippet"]["resourceId"]["channelId"]
@@ -200,20 +194,17 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
             YoutubeChannels.id.in_(youtube_subscription_channels)
         )
         existing_channels = await db.fetch_all(query)
-
         if len(existing_channels) != len(youtube_subscription_channels):
             channels_info = await get_channels_info(youtube_subscription_channels)
             await asyncio.gather(
                 *[add_youtube_channel(channel, db) for channel in channels_info]
             )
-
         await asyncio.gather(
             *[
                 add_youtube_subscription(google_email, subscription, db)
                 for subscription in subscriptions
             ]
         )
-
     query = (
         update(GoogleAccounts)
         .values(subscriptions_loading=False)
@@ -229,7 +220,6 @@ async def update_user_youtube_subscriptions_job(user_email: str, db: Database = 
 @decorators.exception_handler
 async def add_new_channel_videos_job(channel_id: str, db: Database = None):
     get_videos_info = sync_to_async(google_api.get_videos_info)
-
     query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     youtube_channel = YoutubeChannel.parse_obj(await db.fetch_one(query))
     last_updated = youtube_channel.last_updated
@@ -256,17 +246,13 @@ async def add_new_channel_videos_job(channel_id: str, db: Database = None):
             YoutubeVideos.id.in_(recent_uploaded_playlist_video_ids)
         )
         existing_videos = await db.fetch_all(query)
-
         if len(existing_videos) < len(recent_uploaded_playlist_videos):
             videos_info = await get_videos_info(recent_uploaded_playlist_video_ids)
-
             await asyncio.gather(
                 *[add_youtube_video(video, db) for video in videos_info]
             )
-
         if len(recent_uploaded_playlist_videos) < len(uploaded_playlist_videos):
             break
-
     query = (
         update(YoutubeChannels)
         .values(last_updated=datetime.now(timezone.utc))

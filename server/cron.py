@@ -53,11 +53,9 @@ async def cron_start():
         crons_added = await redis.get("crons_added")
         if not crons_added:
             await redis.set("crons_added", 1)
-
             for job_id in scheduled_registry.get_job_ids():
                 logging.info(f"Removing Job: {job_id}")
                 scheduled_registry.remove(job_id, delete_job=True)
-
             cron_job(
                 "0 0 * * *",
                 youtube_tasks.update_youtube_video_categories,

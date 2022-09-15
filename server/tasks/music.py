@@ -97,7 +97,6 @@ async def update_audio_tags(
     audio_file.tags.add(mutagen.id3.TALB(text=job.album))
     audio_file.tags.add(mutagen.id3.TIT1(text=job.grouping))
     audio_file.save()
-
     new_filename: str = (
         f"{job.id}/" + sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
     )
@@ -116,7 +115,6 @@ async def run_job(job_id: str, db: Database = None):
         filename = await retrieve_audio_file(job)
         artwork_info = await retrieve_artwork(job)
         new_filename = await update_audio_tags(job, filename, artwork_info)
-
         file = open(filename, "rb")
         boto3.upload_file(
             bucket=boto3.S3_MUSIC_BUCKET,
@@ -124,7 +122,6 @@ async def run_job(job_id: str, db: Database = None):
             body=file.read(),
             content_type="audio/mpeg",
         )
-
         query = (
             update(MusicJobs)
             .where(MusicJobs.id == job_id)
@@ -148,14 +145,12 @@ async def run_job(job_id: str, db: Database = None):
 def read_tags(file: Union[str, bytes, None], filename):
     folder_id = str(uuid.uuid4())
     tag_path = os.path.join("tags", folder_id)
-
     try:
         try:
             os.mkdir("tags")
         except FileExistsError:
             logging.exception(traceback.format_exc())
         os.mkdir(tag_path)
-
         filepath = os.path.join(tag_path, filename)
         with open(filepath, "wb") as f:
             f.write(file)

@@ -17,64 +17,52 @@ const App = () => {
 		<Stack>
 			<NavBar />
 			<Box paddingY={4}>
-				<Switch>
-					<Route
-						path="/youtube/channel/:id"
-						render={(props) => (
-							<AuthPage>
+				<AuthPage>
+					<Switch>
+						<Route
+							path="/youtube/channel/:id"
+							render={(props) => (
 								<YoutubeChannel channelID={props.match.params.id} />
-							</AuthPage>
-						)}
-					/>
-					<Route
-						path="/youtube/subscriptions"
-						render={() => (
-							<AuthPage>
+							)}
+						/>
+						<Route
+							path="/youtube/subscriptions"
+							render={() => (
 								<YoutubeSubscriptions />
-							</AuthPage>
-						)}
-					/>
-					<Route
-						path="/youtube/videos/queue"
-						render={(props) => (
-							<AuthPage>
+							)}
+						/>
+						<Route
+							path="/youtube/videos/queue"
+							render={(props) => (
 								<YoutubeVideoQueue />
-							</AuthPage>
-						)}
-					/>
-					<Route
-						path="/youtube/video/:id"
-						render={(props) => (
-							<AuthPage>
+							)}
+						/>
+						<Route
+							path="/youtube/video/:id"
+							render={(props) => (
 								<YoutubeVideo id={props.match.params.id} />
-							</AuthPage>
-						)}
-					/>
-					<Route
-						path="/youtube/videos"
-						render={() => (
-							<AuthPage>
+							)}
+						/>
+						<Route
+							path="/youtube/videos"
+							render={() => (
 								<YoutubeVideos />
-							</AuthPage>
-						)}
-					/>
-					<Route
-						path="/music"
-						render={() => (
-							<AuthPage>
+							)}
+						/>
+						<Route
+							path="/music"
+							render={() => (
 								<MusicDownloader />
-							</AuthPage>
-						)}
-					/>
-					<Route
-						path="/"
-						render={() => (
-							<AuthPage>
+							)}
+						/>
+						<Route
+							path="/"
+							render={() => (
 								<MusicDownloader />
-							</AuthPage>
-						)}
-					/>
-				</Switch>
+							)}
+						/>
+					</Switch>
+				</AuthPage>
 			</Box>
 			<Box>
 				<AuthWrapper>
@@ -94,7 +82,7 @@ const App = () => {
 					</YoutubeWrapper>
 				</AuthWrapper>
 			</Box>
-		</Stack>
+		</Stack >
 	);
 };
 

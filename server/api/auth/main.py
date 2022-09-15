@@ -24,19 +24,15 @@ async def login(email: str = Body(...), password: str = Body(...)):
     account = await db.fetch_one(query)
     if not account:
         raise HTTPException(404, "Account not found.")
-
     account = User.parse_obj(account)
     if not bcrypt.checkpw(
         password.encode("utf-8"), account.password.get_secret_value().encode("utf-8")
     ):
         raise HTTPException(400, "Email or Password is incorrect.")
-
     session_id = str(uuid.uuid4())
     query = insert(Sessions).values(id=session_id, user_email=email)
     await db.execute(query)
-
     response = JSONResponse(AuthResponses.User(email=email, admin=account.admin).dict())
-
     TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
     response.set_cookie(
         SessionHandler.cookie_name,
@@ -61,7 +57,6 @@ async def create_new_account(email: str, password: str):
     account = await db.fetch_one(query)
     if account:
         raise HTTPException(400, f"Account with email `{email}` exists.")
-
     hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     query = insert(Users).values(
         email=email,

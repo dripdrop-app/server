@@ -6,13 +6,11 @@ from urllib import parse
 def download_image(artwork, return_content=True):
     if not is_valid_url(artwork):
         raise ValueError
-
     data = requests.get(artwork)
     if data.headers["Content-Type"].split("/")[0] == "image":
         if return_content:
             return data.content
         return artwork
-
     img_links = get_images(artwork)
     for img_link in img_links:
         if "artworks" in img_link and "500x500" in img_link:

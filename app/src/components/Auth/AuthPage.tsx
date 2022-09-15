@@ -41,6 +41,7 @@ const AuthPage = (props: AuthPageProps) => {
 		} else {
 			loginOrCreate({ email, password, login: false });
 		}
+		clearForm();
 	}, [email, loginOrCreate, password, tab]);
 
 	const clearForm = useCallback(() => {

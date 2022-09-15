@@ -26,7 +26,7 @@ const customBaseQuery = (options?: FetchBaseQueryArgs) => {
 		let error;
 		if (response.error) {
 			if (response.error.status === 401 && api.endpoint !== 'checkSession') {
-				window.location.reload();
+				window.history.pushState({}, '', new URL(window.location.host));
 			} else if (response.error.data) {
 				error = response.error.data as ErrorResponse;
 				error = errorParser(error);
