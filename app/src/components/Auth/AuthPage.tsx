@@ -35,6 +35,11 @@ const AuthPage = (props: AuthPageProps) => {
 		return null;
 	}, [error, loginOrCreateStatus.isSuccess, loginOrCreateStatus.originalArgs?.login]);
 
+	const clearForm = useCallback(() => {
+		setEmail('');
+		setPassword('');
+	}, []);
+
 	const submitForm = useCallback(() => {
 		if (tab === 0) {
 			loginOrCreate({ email, password, login: true });
@@ -42,12 +47,7 @@ const AuthPage = (props: AuthPageProps) => {
 			loginOrCreate({ email, password, login: false });
 		}
 		clearForm();
-	}, [email, loginOrCreate, password, tab]);
-
-	const clearForm = useCallback(() => {
-		setEmail('');
-		setPassword('');
-	}, []);
+	}, [email, loginOrCreate, password, tab, clearForm]);
 
 	return useMemo(() => {
 		return (

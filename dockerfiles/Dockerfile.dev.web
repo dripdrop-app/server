@@ -5,8 +5,10 @@ RUN apt-get -y update && \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 RUN pip install -U pip
+RUN pip install poetry
 RUN npm install -g npm
 RUN mkdir -p /src
-COPY ./requirements.txt /src/requirements.txt
+COPY ./poetry.lock /src/poetry.
+COPY ./pyproject.toml /src/pyproject.toml
 WORKDIR /src
-RUN pip install -r requirements.txt
+RUN poetry install

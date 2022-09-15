@@ -3,7 +3,7 @@
 alembic upgrade head
 npm --prefix app install
 
-uvicorn server.app:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT &
+poetry run uvicorn server.app:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT &
 SERVER_PID=$!
 npm --prefix app start &
 CLIENT_PID=$!

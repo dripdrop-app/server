@@ -5,11 +5,12 @@ RUN apt-get -y update && \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 RUN pip install -U pip
+RUN pip install poetry
 RUN npm install -g npm
 RUN mkdir -p /src
 COPY . /src
 WORKDIR /src
-RUN pip install -r requirements.txt
+RUN poetry install
 RUN npm --prefix app install
 RUN npm --prefix app run build && mv app/build .
 RUN chmod +x ./scripts/web.sh

@@ -2,7 +2,10 @@ FROM python:3.10
 RUN apt-get -y update && \
     apt-get -y upgrade && \
     apt-get install -y ffmpeg
+RUN pip install -U pip
+RUN pip install poetry
 RUN mkdir -p /src
-ADD ./requirements.txt /src/requirements.txt
+ADD ./poetry.lock /src/poetry.
+ADD ./pyproject.toml /src/pyproject.toml
 WORKDIR /src
-RUN pip install -r requirements.txt
+RUN poetry install
