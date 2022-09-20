@@ -216,7 +216,8 @@ async def get_youtube_video_categories(
         .distinct(YoutubeVideoCategories.id)
     )
     categories = [
-        YoutubeVideoCategoryResponse.parse_obj(row) for row in await db.fetch_all(query)
+        YoutubeVideoCategoryResponse.parse_obj(row)
+        async for row in await db.iterate(query)
     ]
     return YoutubeResponses.VideoCategories(categories=categories).dict(by_alias=True)
 

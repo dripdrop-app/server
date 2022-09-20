@@ -13,6 +13,7 @@ from asgiref.sync import sync_to_async
 from fastapi import (
     FastAPI,
     Query,
+    Path,
     Response,
     UploadFile,
     WebSocket,
@@ -64,12 +65,18 @@ async def get_tags(file: UploadFile = File(...)):
     return tags.dict(by_alias=True)
 
 
-@app.get("/jobs", response_model=MusicResponses.AllJobs)
-async def get_jobs(user: User = Depends(get_authenticated_user)):
+@app.get("/jobs/{page}/{per_page}", response_model=MusicResponses.AllJobs)
+async def get_jobs(
+    page: int = Path(..., ge=1),
+    per_page: int = Path(..., le=50, gt=0),
+    user: User = Depends(get_authenticated_user),
+):
     query = (
         select(MusicJobs)
         .where(MusicJobs.user_email == user.email)
         .order_by(MusicJobs.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
     )
     jobs = [MusicJob.parse_obj(row) for row in await db.fetch_all(query)]
     return MusicResponses.AllJobs(jobs=jobs).dict(by_alias=True)

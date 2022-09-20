@@ -8,7 +8,8 @@ RUN pip install -U pip
 RUN pip install poetry
 RUN npm install -g npm
 RUN mkdir -p /src
-COPY ./poetry.lock /src/poetry.
+COPY ./poetry.lock /src/poetry.lock
 COPY ./pyproject.toml /src/pyproject.toml
 WORKDIR /src
-RUN poetry install
+RUN poetry export -f requirements.txt --output requirements.txt
+RUN pip install -r requirements.txt

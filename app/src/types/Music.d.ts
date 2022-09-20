@@ -14,6 +14,7 @@ declare global {
 		failed: boolean;
 		createdAt: string;
 	}
+
 	interface MusicFormState {
 		fileType: keyof typeof FILE_TYPE;
 		youtubeUrl: string;

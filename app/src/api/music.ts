@@ -24,8 +24,8 @@ const musicApi = api.injectEndpoints({
 			},
 			providesTags: ['MusicTags'],
 		}),
-		jobs: build.query<JobsResponse, {}>({
-			query: () => '/music/jobs',
+		jobs: build.query<JobsResponse, PageBody>({
+			query: ({ page, perPage }) => `/music/jobs/${page}/${perPage}`,
 			onCacheEntryAdded: async (arg, { cacheDataLoaded, cacheEntryRemoved, dispatch }) => {
 				const url = buildWebsocketURL('/music/jobs/listen');
 				const ws = new WebSocket(url);
@@ -34,15 +34,17 @@ const musicApi = api.injectEndpoints({
 					const jobs = response.data.jobs;
 					dispatch(addJobs(jobs));
 
-					ws.onmessage = (event) => {
-						const json = JSON.parse(event.data);
-						const type = json.type;
-						if (type === 'STARTED') {
-							dispatch(addJob(json.job));
-						} else if (type === 'COMPLETED') {
-							dispatch(updateJob(json.job));
-						}
-					};
+					if (arg.page === 1) {
+						ws.onmessage = (event) => {
+							const json = JSON.parse(event.data);
+							const type = json.type;
+							if (type === 'STARTED') {
+								dispatch(addJob(json.job));
+							} else if (type === 'COMPLETED') {
+								dispatch(updateJob(json.job));
+							}
+						};
+					}
 				} finally {
 					await cacheEntryRemoved;
 					ws.close();
