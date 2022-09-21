@@ -38,7 +38,7 @@ const JobList = () => {
 				))}
 			</Grid>
 		);
-	}, [jobs.length, jobsStatus.isFetching, jobsStatus.isLoading, jobs]);
+	}, [jobsStatus.isFetching, jobsStatus.isLoading, jobs]);
 
 	const JobsDisplay = useMemo(
 		() => (
@@ -51,7 +51,7 @@ const JobList = () => {
 				</Stack>
 			</Stack>
 		),
-		[Jobs, jobsStatus.isFetching, jobsStatus.isLoading, page]
+		[Jobs, jobsStatus.isFetching, jobsStatus.isLoading, page, jobs.length, perPage]
 	);
 
 	return useMemo(
