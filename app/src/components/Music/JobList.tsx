@@ -6,8 +6,9 @@ import { useSelector } from 'react-redux';
 
 const JobList = () => {
 	const [page, setPage] = useState(1);
+	const [perPage] = useState(4);
 
-	const jobsStatus = useJobsQuery({ page, perPage: 5 }, { refetchOnReconnect: true });
+	const jobsStatus = useJobsQuery({ page, perPage }, { refetchOnReconnect: true });
 
 	const jobs = useSelector((state: RootState) => {
 		const jobIDs = state.music.jobs.ids;
@@ -44,9 +45,9 @@ const JobList = () => {
 			<Stack paddingY={5} spacing={2}>
 				{Jobs}
 				<Stack direction="row" justifyContent="center">
-					<Button disabled={page === 1}>Prev</Button>
+					<Button disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
 					<Button>{page}</Button>
-					<Button disabled={jobs.length !== 5}>Next</Button>
+					<Button disabled={jobs.length !== perPage} onClick={() => setPage(page + 1)}>Next</Button>
 				</Stack>
 			</Stack>
 		),
