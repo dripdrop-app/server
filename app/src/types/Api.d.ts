@@ -31,6 +31,7 @@ declare global {
 
 	interface JobsResponse {
 		jobs: Job[];
+		totalPages: number;
 	}
 
 	interface GroupingResponse {

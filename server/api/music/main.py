@@ -32,7 +32,7 @@ from server.redis import (
     create_websocket_redis_channel_listener,
 )
 from server.rq import queue
-from sqlalchemy import select, insert, delete, update
+from sqlalchemy import select, insert, delete, update, func
 
 
 app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
@@ -78,8 +78,17 @@ async def get_jobs(
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
+    count_query = select(func.count(MusicJobs.id)).where(
+        MusicJobs.user_email == user.email
+    )
+    count = await db.fetch_val(count_query)
+    total_pages = count // per_page + 1
+    if count % per_page == 0:
+        total_pages -= 1
     jobs = [MusicJob.parse_obj(row) for row in await db.fetch_all(query)]
-    return MusicResponses.AllJobs(jobs=jobs).dict(by_alias=True)
+    return MusicResponses.AllJobs(jobs=jobs, total_pages=total_pages).dict(
+        by_alias=True
+    )
 
 
 @app.websocket("/jobs/listen")

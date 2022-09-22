@@ -1,6 +1,5 @@
 import api from '.';
 import { buildWebsocketURL } from '../config';
-import { addJob, addJobs, removeJob, updateJob } from '../state/music';
 
 const musicApi = api.injectEndpoints({
 	endpoints: (build) => ({
@@ -26,29 +25,31 @@ const musicApi = api.injectEndpoints({
 		}),
 		jobs: build.query<JobsResponse, PageBody>({
 			query: ({ page, perPage }) => `/music/jobs/${page}/${perPage}`,
-			onCacheEntryAdded: async (arg, { cacheDataLoaded, cacheEntryRemoved, dispatch }) => {
+			onCacheEntryAdded: async (args, { cacheDataLoaded, cacheEntryRemoved, dispatch }) => {
 				const url = buildWebsocketURL('/music/jobs/listen');
 				const ws = new WebSocket(url);
 				try {
-					const response = await cacheDataLoaded;
-					const jobs = response.data.jobs;
-					dispatch(addJobs(jobs));
-
-					if (arg.page === 1) {
-						ws.onmessage = (event) => {
-							const json = JSON.parse(event.data);
-							const type = json.type;
-							if (type === 'STARTED') {
-								dispatch(addJob(json.job));
-							} else if (type === 'COMPLETED') {
-								dispatch(updateJob(json.job));
-							}
-						};
-					}
+					await cacheDataLoaded;
+					ws.onmessage = (event) => {
+						const json = JSON.parse(event.data);
+						const type = json.type;
+						if (type === 'STARTED') {
+							dispatch(musicApi.util.invalidateTags(['MusicJob']));
+						} else if (type === 'COMPLETED') {
+							dispatch(musicApi.util.invalidateTags([{ type: 'MusicJob', id: json.job.id }]));
+						}
+					};
 				} finally {
 					await cacheEntryRemoved;
 					ws.close();
 				}
+			},
+			providesTags: (result) => {
+				if (result) {
+					const { jobs } = result;
+					return jobs.map((job) => ({ type: 'MusicJob', id: job.id }));
+				}
+				return [];
 			},
 		}),
 		removeJob: build.mutation<undefined, string>({
@@ -56,11 +57,11 @@ const musicApi = api.injectEndpoints({
 				url: `/music/jobs/delete/${jobID}`,
 				method: 'DELETE',
 			}),
-			onQueryStarted: async (jobID, { queryFulfilled, dispatch }) => {
-				try {
-					await queryFulfilled;
-					dispatch(removeJob(jobID));
-				} catch {}
+			invalidatesTags: (result, error, jobID) => {
+				if (!error) {
+					return [{ type: 'MusicJob', id: jobID }];
+				}
+				return [];
 			},
 		}),
 		downloadJob: build.query<DownloadResponse, string>({

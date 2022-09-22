@@ -2,18 +2,17 @@ import { useMemo, useState } from 'react';
 import { CircularProgress, Stack, Typography, Grid, Button } from '@mui/material';
 import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
-import { useSelector } from 'react-redux';
 
 const JobList = () => {
 	const [page, setPage] = useState(1);
 	const [perPage] = useState(4);
 
-	const jobsStatus = useJobsQuery({ page, perPage }, { refetchOnReconnect: true });
+	const jobsStatus = useJobsQuery({ page, perPage });
 
-	const jobs = useSelector((state: RootState) => {
-		const jobIDs = state.music.jobs.ids;
-		return jobIDs.map((id) => state.music.jobs.entities[id]) as Job[];
-	});
+	const jobs = useMemo(() => jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.jobs
+		: [], [jobsStatus.isSuccess, jobsStatus.currentData])
+
+	const totalPages = useMemo(() => jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.totalPages : 0, [jobsStatus.isSuccess, jobsStatus.currentData]);
 
 	const Jobs = useMemo(() => {
 		if (jobsStatus.isFetching || jobsStatus.isLoading) {
@@ -47,7 +46,7 @@ const JobList = () => {
 				<Stack direction="row" justifyContent="center">
 					<Button disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
 					<Button>{page}</Button>
-					<Button disabled={jobs.length !== perPage} onClick={() => setPage(page + 1)}>Next</Button>
+					<Button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
 				</Stack>
 			</Stack>
 		),

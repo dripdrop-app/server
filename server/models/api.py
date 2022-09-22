@@ -66,6 +66,7 @@ class MusicResponses:
 
     class AllJobs(ResponseBaseModel):
         jobs: List[MusicJobResponse]
+        total_pages: int
 
     class JobUpdate(ResponseBaseModel):
         type: Literal["COMPLETED", "STARTED"]
