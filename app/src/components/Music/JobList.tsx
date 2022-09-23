@@ -50,7 +50,7 @@ const JobList = () => {
 				</Stack>
 			</Stack>
 		),
-		[Jobs, jobsStatus.isFetching, jobsStatus.isLoading, page, jobs.length, perPage]
+		[Jobs, page, totalPages]
 	);
 
 	return useMemo(
