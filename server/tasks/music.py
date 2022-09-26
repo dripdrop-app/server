@@ -214,6 +214,6 @@ async def clean_job(job: MusicJob, db: Database = None):
 async def cleanup_jobs(db: Database = None):
     limit = datetime.now(timezone.utc) - timedelta(days=14)
     query = select(MusicJobs).where(MusicJobs.created_at < limit)
-    async for row in await db.iterate(query):
+    async for row in db.iterate(query):
         job = MusicJob.parse_obj(row)
         queue.enqueue(clean_job, job)
