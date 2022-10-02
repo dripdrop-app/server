@@ -13,10 +13,10 @@ jobs:
           name: Create Server App Directory
           command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "mkdir -p ~/build"
       - run:
-          name: 'Copy Client to Server'
+          name: Copy Client to Server
           command: 'scp -vr ./app/build $SSH_USER@$SSH_HOST:~'
       - run:
-          name: Copy Deploy Script to Server'
+          name: Copy Deploy Script to Server
           command: scp -v ./scripts/deploy.sh $SSH_USER@$SSH_HOST:~
       - run:
           name: Deploy Over SSH

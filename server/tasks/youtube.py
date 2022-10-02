@@ -117,9 +117,9 @@ async def update_channels(channels: list, db: Database):
             channel_id = channel_info["id"]
             channel_thumbnail = channel_info["snippet"]["thumbnails"]["high"]["url"]
             query = (
-                update(YoutubeChannel)
+                update(YoutubeChannels)
                 .values(thumbnail=channel_thumbnail)
-                .where(YoutubeChannel.id == channel_id)
+                .where(YoutubeChannels.id == channel_id)
             )
             await db.execute(query)
         except Exception:
