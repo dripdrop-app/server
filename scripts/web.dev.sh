@@ -1,7 +1,7 @@
 #!/bin/bash
 
-poetry run alembic upgrade head
-npm --prefix app install
+poetry run alembic upgrade head || exit
+npm --prefix app install || exit
 
 poetry run uvicorn server.app:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT &
 SERVER_PID=$!

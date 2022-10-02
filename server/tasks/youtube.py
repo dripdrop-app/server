@@ -125,7 +125,7 @@ async def update_channels(channels: list, db: Database):
         except Exception:
             logging.exception(traceback.format_exc())
 
-    get_channels_info = await sync_to_async(google_api.get_channels_info(channels))
+    get_channels_info = sync_to_async(google_api.get_channels_info)
     channels_info = await get_channels_info(channels)
     await asyncio.gather(
         *[update_channel(channel_info) for channel_info in channels_info]

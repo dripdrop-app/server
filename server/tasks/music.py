@@ -48,7 +48,9 @@ async def retrieve_audio_file(job: MusicJob):
         f = open(file_path, "wb")
         f.write(res.content)
         f.close()
-        boto3.delete_file(bucket=boto3.S3_MUSIC_BUCKET, filename=job.filename)
+        boto3.delete_file(
+            bucket=boto3.S3_MUSIC_BUCKET, filename=f"{job.id}/{job.filename}"
+        )
         file_path = os.path.join(job_path, filename)
         new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
         AudioSegment.from_file(file_path).export(
@@ -74,7 +76,9 @@ async def retrieve_artwork(job: MusicJob):
                 artwork_url = boto3.resolve_artwork_url(artwork_url)
             imageData = imgdl.download_image(artwork_url)
             extension = artwork_url.split(".")[-1]
-            boto3.delete_file(bucket=boto3.S3_ARTWORK_BUCKET, filename=artwork_url)
+            boto3.delete_file(
+                bucket=boto3.S3_ARTWORK_BUCKET, filename=f"{job.id}/{artwork_url}"
+            )
             return {"image": imageData, "extension": extension}
         except Exception:
             logging.exception(traceback.format_exc())
@@ -199,13 +203,15 @@ def read_tags(file: Union[str, bytes, None], filename):
 async def clean_job(job: MusicJob, db: Database = None):
     try:
         delete_file = sync_to_async(boto3.delete_file)
-        await delete_file(
-            boto3.S3_ARTWORK_BUCKET, boto3.resolve_artwork_url(job.artwork_url)
-        )
-        await delete_file(boto3.S3_MUSIC_BUCKET, boto3.resolve_music_url(job.filename))
+        await delete_file(boto3.S3_ARTWORK_BUCKET, boto3.resolve_artwork_url(job.id))
+        await delete_file(boto3.S3_MUSIC_BUCKET, boto3.resolve_music_url(job.id))
     except Exception:
         logging.exception(traceback.format_exc())
-    query = update(MusicJobs).where(MusicJobs.id == job.id).values(failed=True)
+    query = (
+        update(MusicJobs)
+        .where(MusicJobs.id == job.id)
+        .values(failed=True, completed=False)
+    )
     await db.execute(query)
 
 

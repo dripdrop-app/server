@@ -28,21 +28,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    user: root
-    restart: always
-    volumes:
-      - ./data/pgadmin:/var/lib/pgadmin
-    env_file: .env
-
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@dripdrop.icu
-      PGADMIN_DEFAULT_PASSWORD: $POSTGRES_PASSWORD
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
       - 8000:80
   postgres:
