@@ -2,8 +2,7 @@
 
 [ ! -d $HOME/dripdrop ] || git clone https://github.com/MohamedRaffik/dripdrop
 cd $HOME/dripdrop
-git checkout master
-git pull origin
+git pull --rebase
 mkdir -p build
 \cp -r $HOME/build $HOME/dripdrop
 \cp $HOME/.env .

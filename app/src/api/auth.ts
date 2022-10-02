@@ -1,8 +1,8 @@
-import api, {tags} from '.';
+import api, { tags } from '.';
 
 const authApi = api.injectEndpoints({
-    endpoints: (build) => ({
-        checkSession: build.query<User, void>({
+	endpoints: (build) => ({
+		checkSession: build.query<User, void>({
 			query: () => ({
 				url: '/auth/session',
 			}),
@@ -22,8 +22,8 @@ const authApi = api.injectEndpoints({
 			}),
 			invalidatesTags: (result, error) => (!error ? tags : []),
 		}),
-    })
-})
+	}),
+});
 
 export default authApi;
 export const { useCheckSessionQuery, useLoginOrCreateMutation, useLogoutMutation } = authApi;

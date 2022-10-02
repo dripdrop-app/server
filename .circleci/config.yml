@@ -1,32 +1,32 @@
 version: 2
 
 jobs:
-    build and deploy:
-      docker:
-        - image: node
-      steps:
-          - checkout
-          - run:
-              name: Install client dependencies and build
-              command: npm --prefix app install && NODE_ENV=production npm --prefix app run build
-          - run:
-              name: Create server app directory
-              command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "mkdir -p ~/build"
-          - run:
-              name: 'Copy client to server'
-              command: 'scp -vr ./app/build $SSH_USER@$SSH_HOST:~'
-          - run:
-              name: Copy deploy script to server'
-              command: scp -v ./scripts/deploy.sh $SSH_USER@$SSH_HOST:~
-          - run:
-              name: Deploy Over SSH
-              command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "chmod +x ./deploy.sh && ./deploy.sh"
+  build and deploy:
+    docker:
+      - image: node
+    steps:
+      - checkout
+      - run:
+          name: Install Client Dependencies and Build
+          command: npm --prefix app install && NODE_ENV=production npm --prefix app run build
+      - run:
+          name: Create Server App Directory
+          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "mkdir -p ~/build"
+      - run:
+          name: 'Copy Client to Server'
+          command: 'scp -vr ./app/build $SSH_USER@$SSH_HOST:~'
+      - run:
+          name: Copy Deploy Script to Server'
+          command: scp -v ./scripts/deploy.sh $SSH_USER@$SSH_HOST:~
+      - run:
+          name: Deploy Over SSH
+          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "chmod +x ./deploy.sh && ./deploy.sh"
 
 workflows:
-    version: 2
-    deploy:
-      jobs:
-          - build and deploy:
-              filters:
-                branches:
-                  only: main # only deploy on the main branch
+  version: 2
+  deploy:
+    jobs:
+      - build and deploy:
+          filters:
+            branches:
+              only: main # only deploy on the main branch
