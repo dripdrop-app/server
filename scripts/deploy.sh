@@ -2,9 +2,8 @@
 
 [ ! -d $HOME/dripdrop ] || git clone https://github.com/MohamedRaffik/dripdrop
 cd $HOME/dripdrop
-git reset --hard HEAD
-git config pull.ff only       
-git pull
+git checkout master
+git pull origin
 mkdir -p build
 \cp -r $HOME/build $HOME/dripdrop
 \cp $HOME/.env .
