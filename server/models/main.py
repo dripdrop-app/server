@@ -1,11 +1,11 @@
 import databases
 import re
-import server.utils.boto3 as boto3
 import sqlalchemy
 from datetime import datetime
 from pydantic import BaseModel, SecretStr
 from sqlalchemy.ext.declarative import declarative_base
 from server.config import config
+from server.services.boto3 import boto3_service
 from typing import Optional
 
 
@@ -117,11 +117,15 @@ class MusicJob(BaseModel):
         if data.get("artwork_url") and not re.search(
             "^http(s)?://", data["artwork_url"]
         ):
-            self.artwork_url = boto3.resolve_artwork_url(data["artwork_url"])
+            self.artwork_url = boto3_service.resolve_artwork_url(
+                filename=data["artwork_url"]
+            )
         if data.get("download_url") and not re.search(
             "^http(s)?://", data["download_url"]
         ):
-            self.download_url = boto3.resolve_music_url(data["download_url"])
+            self.download_url = boto3_service.resolve_music_url(
+                filename=data["download_url"]
+            )
 
 
 class GoogleAccounts(Base):

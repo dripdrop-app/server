@@ -4,10 +4,6 @@ import logging
 import re
 import requests
 import traceback
-import server.tasks.music as music_tasks
-import server.utils.boto3 as boto3
-import server.utils.imgdl as imgdl
-import server.utils.mp3dl as mp3dl
 import uuid
 from asgiref.sync import sync_to_async
 from fastapi import (
@@ -24,48 +20,52 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from server.dependencies import get_authenticated_user
-from server.models.main import db, MusicJobs, User, MusicJob
 from server.models.api import MusicResponses, RedisResponses, youtube_regex
-from server.redis import (
+from server.models.main import db, MusicJobs, User, MusicJob
+from server.services.boto3 import boto3_service, Boto3Service
+from server.services.image_downloader import image_downloader_service
+from server.services.redis import (
     redis,
     RedisChannels,
-    create_websocket_redis_channel_listener,
+    redis_service,
 )
-from server.rq import queue
+from server.services.rq import queue
+from server.services.youtube_downloader import youtuber_downloader_service
+from server.tasks.music import music_tasker
 from sqlalchemy import select, insert, delete, update, func
 
 
-app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
+music_app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
 
 
-@app.get("/grouping", response_model=MusicResponses.Grouping)
+@music_app.get("/grouping", response_model=MusicResponses.Grouping)
 async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     try:
-        extract_info = sync_to_async(mp3dl.extract_info)
-        uploader = await extract_info(youtube_url)
+        extract_info = sync_to_async(youtuber_downloader_service.extract_info)
+        uploader = await extract_info(link=youtube_url)
         return MusicResponses.Grouping(grouping=uploader).dict(by_alias=True)
     except Exception:
         raise HTTPException(400)
 
 
-@app.get("/artwork", response_model=MusicResponses.ArtworkURL)
+@music_app.get("/artwork", response_model=MusicResponses.ArtworkURL)
 async def get_artwork(artwork_url: str = Query(...)):
     try:
-        download_image = sync_to_async(imgdl.download_image)
-        artwork_url = await download_image(artwork_url, False)
+        resolve_artwork = sync_to_async(image_downloader_service.resolve_artwork)
+        artwork_url = await resolve_artwork(artwork=artwork_url)
         return MusicResponses.ArtworkURL(artwork_url=artwork_url).dict(by_alias=True)
     except Exception:
         raise HTTPException(400)
 
 
-@app.post("/tags", response_model=MusicResponses.Tags)
+@music_app.post("/tags", response_model=MusicResponses.Tags)
 async def get_tags(file: UploadFile = File(...)):
-    read_tags = sync_to_async(music_tasks.read_tags)
-    tags = await read_tags(await file.read(), file.filename)
+    read_tags = sync_to_async(music_tasker.read_tags)
+    tags = await read_tags(file=await file.read(), filename=file.filename)
     return tags.dict(by_alias=True)
 
 
-@app.get("/jobs/{page}/{per_page}", response_model=MusicResponses.AllJobs)
+@music_app.get("/jobs/{page}/{per_page}", response_model=MusicResponses.AllJobs)
 async def get_jobs(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
@@ -91,7 +91,7 @@ async def get_jobs(
     )
 
 
-@app.websocket("/jobs/listen")
+@music_app.websocket("/jobs/listen")
 async def listen_jobs(
     websocket: WebSocket, user: User = Depends(get_authenticated_user)
 ):
@@ -120,31 +120,31 @@ async def listen_jobs(
         return
 
     await websocket.accept()
-    await create_websocket_redis_channel_listener(
+    await redis_service.create_websocket_redis_channel_listener(
         websocket=websocket, channel=RedisChannels.MUSIC_JOB_CHANNEL, handler=handler
     )
 
 
-async def handle_artwork_url(job_id: str, artwork_url: str):
+async def handle_artwork_url(job_id: str = ..., artwork_url: str = ...):
     is_base64 = re.search("^data:image/", artwork_url)
     if is_base64:
         extension = artwork_url.split(";")[0].split("/")[1]
         dataString = ",".join(artwork_url.split(",")[1:])
         data = dataString.encode()
         data_bytes = base64.b64decode(data)
-        artwork_filename = f"{job_id}_artwork.{extension}"
-        upload_file = sync_to_async(boto3.upload_file)
+        artwork_filename = f"{job_id}/artwork.{extension}"
+        upload_file = sync_to_async(boto3_service.upload_file)
         await upload_file(
-            bucket=boto3.S3_ARTWORK_BUCKET,
+            bucket=Boto3Service.S3_ARTWORK_BUCKET,
             filename=artwork_filename,
             body=data_bytes,
             content_type=f"image/{extension}",
         )
-        artwork_url = artwork_filename
+        artwork_url = f"artwork.{extension}"
     return artwork_url
 
 
-@app.post("/jobs/create/youtube", status_code=202)
+@music_app.post("/jobs/create/youtube", status_code=202)
 async def create_job_from_youtube(
     youtubeUrl: str = Form(..., regex=youtube_regex),
     artworkUrl: str = Form(None),
@@ -159,7 +159,7 @@ async def create_job_from_youtube(
         id=job_id,
         youtube_url=youtubeUrl,
         download_url=None,
-        artwork_url=await handle_artwork_url(job_id, artworkUrl),
+        artwork_url=await handle_artwork_url(job_id=job_id, artwork_url=artworkUrl),
         title=title,
         artist=artist,
         album=album,
@@ -170,7 +170,7 @@ async def create_job_from_youtube(
         user_email=user.email,
     )
     await db.execute(query)
-    queue.enqueue(music_tasks.run_job, job_id)
+    queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),
@@ -178,7 +178,7 @@ async def create_job_from_youtube(
     return Response(None, 202)
 
 
-@app.post("/jobs/create/file", status_code=202)
+@music_app.post("/jobs/create/file", status_code=202)
 async def create_job_from_file(
     file: UploadFile = File(...),
     artworkUrl: str = Form(None),
@@ -189,12 +189,11 @@ async def create_job_from_file(
     user: User = Depends(get_authenticated_user),
 ):
     job_id = str(uuid.uuid4())
-    filename = f"{job_id}/{file.filename}"
     try:
-        upload_file = sync_to_async(boto3.upload_file)
+        upload_file = sync_to_async(boto3_service.upload_file)
         await upload_file(
-            bucket=boto3.S3_MUSIC_BUCKET,
-            filename=filename,
+            bucket=Boto3Service.S3_MUSIC_BUCKET,
+            filename=f"{job_id}/{file.filename}",
             body=await file.read(),
             content_type=file.content_type,
         )
@@ -210,13 +209,13 @@ async def create_job_from_file(
         artist=artist,
         album=album,
         grouping=grouping,
-        filename=filename,
+        filename=file.filename,
         completed=False,
         failed=False,
         user_email=user.email,
     )
     await db.execute(query)
-    queue.enqueue(music_tasks.run_job, job_id)
+    queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),
@@ -224,7 +223,7 @@ async def create_job_from_file(
     return Response(None, 202)
 
 
-@app.delete("/jobs/delete/{job_id}")
+@music_app.delete("/jobs/delete/{job_id}")
 async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = await db.fetch_one(query)
@@ -236,15 +235,15 @@ async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
     )
     await db.execute(query)
     try:
-        delete_file = sync_to_async(boto3.delete_file)
-        await delete_file(bucket=boto3.S3_ARTWORK_BUCKET, filename=job.artwork_url)
-        await delete_file(bucket=boto3.S3_MUSIC_BUCKET, filename=job.filename)
+        delete_file = sync_to_async(boto3_service.delete_file)
+        await delete_file(bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=job.id)
+        await delete_file(bucket=Boto3Service.S3_MUSIC_BUCKET, filename=job.id)
     except Exception:
         logging.exception(traceback.format_exc())
     return Response(None)
 
 
-@app.get("/jobs/download/{job_id}", response_model=MusicResponses.Download)
+@music_app.get("/jobs/download/{job_id}", response_model=MusicResponses.Download)
 async def download_job(job_id: str, user: User = Depends(get_authenticated_user)):
     query = select(MusicJobs).where(MusicJobs.id == job_id)
     job = await db.fetch_one(query)

@@ -3,13 +3,12 @@ from asgiref.sync import sync_to_async
 from fastapi import APIRouter, FastAPI, Depends, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from server.api.auth.main import app as auth_app
-from server.api.music.main import app as music_app
-from server.api.youtube.main import app as youtube_app
-from server.cron import cron_start, cron_end, run_crons
+from server.api.auth.main import auth_app
+from server.api.music.main import music_app
+from server.api.youtube.main import youtube_app
 from server.dependencies import get_admin_user, get_user
 from server.models.main import db
-
+from server.services.cron import cron_service
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_app.router, prefix="/auth")
@@ -18,8 +17,8 @@ api_router.include_router(youtube_app.router, prefix="/youtube")
 
 app = FastAPI(
     title="DripDrop",
-    on_startup=[db.connect, cron_start],
-    on_shutdown=[cron_end, db.disconnect],
+    on_startup=[db.connect, cron_service.cron_start],
+    on_shutdown=[cron_service.cron_end, db.disconnect],
     responses={400: {}},
     dependencies=[Depends(get_user)],
     routes=api_router.routes,
@@ -38,8 +37,8 @@ app.mount(
 
 @app.get("/cron/run", dependencies=[Depends(get_admin_user)], responses={403: {}})
 async def run_cronjobs():
-    run_crons_async = sync_to_async(run_crons)
-    await run_crons_async()
+    run_crons = sync_to_async(cron_service.run_crons)
+    await run_crons()
     return Response(None, 200)
 
 

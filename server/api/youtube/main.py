@@ -1,12 +1,17 @@
 import asyncio
 import logging
-import server.utils.google_api as google_api
 from asgiref.sync import sync_to_async
 from asyncpg import UniqueViolationError
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response, Request
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from server.config import config
 from server.dependencies import get_authenticated_user, get_google_user
+from server.models.api import (
+    YoutubeResponses,
+    YoutubeSubscriptionResponse,
+    YoutubeVideoCategoryResponse,
+    YoutubeVideoResponse,
+)
 from server.models.main import (
     db,
     YoutubeVideoWatches,
@@ -24,22 +29,15 @@ from server.models.main import (
     YoutubeVideoCategories,
     User,
 )
-from server.models.api import (
-    YoutubeResponses,
-    YoutubeSubscriptionResponse,
-    YoutubeVideoCategoryResponse,
-    YoutubeVideoResponse,
-)
-from server.rq import queue
-from server.tasks.youtube import (
-    update_google_access_token,
-    update_user_youtube_subscriptions_job,
-    update_youtube_video_categories,
-)
+from server.services.google_api import google_api_service
+from server.services.rq import queue
+from server.tasks.youtube import youtube_tasker
 from sqlalchemy import insert, select, update, delete
 from typing import List
 
-app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
+youtube_app = FastAPI(
+    dependencies=[Depends(get_authenticated_user)], responses={401: {}}
+)
 
 
 async def get_related_info_for_video(
@@ -96,7 +94,7 @@ async def get_related_info_for_video(
     return YoutubeVideoResponse.parse_obj(row)
 
 
-@app.get(
+@youtube_app.get(
     "/googleoauth2", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
 )
 async def google_oauth2(
@@ -112,10 +110,10 @@ async def google_oauth2(
     user = await db.fetch_one(query)
     if not user:
         return RedirectResponse("/")
-    get_oauth_tokens = sync_to_async(google_api.get_oauth_tokens)
+    get_oauth_tokens = sync_to_async(google_api_service.get_oauth_tokens)
     tokens = await get_oauth_tokens(f"{request.base_url}api/youtube/googleoauth2", code)
     if tokens:
-        get_user_email = sync_to_async(google_api.get_user_email)
+        get_user_email = sync_to_async(google_api_service.get_user_email)
         google_email = await get_user_email(tokens.get("access_token"))
         if google_email:
             try:
@@ -140,9 +138,11 @@ async def google_oauth2(
                 await db.execute(query)
             except Exception:
                 return RedirectResponse("/youtube/videos")
-            job = queue.enqueue(update_youtube_video_categories, False)
-            queue.enqueue_call(
-                update_user_youtube_subscriptions_job,
+            job = queue.enqueue(
+                youtube_tasker.update_youtube_video_categories, args=(False,)
+            )
+            queue.enqueue(
+                youtube_tasker.update_user_youtube_subscriptions_job,
                 args=(email,),
                 depends_on=job,
             )
@@ -151,13 +151,15 @@ async def google_oauth2(
     return RedirectResponse("/youtube/videos")
 
 
-@app.get("/account", response_model=YoutubeResponses.Account)
+@youtube_app.get("/account", response_model=YoutubeResponses.Account)
 async def get_youtube_account(
     google_account: GoogleAccount = Depends(get_google_user),
 ):
     access_token = google_account.access_token
     if config.env == "production":
-        new_access_token = await update_google_access_token(google_account.email, db=db)
+        new_access_token = await youtube_tasker.update_google_access_token(
+            google_account.email, db=db
+        )
         if new_access_token != access_token:
             access_token = new_access_token
             query = (
@@ -173,17 +175,17 @@ async def get_youtube_account(
     ).dict(by_alias=True)
 
 
-@app.get("/oauth", response_class=PlainTextResponse)
+@youtube_app.get("/oauth", response_class=PlainTextResponse)
 async def create_oauth_link(
     request: Request, user: User = Depends(get_authenticated_user)
 ):
-    oauth = google_api.create_oauth_url(
+    oauth = google_api_service.create_oauth_url(
         f"{request.base_url}api/youtube/googleoauth2", user.email
     )
     return PlainTextResponse(oauth["url"])
 
 
-@app.get("/videos/categories", response_model=YoutubeResponses.VideoCategories)
+@youtube_app.get("/videos/categories", response_model=YoutubeResponses.VideoCategories)
 async def get_youtube_video_categories(
     google_account: GoogleAccount = Depends(get_google_user),
     channel_id: str = Query(None),
@@ -221,7 +223,7 @@ async def get_youtube_video_categories(
     return YoutubeResponses.VideoCategories(categories=categories).dict(by_alias=True)
 
 
-@app.get("/videos/{page}/{per_page}", response_model=YoutubeResponses.Videos)
+@youtube_app.get("/videos/{page}/{per_page}", response_model=YoutubeResponses.Videos)
 async def get_youtube_videos(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
@@ -301,7 +303,7 @@ async def get_youtube_videos(
     return YoutubeResponses.Videos(videos=videos).dict(by_alias=True)
 
 
-@app.put("/videos/watch")
+@youtube_app.put("/videos/watch")
 async def add_youtube_video_watch(
     video_id: str = Query(...), google_account: GoogleAccount = Depends(get_google_user)
 ):
@@ -316,7 +318,7 @@ async def add_youtube_video_watch(
     return Response(None, 200)
 
 
-@app.put("/videos/like")
+@youtube_app.put("/videos/like")
 async def add_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -332,7 +334,7 @@ async def add_youtube_video_like(
     return Response(None, 200)
 
 
-@app.delete("/videos/like")
+@youtube_app.delete("/videos/like")
 async def delete_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -345,7 +347,7 @@ async def delete_youtube_video_like(
     return Response(None, 200)
 
 
-@app.put("/videos/queue")
+@youtube_app.put("/videos/queue")
 async def add_youtube_video_queue(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -361,7 +363,7 @@ async def add_youtube_video_queue(
     return Response(None, 200)
 
 
-@app.delete("/videos/queue")
+@youtube_app.delete("/videos/queue")
 async def delete_youtube_video_queue(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -375,7 +377,7 @@ async def delete_youtube_video_queue(
     return Response(None, 200)
 
 
-@app.get("/videos/queue", response_model=YoutubeResponses.VideoQueue)
+@youtube_app.get("/videos/queue", response_model=YoutubeResponses.VideoQueue)
 async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -406,7 +408,7 @@ async def get_youtube_video_queue(
     ).dict(by_alias=True)
 
 
-@app.get(
+@youtube_app.get(
     "/video/{video_id}",
     dependencies=[Depends(get_google_user)],
     response_model=YoutubeResponses.Video,
@@ -457,7 +459,7 @@ async def get_youtube_video(
     ).dict(by_alias=True)
 
 
-@app.get(
+@youtube_app.get(
     "/subscriptions/{page}/{per_page}", response_model=YoutubeResponses.Subscriptions
 )
 async def get_youtube_subscriptions(
@@ -492,7 +494,7 @@ async def get_youtube_subscriptions(
     )
 
 
-@app.get("/channel/{channel_id}", response_model=YoutubeChannel)
+@youtube_app.get("/channel/{channel_id}", response_model=YoutubeChannel)
 async def get_youtube_channel(channel_id: str):
     query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
     channel = await db.fetch_one(query)

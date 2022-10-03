@@ -3,22 +3,23 @@ import uuid
 from fastapi import Body, FastAPI, Depends, Response, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
-from sqlalchemy.sql.expression import true
+from server.config import config
 from server.dependencies import SessionHandler, get_authenticated_user
 from server.models.api import AuthResponses
-from server.config import config
 from server.models.main import db, Users, Sessions, User
 from sqlalchemy import select, insert
 
-app = FastAPI()
+auth_app = FastAPI()
 
 
-@app.get("/session", response_model=AuthResponses.User, responses={401: {}})
+@auth_app.get("/session", response_model=AuthResponses.User, responses={401: {}})
 async def check_session(user: User = Depends(get_authenticated_user)):
     return AuthResponses.User(email=user.email, admin=user.admin).dict()
 
 
-@app.post("/login", response_model=AuthResponses.User, responses={401: {}, 404: {}})
+@auth_app.post(
+    "/login", response_model=AuthResponses.User, responses={401: {}, 404: {}}
+)
 async def login(email: str = Body(...), password: str = Body(...)):
     query = select(Users).where(Users.email == email)
     account = await db.fetch_one(query)
@@ -39,20 +40,22 @@ async def login(email: str = Body(...), password: str = Body(...)):
         await SessionHandler.encrypt({"id": session_id}),
         max_age=TWO_WEEKS_EXPIRATION,
         expires=TWO_WEEKS_EXPIRATION,
-        httponly=true,
+        httponly=True,
         secure=config.env == "production",
     )
     return response
 
 
-@app.get("/logout", dependencies=[Depends(get_authenticated_user)], responses={401: {}})
+@auth_app.get(
+    "/logout", dependencies=[Depends(get_authenticated_user)], responses={401: {}}
+)
 async def logout():
     response = Response(None, 200)
     response.set_cookie("session", max_age=-1, expires=-1)
     return response
 
 
-async def create_new_account(email: str, password: str):
+async def create_new_account(email: str = ..., password: str = ...):
     query = select(Users).where(Users.email == email)
     account = await db.fetch_one(query)
     if account:
@@ -66,9 +69,9 @@ async def create_new_account(email: str, password: str):
     await db.execute(query)
 
 
-@app.post("/create", response_model=AuthResponses.User, status_code=201)
+@auth_app.post("/create", response_model=AuthResponses.User, status_code=201)
 async def create_account(
     email: EmailStr = Body(...), password: str = Body(..., min_length=8)
 ):
-    await create_new_account(email, password)
+    await create_new_account(email=email, password=password)
     return AuthResponses.User(email=email, admin=False)
