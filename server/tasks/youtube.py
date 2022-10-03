@@ -305,7 +305,9 @@ async def delete_channel(channel_id: str, db: Database = None):
 @decorators.exception_handler
 async def channel_cleanup(db: Database = None):
     limit = datetime.now(timezone.utc) - timedelta(days=7)
-    query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
+    query = select(YoutubeChannels).where(
+        YoutubeChannels.last_updated < limit.timestamp()
+    )
     async for row in db.iterate(query):
         channel = YoutubeChannel.parse_obj(row)
         queue.enqueue(delete_channel, channel.id)
