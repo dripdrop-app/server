@@ -70,7 +70,7 @@ class YoutubeTasker:
             )
             await db.execute(query)
         except UniqueViolationError:
-            logging.exception(traceback.format_exc())
+            pass
 
     async def add_youtube_channel(self, channel: dict = ..., db: Database = ...):
         channel_id = channel["id"]
@@ -94,7 +94,7 @@ class YoutubeTasker:
                 at_front=True,
             )
         except UniqueViolationError:
-            logging.exception(traceback.format_exc())
+            pass
 
     async def add_youtube_video(self, video: dict = ..., db: Database = ...):
         video_id = video["id"]
@@ -115,7 +115,7 @@ class YoutubeTasker:
             )
             await db.execute(query)
         except UniqueViolationError:
-            logging.exception(traceback.format_exc())
+            pass
 
     @decorators.worker_task
     @decorators.exception_handler
