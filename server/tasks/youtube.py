@@ -111,6 +111,8 @@ async def add_youtube_video(video, db: Database):
         logging.exception(traceback.format_exc())
 
 
+@decorators.worker_task
+@decorators.exception_handler
 async def update_channels(channels: list, db: Database):
     async def update_channel(channel_info: dict):
         try:
@@ -274,10 +276,10 @@ async def update_active_channels(db: Database = None):
         )
         channels.append(subscription.channel_id)
         if len(channels) == 50:
-            await update_channels(channels, db)
+            queue.enqueue(update_channels, channels)
             channels = []
     if len(channels) > 0:
-        await update_channels(channels, db)
+        queue.enqueue(update_channels, channels)
 
 
 @decorators.worker_task
