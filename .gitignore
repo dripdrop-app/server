@@ -142,3 +142,4 @@ tags
 setup/*.pgsql
 
 data
+logs

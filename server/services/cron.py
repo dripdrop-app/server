@@ -13,9 +13,9 @@ scheduled_registry = ScheduledJobRegistry(queue=queue)
 
 
 class CronService:
-    def run_crons(self):
+    def run_cron_jobs(self):
         video_categories_job = queue.enqueue(
-            youtube_tasker.update_youtube_video_categories, args=(True,)
+            youtube_tasker.update_youtube_video_categories, kwargs={"cron": True}
         )
         active_channels_job = queue.enqueue(
             youtube_tasker.update_active_channels, depends_on=video_categories_job
@@ -28,7 +28,7 @@ class CronService:
         )
         queue.enqueue(music_tasker.cleanup_jobs, depends_on=channel_cleanup_job)
 
-    def cron_job(
+    def create_cron_job(
         self,
         cron_string: str = ...,
         function: Callable = ...,
@@ -47,13 +47,17 @@ class CronService:
             kwargs=kwargs,
         )
         queue.enqueue(
-            "server.cron.cron_job",
-            args=(cron_string, function),
-            kwargs={"args": args, "kwargs": kwargs},
+            self.create_cron_job,
+            kwargs={
+                "cron_string": cron_string,
+                "function": function,
+                "args": args,
+                "kwargs": kwargs,
+            },
             depends_on=job,
         )
 
-    async def cron_start(self):
+    async def start_cron_jobs(self):
         if config.env == "production":
             crons_added = await redis.get("crons_added")
             if not crons_added:
@@ -61,17 +65,17 @@ class CronService:
                 for job_id in scheduled_registry.get_job_ids():
                     logging.info(f"Removing Job: {job_id}")
                     scheduled_registry.remove(job_id, delete_job=True)
-                self.cron_job(
+                self.create_cron_job(
                     "0 0 * * *",
                     youtube_tasker.update_youtube_video_categories,
-                    args=(True,),
+                    kwargs={"cron": True},
                 )
-                self.cron_job("0 0 * * *", music_tasker.cleanup_jobs)
-                self.cron_job("0 1 * * *", youtube_tasker.update_active_channels)
-                self.cron_job("0 3 * * *", youtube_tasker.update_subscriptions)
-                self.cron_job("0 5 * * sun", youtube_tasker.channel_cleanup)
+                self.create_cron_job("0 0 * * *", music_tasker.cleanup_jobs)
+                self.create_cron_job("0 1 * * *", youtube_tasker.update_active_channels)
+                self.create_cron_job("0 3 * * *", youtube_tasker.update_subscriptions)
+                self.create_cron_job("0 5 * * sun", youtube_tasker.channel_cleanup)
 
-    async def cron_end(self):
+    async def end_cron_jobs(self):
         if config.env == "production":
             await redis.delete("crons_added")
 

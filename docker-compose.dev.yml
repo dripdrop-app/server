@@ -2,10 +2,12 @@ version: '2.4'
 name: dripdrop
 services:
   web:
+    platform: linux/amd64
     container_name: web
     restart: always
     volumes:
       - ./:/src
+      - ./data/web/logs:/src/logs
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.web
@@ -19,10 +21,12 @@ services:
       - $SERVER_PORT:$SERVER_PORT
       - $PORT:$PORT
   worker:
+    platform: linux/amd64
     container_name: worker
     restart: always
     volumes:
       - ./:/src
+      - ./data/worker/logs:/src/logs
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.worker

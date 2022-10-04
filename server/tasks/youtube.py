@@ -1,11 +1,11 @@
 import asyncio
 import dateutil.parser
-import logging
 import traceback
 from asgiref.sync import sync_to_async
 from asyncpg.exceptions import UniqueViolationError
 from databases import Database
 from datetime import datetime, timedelta, timezone
+from server.logger import logger
 from server.models.main import (
     GoogleAccount,
     YoutubeChannel,
@@ -131,7 +131,7 @@ class YoutubeTasker:
                 )
                 await db.execute(query)
             except Exception:
-                logging.exception(traceback.format_exc())
+                logger.exception(traceback.format_exc())
 
         get_channels_info = sync_to_async(google_api_service.get_channels_info)
         channels_info = await get_channels_info(channel_ids=channels)

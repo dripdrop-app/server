@@ -35,7 +35,7 @@ def upgrade():
     )
     op.create_table(
         "youtube_video_categories",
-        sa.Column("id", sa.Numeric(), nullable=False),
+        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column(
             "created_at",
@@ -90,7 +90,7 @@ def upgrade():
     op.create_table(
         "youtube_video_category",
         sa.Column("video_id", sa.String(), nullable=False),
-        sa.Column("category_id", sa.Numeric(), nullable=False),
+        sa.Column("category_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["category_id"],
             ["youtube_video_categories.id"],

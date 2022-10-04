@@ -17,8 +17,8 @@ api_router.include_router(youtube_app.router, prefix="/youtube")
 
 app = FastAPI(
     title="DripDrop",
-    on_startup=[db.connect, cron_service.cron_start],
-    on_shutdown=[cron_service.cron_end, db.disconnect],
+    on_startup=[db.connect, cron_service.start_cron_jobs],
+    on_shutdown=[cron_service.end_cron_jobs, db.disconnect],
     responses={400: {}},
     dependencies=[Depends(get_user)],
     routes=api_router.routes,
@@ -37,8 +37,8 @@ app.mount(
 
 @app.get("/cron/run", dependencies=[Depends(get_admin_user)], responses={403: {}})
 async def run_cronjobs():
-    run_crons = sync_to_async(cron_service.run_crons)
-    await run_crons()
+    run_cron_jobs = sync_to_async(cron_service.run_cron_jobs)
+    await run_cron_jobs()
     return Response(None, 200)
 
 
