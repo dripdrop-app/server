@@ -1,8 +1,8 @@
+import logging
 import traceback
 from asgiref.sync import sync_to_async
 from functools import wraps
 from inspect import iscoroutinefunction
-from server.logger import logger
 from server.models.main import init_db
 
 
@@ -16,7 +16,7 @@ class Decorators:
                     function = sync_to_async(function)
                 return await function(*args, **kwargs)
             except Exception:
-                logger.error(traceback.format_exc())
+                logging.error(traceback.format_exc())
                 return None
 
         return wrapper

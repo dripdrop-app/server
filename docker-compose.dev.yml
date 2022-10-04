@@ -30,7 +30,7 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.worker
-    entrypoint: poetry run rq worker --with-scheduler
+    entrypoint: watchfiles 'python worker.py' ./worker.py
     depends_on:
       postgres:
         condition: service_healthy
