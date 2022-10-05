@@ -1,6 +1,6 @@
-import logging
 import requests
 from server.config import config
+from server.logging import logger
 from typing import List
 from urllib import parse
 
@@ -55,7 +55,7 @@ class GoogleAPIService:
         )
         if response.ok:
             return response.json()
-        logging.warning(response.text)
+        logger.warning(response.text)
         return None
 
     def refresh_access_token(self, refresh_token: str = ...):
@@ -72,7 +72,7 @@ class GoogleAPIService:
         )
         if response.ok:
             return response.json()
-        logging.warning(response.text)
+        logger.warning(response.text)
         return None
 
     def get_user_email(self, access_token: str = ...):
@@ -86,7 +86,7 @@ class GoogleAPIService:
         if response.ok:
             json = response.json()
             return json.get("email")
-        logging.warning(response.text)
+        logger.warning(response.text)
         return None
 
     def get_video_categories(self):
@@ -103,7 +103,7 @@ class GoogleAPIService:
         if response.ok:
             json = response.json()
             return json.get("items", [])
-        logging.warning(response.text)
+        logger.warning(response.text)
         return []
 
     def get_user_subscriptions(self, access_token: str = ...):
@@ -125,7 +125,7 @@ class GoogleAPIService:
                 yield json.get("items")
                 params["pageToken"] = json.get("nextPageToken", None)
             else:
-                logging.warning(response.text)
+                logger.warning(response.text)
                 yield []
                 params["pageToken"] = None
 
@@ -144,7 +144,7 @@ class GoogleAPIService:
         if response.ok:
             json = response.json()
             return json.get("items", [])
-        logging.warning(response.text)
+        logger.warning(response.text)
         return []
 
     def get_playlist_videos(self, playlist_id: str = ...):
@@ -166,7 +166,7 @@ class GoogleAPIService:
                 yield json.get("items", [])
                 params["pageToken"] = json.get("nextPageToken", None)
             else:
-                logging.warning(response.text)
+                logger.warning(response.text)
                 yield []
                 params["pageToken"] = None
 
@@ -183,7 +183,7 @@ class GoogleAPIService:
         if response.ok:
             json = response.json()
             return json.get("items", [])
-        logging.warning(response.text)
+        logger.warning(response.text)
         return []
 
 

@@ -1,6 +1,5 @@
 import base64
 import json
-import logging
 import re
 import requests
 import traceback
@@ -20,6 +19,7 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from server.dependencies import get_authenticated_user
+from server.logging import logger
 from server.models.api import MusicResponses, RedisResponses, youtube_regex
 from server.models.main import db, MusicJobs, User, MusicJob
 from server.services.boto3 import boto3_service, Boto3Service
@@ -116,7 +116,7 @@ async def listen_jobs(
                     )
                 )
             except Exception:
-                logging.exception(traceback.format_exc())
+                logger.exception(traceback.format_exc())
         return
 
     await websocket.accept()
@@ -198,7 +198,7 @@ async def create_job_from_file(
             content_type=file.content_type,
         )
     except Exception:
-        logging.exception(traceback.format_exc())
+        logger.exception(traceback.format_exc())
         return Response(None, 500)
     query = insert(MusicJobs).values(
         id=job_id,
@@ -239,7 +239,7 @@ async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
         await delete_file(bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=job.id)
         await delete_file(bucket=Boto3Service.S3_MUSIC_BUCKET, filename=job.id)
     except Exception:
-        logging.exception(traceback.format_exc())
+        logger.exception(traceback.format_exc())
     return Response(None)
 
 

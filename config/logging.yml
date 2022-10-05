@@ -2,7 +2,7 @@ version: 1
 disable_existing_loggers: False
 formatters:
   generic:
-    format: "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
+    format: "%(asctime)s [%(process)d] [%(name)s] [%(levelname)s] %(message)s"
     datefmt: "[%Y-%m-%d %H:%M:%S %z]"
     class: "logging.Formatter"
 filters:
@@ -36,9 +36,15 @@ handlers:
     maxBytes: 10000
     backupCount: 10
 loggers:
-  "":
+  dripdrop:
     level: "INFO"
     handlers: ["console", "error_console", "file", "error_file"]
+  uvicorn.error:
+    level: "INFO"
+    handlers: ["console", "error_console", "file", "error_file"]
+  uvicorn.access:
+    level: "INFO"
+    handlers: ["console", "file"]
   gunicorn.error:
     level: "INFO"
     handlers: ["console", "error_console", "file", "error_file"]

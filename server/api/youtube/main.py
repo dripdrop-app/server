@@ -1,11 +1,11 @@
 import asyncio
-import logging
 from asgiref.sync import sync_to_async
 from asyncpg import UniqueViolationError
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response, Request
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from server.config import config
 from server.dependencies import get_authenticated_user, get_google_user
+from server.logging import logger
 from server.models.api import (
     YoutubeResponses,
     YoutubeSubscriptionResponse,
@@ -147,7 +147,7 @@ async def google_oauth2(
                 depends_on=job,
             )
     else:
-        logging.warning("Could not retrieve tokens")
+        logger.warning("Could not retrieve tokens")
     return RedirectResponse("/youtube/videos")
 
 

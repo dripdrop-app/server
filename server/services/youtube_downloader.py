@@ -1,16 +1,15 @@
-import logging
 import yt_dlp
-
+from server.logging import logger
 
 class Logger(object):
     def debug(self, msg):
         pass
 
     def warning(self, msg):
-        logging.warn(msg)
+        logger.warn(msg)
 
     def error(self, msg):
-        logging.error(msg)
+        logger.error(msg)
 
 
 class YoutubeDownloaderService:

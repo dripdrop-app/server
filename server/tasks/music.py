@@ -2,7 +2,6 @@ import asyncio
 import base64
 import io
 import json
-import logging
 import mutagen
 import os
 import re
@@ -16,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
+from server.logging import logger
 from server.models.main import MusicJob, MusicJobs
 from server.models.api import MusicResponses, RedisResponses
 from server.services.boto3 import boto3_service, Boto3Service
@@ -35,7 +35,7 @@ class MusicTasker:
         try:
             os.mkdir(MusicTasker.JOB_DIR)
         except FileExistsError:
-            logging.exception(traceback.format_exc())
+            logger.exception(traceback.format_exc())
         os.mkdir(job_path)
 
     async def retrieve_audio_file(self, job: MusicJob = ...):
@@ -87,7 +87,7 @@ class MusicTasker:
                 )
                 return {"image": imageData, "extension": extension}
             except Exception:
-                logging.exception(traceback.format_exc())
+                logger.exception(traceback.format_exc())
         return None
 
     async def update_audio_tags(
@@ -144,7 +144,7 @@ class MusicTasker:
         except Exception:
             query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
             await db.execute(query)
-            logging.exception(traceback.format_exc())
+            logger.exception(traceback.format_exc())
         finally:
             await redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL.value,
@@ -163,7 +163,7 @@ class MusicTasker:
             try:
                 os.mkdir("tags")
             except FileExistsError:
-                logging.exception(traceback.format_exc())
+                logger.exception(traceback.format_exc())
             os.mkdir(tag_path)
             filepath = os.path.join(tag_path, filename)
             with open(filepath, "wb") as f:
@@ -211,7 +211,7 @@ class MusicTasker:
             )
         except Exception:
             subprocess.run(["rm", "-rf", tag_path])
-            logging.exception(traceback.format_exc())
+            logger.exception(traceback.format_exc())
             return MusicResponses.Tags(
                 title=None, artist=None, album=None, grouping=None, artwork_url=None
             )
@@ -230,7 +230,7 @@ class MusicTasker:
                 filename=boto3_service.resolve_music_url(job.id),
             )
         except Exception:
-            logging.exception(traceback.format_exc())
+            logger.exception(traceback.format_exc())
         query = (
             update(MusicJobs)
             .where(MusicJobs.id == job.id)

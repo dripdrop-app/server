@@ -1,8 +1,8 @@
-import logging
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from rq.registry import ScheduledJobRegistry
 from server.config import config
+from server.logging import logger
 from server.services.redis import redis
 from server.services.rq import queue
 from server.tasks.music import music_tasker
@@ -39,7 +39,7 @@ class CronService:
         cron = croniter(cron_string, datetime.now(est))
         cron.get_next()
         next_run_time = cron.get_current(ret_type=datetime)
-        logging.info(f"Scheduling {function} to run at {next_run_time}")
+        logger.info(f"Scheduling {function} to run at {next_run_time}")
         job = queue.enqueue_at(
             next_run_time,
             function,
@@ -63,7 +63,7 @@ class CronService:
             if not crons_added:
                 await redis.set("crons_added", 1)
                 for job_id in scheduled_registry.get_job_ids():
-                    logging.info(f"Removing Job: {job_id}")
+                    logger.info(f"Removing Job: {job_id}")
                     scheduled_registry.remove(job_id, delete_job=True)
                 self.create_cron_job(
                     "0 0 * * *",
