@@ -1,10 +1,11 @@
 import logging.config
+import os
 import yaml
 from redis import Redis
 from rq import Connection, Worker
 from server.config import config
 
-with open("log_config.yml") as file:
+with open(os.path.join(os.path.dirname(__file__), "./config/logging.yml")) as file:
     loaded_config = yaml.safe_load(file)
     logging.config.dictConfig(loaded_config)
 
