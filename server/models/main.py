@@ -100,7 +100,7 @@ class MusicJobs(Base):
 class MusicJob(BaseModel):
     id: str
     user_email: str
-    filename: Optional[str] = ""
+    filename: Optional[str]
     youtube_url: Optional[str]
     download_url: Optional[str]
     artwork_url: Optional[str]

@@ -217,9 +217,12 @@ async def get_youtube_video_categories(
         .select_from(query)
         .distinct(YoutubeVideoCategories.id)
     )
-    categories = [
-        YoutubeVideoCategoryResponse.parse_obj(row) async for row in db.iterate(query)
-    ]
+    categories = list(
+        map(
+            lambda row: YoutubeVideoCategoryResponse.parse_obj(row),
+            await db.fetch_all(query),
+        )
+    )
     return YoutubeResponses.VideoCategories(categories=categories).dict(by_alias=True)
 
 
@@ -299,7 +302,8 @@ async def get_youtube_videos(
     else:
         query = query.order_by(videos_query.c.published_at.desc())
     query = query.offset((page - 1) * per_page).limit(per_page)
-    videos = [YoutubeVideoResponse.parse_obj(row) for row in await db.fetch_all(query)]
+    rows = await db.fetch_all(query)
+    videos = list(map(lambda row: YoutubeVideoResponse.parse_obj(row), rows))
     return YoutubeResponses.Videos(videos=videos).dict(by_alias=True)
 
 
@@ -486,9 +490,12 @@ async def get_youtube_subscriptions(
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
-    subscriptions = [
-        YoutubeSubscriptionResponse.parse_obj(row) for row in await db.fetch_all(query)
-    ]
+    subscriptions = list(
+        map(
+            lambda row: YoutubeSubscriptionResponse.parse_obj(row),
+            await db.fetch_all(query),
+        )
+    )
     return YoutubeResponses.Subscriptions(subscriptions=subscriptions).dict(
         by_alias=True
     )

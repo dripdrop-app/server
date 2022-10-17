@@ -85,7 +85,7 @@ async def get_jobs(
     total_pages = count // per_page + 1
     if count % per_page == 0:
         total_pages -= 1
-    jobs = [MusicJob.parse_obj(row) for row in await db.fetch_all(query)]
+    jobs = list(map(lambda row: MusicJob.parse_obj(row), await db.fetch_all(query)))
     return MusicResponses.AllJobs(jobs=jobs, total_pages=total_pages).dict(
         by_alias=True
     )
