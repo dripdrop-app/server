@@ -18,6 +18,7 @@ type MusicFormState =
 			youtubeUrl: string;
 			file: File;
 			artworkUrl: string;
+			resolvedArtworkUrl: string;
 			title: string;
 			artist: string;
 			album: string;
@@ -28,6 +29,7 @@ type MusicFormState =
 			youtubeUrl: string;
 			file: null;
 			artworkUrl: string;
+			resolvedArtworkUrl: string;
 			title: string;
 			artist: string;
 			album: string;

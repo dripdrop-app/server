@@ -9,10 +9,10 @@ class ImageDownloaderService:
             return data.content
 
     def resolve_artwork(self, artwork: str = ...):
-        img_links = self.get_images(artwork)
+        img_links = self._get_images(artwork)
         for img_link in img_links:
             if "artworks" in img_link and "500x500" in img_link:
-                return requests.get(img_link).content
+                return img_link
 
     def valid_image_url(self, artwork: str = ...):
         data = requests.get(artwork)

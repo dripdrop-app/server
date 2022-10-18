@@ -1,6 +1,7 @@
 import yt_dlp
 from server.logging import logger
 
+
 class Logger(object):
     def debug(self, msg):
         pass

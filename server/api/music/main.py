@@ -30,6 +30,7 @@ from server.services.redis import (
     redis_service,
 )
 from server.services.rq import queue
+from server.services.tag_extractor import tag_extractor_service
 from server.services.youtube_downloader import youtuber_downloader_service
 from server.tasks.music import music_tasker
 from sqlalchemy import select, insert, delete, update, func
@@ -46,6 +47,7 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
         uploader = await extract_info(link=youtube_url)
         return MusicResponses.Grouping(grouping=uploader).dict(by_alias=True)
     except Exception:
+        logger.exception(traceback.format_exc())
         raise HTTPException(400)
 
 
@@ -56,12 +58,13 @@ async def get_artwork(artwork_url: str = Query(...)):
         artwork_url = await resolve_artwork(artwork=artwork_url)
         return MusicResponses.ArtworkURL(artwork_url=artwork_url).dict(by_alias=True)
     except Exception:
+        logger.exception(traceback.format_exc())
         raise HTTPException(400)
 
 
 @music_app.post("/tags", response_model=MusicResponses.Tags)
 async def get_tags(file: UploadFile = File(...)):
-    read_tags = sync_to_async(music_tasker.read_tags)
+    read_tags = sync_to_async(tag_extractor_service.read_tags)
     tags = await read_tags(file=await file.read(), filename=file.filename)
     return tags.dict(by_alias=True)
 
@@ -190,6 +193,7 @@ async def create_job_from_file(
     grouping: str = Form(""),
     user: User = Depends(get_authenticated_user),
 ):
+    print("WHATTTT")
     job_id = str(uuid.uuid4())
     try:
         upload_file = sync_to_async(boto3_service.upload_file)
@@ -202,6 +206,7 @@ async def create_job_from_file(
     except Exception:
         logger.exception(traceback.format_exc())
         return Response(None, 500)
+    print("WHATTTT")
     query = insert(MusicJobs).values(
         id=job_id,
         youtube_url=None,
@@ -218,6 +223,7 @@ async def create_job_from_file(
     )
     await db.execute(query)
     queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
+    print("WHATTTT")
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),

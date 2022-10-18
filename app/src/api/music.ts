@@ -8,11 +8,7 @@ const musicApi = api.injectEndpoints({
 			providesTags: ['MusicGrouping'],
 		}),
 		artwork: build.query<Artwork, string>({
-			query: (artworkUrl) => {
-				const searchParams = new URLSearchParams();
-				searchParams.append('artwork_url', artworkUrl);
-				return { url: `/music/artwork?${searchParams}` };
-			},
+			query: (artworkUrl) => ({ url: `/music/artwork`, params: { artwork_url: artworkUrl } }),
 			providesTags: ['MusicArtwork'],
 		}),
 		tags: build.query<TagsResponse, File>({
