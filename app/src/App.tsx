@@ -76,7 +76,7 @@ const AppShell = (props: ComponentProps<any>) => {
 					<List>
 						<Toolbar />
 						<ListItem>
-							<ListItemButton component={Link} to="/music/download">
+							<ListItemButton component={Link} to="/music/downloader">
 								<ListItemIcon>
 									<CloudDownload />
 								</ListItemIcon>
@@ -112,7 +112,7 @@ const AppShell = (props: ComponentProps<any>) => {
 						</ListItem>
 					</List>
 				</Drawer>
-				<Box marginLeft={isSmall ? 0 : `${drawerWidth}px`}>
+				<Box marginLeft={isSmall ? 0 : `${drawerWidth}px`} width="100%">
 					<Toolbar />
 					{props.children}
 				</Box>
@@ -131,7 +131,7 @@ const App = () => {
 				<Route path="/youtube/videos/queue" render={(props) => <YoutubeVideoQueue />} />
 				<Route path="/youtube/video/:id" render={(props) => <YoutubeVideo id={props.match.params.id} />} />
 				<Route path="/youtube/videos" render={() => <YoutubeVideos />} />
-				<Route path="/music" render={() => <MusicDownloader />} />
+				<Route path="/music/downloader" render={() => <MusicDownloader />} />
 				<Route path="/" render={() => <MusicDownloader />} />
 			</Switch>
 		</AppShell>
