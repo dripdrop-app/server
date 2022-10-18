@@ -1,8 +1,4 @@
-export {};
-
-declare global {
-	interface User {
-		email: string;
-		admin: boolean;
-	}
+interface User {
+	email: string;
+	admin: boolean;
 }

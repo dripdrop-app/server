@@ -33,6 +33,7 @@ from server.services.rq import queue
 from server.services.youtube_downloader import youtuber_downloader_service
 from server.tasks.music import music_tasker
 from sqlalchemy import select, insert, delete, update, func
+from typing import Optional
 
 
 music_app = FastAPI(dependencies=[Depends(get_authenticated_user)], responses={401: {}})
@@ -125,29 +126,30 @@ async def listen_jobs(
     )
 
 
-async def handle_artwork_url(job_id: str = ..., artwork_url: str = ...):
-    is_base64 = re.search("^data:image/", artwork_url)
-    if is_base64:
-        extension = artwork_url.split(";")[0].split("/")[1]
-        dataString = ",".join(artwork_url.split(",")[1:])
-        data = dataString.encode()
-        data_bytes = base64.b64decode(data)
-        artwork_filename = f"{job_id}/artwork.{extension}"
-        upload_file = sync_to_async(boto3_service.upload_file)
-        await upload_file(
-            bucket=Boto3Service.S3_ARTWORK_BUCKET,
-            filename=artwork_filename,
-            body=data_bytes,
-            content_type=f"image/{extension}",
-        )
-        artwork_url = f"artwork.{extension}"
+async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...):
+    if artwork_url:
+        is_base64 = re.search("^data:image/", artwork_url)
+        if is_base64:
+            extension = artwork_url.split(";")[0].split("/")[1]
+            dataString = ",".join(artwork_url.split(",")[1:])
+            data = dataString.encode()
+            data_bytes = base64.b64decode(data)
+            artwork_filename = f"{job_id}/artwork.{extension}"
+            upload_file = sync_to_async(boto3_service.upload_file)
+            await upload_file(
+                bucket=Boto3Service.S3_ARTWORK_BUCKET,
+                filename=artwork_filename,
+                body=data_bytes,
+                content_type=f"image/{extension}",
+            )
+            artwork_url = f"artwork.{extension}"
     return artwork_url
 
 
 @music_app.post("/jobs/create/youtube", status_code=202)
 async def create_job_from_youtube(
     youtubeUrl: str = Form(..., regex=youtube_regex),
-    artworkUrl: str = Form(None),
+    artworkUrl: Optional[str] = Form(None),
     title: str = Form(...),
     artist: str = Form(...),
     album: str = Form(...),
@@ -181,7 +183,7 @@ async def create_job_from_youtube(
 @music_app.post("/jobs/create/file", status_code=202)
 async def create_job_from_file(
     file: UploadFile = File(...),
-    artworkUrl: str = Form(None),
+    artworkUrl: Optional[str] = Form(None),
     title: str = Form(...),
     artist: str = Form(...),
     album: str = Form(...),
@@ -204,7 +206,7 @@ async def create_job_from_file(
         id=job_id,
         youtube_url=None,
         download_url=None,
-        artwork_url=await handle_artwork_url(job_id, artworkUrl),
+        artwork_url=await handle_artwork_url(job_id=job_id, artwork_url=artworkUrl),
         title=title,
         artist=artist,
         album=album,

@@ -5,7 +5,7 @@ import { createApi, fetchBaseQuery, FetchArgs } from '@reduxjs/toolkit/query/rea
 export const errorParser = (error: ErrorResponse | undefined) => {
 	if (error && typeof error.detail === 'string') {
 		return error.detail;
-	} else if (error && typeof error.detail !== 'string') {
+	} else if (error && error.detail && typeof error.detail !== 'string') {
 		return error.detail.reduce((msg, error) => {
 			const field = error.loc.pop();
 			if (field) {
