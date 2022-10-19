@@ -192,7 +192,6 @@ async def create_job_from_file(
     grouping: str = Form(""),
     user: User = Depends(get_authenticated_user),
 ):
-    print("WHATTTT")
     job_id = str(uuid.uuid4())
     try:
         upload_file = sync_to_async(boto3_service.upload_file)
@@ -205,7 +204,6 @@ async def create_job_from_file(
     except Exception:
         logger.exception(traceback.format_exc())
         return Response(None, 500)
-    print("WHATTTT")
     query = insert(MusicJobs).values(
         id=job_id,
         youtube_url=None,
@@ -222,7 +220,6 @@ async def create_job_from_file(
     )
     await db.execute(query)
     queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
-    print("WHATTTT")
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL.value,
         json.dumps(RedisResponses.MusicChannel(job_id=job_id, type="STARTED").dict()),
