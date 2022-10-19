@@ -61,9 +61,6 @@ class MusicResponses:
         grouping: Optional[str]
         artwork_url: Optional[str]
 
-    class Download(ResponseBaseModel):
-        url: str
-
     class AllJobs(ResponseBaseModel):
         jobs: List[MusicJobResponse]
         total_pages: int

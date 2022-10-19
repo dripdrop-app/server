@@ -10,6 +10,7 @@ interface Job {
 	completed: boolean;
 	failed: boolean;
 	createdAt: string;
+	downloadUrl?: string;
 }
 
 type MusicFormState =

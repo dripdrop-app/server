@@ -1,7 +1,6 @@
 import base64
 import json
 import re
-import requests
 import traceback
 import uuid
 from asgiref.sync import sync_to_async
@@ -33,7 +32,7 @@ from server.services.rq import queue
 from server.services.tag_extractor import tag_extractor_service
 from server.services.youtube_downloader import youtuber_downloader_service
 from server.tasks.music import music_tasker
-from sqlalchemy import select, insert, delete, update, func
+from sqlalchemy import select, insert, delete, func
 from typing import Optional
 
 
@@ -249,23 +248,3 @@ async def delete_job(job_id: str, user: User = Depends(get_authenticated_user)):
     except Exception:
         logger.exception(traceback.format_exc())
     return Response(None)
-
-
-@music_app.get("/jobs/download/{job_id}", response_model=MusicResponses.Download)
-async def download_job(job_id: str, user: User = Depends(get_authenticated_user)):
-    query = select(MusicJobs).where(MusicJobs.id == job_id)
-    job = await db.fetch_one(query)
-    if not job:
-        raise HTTPException(404)
-    job = MusicJob.parse_obj(job)
-    res = await sync_to_async(requests.get)(job.download_url)
-    if res.status_code != 200:
-        query = (
-            update(MusicJobs)
-            .where(MusicJobs.user_email == user.email, MusicJobs.id == job_id)
-            .values(failed=True)
-        )
-        await db.execute(query)
-        await redis.publish(RedisChannels.MUSIC_JOB_CHANNEL.value, job_id)
-        raise HTTPException(404)
-    return MusicResponses.Download(url=job.download_url)

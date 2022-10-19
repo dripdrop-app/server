@@ -60,12 +60,6 @@ const musicApi = api.injectEndpoints({
 				return [];
 			},
 		}),
-		downloadJob: build.query<DownloadResponse, string>({
-			query: (jobID) => ({
-				url: `/music/jobs/download/${jobID}`,
-				providesTags: ['MusicDownload'],
-			}),
-		}),
 		createFileJob: build.query<undefined, CreateFileJobBody>({
 			query: (args) => {
 				const formData = new FormData();
@@ -106,5 +100,4 @@ export const {
 	useLazyCreateYoutubeJobQuery,
 	useJobsQuery,
 	useRemoveJobMutation,
-	useLazyDownloadJobQuery,
 } = musicApi;
