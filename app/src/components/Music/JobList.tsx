@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Box, CircularProgress, Container, Grid, Pagination, Typography, Stack } from '@mui/material';
+import { Box, CircularProgress, Container, Grid, Pagination, Typography, Stack, Divider } from '@mui/material';
 import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
 
@@ -53,6 +53,7 @@ const JobList = () => {
 					}}
 					spacing={2}
 					flexWrap="wrap"
+					paddingY={2}
 				>
 					<Typography variant="h4">Jobs</Typography>
 					<Pagination
@@ -63,6 +64,7 @@ const JobList = () => {
 						onChange={(e, page) => setArgs((value) => ({ ...value, page }))}
 					/>
 				</Stack>
+				<Divider />
 				<Box sx={{ paddingY: 2 }}>{renderJobs}</Box>
 			</Container>
 		),

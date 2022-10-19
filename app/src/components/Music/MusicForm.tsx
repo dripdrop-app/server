@@ -15,6 +15,7 @@ import {
 	Snackbar,
 	Alert,
 	Box,
+	Divider,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { FileUpload } from '@mui/icons-material';
@@ -199,7 +200,10 @@ const MusicForm = () => {
 				>
 					<Alert severity="error">Job Failed to Submit</Alert>
 				</Snackbar>
-				<Typography variant="h4">Music Downloader / Converter</Typography>
+				<Typography paddingY={2} variant="h4">
+					Music Downloader / Converter
+				</Typography>
+				<Divider />
 				<Stack component="form" onSubmit={handleSubmit(onSubmit)} paddingY={4} paddingX={2} spacing={4}>
 					<Stack
 						direction="row"
