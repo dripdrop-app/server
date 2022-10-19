@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Box, CircularProgress, Container, Grid, Pagination, Typography, Stack, Divider } from '@mui/material';
+import { Box, CircularProgress, Grid, Pagination, Typography, Stack, Divider } from '@mui/material';
 import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
 
@@ -26,7 +26,7 @@ const JobList = () => {
 		return (
 			<Grid container spacing={2}>
 				{jobs.map((job) => (
-					<Grid item xs={12} sm={6} md={4}>
+					<Grid item xs={12} sm={6} md={4} xl={2}>
 						<JobCard {...job} />
 					</Grid>
 				))}
@@ -44,7 +44,7 @@ const JobList = () => {
 
 	return useMemo(
 		() => (
-			<Container sx={{ paddingY: 2 }}>
+			<Box padding={2}>
 				<Stack
 					direction="row"
 					justifyContent={{
@@ -65,8 +65,8 @@ const JobList = () => {
 					/>
 				</Stack>
 				<Divider />
-				<Box sx={{ paddingY: 2 }}>{renderJobs}</Box>
-			</Container>
+				<Box paddingY={2}>{renderJobs}</Box>
+			</Box>
 		),
 		[args.page, renderJobs, totalPages]
 	);
