@@ -12,7 +12,7 @@ const YoutubeSubscriptions = () => {
 	const SubscriptionsView = useMemo(
 		() => (
 			<Stack spacing={2} paddingY={2}>
-				<InfiniteScroll
+				{/* <InfiniteScroll
 					items={Array(pages).fill(1)}
 					renderItem={(page, index) => (
 						<Grid container>
@@ -54,7 +54,7 @@ const YoutubeSubscriptions = () => {
 							setPages((page) => page + 1);
 						}
 					}}
-				/>
+				/> */}
 			</Stack>
 		),
 		[pages]

@@ -71,7 +71,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 							<Grid container>
 								{relatedVideos.map((video) => (
 									<Grid item xs={12} sm={6} md={12 / 5} padding={1} key={video.id}>
-										<YoutubeVideoCard sx={{ height: '100%' }} video={video} />
+										<YoutubeVideoCard video={video} />
 									</Grid>
 								))}
 							</Grid>

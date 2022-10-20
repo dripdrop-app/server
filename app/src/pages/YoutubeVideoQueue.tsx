@@ -60,7 +60,7 @@ const YoutubeVideoQueue = () => {
 	const QueueSlide = useMemo(() => {
 		return (
 			<Box ref={boxRef} height="30vh" sx={{ overflowY: 'scroll' }}>
-				<InfiniteScroll
+				{/* <InfiniteScroll
 					parentRef={boxRef}
 					items={Array(pages).fill(1)}
 					onEndReached={() => {
@@ -74,14 +74,7 @@ const YoutubeVideoQueue = () => {
 								page={index + 1}
 								perPage={50}
 								queuedOnly={true}
-								onLoading={(page) => {
-									pagesLoaded.current[page] = false;
-								}}
-								onLoaded={(page, videos) => {
-									if (videos.length === 50) {
-										pagesLoaded.current[page] = true;
-									}
-								}}
+								onLoaded={(videos) => {}}
 								renderItem={(video, videoIndex) => (
 									<ListItem
 										secondaryAction={
@@ -110,7 +103,7 @@ const YoutubeVideoQueue = () => {
 							/>
 						</List>
 					)}
-				/>
+				/> */}
 			</Box>
 		);
 	}, [dispatch, isMobile, pages, unQueueVideo, unQueuedVideoStatus.isLoading]);

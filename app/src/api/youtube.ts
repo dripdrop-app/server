@@ -10,11 +10,11 @@ const youtubeApi = api.injectEndpoints({
 			query: () => ({ url: '/youtube/oauth', responseHandler: (response) => response.text() }),
 		}),
 		youtubeVideoCategories: build.query<YoutubeVideoCategoriesResponse, ChannelBody>({
-			query: ({ channelID }) => {
+			query: ({ channelId }) => {
 				let url = '/youtube/videos/categories';
 				const searchParams = new URLSearchParams();
-				if (channelID) {
-					searchParams.append('channel_id', channelID);
+				if (channelId) {
+					searchParams.append('channel_id', channelId);
 				}
 				if (searchParams.toString()) {
 					url += `?${searchParams}`;
@@ -42,11 +42,11 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		youtubeVideos: build.query<YoutubeVideosResponse, YoutubeVideosBody>({
-			query: ({ perPage, page, channelID, selectedCategories, likedOnly, queuedOnly }) => {
+			query: ({ perPage, page, channelId, selectedCategories, likedOnly, queuedOnly }) => {
 				let url = `/youtube/videos/${page}/${perPage}`;
 				const searchParams = new URLSearchParams();
-				if (channelID) {
-					searchParams.append('channel_id', channelID);
+				if (channelId) {
+					searchParams.append('channel_id', channelId);
 				}
 				if (selectedCategories) {
 					selectedCategories.forEach((category) => searchParams.append('video_categories', category.toString()));
@@ -77,11 +77,11 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		youtubeSubscriptions: build.query<YoutubeSubscriptionsResponse, YoutubeSubscriptionBody>({
-			query: ({ perPage, page, channelID }) => {
+			query: ({ perPage, page, channelId }) => {
 				let url = `/youtube/subscriptions/${page}/${perPage}`;
 				const searchParams = new URLSearchParams();
-				if (channelID) {
-					searchParams.append('channel_id', channelID);
+				if (channelId) {
+					searchParams.append('channel_id', channelId);
 				}
 				if (searchParams.toString()) {
 					url += `?${searchParams}`;

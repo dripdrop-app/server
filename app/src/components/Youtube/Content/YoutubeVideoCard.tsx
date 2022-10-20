@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Card, CardMedia, CardContent, Box, Stack, SxProps, Theme, Grid, Typography } from '@mui/material';
+import { Card, CardMedia, CardContent, Box, Stack, Grid, Typography, Theme, SxProps } from '@mui/material';
 import VideoButtons from './VideoButtons';
 import RouterLink from '../../RouterLink';
 
@@ -9,7 +9,7 @@ interface VideoCardProps {
 }
 
 const VideoCard = (props: VideoCardProps) => {
-	const { sx, video } = props;
+	const { video, sx } = props;
 
 	return useMemo(() => {
 		const publishedAt = new Date(video.publishedAt).toLocaleDateString();
@@ -20,7 +20,7 @@ const VideoCard = (props: VideoCardProps) => {
 			<Card sx={sx} variant="outlined">
 				<Stack height="100%">
 					<RouterLink to={videoLink}>
-						<CardMedia component="img" image={video.thumbnail} />
+						<CardMedia component="img" image={video.thumbnail} loading="lazy" />
 					</RouterLink>
 					<CardContent>
 						<Typography color="primary">

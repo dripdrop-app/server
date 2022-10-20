@@ -51,7 +51,7 @@ interface YoutubeVideoCategoriesResponse {
 }
 
 interface ChannelBody {
-	channelID?: string;
+	channelId?: string;
 }
 
 interface PageBody {

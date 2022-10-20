@@ -3,15 +3,15 @@ import { useCallback, useMemo, useState } from 'react';
 import { useYoutubeVideoCategoriesQuery } from '../../../api/youtube';
 
 interface CategorySelectProps {
-	channelID?: string;
+	channelId?: string;
 	onChange: (newCategories: number[]) => void;
 }
 
 const CategorySelect = (props: CategorySelectProps) => {
-	const { onChange, channelID } = props;
+	const { onChange, channelId } = props;
 	const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
-	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelID });
+	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId });
 
 	const categories = useMemo(
 		() =>

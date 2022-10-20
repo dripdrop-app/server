@@ -5,11 +5,11 @@ import YoutubePage from '../components/Youtube/Auth/YoutubePage';
 import YoutubeVideosView from '../components/Youtube/Content/YoutubeVideosView';
 
 interface YoutubeChannelProps {
-	channelID: string;
+	channelId: string;
 }
 
 const YoutubeChannel = (props: YoutubeChannelProps) => {
-	const channelStatus = useYoutubeChannelQuery(props.channelID);
+	const channelStatus = useYoutubeChannelQuery(props.channelId);
 
 	return useMemo(() => {
 		if (channelStatus.isSuccess && channelStatus.currentData) {
@@ -23,7 +23,7 @@ const YoutubeChannel = (props: YoutubeChannelProps) => {
 						</Stack>
 						<YoutubePage>
 							<Stack paddingY={2}>
-								<YoutubeVideosView channelID={props.channelID} />
+								<YoutubeVideosView channelId={props.channelId} />
 							</Stack>
 						</YoutubePage>
 					</Stack>
@@ -41,7 +41,7 @@ const YoutubeChannel = (props: YoutubeChannelProps) => {
 				Failed to load channel
 			</Stack>
 		);
-	}, [channelStatus.currentData, channelStatus.isLoading, channelStatus.isSuccess, props.channelID]);
+	}, [channelStatus.currentData, channelStatus.isLoading, channelStatus.isSuccess, props.channelId]);
 };
 
 export default YoutubeChannel;

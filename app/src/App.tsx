@@ -12,10 +12,10 @@ import {
 	ListItemButton,
 	ListItemIcon,
 	ListItemText,
-	Divider,
 	IconButton,
 	useTheme,
 	useMediaQuery,
+	Paper,
 } from '@mui/material';
 import { CloudDownload, YouTube, Subscriptions, Queue, Menu, Close } from '@mui/icons-material';
 import MusicDownloader from './pages/MusicDownloader';
@@ -57,41 +57,42 @@ const AppShell = (props: ComponentProps<any>) => {
 			<Box display="flex">
 				<AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
 					<Toolbar>
-						<IconButton
-							sx={(theme) => ({
-								[theme.breakpoints.up('md')]: {
-									display: 'none',
-								},
-							})}
-							onClick={() => setOpenDrawer(!openDrawer)}
-						>
-							{!openDrawer ? <Menu /> : <Close />}
-						</IconButton>
+						<IconButton onClick={() => setOpenDrawer(!openDrawer)}>{!openDrawer ? <Menu /> : <Close />}</IconButton>
 						<Avatar alt="dripdrop" src="https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png" />
 						<Typography variant="h5">dripdrop</Typography>
 					</Toolbar>
 				</AppBar>
 				<Drawer ref={drawerRef} variant={isSmall ? 'temporary' : 'permanent'} anchor="left" open={openDrawer}>
-					<Divider />
-					<List>
+					<List component={Paper} sx={{ height: '100%', width: '100%' }}>
 						<Toolbar />
 						<ListItem>
-							<ListItemButton component={Link} to="/music/downloader">
-								<ListItemIcon>
+							<ListItemButton component={Link} to="/music/downloader" sx={{ paddingX: 0 }}>
+								<ListItemIcon sx={{ ml: 'auto' }}>
 									<CloudDownload />
 								</ListItemIcon>
-								<ListItemText primary="Music Downloader" />
+								<ListItemText
+									primary="Music Downloader"
+									sx={(theme) => ({
+										[theme.breakpoints.up('md')]: {
+											display: openDrawer ? 'block' : 'none',
+										},
+									})}
+								/>
 							</ListItemButton>
 						</ListItem>
-						<ListItem>
-							<ListItemText primary="YouTube" />
-						</ListItem>
-						<ListItem>
+						{/* <ListItem>
 							<ListItemButton component={Link} to="/youtube/videos">
 								<ListItemIcon>
 									<YouTube />
 								</ListItemIcon>
-								<ListItemText primary="Videos" />
+								<ListItemText
+									primary="Videos"
+									sx={(theme) => ({
+										[theme.breakpoints.up('md')]: {
+											display: openDrawer ? 'block' : 'none',
+										},
+									})}
+								/>
 							</ListItemButton>
 						</ListItem>
 						<ListItem>
@@ -99,7 +100,15 @@ const AppShell = (props: ComponentProps<any>) => {
 								<ListItemIcon>
 									<Subscriptions />
 								</ListItemIcon>
-								<ListItemText primary="Subscriptions" />
+
+								<ListItemText
+									primary="Subscriptions"
+									sx={(theme) => ({
+										[theme.breakpoints.up('md')]: {
+											display: openDrawer ? 'block' : 'none',
+										},
+									})}
+								/>
 							</ListItemButton>
 						</ListItem>
 						<ListItem>
@@ -107,12 +116,19 @@ const AppShell = (props: ComponentProps<any>) => {
 								<ListItemIcon>
 									<Queue />
 								</ListItemIcon>
-								<ListItemText primary="Queue" />
+								<ListItemText
+									primary="Queue"
+									sx={(theme) => ({
+										[theme.breakpoints.up('md')]: {
+											display: openDrawer ? 'block' : 'none',
+										},
+									})}
+								/>
 							</ListItemButton>
-						</ListItem>
+						</ListItem> */}
 					</List>
 				</Drawer>
-				<Box marginLeft={isSmall ? 0 : `${drawerWidth}px`} width="100%">
+				<Box component="main" marginLeft={isSmall ? 0 : `${drawerWidth}px`} width="100%">
 					<Toolbar />
 					{props.children}
 				</Box>
@@ -126,7 +142,7 @@ const App = () => {
 	return (
 		<AppShell>
 			<Switch>
-				<Route path="/youtube/channel/:id" render={(props) => <YoutubeChannel channelID={props.match.params.id} />} />
+				<Route path="/youtube/channel/:id" render={(props) => <YoutubeChannel channelId={props.match.params.id} />} />
 				<Route path="/youtube/subscriptions" render={() => <YoutubeSubscriptions />} />
 				<Route path="/youtube/videos/queue" render={(props) => <YoutubeVideoQueue />} />
 				<Route path="/youtube/video/:id" render={(props) => <YoutubeVideo id={props.match.params.id} />} />
