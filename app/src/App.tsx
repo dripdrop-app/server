@@ -52,6 +52,41 @@ const AppShell = (props: ComponentProps<any>) => {
 		};
 	}, [isSmall]);
 
+	const ListItems = useMemo(() => {
+		const items = {
+			'Music Downloader': {
+				link: '/music/downloader',
+				icon: CloudDownload,
+			},
+			Videos: {
+				link: '/youtube/videos',
+				icon: YouTube,
+			},
+			Subscriptions: {
+				link: '/youtube/subcriptions',
+				icon: Subscriptions,
+			},
+			Queue: {
+				link: '/youtube/queue',
+				icon: Queue,
+			},
+		};
+		return Object.keys(items).map((title) => {
+			const info = items[title as keyof typeof items];
+			const Icon = info.icon;
+			return (
+				<ListItem key={title} disablePadding>
+					<ListItemButton sx={{ padding: 2 }} component={Link} to={info.link}>
+						<ListItemIcon>
+							<Icon />
+						</ListItemIcon>
+						<ListItemText primary={title} />
+					</ListItemButton>
+				</ListItem>
+			);
+		});
+	}, []);
+
 	return useMemo(
 		() => (
 			<Box display="flex">
@@ -63,69 +98,9 @@ const AppShell = (props: ComponentProps<any>) => {
 					</Toolbar>
 				</AppBar>
 				<Drawer ref={drawerRef} variant={isSmall ? 'temporary' : 'permanent'} anchor="left" open={openDrawer}>
-					<List component={Paper} sx={{ height: '100%', width: '100%' }}>
+					<List component={Paper} sx={{ height: '100%' }}>
 						<Toolbar />
-						<ListItem>
-							<ListItemButton component={Link} to="/music/downloader" sx={{ paddingX: 0 }}>
-								<ListItemIcon sx={{ ml: 'auto' }}>
-									<CloudDownload />
-								</ListItemIcon>
-								<ListItemText
-									primary="Music Downloader"
-									sx={(theme) => ({
-										[theme.breakpoints.up('md')]: {
-											display: openDrawer ? 'block' : 'none',
-										},
-									})}
-								/>
-							</ListItemButton>
-						</ListItem>
-						{/* <ListItem>
-							<ListItemButton component={Link} to="/youtube/videos">
-								<ListItemIcon>
-									<YouTube />
-								</ListItemIcon>
-								<ListItemText
-									primary="Videos"
-									sx={(theme) => ({
-										[theme.breakpoints.up('md')]: {
-											display: openDrawer ? 'block' : 'none',
-										},
-									})}
-								/>
-							</ListItemButton>
-						</ListItem>
-						<ListItem>
-							<ListItemButton component={Link} to="/youtube/subscriptions">
-								<ListItemIcon>
-									<Subscriptions />
-								</ListItemIcon>
-
-								<ListItemText
-									primary="Subscriptions"
-									sx={(theme) => ({
-										[theme.breakpoints.up('md')]: {
-											display: openDrawer ? 'block' : 'none',
-										},
-									})}
-								/>
-							</ListItemButton>
-						</ListItem>
-						<ListItem>
-							<ListItemButton component={Link} to="/youtube/queue">
-								<ListItemIcon>
-									<Queue />
-								</ListItemIcon>
-								<ListItemText
-									primary="Queue"
-									sx={(theme) => ({
-										[theme.breakpoints.up('md')]: {
-											display: openDrawer ? 'block' : 'none',
-										},
-									})}
-								/>
-							</ListItemButton>
-						</ListItem> */}
+						{ListItems}
 					</List>
 				</Drawer>
 				<Box component="main" marginLeft={isSmall ? 0 : `${drawerWidth}px`} width="100%">
@@ -134,7 +109,7 @@ const AppShell = (props: ComponentProps<any>) => {
 				</Box>
 			</Box>
 		),
-		[drawerWidth, isSmall, openDrawer, props.children]
+		[ListItems, drawerWidth, isSmall, openDrawer, props.children]
 	);
 };
 
