@@ -14,8 +14,8 @@ import {
 	Stack,
 } from '@mui/material';
 import { throttle } from 'lodash';
-import { useYoutubeVideosQuery, useYoutubeVideoCategoriesQuery } from '../../../api/youtube';
-import InfiniteScroll from '../../InfiniteScroll';
+import { useYoutubeVideosQuery, useYoutubeVideoCategoriesQuery } from '../../api/youtube';
+import InfiniteScroll from '../InfiniteScroll';
 import YoutubeVideosPage from './YoutubeVideosPage';
 import YoutubeVideoCard from './YoutubeVideoCard';
 
@@ -99,7 +99,7 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	return useMemo(
 		() => (
 			<Box>
-				<Stack direction="row" justifyContent="space-between" paddingX={2}>
+				<Stack direction="row" justifyContent="space-between" paddingX={2} flexWrap="wrap">
 					<FormControlLabel
 						control={
 							<Checkbox
@@ -112,7 +112,7 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 					<FormControl>
 						<InputLabel id="categories">Categories</InputLabel>
 						<Select
-							sx={{ width: 300 }}
+							sx={{ width: '30vw' }}
 							labelId="categories"
 							label="Categories"
 							value={filter.selectedCategories}

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card, CardMedia, CardContent, Box, Stack, Grid, Typography, Theme, SxProps } from '@mui/material';
-import VideoButtons from './VideoButtons';
-import RouterLink from '../../RouterLink';
+import VideoButtons from './YoutubeVideoButtons';
+import RouterLink from '../RouterLink';
 
 interface VideoCardProps {
 	video: YoutubeVideo;
@@ -17,7 +17,7 @@ const VideoCard = (props: VideoCardProps) => {
 		const videoLink = `/youtube/video/${video.id}`;
 
 		return (
-			<Card sx={sx} variant="outlined">
+			<Card sx={sx}>
 				<Stack height="100%">
 					<RouterLink to={videoLink}>
 						<CardMedia component="img" image={video.thumbnail} loading="lazy" />

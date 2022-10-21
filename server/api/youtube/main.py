@@ -296,7 +296,7 @@ async def get_youtube_videos(
         video_watches_query.c.created_at.label("watched"),
     ).select_from(query)
     if liked_only:
-        query = query.order_by(video_likes_query.c.created_at.asc())
+        query = query.order_by(video_likes_query.c.created_at.desc())
     elif queued_only:
         query = query.order_by(video_queues_query.c.created_at.asc())
     else:

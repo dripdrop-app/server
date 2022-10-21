@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
-import { useYoutubeSubscriptionsQuery } from '../../../api/youtube';
+import { useYoutubeSubscriptionsQuery } from '../../api/youtube';
 
 interface YoutubeSubscriptionsPageProps extends YoutubeSubscriptionBody {
 	renderLoadingItem: () => JSX.Element;

@@ -26,9 +26,9 @@ import {
 } from '../state/youtube';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
 import { useDeleteYoutubeVideoQueueMutation, useYoutubeVideoQueueQuery } from '../api/youtube';
-import YoutubeVideosPage from '../components/Youtube/Content/YoutubeVideosPage';
+import YoutubeVideosPage from '../components/Youtube/YoutubeVideosPage';
 import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
-import VideoButtons from '../components/Youtube/Content/VideoButtons';
+import VideoButtons from '../components/Youtube/YoutubeVideoButtons';
 import InfiniteScroll from '../components/InfiniteScroll';
 import RouterLink from '../components/RouterLink';
 

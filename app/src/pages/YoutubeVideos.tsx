@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Divider, Stack, Typography } from '@mui/material';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-import YoutubeVideosView from '../components/Youtube/Content/YoutubeVideosView';
+import YoutubeVideosView from '../components/Youtube/YoutubeVideosView';
 
 interface YoutubeVideosProps {
 	channelID?: string;

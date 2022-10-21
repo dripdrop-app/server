@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from 'react';
-import { useYoutubeVideosQuery } from '../../../api/youtube';
+import { useYoutubeVideosQuery } from '../../api/youtube';
 
 interface YoutubeVideosPageProps extends YoutubeVideosBody {
 	renderItem: (video: YoutubeVideo, index: number) => JSX.Element;

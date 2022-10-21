@@ -2,7 +2,7 @@ import { Avatar, CircularProgress, Container, Stack, Typography } from '@mui/mat
 import { useMemo } from 'react';
 import { useYoutubeChannelQuery } from '../api/youtube';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-import YoutubeVideosView from '../components/Youtube/Content/YoutubeVideosView';
+import YoutubeVideosView from '../components/Youtube/YoutubeVideosView';
 
 interface YoutubeChannelProps {
 	channelId: string;

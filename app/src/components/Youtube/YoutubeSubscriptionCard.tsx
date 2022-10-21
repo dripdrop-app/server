@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { SxProps, Theme, Card, CardMedia, CardContent, Stack, Box, Typography } from '@mui/material';
-import RouterLink from '../../RouterLink';
+import RouterLink from '../RouterLink';
 
 interface SubscriptionCardProps {
 	subscription: YoutubeSubscription;

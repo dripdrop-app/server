@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { Container, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import InfiniteScroll from '../components/InfiniteScroll';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-import YoutubeSubscriptionsPage from '../components/Youtube/Content/YoutubeSubscriptionsPage';
-import YoutubeSubscriptionCard from '../components/Youtube/Content/YoutubeSubscriptionCard';
+import YoutubeSubscriptionsPage from '../components/Youtube/YoutubeSubscriptionsPage';
+import YoutubeSubscriptionCard from '../components/Youtube/YoutubeSubscriptionCard';
 
 const YoutubeSubscriptions = () => {
 	const [pages, setPages] = useState(1);
