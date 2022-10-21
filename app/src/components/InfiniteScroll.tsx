@@ -1,29 +1,22 @@
-import { useCallback, useEffect, useState, ComponentType, ComponentPropsWithRef, useMemo, Fragment } from 'react';
+import { useCallback, useEffect, useState, useMemo, Fragment } from 'react';
 
 interface InfiniteScrollProps<T> {
 	items: T[];
-	loading: boolean;
-	components: {
-		Parent: ComponentType<ComponentPropsWithRef<'div'>>;
-		Loader: ComponentType<ComponentPropsWithRef<'div'>>;
-	};
+	threshold?: number;
 	renderItem: (item: T, index: number) => JSX.Element | JSX.Element[];
 	onEndReached: () => void;
 }
 
 const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
-	const { items, renderItem, onEndReached, components, loading } = props;
-	const { Parent, Loader } = components;
+	const { items, renderItem, onEndReached, threshold } = props;
 
 	const [showScrollButton, setShowScrollButton] = useState(false);
 
 	const onGridBottom = useCallback(() => {
-		if (document.body.offsetHeight - 1000 < window.innerHeight + window.scrollY) {
-			if (!loading) {
-				onEndReached();
-			}
+		if (document.body.offsetHeight - (threshold ?? 1000) < window.innerHeight + window.scrollY) {
+			onEndReached();
 		}
-	}, [loading, onEndReached]);
+	}, [onEndReached, threshold]);
 
 	const updateScrollButton = useCallback(() => {
 		if (window.scrollY > 0 && !showScrollButton) {
@@ -45,17 +38,9 @@ const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
 			window.removeEventListener('scroll', onGridBottom);
 			window.removeEventListener('scroll', updateScrollButton);
 		};
-	}, [loading, onGridBottom, updateScrollButton]);
+	}, [onGridBottom, updateScrollButton]);
 
-	return useMemo(
-		() => (
-			<Fragment>
-				<Parent>{RenderItems}</Parent>
-				{loading ? <Loader /> : null}
-			</Fragment>
-		),
-		[Loader, Parent, RenderItems, loading]
-	);
+	return useMemo(() => <div>{RenderItems}</div>, [RenderItems]);
 };
 
 export default InfiniteScroll;

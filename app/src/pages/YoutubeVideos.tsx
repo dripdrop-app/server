@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Stack, Typography } from '@mui/material';
+import { Divider, Stack, Typography } from '@mui/material';
 import YoutubePage from '../components/Youtube/Auth/YoutubePage';
 import YoutubeVideosView from '../components/Youtube/Content/YoutubeVideosView';
 
@@ -10,10 +10,11 @@ interface YoutubeVideosProps {
 const YoutubeVideos = (props: YoutubeVideosProps) => {
 	return useMemo(
 		() => (
-			<Stack padding={2}>
-				<Typography variant="h3">Youtube Videos</Typography>
+			<Stack padding={4} spacing={2}>
+				<Typography variant="h4">Videos</Typography>
+				<Divider />
 				<YoutubePage>
-					<Stack paddingY={2}>
+					<Stack>
 						<YoutubeVideosView channelId={props.channelID} />
 					</Stack>
 				</YoutubePage>

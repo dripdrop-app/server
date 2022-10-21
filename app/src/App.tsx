@@ -16,6 +16,7 @@ import {
 	useTheme,
 	useMediaQuery,
 	Paper,
+	Tooltip,
 } from '@mui/material';
 import { CloudDownload, YouTube, Subscriptions, Queue, Menu, Close } from '@mui/icons-material';
 import MusicDownloader from './pages/MusicDownloader';
@@ -76,12 +77,27 @@ const AppShell = (props: ComponentProps<any>) => {
 			const Icon = info.icon;
 			return (
 				<ListItem key={title} disablePadding>
-					<ListItemButton sx={{ padding: 2 }} component={Link} to={info.link}>
-						<ListItemIcon>
-							<Icon />
-						</ListItemIcon>
-						<ListItemText primary={title} />
-					</ListItemButton>
+					<Tooltip title={title} placement="right">
+						<ListItemButton sx={{ padding: 2 }} component={Link} to={info.link}>
+							<ListItemIcon
+								sx={(theme) => ({
+									[theme.breakpoints.up('md')]: {
+										minWidth: 0,
+									},
+								})}
+							>
+								<Icon />
+							</ListItemIcon>
+							<ListItemText
+								sx={(theme) => ({
+									[theme.breakpoints.up('md')]: {
+										display: 'none',
+									},
+								})}
+								primary={title}
+							/>
+						</ListItemButton>
+					</Tooltip>
 				</ListItem>
 			);
 		});
@@ -90,9 +106,18 @@ const AppShell = (props: ComponentProps<any>) => {
 	return useMemo(
 		() => (
 			<Box display="flex">
-				<AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+				<AppBar position="fixed" component={Paper} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
 					<Toolbar>
-						<IconButton onClick={() => setOpenDrawer(!openDrawer)}>{!openDrawer ? <Menu /> : <Close />}</IconButton>
+						<IconButton
+							sx={(theme) => ({
+								[theme.breakpoints.up('md')]: {
+									display: 'none',
+								},
+							})}
+							onClick={() => setOpenDrawer(!openDrawer)}
+						>
+							{!openDrawer ? <Menu /> : <Close />}
+						</IconButton>
 						<Avatar alt="dripdrop" src="https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png" />
 						<Typography variant="h5">dripdrop</Typography>
 					</Toolbar>
@@ -103,7 +128,18 @@ const AppShell = (props: ComponentProps<any>) => {
 						{ListItems}
 					</List>
 				</Drawer>
-				<Box component="main" marginLeft={isSmall ? 0 : `${drawerWidth}px`} width="100%">
+				<Box
+					component="main"
+					sx={(theme) => ({
+						width: '100%',
+						[theme.breakpoints.down('md')]: {
+							marginLeft: 0,
+						},
+						[theme.breakpoints.up('md')]: {
+							marginLeft: `${drawerWidth}px`,
+						},
+					})}
+				>
 					<Toolbar />
 					{props.children}
 				</Box>

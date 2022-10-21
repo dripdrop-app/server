@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
 	Box,
 	Checkbox,
@@ -13,7 +13,7 @@ import {
 	SelectChangeEvent,
 	Stack,
 } from '@mui/material';
-import { isEqual, throttle } from 'lodash';
+import { throttle } from 'lodash';
 import { useYoutubeVideosQuery, useYoutubeVideoCategoriesQuery } from '../../../api/youtube';
 import InfiniteScroll from '../../InfiniteScroll';
 import YoutubeVideosPage from './YoutubeVideosPage';
@@ -27,7 +27,7 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	const [filter, setFilter] = useState<YoutubeVideosBody>({
 		selectedCategories: [],
 		page: 1,
-		perPage: 50,
+		perPage: 48,
 		likedOnly: false,
 		queuedOnly: false,
 		channelId: props.channelId,
@@ -91,10 +91,10 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	}, [filter.perPage, videosStatus.currentData, videosStatus.isSuccess]);
 
 	useEffect(() => {
-		if (!isEqual(videosStatus.originalArgs, filter)) {
+		if (videosStatus.isFetching || videosStatus.isLoading) {
 			continueLoadingRef.current = false;
 		}
-	}, [filter, videosStatus.originalArgs]);
+	}, [videosStatus.isFetching, videosStatus.isLoading]);
 
 	return useMemo(
 		() => (
@@ -140,29 +140,27 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 				</Stack>
 				<InfiniteScroll
 					items={Array(filter.page).fill(1)}
-					loading={videosStatus.isFetching}
-					components={{
-						Parent: React.forwardRef((props, ref) => <Grid {...props} container ref={ref} />),
-						Loader: React.forwardRef((props, ref) => (
-							<Stack {...props} direction="row" justifyContent="center" ref={ref}>
-								<CircularProgress />
-							</Stack>
-						)),
-					}}
 					renderItem={(page, index) => (
-						<YoutubeVideosPage
-							selectedCategories={filter.selectedCategories}
-							perPage={filter.perPage}
-							page={index + 1}
-							likedOnly={filter.likedOnly}
-							queuedOnly={filter.queuedOnly}
-							channelId={filter.channelId}
-							renderItem={(video) => (
-								<Grid item xs={12} sm={6} md={4} xl={2} padding={1}>
-									<YoutubeVideoCard video={video} />
-								</Grid>
-							)}
-						/>
+						<Grid container>
+							<YoutubeVideosPage
+								selectedCategories={filter.selectedCategories}
+								perPage={filter.perPage}
+								page={index + 1}
+								likedOnly={filter.likedOnly}
+								queuedOnly={filter.queuedOnly}
+								channelId={filter.channelId}
+								renderItem={(video) => (
+									<Grid item xs={12} sm={6} md={3} xl={2} padding={1}>
+										<YoutubeVideoCard video={video} />
+									</Grid>
+								)}
+								renderLoading={() => (
+									<Grid item xs={1}>
+										<CircularProgress sx={{ height: '10vh' }} />
+									</Grid>
+								)}
+							/>
+						</Grid>
 					)}
 					onEndReached={onEndReached}
 				/>
@@ -176,7 +174,6 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 			filter.queuedOnly,
 			filter.channelId,
 			CategoryList,
-			videosStatus.isFetching,
 			onEndReached,
 			onCategoryChange,
 			getCategoryName,
