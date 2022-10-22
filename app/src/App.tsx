@@ -1,5 +1,6 @@
 import { ComponentProps, useEffect, useMemo, useRef, useState } from 'react';
 import { Route, Switch, Link } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
 import {
 	Box,
 	AppBar,
@@ -17,8 +18,10 @@ import {
 	useMediaQuery,
 	Paper,
 	Tooltip,
+	CssBaseline,
 } from '@mui/material';
 import { CloudDownload, YouTube, Subscriptions, Queue, Menu, Close } from '@mui/icons-material';
+import Theme from './theme';
 import MusicDownloader from './pages/MusicDownloader';
 import YoutubeChannel from './pages/YoutubeChannel';
 import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
@@ -105,11 +108,7 @@ const AppShell = (props: ComponentProps<any>) => {
 	return useMemo(
 		() => (
 			<Box display="flex">
-				<AppBar
-					position="fixed"
-					component={Paper}
-					sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: (theme) => theme.palette.primary.dark }}
-				>
+				<AppBar position="fixed" component={Paper} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
 					<Toolbar>
 						<IconButton
 							sx={(theme) => ({
@@ -156,17 +155,20 @@ const AppShell = (props: ComponentProps<any>) => {
 
 const App = () => {
 	return (
-		<AppShell>
-			<Switch>
-				<Route path="/youtube/channel/:id" render={(props) => <YoutubeChannel channelId={props.match.params.id} />} />
-				<Route path="/youtube/subscriptions" render={() => <YoutubeSubscriptions />} />
-				<Route path="/youtube/videos/queue" render={(props) => <YoutubeVideoQueue />} />
-				<Route path="/youtube/video/:id" render={(props) => <YoutubeVideo id={props.match.params.id} />} />
-				<Route path="/youtube/videos" render={() => <YoutubeVideos />} />
-				<Route path="/music/downloader" render={() => <MusicDownloader />} />
-				<Route path="/" render={() => <MusicDownloader />} />
-			</Switch>
-		</AppShell>
+		<ThemeProvider theme={Theme}>
+			<CssBaseline />
+			<AppShell>
+				<Switch>
+					<Route path="/youtube/channel/:id" render={(props) => <YoutubeChannel channelId={props.match.params.id} />} />
+					<Route path="/youtube/subscriptions" render={() => <YoutubeSubscriptions />} />
+					<Route path="/youtube/videos/queue" render={(props) => <YoutubeVideoQueue />} />
+					<Route path="/youtube/video/:id" render={(props) => <YoutubeVideo id={props.match.params.id} />} />
+					<Route path="/youtube/videos" render={() => <YoutubeVideos />} />
+					<Route path="/music/downloader" render={() => <MusicDownloader />} />
+					<Route path="/" render={() => <MusicDownloader />} />
+				</Switch>
+			</AppShell>
+		</ThemeProvider>
 	);
 };
 

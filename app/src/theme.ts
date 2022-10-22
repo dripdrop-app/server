@@ -13,4 +13,12 @@ export default createTheme({
 			dark: yellow[900],
 		},
 	},
+	components: {
+		MuiAppBar: {
+			styleOverrides: { root: { backgroundColor: blue[900] } },
+		},
+		MuiListItemIcon: {
+			styleOverrides: { root: { color: blue[400] } },
+		},
+	},
 });
