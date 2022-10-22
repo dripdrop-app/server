@@ -28,27 +28,26 @@ import YoutubeVideos from './pages/YoutubeVideos';
 
 const AppShell = (props: ComponentProps<any>) => {
 	const [openDrawer, setOpenDrawer] = useState(false);
-	const [drawerWidth, setDrawerWidth] = useState(0);
+	const [listWidth, setListWidth] = useState(0);
 
-	const drawerRef = useRef<HTMLDivElement>(null);
+	const listRef = useRef<HTMLDivElement>(null);
 
 	const theme = useTheme();
 	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
 
 	useEffect(() => {
-		const drawer = drawerRef.current;
+		const list = listRef.current;
 		const observer = new ResizeObserver((entries) => {
 			for (const entry of entries) {
-				const child = entry.target.children[0];
-				setDrawerWidth(child.clientWidth);
+				setListWidth(entry.target.clientWidth);
 			}
 		});
-		if (drawer) {
-			observer.observe(drawer);
+		if (list) {
+			observer.observe(list);
 		}
 		return () => {
-			if (drawer) {
-				observer.unobserve(drawer);
+			if (list) {
+				observer.unobserve(list);
 			}
 		};
 	}, [isSmall]);
@@ -120,14 +119,15 @@ const AppShell = (props: ComponentProps<any>) => {
 							})}
 							onClick={() => setOpenDrawer(!openDrawer)}
 						>
-							{!openDrawer ? <Menu /> : <Close />}
+							<Menu sx={{ display: openDrawer ? 'none' : 'block' }} />
+							<Close sx={{ display: openDrawer ? 'block' : 'none' }} />
 						</IconButton>
 						<Avatar alt="dripdrop" src="https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png" />
 						<Typography variant="h5">dripdrop</Typography>
 					</Toolbar>
 				</AppBar>
-				<Drawer ref={drawerRef} variant={isSmall ? 'temporary' : 'permanent'} anchor="left" open={openDrawer}>
-					<List component={Paper} sx={{ height: '100%' }}>
+				<Drawer variant={isSmall ? 'temporary' : 'permanent'} anchor="left" open={openDrawer}>
+					<List ref={listRef} component={Paper} sx={{ height: '100%' }}>
 						<Toolbar />
 						{ListItems}
 					</List>
@@ -141,7 +141,7 @@ const AppShell = (props: ComponentProps<any>) => {
 							marginLeft: 0,
 						},
 						[theme.breakpoints.up('md')]: {
-							marginLeft: `${drawerWidth}px`,
+							marginLeft: `${listWidth}px`,
 						},
 					})}
 				>
@@ -150,7 +150,7 @@ const AppShell = (props: ComponentProps<any>) => {
 				</Box>
 			</Box>
 		),
-		[ListItems, drawerWidth, isSmall, openDrawer, props.children]
+		[ListItems, listWidth, isSmall, openDrawer, props.children]
 	);
 };
 
