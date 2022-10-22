@@ -4,7 +4,7 @@ import MusicForm from '../components/Music/MusicForm';
 
 const MusicDownloader = () => {
 	return (
-		<Stack padding={4} spacing={2} direction="column">
+		<Stack spacing={2} direction="column">
 			<MusicForm />
 			<JobList />
 		</Stack>

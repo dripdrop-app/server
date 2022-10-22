@@ -134,6 +134,7 @@ const AppShell = (props: ComponentProps<any>) => {
 				</Drawer>
 				<Box
 					component="main"
+					padding={4}
 					sx={(theme) => ({
 						width: '100%',
 						[theme.breakpoints.down('md')]: {
