@@ -10,7 +10,7 @@ interface YoutubeVideosProps {
 const YoutubeVideos = (props: YoutubeVideosProps) => {
 	return useMemo(
 		() => (
-			<Stack padding={4} spacing={2}>
+			<Stack direction="column" padding={4} spacing={2}>
 				<Typography variant="h4">Videos</Typography>
 				<Divider />
 				<YoutubePage>

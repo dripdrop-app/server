@@ -185,7 +185,7 @@ const MusicForm = () => {
 
 	return useMemo(
 		() => (
-			<Container sx={{ paddingY: 2 }}>
+			<Stack direction="column">
 				<Snackbar
 					open={openSuccess}
 					onClose={() => setOpenSuccess(false)}
@@ -200,9 +200,9 @@ const MusicForm = () => {
 				>
 					<Alert severity="error">Job Failed to Submit</Alert>
 				</Snackbar>
-				<Stack direction="column" paddingY={2} spacing={2}>
-					<Typography variant="h4">Music Downloader / Converter</Typography>
-					<Divider />
+				<Typography variant="h4">Music Downloader / Converter</Typography>
+				<Divider />
+				<Container>
 					<Stack component="form" onSubmit={handleSubmit(onSubmit)} spacing={4}>
 						<Stack
 							direction="row"
@@ -505,8 +505,8 @@ const MusicForm = () => {
 							</Button>
 						</Stack>
 					</Stack>
-				</Stack>
-			</Container>
+				</Container>
+			</Stack>
 		),
 		[
 			openSuccess,

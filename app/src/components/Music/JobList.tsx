@@ -44,7 +44,7 @@ const JobList = () => {
 
 	return useMemo(
 		() => (
-			<Box padding={2}>
+			<Box>
 				<Stack
 					direction="row"
 					justifyContent={{
