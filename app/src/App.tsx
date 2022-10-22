@@ -106,7 +106,11 @@ const AppShell = (props: ComponentProps<any>) => {
 	return useMemo(
 		() => (
 			<Box display="flex">
-				<AppBar position="fixed" component={Paper} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+				<AppBar
+					position="fixed"
+					component={Paper}
+					sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: (theme) => theme.palette.primary.dark }}
+				>
 					<Toolbar>
 						<IconButton
 							sx={(theme) => ({

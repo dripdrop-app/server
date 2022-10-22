@@ -1,17 +1,17 @@
 version: '2.4'
 name: dripdrop
 services:
-  web:
+  server:
     platform: linux/amd64
-    container_name: web
+    container_name: server
     restart: always
     volumes:
       - ./:/src
-      - ./data/web/logs:/src/logs
+      - ./data/server/logs:/src/logs
     env_file: .env
     build:
-      dockerfile: dockerfiles/Dockerfile.dev.web
-    entrypoint: ./scripts/web.dev.sh
+      dockerfile: dockerfiles/Dockerfile.dev.server
+    entrypoint: ./scripts/server.dev.sh
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,6 +19,16 @@ services:
         condition: service_healthy
     ports:
       - $SERVER_PORT:$SERVER_PORT
+  web:
+    container_name: web
+    restart: always
+    volumes:
+      - ./app:/src
+    env_file: .env
+    build:
+      dockerfile: dockerfiles/Dockerfile.dev.web
+    entrypoint: npm start
+    ports:
       - $PORT:$PORT
   worker:
     platform: linux/amd64

@@ -13,7 +13,7 @@ import {
 import { generateTime } from '../../../utils/helpers';
 import ConditionalDisplay from '../../ConditionalDisplay';
 import YoutubeVideoQueuePlayer from './YoutubeVideoQueuePlayer';
-import VideoButtons from '../Content/YoutubeVideoButtons';
+import VideoButtons from '../YoutubeVideoButtons';
 import RouterLink from '../../RouterLink';
 
 const YoutubeVideoQueueDisplay = () => {
