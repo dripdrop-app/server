@@ -60,7 +60,7 @@ interface PageBody {
 }
 
 interface YoutubeVideosBody extends ChannelBody, PageBody {
-	selectedCategories?: number[];
+	selectedCategories: number[];
 	likedOnly?: boolean;
 	queuedOnly?: boolean;
 }

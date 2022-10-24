@@ -1,23 +1,11 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import {
-	Box,
-	Checkbox,
-	Chip,
-	CircularProgress,
-	FormControl,
-	FormControlLabel,
-	Grid,
-	InputLabel,
-	MenuItem,
-	Select,
-	SelectChangeEvent,
-	Stack,
-} from '@mui/material';
+import { Box, Checkbox, CircularProgress, FormControlLabel, Grid, Stack } from '@mui/material';
 import { throttle } from 'lodash';
-import { useYoutubeVideosQuery, useYoutubeVideoCategoriesQuery } from '../../api/youtube';
+import { useYoutubeVideosQuery } from '../../api/youtube';
 import InfiniteScroll from '../InfiniteScroll';
 import YoutubeVideosPage from './YoutubeVideosPage';
 import YoutubeVideoCard from './YoutubeVideoCard';
+import CategorySelect from './CategorySelect';
 
 interface YoutubeVideosViewProps {
 	channelId?: string;
@@ -35,7 +23,6 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	const continueLoadingRef = useRef(false);
 
 	const videosStatus = useYoutubeVideosQuery(filter);
-	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: filter.channelId });
 
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const onEndReached = useCallback(
@@ -45,42 +32,6 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 			}
 		}, 5000),
 		[]
-	);
-
-	const categories = useMemo(() => {
-		if (videoCategoriesStatus.isSuccess && videoCategoriesStatus.currentData) {
-			const { categories } = videoCategoriesStatus.currentData;
-			return categories;
-		}
-		return [];
-	}, [videoCategoriesStatus.currentData, videoCategoriesStatus.isSuccess]);
-
-	const CategoryList = useMemo(() => {
-		return [...categories]
-			.sort((a, b) => (a.name > b.name ? 1 : -1))
-			.map((category) => ({
-				key: category.id,
-				text: category.name,
-				value: category.id,
-			}));
-	}, [categories]);
-
-	const onCategoryChange = useCallback((e: SelectChangeEvent<number[]>) => {
-		const value = e.target.value;
-		if (typeof value === 'string') {
-			const newCategories = value.split(',').map(parseInt);
-			setFilter((prevState) => ({ ...prevState, selectedCategories: newCategories }));
-		} else {
-			setFilter((prevState) => ({ ...prevState, selectedCategories: value }));
-		}
-	}, []);
-
-	const getCategoryName = useCallback(
-		(categoryId: number) => {
-			const category = CategoryList.find((category) => category.value === categoryId);
-			return category;
-		},
-		[CategoryList]
 	);
 
 	useEffect(() => {
@@ -109,34 +60,6 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 						}
 						label="Show Liked Only"
 					/>
-					<FormControl>
-						<InputLabel id="categories">Categories</InputLabel>
-						<Select
-							sx={{ width: '30vw' }}
-							labelId="categories"
-							label="Categories"
-							value={filter.selectedCategories}
-							multiple
-							renderValue={(selected) => (
-								<Stack direction="row" flexWrap="wrap" spacing={1}>
-									{selected.map((s) => {
-										const category = getCategoryName(s);
-										if (category) {
-											return <Chip key={category.key} label={category.text} />;
-										}
-										return null;
-									})}
-								</Stack>
-							)}
-							onChange={onCategoryChange}
-						>
-							{CategoryList.map((category) => (
-								<MenuItem key={category.key} value={category.value}>
-									{category.text}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
 				</Stack>
 				<InfiniteScroll
 					items={Array(filter.page).fill(1)}
@@ -164,19 +87,23 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 					)}
 					onEndReached={onEndReached}
 				/>
+				<CategorySelect
+					sx={{ position: 'fixed', top: '25%', right: 0, borderRadius: 0 }}
+					currentCategories={filter.selectedCategories}
+					onChange={(newCategories) =>
+						setFilter((prevValue) => ({ ...prevValue, selectedCategories: newCategories, page: 1 }))
+					}
+				/>
 			</Box>
 		),
 		[
 			filter.likedOnly,
-			filter.selectedCategories,
 			filter.page,
+			filter.selectedCategories,
 			filter.perPage,
 			filter.queuedOnly,
 			filter.channelId,
-			CategoryList,
 			onEndReached,
-			onCategoryChange,
-			getCategoryName,
 		]
 	);
 };
