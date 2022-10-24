@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { Box, Checkbox, CircularProgress, FormControlLabel, Grid, Stack } from '@mui/material';
+import { Box, Checkbox, FormControlLabel, Grid, LinearProgress, Stack } from '@mui/material';
 import { throttle } from 'lodash';
 import { useYoutubeVideosQuery } from '../../api/youtube';
 import InfiniteScroll from '../InfiniteScroll';
@@ -60,6 +60,12 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 						}
 						label="Show Liked Only"
 					/>
+					<CategorySelect
+						currentCategories={filter.selectedCategories}
+						onChange={(newCategories) =>
+							setFilter((prevValue) => ({ ...prevValue, selectedCategories: newCategories, page: 1 }))
+						}
+					/>
 				</Stack>
 				<InfiniteScroll
 					items={Array(filter.page).fill(1)}
@@ -78,21 +84,14 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 									</Grid>
 								)}
 								renderLoading={() => (
-									<Grid item xs={1}>
-										<CircularProgress sx={{ height: '10vh' }} />
+									<Grid item xs={12} padding={2}>
+										<LinearProgress />
 									</Grid>
 								)}
 							/>
 						</Grid>
 					)}
 					onEndReached={onEndReached}
-				/>
-				<CategorySelect
-					sx={{ position: 'fixed', top: '25%', right: 0, borderRadius: 0 }}
-					currentCategories={filter.selectedCategories}
-					onChange={(newCategories) =>
-						setFilter((prevValue) => ({ ...prevValue, selectedCategories: newCategories, page: 1 }))
-					}
 				/>
 			</Box>
 		),

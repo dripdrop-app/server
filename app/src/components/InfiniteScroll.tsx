@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, useMemo, Fragment } from 'react';
+import { Box, Fab } from '@mui/material';
+import { ArrowUpward } from '@mui/icons-material';
 
 interface InfiniteScrollProps<T> {
 	items: T[];
@@ -40,7 +42,27 @@ const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
 		};
 	}, [onGridBottom, updateScrollButton]);
 
-	return useMemo(() => <div>{RenderItems}</div>, [RenderItems]);
+	return useMemo(
+		() => (
+			<Box>
+				<Fab
+					sx={{
+						position: 'fixed',
+						bottom: '5vh',
+						right: '5vw',
+						display: showScrollButton ? 'block' : 'none',
+						zIndex: (theme) => theme.zIndex.fab,
+					}}
+					color="primary"
+					onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+				>
+					<ArrowUpward />
+				</Fab>
+				<Box>{RenderItems}</Box>
+			</Box>
+		),
+		[RenderItems, showScrollButton]
+	);
 };
 
 export default InfiniteScroll;

@@ -21,7 +21,7 @@ const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
 	return useMemo(
 		() => (
 			<Fragment>
-				<div style={{ display: videosStatus.isLoading ? 'block' : 'none' }}>{LoadingItem}</div>
+				<div style={{ display: videosStatus.isLoading ? 'contents' : 'none' }}>{LoadingItem}</div>
 				{videos.map((video, i) => (
 					<Fragment key={video.id}>{renderItem(video, i)}</Fragment>
 				))}

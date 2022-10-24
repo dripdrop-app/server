@@ -43,6 +43,7 @@ const CategorySelect = (props: CategorySelectProps) => {
 				const isSelected = !!selectedCategories.find((selectedCategory) => selectedCategory === category.id);
 				return (
 					<FormControlLabel
+						key={category.id}
 						control={
 							<Checkbox
 								checked={isSelected}
