@@ -26,7 +26,7 @@ const JobList = () => {
 		return (
 			<Grid container spacing={2}>
 				{jobs.map((job) => (
-					<Grid item xs={12} sm={6} md={4} xl={2}>
+					<Grid key={job.id} item xs={12} sm={6} md={4} xl={2}>
 						<JobCard {...job} />
 					</Grid>
 				))}

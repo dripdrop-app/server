@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Box, Button, Tooltip } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 import { AddToQueue, RemoveFromQueue, ThumbUp, RemoveRedEye } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -62,9 +62,7 @@ export const YoutubeVideoWatchButton = (props: VideoButtonsProps) => {
 	return useMemo(
 		() => (
 			<Tooltip title={`Watched on ${watchedDate}`}>
-				<Button color="inherit" sx={{ display: video.watched ? 'block' : 'none' }}>
-					<RemoveRedEye />
-				</Button>
+				<RemoveRedEye sx={{ display: video.watched ? 'block' : 'none' }} />
 			</Tooltip>
 		),
 		[video.watched, watchedDate]

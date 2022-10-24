@@ -1,15 +1,41 @@
-import { useMemo } from 'react';
-import { Card, CardMedia, CardContent, Box, Stack, Grid, Typography, Theme, SxProps } from '@mui/material';
-import VideoButtons from './YoutubeVideoButtons';
-import RouterLink from '../RouterLink';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import { Card, CardMedia, CardContent, Typography, Link, Stack, Box, useTheme, useMediaQuery } from '@mui/material';
+import { YoutubeVideoQueueButton, YoutubeVideoWatchButton } from './YoutubeVideoButtons';
 
 interface VideoCardProps {
 	video: YoutubeVideo;
-	sx?: SxProps<Theme>;
 }
 
 const VideoCard = (props: VideoCardProps) => {
-	const { video, sx } = props;
+	const { video } = props;
+	const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+
+	const cardImageRef = useRef<HTMLImageElement>(null);
+
+	const theme = useTheme();
+	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
+
+	useEffect(() => {
+		const cardImage = cardImageRef.current;
+		const observer = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const rect = entry.target.getBoundingClientRect();
+				setImageDimensions({
+					width: rect.width,
+					height: rect.height,
+				});
+			}
+		});
+		if (cardImage) {
+			observer.observe(cardImage);
+		}
+		return () => {
+			if (cardImage) {
+				observer.unobserve(cardImage);
+			}
+		};
+	}, [isSmall]);
 
 	return useMemo(() => {
 		const publishedAt = new Date(video.publishedAt).toLocaleDateString();
@@ -17,34 +43,43 @@ const VideoCard = (props: VideoCardProps) => {
 		const videoLink = `/youtube/video/${video.id}`;
 
 		return (
-			<Card sx={sx}>
-				<Stack height="100%">
-					<RouterLink to={videoLink}>
-						<CardMedia component="img" image={video.thumbnail} loading="lazy" />
-					</RouterLink>
-					<CardContent>
-						<Typography color="primary">
-							<RouterLink to={videoLink}>{video.title}</RouterLink>
-						</Typography>
-					</CardContent>
-					<Box flex={1} />
-					<CardContent>
-						<VideoButtons video={video} />
-					</CardContent>
-					<CardContent>
-						<Grid container spacing={1} justifyContent="space-between">
-							<Grid item>
-								<Typography color="primary">
-									<RouterLink to={channelLink}>{video.channelTitle}</RouterLink>
-								</Typography>
-							</Grid>
-							<Grid item>{publishedAt}</Grid>
-						</Grid>
-					</CardContent>
+			<Card>
+				<Stack direction="column" position="relative">
+					<CardMedia ref={cardImageRef} component="img" image={video.thumbnail} loading="lazy" />
+					<Link component={RouterLink} to={videoLink} sx={{ position: 'absolute' }}>
+						<Box
+							sx={{ background: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0))' }}
+							height={imageDimensions.height}
+							width={imageDimensions.width}
+						/>
+					</Link>
+					<Box position="absolute" width="100%" alignItems="center" padding={2}>
+						<Box sx={{ float: 'left' }}>
+							<YoutubeVideoWatchButton video={video} />
+						</Box>
+						<Box sx={{ float: 'right' }}>
+							<YoutubeVideoQueueButton video={video} />
+						</Box>
+					</Box>
 				</Stack>
+				<CardContent component={Stack} direction="column" spacing={2}>
+					<Typography variant="body1">
+						<Link component={RouterLink} to={videoLink}>
+							{video.title}
+						</Link>
+					</Typography>
+					<Stack direction="row" spacing={2} flexWrap="wrap">
+						<Typography variant="caption">
+							<Link component={RouterLink} to={channelLink}>
+								{video.channelTitle}
+							</Link>
+						</Typography>
+						<Typography variant="caption">{publishedAt}</Typography>
+					</Stack>
+				</CardContent>
 			</Card>
 		);
-	}, [sx, video]);
+	}, [imageDimensions.height, imageDimensions.width, video]);
 };
 
 export default VideoCard;

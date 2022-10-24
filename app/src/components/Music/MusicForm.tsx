@@ -185,7 +185,7 @@ const MusicForm = () => {
 
 	return useMemo(
 		() => (
-			<Stack direction="column">
+			<Stack direction="column" spacing={2}>
 				<Snackbar
 					open={openSuccess}
 					onClose={() => setOpenSuccess(false)}
@@ -202,310 +202,312 @@ const MusicForm = () => {
 				</Snackbar>
 				<Typography variant="h4">Music Downloader / Converter</Typography>
 				<Divider />
-				<Container>
-					<Stack component="form" onSubmit={handleSubmit(onSubmit)} spacing={4}>
-						<Stack
-							direction="row"
-							alignItems="center"
-							spacing={{
-								xs: 0,
-								md: 2,
-							}}
-							flexWrap={{
-								xs: 'wrap',
-								md: 'nowrap',
-							}}
-						>
-							<Controller
-								name="youtubeUrl"
-								control={control}
-								defaultValue={''}
-								rules={{
-									required: !watchFields.fileSwitch,
-									pattern: /^http(s?):\/\/(www\.)?youtube\.com\/watch\?v=.+/,
-								}}
-								render={({ field, fieldState }) => {
-									let error = '';
-									if (fieldState.error?.type === 'pattern') {
-										error = 'Invalid YouTube Link';
-									} else if (fieldState.error?.type === 'required') {
-										error = 'Required';
-									}
-									return (
-										<TextField
-											{...field}
-											error={!!error}
-											helperText={error}
-											label="Youtube URL"
-											variant="standard"
-											disabled={watchFields.fileSwitch}
-											fullWidth
-										/>
-									);
-								}}
-							/>
-							<Controller
-								name="fileSwitch"
-								control={control}
-								defaultValue={false}
-								render={({ field }) => <Switch {...field} checked={field.value} />}
-							/>
-							<Controller
-								name="file"
-								control={control}
-								defaultValue={null}
-								rules={{ required: watchFields.fileSwitch }}
-								render={({ field, fieldState }) => {
-									let error = '';
-									if (fieldState.error?.type === 'required') {
-										error = 'Required';
-									}
-									return (
-										<TextField
-											value={watchFields.file?.name || ''}
-											error={!!error}
-											helperText={error}
-											variant="standard"
-											disabled={true}
-											InputProps={{
-												endAdornment: (
-													<InputAdornment position="end">
-														<Tooltip title="Upload">
-															<Box>
-																<IconButton
-																	onClick={() => {
-																		if (fileRef.current) {
-																			const file = fileRef.current;
-																			file.click();
-																		}
-																	}}
-																	disabled={!watchFields.fileSwitch}
-																>
-																	<input
-																		ref={fileRef}
-																		onChange={(e) => {
-																			const files = e.target.files;
-																			if (files) {
-																				const file = files[0];
-																				setValue('file', file);
-																				trigger();
-																			}
-																		}}
-																		onBlur={field.onBlur}
-																		hidden
-																		type="file"
-																		accept="audio/*"
-																	/>
-																	<FileUpload />
-																</IconButton>
-															</Box>
-														</Tooltip>
-													</InputAdornment>
-												),
-											}}
-											fullWidth
-										/>
-									);
-								}}
-							/>
-						</Stack>
-						<Stack
-							direction="row"
-							alignItems="center"
-							spacing={{
-								xs: 0,
-								md: 2,
-							}}
-							flexWrap={{
-								xs: 'wrap',
-								md: 'nowrap',
-							}}
-						>
-							<Paper variant="outlined">
-								<img
-									alt="blank"
-									width="100%"
-									src={
-										watchFields.resolvedArtworkUrl ||
-										'https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/blank_image.jpeg'
-									}
-								/>
-							</Paper>
+				<Box>
+					<Container>
+						<Stack component="form" onSubmit={handleSubmit(onSubmit)} spacing={4}>
 							<Stack
-								spacing={2}
-								direction="column"
-								width={{
-									xs: '100%',
-									md: '50%',
+								direction="row"
+								alignItems="center"
+								spacing={{
+									xs: 0,
+									md: 2,
+								}}
+								flexWrap={{
+									xs: 'wrap',
+									md: 'nowrap',
 								}}
 							>
 								<Controller
-									name="artworkUrl"
+									name="youtubeUrl"
 									control={control}
 									defaultValue={''}
-									render={({ field, fieldState }) => (
-										<TextField
-											{...field}
-											error={!!fieldState.error}
-											helperText={fieldState.error?.message}
-											label="Artwork URL"
-											variant="standard"
-											fullWidth
-											disabled={tagsLoading}
-										/>
-									)}
+									rules={{
+										required: !watchFields.fileSwitch,
+										pattern: /^http(s?):\/\/(www\.)?youtube\.com\/watch\?v=.+/,
+									}}
+									render={({ field, fieldState }) => {
+										let error = '';
+										if (fieldState.error?.type === 'pattern') {
+											error = 'Invalid YouTube Link';
+										} else if (fieldState.error?.type === 'required') {
+											error = 'Required';
+										}
+										return (
+											<TextField
+												{...field}
+												error={!!error}
+												helperText={error}
+												label="Youtube URL"
+												variant="standard"
+												disabled={watchFields.fileSwitch}
+												fullWidth
+											/>
+										);
+									}}
 								/>
 								<Controller
-									name="resolvedArtworkUrl"
+									name="fileSwitch"
+									control={control}
+									defaultValue={false}
+									render={({ field }) => <Switch {...field} checked={field.value} />}
+								/>
+								<Controller
+									name="file"
+									control={control}
+									defaultValue={null}
+									rules={{ required: watchFields.fileSwitch }}
+									render={({ field, fieldState }) => {
+										let error = '';
+										if (fieldState.error?.type === 'required') {
+											error = 'Required';
+										}
+										return (
+											<TextField
+												value={watchFields.file?.name || ''}
+												error={!!error}
+												helperText={error}
+												variant="standard"
+												disabled={true}
+												InputProps={{
+													endAdornment: (
+														<InputAdornment position="end">
+															<Tooltip title="Upload">
+																<Box>
+																	<IconButton
+																		onClick={() => {
+																			if (fileRef.current) {
+																				const file = fileRef.current;
+																				file.click();
+																			}
+																		}}
+																		disabled={!watchFields.fileSwitch}
+																	>
+																		<input
+																			ref={fileRef}
+																			onChange={(e) => {
+																				const files = e.target.files;
+																				if (files) {
+																					const file = files[0];
+																					setValue('file', file);
+																					trigger();
+																				}
+																			}}
+																			onBlur={field.onBlur}
+																			hidden
+																			type="file"
+																			accept="audio/*"
+																		/>
+																		<FileUpload />
+																	</IconButton>
+																</Box>
+															</Tooltip>
+														</InputAdornment>
+													),
+												}}
+												fullWidth
+											/>
+										);
+									}}
+								/>
+							</Stack>
+							<Stack
+								direction="row"
+								alignItems="center"
+								spacing={{
+									xs: 0,
+									md: 2,
+								}}
+								flexWrap={{
+									xs: 'wrap',
+									md: 'nowrap',
+								}}
+							>
+								<Paper variant="outlined">
+									<img
+										alt="blank"
+										width="100%"
+										src={
+											watchFields.resolvedArtworkUrl ||
+											'https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/blank_image.jpeg'
+										}
+									/>
+								</Paper>
+								<Stack
+									spacing={2}
+									direction="column"
+									width={{
+										xs: '100%',
+										md: '50%',
+									}}
+								>
+									<Controller
+										name="artworkUrl"
+										control={control}
+										defaultValue={''}
+										render={({ field, fieldState }) => (
+											<TextField
+												{...field}
+												error={!!fieldState.error}
+												helperText={fieldState.error?.message}
+												label="Artwork URL"
+												variant="standard"
+												fullWidth
+												disabled={tagsLoading}
+											/>
+										)}
+									/>
+									<Controller
+										name="resolvedArtworkUrl"
+										control={control}
+										defaultValue={''}
+										render={({ field }) => (
+											<TextField
+												{...field}
+												label="Resolved Artwork URL"
+												variant="standard"
+												fullWidth
+												disabled
+												InputProps={{
+													endAdornment: createInputLoadingAdornment(artworkLoading || tagsLoading),
+												}}
+											/>
+										)}
+									/>
+									<Button onClick={() => setValue('artworkUrl', '')}>Clear</Button>
+								</Stack>
+							</Stack>
+							<Stack
+								direction="row"
+								justifyContent="space-around"
+								spacing={{
+									xs: 0,
+									md: 2,
+								}}
+								flexWrap={{
+									xs: 'wrap',
+									md: 'nowrap',
+								}}
+							>
+								<Controller
+									name="title"
+									control={control}
+									defaultValue={''}
+									rules={{ required: true }}
+									render={({ field, fieldState }) => {
+										let error = '';
+										if (fieldState.error?.type === 'required') {
+											error = 'Required';
+										}
+										return (
+											<TextField
+												{...field}
+												error={!!error}
+												helperText={error}
+												label="Title"
+												variant="standard"
+												fullWidth
+												disabled={tagsLoading}
+												InputProps={{
+													endAdornment: createInputLoadingAdornment(tagsLoading),
+												}}
+											/>
+										);
+									}}
+								/>
+								<Controller
+									name="artist"
+									control={control}
+									defaultValue={''}
+									rules={{ required: true }}
+									render={({ field, fieldState }) => {
+										let error = '';
+										if (fieldState.error?.type === 'required') {
+											error = 'Required';
+										}
+										return (
+											<TextField
+												{...field}
+												error={!!error}
+												helperText={error}
+												label="Artist"
+												variant="standard"
+												fullWidth
+												disabled={tagsLoading}
+												InputProps={{
+													endAdornment: createInputLoadingAdornment(tagsLoading),
+												}}
+											/>
+										);
+									}}
+								/>
+								<Controller
+									name="album"
+									control={control}
+									defaultValue={''}
+									rules={{ required: true }}
+									render={({ field, fieldState }) => {
+										let error = '';
+										if (fieldState.error?.type === 'required') {
+											error = 'Required';
+										}
+										return (
+											<TextField
+												{...field}
+												error={!!error}
+												helperText={error}
+												label="Album"
+												variant="standard"
+												fullWidth
+												disabled={tagsLoading}
+												InputProps={{
+													endAdornment: createInputLoadingAdornment(tagsLoading),
+												}}
+											/>
+										);
+									}}
+								/>
+								<Controller
+									name="grouping"
 									control={control}
 									defaultValue={''}
 									render={({ field }) => (
 										<TextField
 											{...field}
-											label="Resolved Artwork URL"
+											label="Grouping"
 											variant="standard"
 											fullWidth
-											disabled
+											disabled={tagsLoading || groupingLoading}
 											InputProps={{
-												endAdornment: createInputLoadingAdornment(artworkLoading || tagsLoading),
+												endAdornment: createInputLoadingAdornment(tagsLoading || groupingLoading),
 											}}
 										/>
 									)}
 								/>
-								<Button onClick={() => setValue('artworkUrl', '')}>Clear</Button>
+							</Stack>
+							<Stack
+								direction="row"
+								justifyContent="center"
+								spacing={2}
+								flexWrap={{
+									xs: 'wrap',
+									md: 'nowrap',
+								}}
+							>
+								<LoadingButton
+									disabled={artworkLoading || tagsLoading || groupingLoading}
+									loading={jobLoading}
+									variant="contained"
+									type="submit"
+								>
+									Download / Convert
+								</LoadingButton>
+								<Button variant="contained" onClick={() => reset()}>
+									Reset
+								</Button>
 							</Stack>
 						</Stack>
-						<Stack
-							direction="row"
-							justifyContent="space-around"
-							spacing={{
-								xs: 0,
-								md: 2,
-							}}
-							flexWrap={{
-								xs: 'wrap',
-								md: 'nowrap',
-							}}
-						>
-							<Controller
-								name="title"
-								control={control}
-								defaultValue={''}
-								rules={{ required: true }}
-								render={({ field, fieldState }) => {
-									let error = '';
-									if (fieldState.error?.type === 'required') {
-										error = 'Required';
-									}
-									return (
-										<TextField
-											{...field}
-											error={!!error}
-											helperText={error}
-											label="Title"
-											variant="standard"
-											fullWidth
-											disabled={tagsLoading}
-											InputProps={{
-												endAdornment: createInputLoadingAdornment(tagsLoading),
-											}}
-										/>
-									);
-								}}
-							/>
-							<Controller
-								name="artist"
-								control={control}
-								defaultValue={''}
-								rules={{ required: true }}
-								render={({ field, fieldState }) => {
-									let error = '';
-									if (fieldState.error?.type === 'required') {
-										error = 'Required';
-									}
-									return (
-										<TextField
-											{...field}
-											error={!!error}
-											helperText={error}
-											label="Artist"
-											variant="standard"
-											fullWidth
-											disabled={tagsLoading}
-											InputProps={{
-												endAdornment: createInputLoadingAdornment(tagsLoading),
-											}}
-										/>
-									);
-								}}
-							/>
-							<Controller
-								name="album"
-								control={control}
-								defaultValue={''}
-								rules={{ required: true }}
-								render={({ field, fieldState }) => {
-									let error = '';
-									if (fieldState.error?.type === 'required') {
-										error = 'Required';
-									}
-									return (
-										<TextField
-											{...field}
-											error={!!error}
-											helperText={error}
-											label="Album"
-											variant="standard"
-											fullWidth
-											disabled={tagsLoading}
-											InputProps={{
-												endAdornment: createInputLoadingAdornment(tagsLoading),
-											}}
-										/>
-									);
-								}}
-							/>
-							<Controller
-								name="grouping"
-								control={control}
-								defaultValue={''}
-								render={({ field }) => (
-									<TextField
-										{...field}
-										label="Grouping"
-										variant="standard"
-										fullWidth
-										disabled={tagsLoading || groupingLoading}
-										InputProps={{
-											endAdornment: createInputLoadingAdornment(tagsLoading || groupingLoading),
-										}}
-									/>
-								)}
-							/>
-						</Stack>
-						<Stack
-							direction="row"
-							justifyContent="center"
-							spacing={2}
-							flexWrap={{
-								xs: 'wrap',
-								md: 'nowrap',
-							}}
-						>
-							<LoadingButton
-								disabled={artworkLoading || tagsLoading || groupingLoading}
-								loading={jobLoading}
-								variant="contained"
-								type="submit"
-							>
-								Download / Convert
-							</LoadingButton>
-							<Button variant="contained" onClick={() => reset()}>
-								Reset
-							</Button>
-						</Stack>
-					</Stack>
-				</Container>
+					</Container>
+				</Box>
 			</Stack>
 		),
 		[

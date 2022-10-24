@@ -21,7 +21,7 @@ import {
 	CssBaseline,
 } from '@mui/material';
 import { CloudDownload, YouTube, Subscriptions, Queue, Menu, Close } from '@mui/icons-material';
-import Theme from './theme';
+import { createCustomTheme } from './theme';
 import MusicDownloader from './pages/MusicDownloader';
 import YoutubeChannel from './pages/YoutubeChannel';
 import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
@@ -155,7 +155,7 @@ const AppShell = (props: ComponentProps<any>) => {
 
 const App = () => {
 	return (
-		<ThemeProvider theme={Theme}>
+		<ThemeProvider theme={createCustomTheme('dark')}>
 			<CssBaseline />
 			<AppShell>
 				<Switch>

@@ -1,24 +1,32 @@
 import { createTheme } from '@mui/material/styles';
-import { blue, yellow } from '@mui/material/colors';
+import { blue } from '@mui/material/colors';
+import { PaletteMode } from '@mui/material';
 
-export default createTheme({
-	palette: {
-		mode: 'dark',
-		primary: {
-			main: blue[700],
-			dark: blue[900],
+export const createCustomTheme = (mode: PaletteMode) =>
+	createTheme({
+		palette: {
+			mode,
+			primary: {
+				main: blue[500],
+			},
 		},
-		secondary: {
-			main: yellow[700],
-			dark: yellow[900],
+		components: {
+			MuiAppBar: {
+				styleOverrides: { root: { backgroundColor: mode === 'dark' ? blue[900] : blue[700], borderRadius: 0 } },
+			},
+			MuiListItemIcon: {
+				styleOverrides: { root: { color: blue[500] } },
+			},
+			MuiLink: {
+				styleOverrides: {
+					root: {
+						color: 'white',
+						textDecoration: 'none',
+						'&:hover': {
+							textDecoration: 'underline',
+						},
+					},
+				},
+			},
 		},
-	},
-	components: {
-		MuiAppBar: {
-			styleOverrides: { root: { backgroundColor: blue[900] } },
-		},
-		MuiListItemIcon: {
-			styleOverrides: { root: { color: blue[400] } },
-		},
-	},
-});
+	});
