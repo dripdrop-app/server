@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Card, CardMedia, CardContent, Typography, Link, Stack, Box, useTheme, useMediaQuery } from '@mui/material';
+import { Card, CardMedia, CardContent, Typography, Link, Stack, Box } from '@mui/material';
 import { YoutubeVideoQueueButton, YoutubeVideoWatchButton } from './YoutubeVideoButtons';
 
 interface VideoCardProps {
@@ -14,9 +14,6 @@ const VideoCard = (props: VideoCardProps) => {
 
 	const cardRef = useRef<HTMLDivElement>(null);
 	const imageRef = useRef<HTMLImageElement>(null);
-
-	const theme = useTheme();
-	const isSmall = useMediaQuery(theme.breakpoints.down('md'));
 
 	useEffect(() => {
 		const image = imageRef.current;
@@ -37,7 +34,7 @@ const VideoCard = (props: VideoCardProps) => {
 				observer.unobserve(image);
 			}
 		};
-	}, [isSmall]);
+	}, []);
 
 	const onMouseMove = useCallback((e: MouseEvent) => {
 		const card = cardRef.current;
@@ -72,13 +69,23 @@ const VideoCard = (props: VideoCardProps) => {
 					<CardMedia ref={imageRef} component="img" image={video.thumbnail} loading="lazy" />
 					<Link component={RouterLink} to={videoLink} sx={{ position: 'absolute' }}>
 						<Box
-							sx={{ background: cardHovered ? 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0))' : '' }}
+							sx={(theme) => ({
+								background: cardHovered ? 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0))' : '',
+								[theme.breakpoints.down('md')]: {
+									background: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0))',
+								},
+							})}
 							height={imageDimensions.height}
 							width={imageDimensions.width}
 						/>
 					</Link>
 					<Box
-						display={cardHovered ? 'block' : 'none'}
+						sx={(theme) => ({
+							display: cardHovered ? 'block' : 'none',
+							[theme.breakpoints.down('md')]: {
+								display: 'block',
+							},
+						})}
 						position="absolute"
 						width="100%"
 						alignItems="center"
