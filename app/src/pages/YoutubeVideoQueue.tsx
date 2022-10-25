@@ -1,40 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-	Box,
-	Stack,
-	IconButton,
-	Typography,
-	List,
-	ListItem,
-	ListItemAvatar,
-	Avatar,
-	ListItemText,
-	ListItemButton,
-	useTheme,
-	useMediaQuery,
-	Divider,
-	Container,
-	Grid,
-} from '@mui/material';
-import { RemoveFromQueue } from '@mui/icons-material';
+import { Box, Stack, Typography, Divider, Container, Grid } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-	hideVideoQueueDisplay,
-	setVideoQueuePlayerVideo,
-	showVideoQueueDisplay,
-	setVideoQueueIndex,
-} from '../state/youtube';
-import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-import { useDeleteYoutubeVideoQueueMutation, useYoutubeVideoQueueQuery } from '../api/youtube';
-import YoutubeVideosPage from '../components/Youtube/YoutubeVideosPage';
+import { hideVideoQueueDisplay, setVideoQueuePlayerVideo, showVideoQueueDisplay } from '../state/youtube';
+import { useYoutubeVideoQueueQuery } from '../api/youtube';
 import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
 import VideoButtons from '../components/Youtube/YoutubeVideoButtons';
-import InfiniteScroll from '../components/InfiniteScroll';
 import RouterLink from '../components/RouterLink';
 
 const YoutubeVideoQueue = () => {
-	const [pages, setPagesState] = useState(1);
-	const pagesLoaded = useRef<Record<number, boolean>>({});
+	const [filter, setFilter] = useState<YoutubeSubscriptionBody>({
+		page: 1,
+		perPage: 48,
+	});
+	const continueLoadingRef = useRef(false);
 	const boxRef = useRef<HTMLDivElement>(null);
 
 	const { queueIndex } = useSelector((state: RootState) => ({
@@ -42,11 +20,7 @@ const YoutubeVideoQueue = () => {
 	}));
 	const dispatch = useDispatch();
 
-	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.only('xs'));
-
 	const videoQueueStatus = useYoutubeVideoQueueQuery(queueIndex);
-	const [unQueueVideo, unQueuedVideoStatus] = useDeleteYoutubeVideoQueueMutation();
 
 	const { currentVideo } = useMemo(() => {
 		if (videoQueueStatus.isSuccess && videoQueueStatus.currentData) {
@@ -106,7 +80,7 @@ const YoutubeVideoQueue = () => {
 				/> */}
 			</Box>
 		);
-	}, [dispatch, isMobile, pages, unQueueVideo, unQueuedVideoStatus.isLoading]);
+	}, []);
 
 	const VideoPlayerButtons = useMemo(() => {
 		if (currentVideo) {
@@ -152,23 +126,21 @@ const YoutubeVideoQueue = () => {
 
 	return useMemo(
 		() => (
-			<YoutubePage>
-				<Stack>
-					<Box marginBottom={2} height="80vh">
-						<YoutubeVideoQueuePlayer playing={true} />
-					</Box>
-					<Box margin={1}>{VideoPlayerButtons}</Box>
-					<Divider />
-					<Box margin={1}>
-						<Container>
-							<Box margin={2}>
-								<Typography variant="h5">Queue</Typography>
-							</Box>
-							<Box>{QueueSlide}</Box>
-						</Container>
-					</Box>
-				</Stack>
-			</YoutubePage>
+			<Stack>
+				<Box marginBottom={2} height="80vh">
+					<YoutubeVideoQueuePlayer playing={true} />
+				</Box>
+				<Box margin={1}>{VideoPlayerButtons}</Box>
+				<Divider />
+				<Box margin={1}>
+					<Container>
+						<Box margin={2}>
+							<Typography variant="h5">Queue</Typography>
+						</Box>
+						<Box>{QueueSlide}</Box>
+					</Container>
+				</Box>
+			</Stack>
 		),
 		[QueueSlide, VideoPlayerButtons]
 	);

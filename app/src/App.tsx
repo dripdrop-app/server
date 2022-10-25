@@ -70,7 +70,7 @@ const AppShell = (props: ComponentProps<any>) => {
 				icon: Subscriptions,
 			},
 			Queue: {
-				link: '/youtube/queue',
+				link: '/youtube/videos/queue',
 				icon: Queue,
 			},
 		};
