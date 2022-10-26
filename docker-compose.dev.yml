@@ -23,11 +23,11 @@ services:
     container_name: web
     restart: always
     volumes:
-      - ./app:/src
+      - ./:/src
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.web
-    entrypoint: npm start
+    entrypoint: npm --prefix app start
     ports:
       - $PORT:$PORT
   worker:
