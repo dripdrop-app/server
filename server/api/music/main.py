@@ -1,5 +1,6 @@
 import base64
 import json
+import math
 import re
 import traceback
 import uuid
@@ -74,20 +75,21 @@ async def get_jobs(
     per_page: int = Path(..., le=50, gt=0),
     user: User = Depends(get_authenticated_user),
 ):
-    query = (
+    jobs_query = (
         select(MusicJobs)
         .where(MusicJobs.user_email == user.email)
-        .order_by(MusicJobs.created_at.desc())
+        .alias(name="music_jobs")
+    )
+    query = (
+        select(jobs_query)
+        .order_by(jobs_query.c.created_at.desc())
+        .select_from(jobs_query)
         .offset((page - 1) * per_page)
         .limit(per_page)
     )
-    count_query = select(func.count(MusicJobs.id)).where(
-        MusicJobs.user_email == user.email
-    )
+    count_query = select(func.count(jobs_query.c.id)).select_from(jobs_query)
     count = await db.fetch_val(count_query)
-    total_pages = count // per_page + 1
-    if count % per_page == 0:
-        total_pages -= 1
+    total_pages = math.ceil(count / per_page)
     jobs = list(map(lambda row: MusicJob.parse_obj(row), await db.fetch_all(query)))
     return MusicResponses.AllJobs(jobs=jobs, total_pages=total_pages).dict(
         by_alias=True

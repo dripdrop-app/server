@@ -96,6 +96,7 @@ class YoutubeResponses:
 
     class Videos(ResponseBaseModel):
         videos: List[YoutubeVideoResponse]
+        total_pages: int
 
     class Video(ResponseBaseModel):
         video: YoutubeVideoResponse
