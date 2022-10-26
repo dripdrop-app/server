@@ -2,19 +2,19 @@ import { useEffect, useMemo } from 'react';
 import { Avatar, Box, Container, Grid, IconButton, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { MenuOpen, Pause, PlayArrow, SkipNext, SkipPrevious } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import { useYoutubeVideoQueueQuery } from '../../../api/youtube';
+import { useYoutubeVideoQueueQuery } from '../../api/youtube';
 import {
 	playVideoQueue,
 	pauseVideoQueue,
 	setVideoQueuePlayerVideo,
 	reverseVideoQueue,
 	advanceVideoQueue,
-} from '../../../state/youtube';
-import { generateTime } from '../../../utils/helpers';
-import ConditionalDisplay from '../../ConditionalDisplay';
+} from '../../state/youtube';
+import { generateTime } from '../../utils/helpers';
+import ConditionalDisplay from '../ConditionalDisplay';
 import YoutubeVideoQueuePlayer from './YoutubeVideoQueuePlayer';
-import VideoButtons from '../YoutubeVideoButtons';
-import RouterLink from '../../RouterLink';
+import VideoButtons from './YoutubeVideoButtons';
+import RouterLink from '../RouterLink';
 
 const YoutubeVideoQueueDisplay = () => {
 	const { playing, duration, progress, hide, ended, queueIndex } = useSelector((state: RootState) => ({

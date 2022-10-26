@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Box, Stack, Typography, Link } from '@mui/material';
 import { hideVideoQueueDisplay, setVideoQueuePlayerVideo, showVideoQueueDisplay } from '../state/youtube';
 import { useYoutubeVideoQueueQuery } from '../api/youtube';
-import YoutubeVideoQueuePlayer from '../components/Youtube/Queue/YoutubeVideoQueuePlayer';
+import YoutubeVideoQueuePlayer from '../components/Youtube/YoutubeVideoQueuePlayer';
 import {
 	YoutubeVideoLikeButton,
 	YoutubeVideoQueueButton,
