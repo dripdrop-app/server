@@ -45,7 +45,14 @@ const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
 
 	const videosStatus = useYoutubeVideosQuery(filter);
 
-	const totalPages = useMemo(() => (videosStatus.data ? videosStatus.data.totalPages : 1), [videosStatus.data]);
+	const totalPages = useMemo(() => {
+		if (videosStatus.isSuccess && videosStatus.currentData) {
+			return videosStatus.currentData.totalPages;
+		} else if (videosStatus.data) {
+			return videosStatus.data.totalPages;
+		}
+		return 1;
+	}, [videosStatus.currentData, videosStatus.data, videosStatus.isSuccess]);
 
 	const getVideoIndex = useCallback(
 		(index: number) => (filter.page - 1) * filter.perPage + index + 1,
