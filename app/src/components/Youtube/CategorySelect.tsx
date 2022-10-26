@@ -6,6 +6,7 @@ import {
 	Divider,
 	FormControlLabel,
 	FormGroup,
+	IconButton,
 	Modal,
 	Paper,
 	Stack,
@@ -13,7 +14,7 @@ import {
 	Theme,
 	Typography,
 } from '@mui/material';
-import { Category } from '@mui/icons-material';
+import { Category, Close } from '@mui/icons-material';
 import { useYoutubeVideoCategoriesQuery } from '../../api/youtube';
 
 interface CategorySelectProps extends ChannelBody {
@@ -82,12 +83,14 @@ const CategorySelect = (props: CategorySelectProps) => {
 					Categories
 				</Button>
 				<Modal open={openModal} onClose={() => setOpenModal(false)}>
-					<Box
-						sx={{ top: '25%', height: '50%', left: '25%', width: '50%', position: 'absolute', padding: 4 }}
-						component={Paper}
-					>
+					<Box top="25%" left="25%" width="50%" height="50%" position="absolute" padding={4} component={Paper}>
 						<Stack direction="column" spacing={2}>
-							<Typography variant="h6">Categories</Typography>
+							<Stack direction="row" justifyContent="space-between">
+								<Typography variant="h6">Categories</Typography>
+								<IconButton onClick={() => setOpenModal(false)}>
+									<Close />
+								</IconButton>
+							</Stack>
 							<Divider />
 							<Stack direction="row" flexWrap="wrap" spacing={2}>
 								<FormGroup>{RenderCategories}</FormGroup>

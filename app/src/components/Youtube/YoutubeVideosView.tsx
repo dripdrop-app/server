@@ -36,10 +36,10 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 
 	useEffect(() => {
 		if (videosStatus.isSuccess && videosStatus.currentData) {
-			const { videos } = videosStatus.currentData;
-			continueLoadingRef.current = videos.length === filter.perPage;
+			const { totalPages } = videosStatus.currentData;
+			continueLoadingRef.current = totalPages < filter.page;
 		}
-	}, [filter.perPage, videosStatus.currentData, videosStatus.isSuccess]);
+	}, [filter.page, videosStatus.currentData, videosStatus.isSuccess]);
 
 	useEffect(() => {
 		if (videosStatus.isFetching || videosStatus.isLoading) {
@@ -50,7 +50,7 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	return useMemo(
 		() => (
 			<Box>
-				<Stack direction="row" justifyContent="space-between" paddingX={2} flexWrap="wrap">
+				<Stack direction="row" justifyContent="space-between" paddingX={2} paddingBottom={1} flexWrap="wrap">
 					<FormControlLabel
 						control={
 							<Checkbox

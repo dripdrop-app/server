@@ -61,7 +61,7 @@ const JobList = () => {
 						count={totalPages}
 						color="primary"
 						shape="rounded"
-						onChange={(e, page) => setArgs((value) => ({ ...value, page }))}
+						onChange={(e, newPage) => setArgs((prevState) => ({ ...prevState, page: newPage }))}
 					/>
 				</Stack>
 				<Divider />

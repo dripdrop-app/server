@@ -136,11 +136,10 @@ const AppShell = (props: ComponentProps<any>) => {
 					padding={4}
 					sx={(theme) => ({
 						width: '100%',
+						height: '100%',
+						marginLeft: `${listWidth}px`,
 						[theme.breakpoints.down('md')]: {
 							marginLeft: 0,
-						},
-						[theme.breakpoints.up('md')]: {
-							marginLeft: `${listWidth}px`,
 						},
 					})}
 				>

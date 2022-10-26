@@ -1,7 +1,6 @@
-import { useMemo } from 'react';
-import { Box, Tooltip } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { Box, CircularProgress, IconButton, Tooltip } from '@mui/material';
 import { AddToQueue, RemoveFromQueue, ThumbUp, RemoveRedEye } from '@mui/icons-material';
-import { LoadingButton } from '@mui/lab';
 import {
 	useAddYoutubeVideoLikeMutation,
 	useAddYoutubeVideoQueueMutation,
@@ -19,17 +18,23 @@ export const YoutubeVideoLikeButton = (props: VideoButtonsProps) => {
 	const [likeVideo, likeVideoStatus] = useAddYoutubeVideoLikeMutation();
 	const [unLikeVideo, unLikeVideoStatus] = useDeleteYoutubeVideoLikeMutation();
 
+	const loading = useMemo(
+		() => likeVideoStatus.isLoading || unLikeVideoStatus.isLoading,
+		[likeVideoStatus.isLoading, unLikeVideoStatus.isLoading]
+	);
+
 	return useMemo(
 		() => (
-			<LoadingButton
-				loading={likeVideoStatus.isLoading || unLikeVideoStatus.isLoading}
+			<IconButton
+				disabled={loading}
 				onClick={() => (video.liked ? unLikeVideo(video.id) : likeVideo(video.id))}
 				color={video.liked ? 'success' : 'primary'}
 			>
-				<ThumbUp />
-			</LoadingButton>
+				<CircularProgress sx={{ display: loading ? 'block' : 'none' }} />
+				<ThumbUp sx={{ display: !loading ? 'block' : 'none' }} />
+			</IconButton>
 		),
-		[likeVideo, likeVideoStatus.isLoading, unLikeVideo, unLikeVideoStatus.isLoading, video.id, video.liked]
+		[likeVideo, loading, unLikeVideo, video.id, video.liked]
 	);
 };
 
@@ -39,33 +44,47 @@ export const YoutubeVideoQueueButton = (props: VideoButtonsProps) => {
 	const [queueVideo, queueVideoStatus] = useAddYoutubeVideoQueueMutation();
 	const [unQueueVideo, unQueueVideoStatus] = useDeleteYoutubeVideoQueueMutation();
 
+	const loading = useMemo(
+		() => queueVideoStatus.isLoading || unQueueVideoStatus.isLoading,
+		[queueVideoStatus.isLoading, unQueueVideoStatus.isLoading]
+	);
+
 	return useMemo(
 		() => (
-			<LoadingButton
-				loading={queueVideoStatus.isLoading || unQueueVideoStatus.isLoading}
+			<IconButton
+				disabled={loading}
 				onClick={() => (video.queued ? unQueueVideo(video.id) : queueVideo(video.id))}
 				color={video.queued ? 'error' : 'inherit'}
 			>
-				<AddToQueue sx={{ display: video.queued ? 'none' : 'block' }} />
-				<RemoveFromQueue color="error" sx={{ display: video.queued ? 'block' : 'none' }} />
-			</LoadingButton>
+				<CircularProgress sx={{ display: loading ? 'block' : 'none' }} />
+				<AddToQueue sx={{ display: video.queued && !loading ? 'none' : 'block' }} />
+				<RemoveFromQueue color="error" sx={{ display: video.queued && !loading ? 'block' : 'none' }} />
+			</IconButton>
 		),
-		[queueVideo, queueVideoStatus.isLoading, unQueueVideo, unQueueVideoStatus.isLoading, video.id, video.queued]
+		[loading, queueVideo, unQueueVideo, video.id, video.queued]
 	);
 };
 
 export const YoutubeVideoWatchButton = (props: VideoButtonsProps) => {
 	const { video } = props;
+	const [open, setOpen] = useState(false);
 
 	const watchedDate = video.watched ? new Date(video.watched).toLocaleDateString() : '';
 
 	return useMemo(
 		() => (
-			<Tooltip title={`Watched on ${watchedDate}`}>
-				<RemoveRedEye sx={{ display: video.watched ? 'block' : 'none' }} />
+			<Tooltip
+				open={open}
+				onOpen={() => setOpen(true)}
+				onClose={() => setOpen(false)}
+				title={`Watched on ${watchedDate}`}
+			>
+				<IconButton onClick={() => setOpen(true)}>
+					<RemoveRedEye sx={{ display: video.watched ? 'block' : 'none' }} />
+				</IconButton>
 			</Tooltip>
 		),
-		[video.watched, watchedDate]
+		[open, video.watched, watchedDate]
 	);
 };
 

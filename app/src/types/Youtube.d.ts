@@ -67,6 +67,7 @@ interface YoutubeVideosBody extends ChannelBody, PageBody {
 
 interface YoutubeVideosResponse {
 	videos: YoutubeVideo[];
+	totalPages: number;
 }
 
 interface YoutubeVideoBody {

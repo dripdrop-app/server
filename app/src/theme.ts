@@ -7,7 +7,8 @@ export const createCustomTheme = (mode: PaletteMode) =>
 		palette: {
 			mode,
 			primary: {
-				main: blue[500],
+				main: blue[700],
+				dark: blue[900],
 			},
 		},
 		components: {
