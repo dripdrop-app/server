@@ -85,7 +85,7 @@ const AppShell = (props: ComponentProps<any>) => {
 			return (
 				<ListItem key={title} disablePadding>
 					<Tooltip title={title} placement="right">
-						<ListItemButton sx={{ padding: 2 }} component={Link} to={info.link}>
+						<ListItemButton sx={{ padding: 2 }} component={Link} to={info.link} onClick={() => setOpenDrawer(false)}>
 							<ListItemIcon
 								sx={(theme) => ({
 									[theme.breakpoints.up('md')]: {
