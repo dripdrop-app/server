@@ -1,97 +1,29 @@
-import { useEffect, useMemo } from 'react';
-import { Box, CircularProgress, Container, Divider, Grid, Stack, Typography } from '@mui/material';
-import ReactPlayer from 'react-player';
-import { useYoutubeVideoQuery, useAddYoutubeVideoWatchMutation } from '../api/youtube';
-import YoutubeVideoCard from '../components/Youtube/Content/YoutubeVideoCard';
-import VideoButtons from '../components/Youtube/Content/VideoButtons';
-import YoutubePage from '../components/Youtube/Auth/YoutubePage';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import ReactPlayer from 'react-player';
+import { Box, CircularProgress, Divider, Grid, Stack, Typography } from '@mui/material';
+import { useYoutubeVideoQuery, useAddYoutubeVideoWatchMutation } from '../api/youtube';
+import YoutubeVideoCard from '../components/Youtube/YoutubeVideoCard';
+import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 import { hideVideoQueueDisplay, showVideoQueueDisplay } from '../state/youtube';
-import RouterLink from '../components/RouterLink';
+import YoutubeVideoInformation from '../components/Youtube/YoutubeVideoInformation';
 
 interface YoutubeVideoProps {
 	id: string;
 }
 
 const YoutubeVideo = (props: YoutubeVideoProps) => {
-	const videoStatus = useYoutubeVideoQuery({ videoID: props.id });
+	const videoStatus = useYoutubeVideoQuery({ videoID: props.id, relatedLength: 4 });
+
+	const [height, setHeight] = useState('100%');
+	const ref = useRef<HTMLDivElement>(null);
+
 	const [watchVideo] = useAddYoutubeVideoWatchMutation();
 
 	const dispatch = useDispatch();
 
-	const Content = useMemo(() => {
-		if (videoStatus.data) {
-			const { video, relatedVideos } = videoStatus.data;
-			const publishedAt = new Date(video.publishedAt).toLocaleDateString();
-			return (
-				<Stack>
-					<Box marginBottom={2} height="80vh">
-						<ReactPlayer
-							height="100%"
-							width="100%"
-							pip
-							url={`https://youtube.com/embed/${video.id}`}
-							controls={true}
-							playing={true}
-							onProgress={({ playedSeconds }) => {
-								if (playedSeconds > 20 && !video.watched) {
-									watchVideo(video.id);
-								}
-							}}
-						/>
-					</Box>
-					<Box margin={1}>
-						<Container>
-							<Grid container>
-								<Grid item md={8}>
-									<Typography variant="h5">{video.title}</Typography>
-								</Grid>
-								<Grid item md={4} textAlign="right">
-									<VideoButtons video={video} />
-								</Grid>
-							</Grid>
-							<Grid container>
-								<Grid item md={8}>
-									<Typography color="primary" variant="h6">
-										<RouterLink to={`/youtube/channel/${video.channelId}`}>{video.channelTitle}</RouterLink>
-									</Typography>
-								</Grid>
-								<Grid item md={4} textAlign="right">
-									<Typography variant="h6">{publishedAt}</Typography>
-								</Grid>
-							</Grid>
-						</Container>
-					</Box>
-					<Divider />
-					<Box margin={1}>
-						<Container>
-							<Box margin={1}>
-								<Typography variant="h5">Related Videos</Typography>
-							</Box>
-							<Grid container>
-								{relatedVideos.map((video) => (
-									<Grid item xs={12} sm={6} md={12 / 5} padding={1} key={video.id}>
-										<YoutubeVideoCard sx={{ height: '100%' }} video={video} />
-									</Grid>
-								))}
-							</Grid>
-						</Container>
-					</Box>
-				</Stack>
-			);
-		} else if (videoStatus.isLoading) {
-			return (
-				<Stack padding={10} direction="row" justifyContent="center">
-					<CircularProgress />
-				</Stack>
-			);
-		}
-		return (
-			<Stack padding={10} direction="row" justifyContent="center">
-				Failed to load video
-			</Stack>
-		);
-	}, [videoStatus.data, videoStatus.isLoading, watchVideo]);
+	const video = useMemo(() => videoStatus.data?.video, [videoStatus.data?.video]);
+	const relatedVideos = useMemo(() => videoStatus.data?.relatedVideos, [videoStatus.data?.relatedVideos]);
 
 	useEffect(() => {
 		dispatch(hideVideoQueueDisplay());
@@ -100,7 +32,79 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 		};
 	}, [dispatch]);
 
-	return <YoutubePage>{Content}</YoutubePage>;
+	useEffect(() => {
+		const element = ref.current;
+		const observer = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const { target } = entry;
+				const rect = target.getBoundingClientRect();
+				setHeight(`${window.innerHeight - rect.top}px`);
+			}
+		});
+		if (element) {
+			observer.observe(element);
+			return () => observer.unobserve(element);
+		}
+	}, [video]);
+
+	return useMemo(
+		() => (
+			<YoutubeAuthPage>
+				<Box ref={ref} height={height}>
+					<Stack
+						direction="row"
+						justifyContent="center"
+						display={videoStatus.isLoading || videoStatus.isFetching ? 'block' : 'none'}
+					>
+						<CircularProgress />
+					</Stack>
+					{videoStatus.isError ? (
+						<Stack direction="row" justifyContent="center">
+							Failed to load video
+						</Stack>
+					) : (
+						<Box />
+					)}
+					{video && relatedVideos ? (
+						<Stack direction="column" spacing={2} height={height}>
+							<Box flex={9}>
+								<ReactPlayer
+									height="100%"
+									width="100%"
+									pip
+									url={`https://youtube.com/embed/${video.id}`}
+									controls={true}
+									playing={true}
+									onProgress={({ playedSeconds }) => {
+										if (playedSeconds > 20 && !video.watched) {
+											watchVideo(video.id);
+										}
+									}}
+								/>
+							</Box>
+							<Box flex={1}>
+								<YoutubeVideoInformation video={video} />
+							</Box>
+							<Divider />
+							<Box flex={1} padding={2}>
+								<Typography variant="h6">Related Videos</Typography>
+								<Grid container>
+									{relatedVideos.map((video) => (
+										<Grid item xs={12} sm={6} md={3} xl={2} padding={1} key={video.id}>
+											<YoutubeVideoCard video={video} />
+										</Grid>
+									))}
+								</Grid>
+							</Box>
+						</Stack>
+					) : (
+						<Box />
+					)}
+				</Box>
+			</YoutubeAuthPage>
+		),
+		[height, relatedVideos, video, videoStatus.isError, videoStatus.isFetching, videoStatus.isLoading, watchVideo]
+	);
 };
 
 export default YoutubeVideo;

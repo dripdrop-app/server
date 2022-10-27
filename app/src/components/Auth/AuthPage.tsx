@@ -1,98 +1,161 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Stack, CircularProgress, Alert, Button, Container, Grid, Tab, Tabs, TextField } from '@mui/material';
-import { useLoginOrCreateMutation } from '../../api/auth';
+import { ComponentProps, useCallback, useMemo, useState } from 'react';
+import { Stack, Alert, Button, Container, Tab, Tabs, TextField, IconButton, CircularProgress } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useLoginMutation, useCreateMutation, useCheckSessionQuery } from '../../api/auth';
 import { isFetchBaseQueryError } from '../../utils/helpers';
-import AuthWrapper from './AuthWrapper';
-import ConditionalDisplay from '../ConditionalDisplay';
 
-interface AuthPageProps {
-	children: JSX.Element;
+interface AuthWrapperProps extends ComponentProps<'div'> {
+	unAuthenticatedRender: () => JSX.Element;
 }
 
-const AuthPage = (props: AuthPageProps) => {
+export const AuthWrapper = (props: AuthWrapperProps) => {
+	const { unAuthenticatedRender, children } = props;
+
+	const sessionStatus = useCheckSessionQuery();
+
+	return useMemo(() => {
+		if (sessionStatus.isFetching || sessionStatus.isLoading) {
+			return (
+				<Stack direction="row" justifyContent="center">
+					<CircularProgress />
+				</Stack>
+			);
+		} else if (sessionStatus.isSuccess && sessionStatus.currentData) {
+			return <div>{children}</div>;
+		}
+		return unAuthenticatedRender();
+	}, [
+		children,
+		sessionStatus.currentData,
+		sessionStatus.isFetching,
+		sessionStatus.isLoading,
+		sessionStatus.isSuccess,
+		unAuthenticatedRender,
+	]);
+};
+
+interface AuthFormProps {
+	error?: string | null;
+	notice?: string | null;
+	onSubmit: (email: string, password: string) => void;
+}
+
+const AuthForm = (props: AuthFormProps) => {
+	const { error, notice, onSubmit } = props;
+
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [showPassword, setShowPassword] = useState(false);
+
+	return useMemo(
+		() => (
+			<Container>
+				<Stack direction="column" spacing={2}>
+					{notice ? <Alert severity="info">{notice}</Alert> : null}
+					{error ? <Alert severity="error">{error}</Alert> : null}
+					<TextField type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth />
+					<TextField
+						type={showPassword ? 'text' : 'password'}
+						label="Password"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						fullWidth
+						InputProps={{
+							endAdornment: (
+								<IconButton onClick={() => setShowPassword(!showPassword)}>
+									<Visibility sx={{ display: showPassword ? 'none' : 'block' }} />
+									<VisibilityOff sx={{ display: !showPassword ? 'none' : 'block' }} />
+								</IconButton>
+							),
+						}}
+					/>
+					<Stack direction="row" spacing={2}>
+						<Button variant="contained" onClick={() => onSubmit(email, password)}>
+							Submit
+						</Button>
+						<Button
+							variant="contained"
+							onClick={() => {
+								setEmail('');
+								setPassword('');
+							}}
+						>
+							Reset
+						</Button>
+					</Stack>
+				</Stack>
+			</Container>
+		),
+		[email, error, notice, onSubmit, password, showPassword]
+	);
+};
+
+const AuthPage = (props: ComponentProps<'div'>) => {
 	const [tab, setTab] = useState(0);
 
-	const [loginOrCreate, loginOrCreateStatus] = useLoginOrCreateMutation();
+	const [login, loginStatus] = useLoginMutation();
+	const [create, createStatus] = useCreateMutation();
 
-	const error = useMemo(() => {
-		if (loginOrCreateStatus.isError) {
-			if (isFetchBaseQueryError(loginOrCreateStatus.error)) {
-				return String(loginOrCreateStatus.error.data);
+	const loginError = useMemo(() => {
+		if (loginStatus.isError) {
+			if (isFetchBaseQueryError(loginStatus.error)) {
+				return String(loginStatus.error.data);
+			} else if (loginStatus.error.message) {
+				return loginStatus.error.message;
 			}
-			return loginOrCreateStatus.error;
 		}
 		return null;
-	}, [loginOrCreateStatus.error, loginOrCreateStatus.isError]);
+	}, [loginStatus.error, loginStatus.isError]);
 
-	const Notice = useMemo(() => {
-		if (loginOrCreateStatus.isSuccess && !loginOrCreateStatus.originalArgs?.login) {
-			return <Alert severity="info">Account successfully created. You can login to your account now.</Alert>;
-		} else if (error) {
-			return <Alert severity="error">{error}</Alert>;
+	const createError = useMemo(() => {
+		if (createStatus.isError) {
+			if (isFetchBaseQueryError(createStatus.error)) {
+				return String(createStatus.error.data);
+			} else if (createStatus.error.message) {
+				return createStatus.error.message;
+			}
 		}
 		return null;
-	}, [error, loginOrCreateStatus.isSuccess, loginOrCreateStatus.originalArgs?.login]);
+	}, [createStatus.error, createStatus.isError]);
 
-	const clearForm = useCallback(() => {
-		setEmail('');
-		setPassword('');
-	}, []);
-
-	const submitForm = useCallback(() => {
-		if (tab === 0) {
-			loginOrCreate({ email, password, login: true });
-		} else {
-			loginOrCreate({ email, password, login: false });
+	const createNotice = useMemo(() => {
+		if (createStatus.isSuccess) {
+			return 'Account successfully created. You can login to your account now.';
 		}
-		clearForm();
-	}, [email, loginOrCreate, password, tab, clearForm]);
+		return null;
+	}, [createStatus.isSuccess]);
+
+	const onSubmitForm = useCallback(
+		(email: string, password: string) => {
+			if (tab === 0) {
+				login({ email, password });
+			} else {
+				create({ email, password });
+			}
+		},
+		[tab, login, create]
+	);
 
 	return useMemo(() => {
 		return (
 			<AuthWrapper
-				showLoading={true}
-				altRender={
+				unAuthenticatedRender={() => (
 					<Container>
-						<Grid container>
-							<Grid item xs={12}>
-								<Tabs value={tab}>
-									<Tab label="Login" onClick={() => setTab(0)} />
-									<Tab label="Sign up" onClick={() => setTab(1)} />
-								</Tabs>
-							</Grid>
-							<Grid item xs={12}>
-								<Stack spacing={2} marginY={3}>
-									{Notice}
-									<TextField value={email} onChange={(e) => setEmail(e.target.value)} label="Email" type="email" />
-									<TextField
-										value={password}
-										onChange={(e) => setPassword(e.target.value)}
-										label="Password"
-										type="password"
-									/>
-									<Stack direction="row" spacing={2}>
-										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={submitForm}>
-											<ConditionalDisplay condition={loginOrCreateStatus.isLoading}>
-												<CircularProgress />
-											</ConditionalDisplay>
-											<ConditionalDisplay condition={!loginOrCreateStatus.isLoading}>Submit</ConditionalDisplay>
-										</Button>
-										<Button disabled={loginOrCreateStatus.isLoading} variant="contained" onClick={clearForm}>
-											Clear
-										</Button>
-									</Stack>
-								</Stack>
-							</Grid>
-						</Grid>
+						<Tabs value={tab}>
+							<Tab label="Login" onClick={() => setTab(0)} />
+							<Tab label="Sign up" onClick={() => setTab(1)} />
+						</Tabs>
+						<Stack direction="column" paddingY={4}>
+							{tab === 0 ? <AuthForm error={loginError} onSubmit={onSubmitForm} /> : null}
+							{tab === 1 ? <AuthForm error={createError} notice={createNotice} onSubmit={onSubmitForm} /> : null}
+						</Stack>
 					</Container>
-				}
+				)}
 			>
 				{props.children}
 			</AuthWrapper>
 		);
-	}, [Notice, clearForm, email, loginOrCreateStatus.isLoading, password, props.children, submitForm, tab]);
+	}, [createError, createNotice, loginError, onSubmitForm, props.children, tab]);
 };
 
 export default AuthPage;

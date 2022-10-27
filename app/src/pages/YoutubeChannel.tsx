@@ -1,47 +1,55 @@
-import { Avatar, CircularProgress, Container, Stack, Typography } from '@mui/material';
 import { useMemo } from 'react';
+import { Avatar, Box, CircularProgress, Divider, Stack, Typography } from '@mui/material';
 import { useYoutubeChannelQuery } from '../api/youtube';
-import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-import YoutubeVideosView from '../components/Youtube/Content/YoutubeVideosView';
+import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
+import YoutubeVideosView from '../components/Youtube/YoutubeVideosView';
 
 interface YoutubeChannelProps {
-	channelID: string;
+	channelId: string;
 }
 
 const YoutubeChannel = (props: YoutubeChannelProps) => {
-	const channelStatus = useYoutubeChannelQuery(props.channelID);
+	const { channelId } = props;
 
-	return useMemo(() => {
-		if (channelStatus.isSuccess && channelStatus.currentData) {
-			const channel = channelStatus.currentData;
-			return (
-				<Container>
-					<Stack>
-						<Stack direction="row" alignItems="center" spacing={2}>
-							<Avatar alt={channel.title} src={channel.thumbnail} />
-							<Typography variant="h3">{channel.title}</Typography>
-						</Stack>
-						<YoutubePage>
-							<Stack paddingY={2}>
-								<YoutubeVideosView channelID={props.channelID} />
-							</Stack>
-						</YoutubePage>
+	const channelStatus = useYoutubeChannelQuery(channelId);
+
+	const channel = useMemo(() => channelStatus.data, [channelStatus.data]);
+
+	return useMemo(
+		() => (
+			<YoutubeAuthPage>
+				<Box>
+					<Stack
+						direction="row"
+						justifyContent="center"
+						display={channelStatus.isLoading || channelStatus.isFetching ? 'block' : 'none'}
+					>
+						<CircularProgress />
 					</Stack>
-				</Container>
-			);
-		} else if (channelStatus.isLoading) {
-			return (
-				<Stack padding={10} direction="row" justifyContent="center">
-					<CircularProgress />
-				</Stack>
-			);
-		}
-		return (
-			<Stack padding={10} direction="row" justifyContent="center">
-				Failed to load channel
-			</Stack>
-		);
-	}, [channelStatus.currentData, channelStatus.isLoading, channelStatus.isSuccess, props.channelID]);
+					{channelStatus.isError ? (
+						<Stack direction="row" justifyContent="center">
+							Failed to load channel
+						</Stack>
+					) : (
+						<Box />
+					)}
+					{channel ? (
+						<Stack direction="column" spacing={2}>
+							<Stack direction="row" alignItems="center" spacing={2}>
+								<Avatar alt={channel.title} src={channel.thumbnail} />
+								<Typography variant="h4">{channel.title}</Typography>
+							</Stack>
+							<Divider />
+							<YoutubeVideosView channelId={channelId} />
+						</Stack>
+					) : (
+						<Box />
+					)}
+				</Box>
+			</YoutubeAuthPage>
+		),
+		[channel, channelId, channelStatus.isError, channelStatus.isFetching, channelStatus.isLoading]
+	);
 };
 
 export default YoutubeChannel;

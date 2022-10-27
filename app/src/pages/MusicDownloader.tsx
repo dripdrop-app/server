@@ -1,15 +1,16 @@
-import { Container, Stack } from '@mui/material';
-import MusicForm from '../components/Music/MusicForm';
+import { Stack } from '@mui/material';
+import AuthPage from '../components/Auth/AuthPage';
 import JobList from '../components/Music/JobList';
+import MusicForm from '../components/Music/MusicForm';
 
 const MusicDownloader = () => {
 	return (
-		<Container>
-			<Stack>
+		<AuthPage>
+			<Stack spacing={2} direction="column">
 				<MusicForm />
 				<JobList />
 			</Stack>
-		</Container>
+		</AuthPage>
 	);
 };
 

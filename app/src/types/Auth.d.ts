@@ -1,8 +1,9 @@
-export {};
+interface User {
+	email: string;
+	admin: boolean;
+}
 
-declare global {
-	interface User {
-		email: string;
-		admin: boolean;
-	}
+interface LoginBody {
+	email: string;
+	password: string;
 }

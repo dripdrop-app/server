@@ -1,4 +1,5 @@
 import asyncio
+import math
 from asgiref.sync import sync_to_async
 from asyncpg import UniqueViolationError
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, Response, Request
@@ -32,7 +33,7 @@ from server.models.main import (
 from server.services.google_api import google_api_service
 from server.services.rq import queue
 from server.tasks.youtube import youtube_tasker
-from sqlalchemy import insert, select, update, delete
+from sqlalchemy import func, insert, select, update, delete
 from typing import List
 
 youtube_app = FastAPI(
@@ -288,6 +289,9 @@ async def get_youtube_videos(
         )
         .join(channel_query, channel_query.c.id == videos_query.c.channel_id)
     )
+    count_query = select(func.count(videos_query.c.id)).select_from(query)
+    count = await db.fetch_val(count_query)
+    total_pages = math.ceil(count / per_page)
     query = select(
         videos_query,
         channel_query.c.title.label("channel_title"),
@@ -296,7 +300,7 @@ async def get_youtube_videos(
         video_watches_query.c.created_at.label("watched"),
     ).select_from(query)
     if liked_only:
-        query = query.order_by(video_likes_query.c.created_at.asc())
+        query = query.order_by(video_likes_query.c.created_at.desc())
     elif queued_only:
         query = query.order_by(video_queues_query.c.created_at.asc())
     else:
@@ -304,7 +308,9 @@ async def get_youtube_videos(
     query = query.offset((page - 1) * per_page).limit(per_page)
     rows = await db.fetch_all(query)
     videos = list(map(lambda row: YoutubeVideoResponse.parse_obj(row), rows))
-    return YoutubeResponses.Videos(videos=videos).dict(by_alias=True)
+    return YoutubeResponses.Videos(videos=videos, total_pages=total_pages).dict(
+        by_alias=True
+    )
 
 
 @youtube_app.put("/videos/watch")

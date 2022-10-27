@@ -5,7 +5,7 @@ RUN apt-get -y update && \
 RUN pip install -U pip
 RUN pip install poetry
 RUN mkdir -p /src
-COPY . /src
 WORKDIR /src
+COPY . .
 RUN poetry export -f requirements.txt --output requirements.txt
 RUN pip install -r requirements.txt

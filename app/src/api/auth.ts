@@ -8,13 +8,20 @@ const authApi = api.injectEndpoints({
 			}),
 			providesTags: ['User'],
 		}),
-		loginOrCreate: build.mutation<User | undefined, { email: string; password: string; login: boolean }>({
-			query: ({ email, password, login }) => ({
-				url: `/auth/${login ? 'login' : 'create'}`,
+		create: build.mutation<undefined, LoginBody>({
+			query: ({ email, password }) => ({
+				url: '/auth/create',
 				method: 'POST',
 				body: { email, password },
 			}),
-			invalidatesTags: (result, error, args) => (args.login && !error ? tags : []),
+		}),
+		login: build.mutation<User, LoginBody>({
+			query: ({ email, password }) => ({
+				url: '/auth/login',
+				method: 'POST',
+				body: { email, password },
+			}),
+			invalidatesTags: (result, error, args) => (!error ? tags : []),
 		}),
 		logout: build.mutation<undefined, void>({
 			query: () => ({
@@ -26,4 +33,4 @@ const authApi = api.injectEndpoints({
 });
 
 export default authApi;
-export const { useCheckSessionQuery, useLoginOrCreateMutation, useLogoutMutation } = authApi;
+export const { useCheckSessionQuery, useCreateMutation, useLoginMutation, useLogoutMutation } = authApi;

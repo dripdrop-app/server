@@ -1,6 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
 import baseApi from './api';
-import { musicSlice } from './state/music';
 import { youtubeSlice } from './state/youtube';
 
 declare global {
@@ -10,7 +9,6 @@ declare global {
 export const store = configureStore({
 	reducer: {
 		[baseApi.reducerPath]: baseApi.reducer,
-		[musicSlice.name]: musicSlice.reducer,
 		[youtubeSlice.name]: youtubeSlice.reducer,
 	},
 	middleware: (getDefaultMiddleware) =>

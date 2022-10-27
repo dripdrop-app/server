@@ -3,18 +3,20 @@ import { FetchBaseQueryArgs } from '@reduxjs/toolkit/dist/query/fetchBaseQuery';
 import { createApi, fetchBaseQuery, FetchArgs } from '@reduxjs/toolkit/query/react';
 
 export const errorParser = (error: ErrorResponse | undefined) => {
-	if (error && typeof error.detail === 'string') {
-		return error.detail;
-	} else if (error && typeof error.detail !== 'string') {
-		return error.detail.reduce((msg, error) => {
-			const field = error.loc.pop();
-			if (field) {
-				let message = error.msg.replace('value', field);
-				message = message.charAt(0).toLocaleUpperCase() + message.substring(1);
-				msg = !msg ? message : `${msg}, ${message}`;
-			}
-			return msg;
-		}, '');
+	if (error && error.detail) {
+		if (typeof error.detail === 'string') {
+			return error.detail;
+		} else if (typeof error.detail === 'object') {
+			return error.detail.reduce((msg, error) => {
+				const field = error.loc.pop();
+				if (field) {
+					let message = error.msg.replace('value', field);
+					message = message.charAt(0).toLocaleUpperCase() + message.substring(1);
+					msg = !msg ? message : `${msg}, ${message}`;
+				}
+				return msg;
+			}, '');
+		}
 	}
 	return error;
 };

@@ -61,9 +61,6 @@ class MusicResponses:
         grouping: Optional[str]
         artwork_url: Optional[str]
 
-    class Download(ResponseBaseModel):
-        url: str
-
     class AllJobs(ResponseBaseModel):
         jobs: List[MusicJobResponse]
         total_pages: int
@@ -99,6 +96,7 @@ class YoutubeResponses:
 
     class Videos(ResponseBaseModel):
         videos: List[YoutubeVideoResponse]
+        total_pages: int
 
     class Video(ResponseBaseModel):
         video: YoutubeVideoResponse

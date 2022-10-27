@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Stack, Container, Typography } from '@mui/material';
-import YoutubePage from '../components/Youtube/Auth/YoutubePage';
-import YoutubeVideosView from '../components/Youtube/Content/YoutubeVideosView';
+import { Divider, Stack, Typography } from '@mui/material';
+import YoutubeVideosView from '../components/Youtube/YoutubeVideosView';
+import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 
 interface YoutubeVideosProps {
 	channelID?: string;
@@ -10,16 +10,13 @@ interface YoutubeVideosProps {
 const YoutubeVideos = (props: YoutubeVideosProps) => {
 	return useMemo(
 		() => (
-			<Container>
-				<Stack>
-					<Typography variant="h3">Youtube Videos</Typography>
-					<YoutubePage>
-						<Stack paddingY={2}>
-							<YoutubeVideosView channelID={props.channelID} />
-						</Stack>
-					</YoutubePage>
+			<YoutubeAuthPage>
+				<Stack direction="column" spacing={2}>
+					<Typography variant="h4">Videos</Typography>
+					<Divider />
+					<YoutubeVideosView channelId={props.channelID} />
 				</Stack>
-			</Container>
+			</YoutubeAuthPage>
 		),
 		[props.channelID]
 	);

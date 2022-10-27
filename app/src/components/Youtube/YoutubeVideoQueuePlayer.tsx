@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import ReactPlayer from 'react-player';
 import { useSelector, useDispatch } from 'react-redux';
-import { useAddYoutubeVideoWatchMutation } from '../../../api/youtube';
+import { useAddYoutubeVideoWatchMutation } from '../../api/youtube';
 import {
 	setVideoQueuePlayer,
 	playVideoQueue,
@@ -9,7 +9,7 @@ import {
 	updateVideoQueueProgress,
 	updateVideoQueueDuration,
 	endVideoQueue,
-} from '../../../state/youtube';
+} from '../../state/youtube';
 
 interface YoutubeVideoQueuePlayerProps {
 	playing: boolean;

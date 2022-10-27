@@ -1,88 +1,67 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useMemo, Fragment } from 'react';
 import { Box, Fab } from '@mui/material';
 import { ArrowUpward } from '@mui/icons-material';
-import ConditionalDisplay from './ConditionalDisplay';
 
 interface InfiniteScrollProps<T> {
 	items: T[];
+	threshold?: number;
 	renderItem: (item: T, index: number) => JSX.Element | JSX.Element[];
-	onEndReached?: () => void;
-	parentRef?: React.RefObject<HTMLElement>;
+	onEndReached: () => void;
 }
 
 const InfiniteScroll = <T,>(props: InfiniteScrollProps<T>) => {
-	const { items, renderItem, onEndReached, parentRef } = props;
+	const { items, renderItem, onEndReached, threshold } = props;
+
 	const [showScrollButton, setShowScrollButton] = useState(false);
 
-	const boxRef = useRef<HTMLDivElement>();
-
 	const onGridBottom = useCallback(() => {
-		if (parentRef && parentRef.current) {
-			const parent = parentRef.current;
-			if (parent.offsetHeight + parent.scrollTop > parent.scrollHeight - 500 && onEndReached) {
-				onEndReached();
-			}
-		} else {
-			if (document.body.offsetHeight - 500 < window.innerHeight + window.scrollY && onEndReached) {
-				onEndReached();
-			}
+		if (document.body.offsetHeight - (threshold ?? 1000) < window.innerHeight + window.scrollY) {
+			onEndReached();
 		}
-	}, [onEndReached, parentRef]);
+	}, [onEndReached, threshold]);
 
 	const updateScrollButton = useCallback(() => {
-		if (boxRef.current) {
-			const grid = boxRef.current;
-			const gridCoordinates = grid.getBoundingClientRect();
-			if (gridCoordinates.y < 0 && !showScrollButton) {
-				setShowScrollButton(true);
-			} else if (gridCoordinates.y > 0 && showScrollButton) {
-				setShowScrollButton(false);
-			}
+		if (window.scrollY > 0 && !showScrollButton) {
+			setShowScrollButton(true);
+		} else if (window.scrollY === 0 && showScrollButton) {
+			setShowScrollButton(false);
 		}
 	}, [showScrollButton]);
 
-	useEffect(() => {
-		const parent = parentRef && parentRef.current ? parentRef.current : window;
-		if (parent) {
-			parent.addEventListener('scroll', updateScrollButton);
-			parent.addEventListener('scroll', onGridBottom);
-			return () => {
-				parent.removeEventListener('scroll', onGridBottom);
-				parent.removeEventListener('scroll', updateScrollButton);
-			};
-		}
-	}, [onGridBottom, parentRef, updateScrollButton]);
+	const RenderItems = useMemo(
+		() => items.map((item, index) => <Fragment key={`scroll-item-${index}`}>{renderItem(item, index)}</Fragment>),
+		[items, renderItem]
+	);
 
-	return (
-		<Box>
-			<Box ref={boxRef}>
-				{items.map((item, index) => (
-					<React.Fragment key={`scroll-item-${index}`}>{renderItem(item, index)}</React.Fragment>
-				))}
-			</Box>
-			<ConditionalDisplay condition={showScrollButton}>
-				<Box
+	useEffect(() => {
+		window.addEventListener('scroll', updateScrollButton);
+		window.addEventListener('scroll', onGridBottom);
+		return () => {
+			window.removeEventListener('scroll', onGridBottom);
+			window.removeEventListener('scroll', updateScrollButton);
+		};
+	}, [onGridBottom, updateScrollButton]);
+
+	return useMemo(
+		() => (
+			<Box>
+				<Fab
 					sx={{
 						position: 'fixed',
+						bottom: '5vh',
 						right: '5vw',
-						bottom: '10vh',
+						display: showScrollButton ? 'block' : 'none',
+						zIndex: (theme) => theme.zIndex.fab,
 					}}
+					color="primary"
+					onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
 				>
-					<Fab
-						variant="circular"
-						color="primary"
-						onClick={() => {
-							if (boxRef.current) {
-								const parent = parentRef && parentRef.current ? parentRef.current : window;
-								parent.scrollTo({ top: 0, behavior: 'smooth' });
-							}
-						}}
-					>
-						<ArrowUpward />
-					</Fab>
-				</Box>
-			</ConditionalDisplay>
-		</Box>
+					<ArrowUpward />
+				</Fab>
+				<Box>{RenderItems}</Box>
+			</Box>
+		),
+		[RenderItems, showScrollButton]
 	);
 };
 

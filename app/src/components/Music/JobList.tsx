@@ -1,66 +1,74 @@
-import { useMemo, useState } from 'react';
-import { CircularProgress, Stack, Typography, Grid, Button } from '@mui/material';
+import { useState, useMemo, useEffect } from 'react';
+import { Box, CircularProgress, Grid, Pagination, Typography, Stack, Divider } from '@mui/material';
 import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
 
 const JobList = () => {
-	const [page, setPage] = useState(1);
-	const [perPage] = useState(4);
+	const [args, setArgs] = useState<PageBody>({
+		page: 1,
+		perPage: 5,
+	});
+	const [jobs, setJobs] = useState<Job[]>([]);
+	const [totalPages, setTotalPages] = useState(1);
 
-	const jobsStatus = useJobsQuery({ page, perPage });
+	const jobsStatus = useJobsQuery(args);
 
-	const jobs = useMemo(() => jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.jobs
-		: [], [jobsStatus.isSuccess, jobsStatus.currentData])
-
-	const totalPages = useMemo(() => jobsStatus.isSuccess && jobsStatus.currentData ? jobsStatus.currentData.totalPages : 0, [jobsStatus.isSuccess, jobsStatus.currentData]);
-
-	const Jobs = useMemo(() => {
-		if (jobsStatus.isFetching || jobsStatus.isLoading) {
+	const renderJobs = useMemo(() => {
+		if (jobsStatus.isLoading || jobsStatus.isFetching) {
 			return (
-				<Stack paddingY={5} direction="row" justifyContent="center">
+				<Stack justifyContent="center">
 					<CircularProgress />
 				</Stack>
 			);
 		} else if (jobs.length === 0) {
-			return (
-				<Stack paddingY={5} direction="row" justifyContent="center">
-					No Existing Jobs
-				</Stack>
-			);
+			return <Stack justifyContent="center">No Jobs</Stack>;
 		}
 		return (
-			<Grid container>
+			<Grid container spacing={2}>
 				{jobs.map((job) => (
-					<Grid key={job.id} item md={3} sm={6} xs={12} padding={1}>
-						<JobCard sx={{ height: '100%' }} job={job} />
+					<Grid key={job.id} item xs={12} sm={6} md={4} xl={2}>
+						<JobCard {...job} />
 					</Grid>
 				))}
 			</Grid>
 		);
-	}, [jobsStatus.isFetching, jobsStatus.isLoading, jobs]);
+	}, [jobs, jobsStatus.isFetching, jobsStatus.isLoading]);
 
-	const JobsDisplay = useMemo(
-		() => (
-			<Stack paddingY={5} spacing={2}>
-				{Jobs}
-				<Stack direction="row" justifyContent="center">
-					<Button disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
-					<Button>{page}</Button>
-					<Button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
-				</Stack>
-			</Stack>
-		),
-		[Jobs, page, totalPages]
-	);
+	useEffect(() => {
+		if (jobsStatus.isSuccess && jobsStatus.currentData) {
+			const { jobs, totalPages } = jobsStatus.currentData;
+			setJobs(jobs);
+			setTotalPages(totalPages);
+		}
+	}, [jobsStatus.currentData, jobsStatus.isSuccess]);
 
 	return useMemo(
 		() => (
-			<Stack paddingY={2}>
-				<Typography variant="h3">Jobs</Typography>
-				{JobsDisplay}
-			</Stack>
+			<Box>
+				<Stack
+					direction="row"
+					justifyContent={{
+						xs: 'center',
+						sm: 'space-between',
+					}}
+					spacing={2}
+					flexWrap="wrap"
+					paddingY={2}
+				>
+					<Typography variant="h4">Jobs</Typography>
+					<Pagination
+						page={args.page}
+						count={totalPages}
+						color="primary"
+						shape="rounded"
+						onChange={(e, newPage) => setArgs((prevState) => ({ ...prevState, page: newPage }))}
+					/>
+				</Stack>
+				<Divider />
+				<Box paddingY={2}>{renderJobs}</Box>
+			</Box>
 		),
-		[JobsDisplay]
+		[args.page, renderJobs, totalPages]
 	);
 };
 
