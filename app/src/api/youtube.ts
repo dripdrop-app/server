@@ -10,17 +10,7 @@ const youtubeApi = api.injectEndpoints({
 			query: () => ({ url: '/youtube/oauth', responseHandler: (response) => response.text() }),
 		}),
 		youtubeVideoCategories: build.query<YoutubeVideoCategoriesResponse, ChannelBody>({
-			query: ({ channelId }) => {
-				let url = '/youtube/videos/categories';
-				const searchParams = new URLSearchParams();
-				if (channelId) {
-					searchParams.append('channel_id', channelId);
-				}
-				if (searchParams.toString()) {
-					url += `?${searchParams}`;
-				}
-				return { url };
-			},
+			query: ({ channelId }) => ({ url: '/youtube/videos/categories', params: { channel_id: channelId } }),
 			providesTags: (result) => {
 				if (result) {
 					return result.categories.map((category) => ({ type: 'YoutubeVideoCategory', id: category.id }));
@@ -42,26 +32,15 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		youtubeVideos: build.query<YoutubeVideosResponse, YoutubeVideosBody>({
-			query: ({ perPage, page, channelId, selectedCategories, likedOnly, queuedOnly }) => {
-				let url = `/youtube/videos/${page}/${perPage}`;
-				const searchParams = new URLSearchParams();
-				if (channelId) {
-					searchParams.append('channel_id', channelId);
-				}
-				if (selectedCategories) {
-					selectedCategories.forEach((category) => searchParams.append('video_categories', category.toString()));
-				}
-				if (likedOnly) {
-					searchParams.append('liked_only', likedOnly.toString());
-				}
-				if (queuedOnly) {
-					searchParams.append('queued_only', queuedOnly.toString());
-				}
-				if (searchParams.toString()) {
-					url += `?${searchParams}`;
-				}
-				return { url };
-			},
+			query: ({ perPage, page, channelId, selectedCategories, likedOnly, queuedOnly }) => ({
+				url: `/youtube/videos/${page}/${perPage}`,
+				params: {
+					channel_id: channelId,
+					video_categories: selectedCategories.length === 0 ? undefined : selectedCategories,
+					liked_only: likedOnly,
+					queued_only: queuedOnly,
+				},
+			}),
 			providesTags: (result, error, args) => {
 				if (result) {
 					const tags = [];
@@ -77,17 +56,10 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		youtubeSubscriptions: build.query<YoutubeSubscriptionsResponse, YoutubeSubscriptionBody>({
-			query: ({ perPage, page, channelId }) => {
-				let url = `/youtube/subscriptions/${page}/${perPage}`;
-				const searchParams = new URLSearchParams();
-				if (channelId) {
-					searchParams.append('channel_id', channelId);
-				}
-				if (searchParams.toString()) {
-					url += `?${searchParams}`;
-				}
-				return { url };
-			},
+			query: ({ perPage, page, channelId }) => ({
+				url: `/youtube/subscriptions/${page}/${perPage}`,
+				params: { channel_id: channelId },
+			}),
 			providesTags: (result) => {
 				if (result) {
 					return result.subscriptions.map((subscription) => ({ type: 'YoutubeSubscription', id: subscription.id }));

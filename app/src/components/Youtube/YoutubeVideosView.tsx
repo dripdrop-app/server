@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { Box, Checkbox, FormControlLabel, Grid, LinearProgress, Stack } from '@mui/material';
+import { Box, Checkbox, CircularProgress, FormControlLabel, Grid, Stack } from '@mui/material';
 import { throttle } from 'lodash';
 import { useYoutubeVideosQuery } from '../../api/youtube';
 import InfiniteScroll from '../InfiniteScroll';
@@ -17,7 +17,6 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 		page: 1,
 		perPage: 48,
 		likedOnly: false,
-		queuedOnly: false,
 		channelId: props.channelId,
 	});
 	const continueLoadingRef = useRef(false);
@@ -37,7 +36,7 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	useEffect(() => {
 		if (videosStatus.isSuccess && videosStatus.currentData) {
 			const { totalPages } = videosStatus.currentData;
-			continueLoadingRef.current = totalPages < filter.page;
+			continueLoadingRef.current = filter.page < totalPages;
 		}
 	}, [filter.page, videosStatus.currentData, videosStatus.isSuccess]);
 
@@ -85,7 +84,9 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 								)}
 								renderLoading={() => (
 									<Grid item xs={12} padding={2}>
-										<LinearProgress />
+										<Stack direction="row" justifyContent="center">
+											<CircularProgress />
+										</Stack>
 									</Grid>
 								)}
 							/>

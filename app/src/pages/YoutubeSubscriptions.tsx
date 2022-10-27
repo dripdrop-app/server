@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Divider, Grid, LinearProgress, Stack, Typography } from '@mui/material';
+import { CircularProgress, Divider, Grid, Stack, Typography } from '@mui/material';
 import { throttle } from 'lodash';
 import { useYoutubeSubscriptionsQuery } from '../api/youtube';
 import InfiniteScroll from '../components/InfiniteScroll';
 import YoutubeSubscriptionsPage from '../components/Youtube/YoutubeSubscriptionsPage';
 import YoutubeSubscriptionCard from '../components/Youtube/YoutubeSubscriptionCard';
+import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 
 const YoutubeSubscriptions = () => {
 	const [filter, setFilter] = useState<YoutubeSubscriptionBody>({
@@ -40,32 +41,36 @@ const YoutubeSubscriptions = () => {
 
 	return useMemo(
 		() => (
-			<Stack direction="column" spacing={2}>
-				<Typography variant="h4">Subscriptions</Typography>
-				<Divider />
-				<InfiniteScroll
-					items={Array(filter.page).fill(1)}
-					renderItem={(page, index) => (
-						<Grid container>
-							<YoutubeSubscriptionsPage
-								perPage={filter.perPage}
-								page={index + 1}
-								renderItem={(subscription) => (
-									<Grid item xs={12} sm={6} md={3} xl={2} padding={1}>
-										<YoutubeSubscriptionCard subscription={subscription} />
-									</Grid>
-								)}
-								renderLoading={() => (
-									<Grid item xs={12} padding={2}>
-										<LinearProgress />
-									</Grid>
-								)}
-							/>
-						</Grid>
-					)}
-					onEndReached={onEndReached}
-				/>
-			</Stack>
+			<YoutubeAuthPage>
+				<Stack direction="column" spacing={2}>
+					<Typography variant="h4">Subscriptions</Typography>
+					<Divider />
+					<InfiniteScroll
+						items={Array(filter.page).fill(1)}
+						renderItem={(page, index) => (
+							<Grid container>
+								<YoutubeSubscriptionsPage
+									perPage={filter.perPage}
+									page={index + 1}
+									renderItem={(subscription) => (
+										<Grid item xs={12} sm={6} md={3} xl={2} padding={1}>
+											<YoutubeSubscriptionCard subscription={subscription} />
+										</Grid>
+									)}
+									renderLoading={() => (
+										<Grid item xs={12} padding={2}>
+											<Stack direction="row" justifyContent="center">
+												<CircularProgress />
+											</Stack>
+										</Grid>
+									)}
+								/>
+							</Grid>
+						)}
+						onEndReached={onEndReached}
+					/>
+				</Stack>
+			</YoutubeAuthPage>
 		),
 		[filter.page, filter.perPage, onEndReached]
 	);

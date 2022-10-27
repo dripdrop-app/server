@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Box, CircularProgress, IconButton, Tooltip } from '@mui/material';
-import { AddToQueue, RemoveFromQueue, ThumbUp, RemoveRedEye } from '@mui/icons-material';
+import { AddToQueue, RemoveFromQueue, ThumbUp, Visibility } from '@mui/icons-material';
 import {
 	useAddYoutubeVideoLikeMutation,
 	useAddYoutubeVideoQueueMutation,
@@ -80,7 +80,7 @@ export const YoutubeVideoWatchButton = (props: VideoButtonsProps) => {
 				title={`Watched on ${watchedDate}`}
 			>
 				<IconButton onClick={() => setOpen(true)}>
-					<RemoveRedEye sx={{ display: video.watched ? 'block' : 'none' }} />
+					<Visibility sx={{ display: video.watched ? 'block' : 'none' }} />
 				</IconButton>
 			</Tooltip>
 		),

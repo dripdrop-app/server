@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Card, CardMedia, CardContent, Typography, Link, Stack, Box } from '@mui/material';
+import { Card, CardMedia, CardContent, Typography, Link, Stack, Box, Avatar } from '@mui/material';
 import { YoutubeVideoQueueButton, YoutubeVideoWatchButton } from './YoutubeVideoButtons';
 
 interface VideoCardProps {

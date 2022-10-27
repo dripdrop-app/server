@@ -1,6 +1,5 @@
 import { ComponentProps, useEffect, useMemo, useRef, useState } from 'react';
 import { Route, Switch, Link } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
 import {
 	Box,
 	AppBar,
@@ -20,7 +19,8 @@ import {
 	Tooltip,
 	CssBaseline,
 } from '@mui/material';
-import { CloudDownload, YouTube, Subscriptions, Queue, Menu, Close } from '@mui/icons-material';
+import { CloudDownload, YouTube, Subscriptions, Queue, Menu, Close, AccountCircle } from '@mui/icons-material';
+import { ThemeProvider } from '@mui/material/styles';
 import { createCustomTheme } from './theme';
 import MusicDownloader from './pages/MusicDownloader';
 import YoutubeChannel from './pages/YoutubeChannel';
@@ -28,6 +28,7 @@ import YoutubeSubscriptions from './pages/YoutubeSubscriptions';
 import YoutubeVideo from './pages/YoutubeVideo';
 import YoutubeVideoQueue from './pages/YoutubeVideoQueue';
 import YoutubeVideos from './pages/YoutubeVideos';
+import Account from './pages/Account';
 
 const AppShell = (props: ComponentProps<any>) => {
 	const [openDrawer, setOpenDrawer] = useState(false);
@@ -72,6 +73,10 @@ const AppShell = (props: ComponentProps<any>) => {
 			Queue: {
 				link: '/youtube/videos/queue',
 				icon: Queue,
+			},
+			Account: {
+				link: '/account',
+				icon: AccountCircle,
 			},
 		};
 		return Object.keys(items).map((title) => {
@@ -164,6 +169,7 @@ const App = () => {
 					<Route path="/youtube/video/:id" render={(props) => <YoutubeVideo id={props.match.params.id} />} />
 					<Route path="/youtube/videos" render={() => <YoutubeVideos />} />
 					<Route path="/music/downloader" render={() => <MusicDownloader />} />
+					<Route path="/account" render={() => <Account />} />
 					<Route path="/" render={() => <MusicDownloader />} />
 				</Switch>
 			</AppShell>

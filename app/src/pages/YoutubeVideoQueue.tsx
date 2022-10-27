@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Stack, Typography, Link } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { hideVideoQueueDisplay, setVideoQueuePlayerVideo, showVideoQueueDisplay } from '../state/youtube';
 import { useYoutubeVideoQueueQuery } from '../api/youtube';
 import YoutubeVideoQueuePlayer from '../components/Youtube/YoutubeVideoQueuePlayer';
-import {
-	YoutubeVideoLikeButton,
-	YoutubeVideoQueueButton,
-	YoutubeVideoWatchButton,
-} from '../components/Youtube/YoutubeVideoButtons';
 import YoutubeVideoQueueModal from '../components/Youtube/YoutubeVideoQueueModal';
+import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
+import YoutubeVideoInformation from '../components/Youtube/YoutubeVideoInformation';
 
 const YoutubeVideoQueue = () => {
 	const [height, setHeight] = useState('100%');
@@ -31,35 +27,6 @@ const YoutubeVideoQueue = () => {
 		}
 		return { currentVideo: null, prev: false, next: false };
 	}, [videoQueueStatus.currentData, videoQueueStatus.data, videoQueueStatus.isSuccess]);
-
-	const VideoInfo = useMemo(() => {
-		if (currentVideo) {
-			const publishedAt = new Date(currentVideo.publishedAt).toLocaleDateString();
-			const channelLink = `/youtube/channel/${currentVideo.channelId}`;
-
-			return (
-				<Stack direction="column" padding={2}>
-					<Stack direction="row" flexWrap="wrap" justifyContent="space-between">
-						<Typography variant="h6">{currentVideo.title}</Typography>
-						<Stack direction="row" alignItems="center">
-							<YoutubeVideoWatchButton video={currentVideo} />
-							<YoutubeVideoLikeButton video={currentVideo} />
-							<YoutubeVideoQueueButton video={currentVideo} />
-						</Stack>
-					</Stack>
-					<Stack direction="row" flexWrap="wrap" justifyContent="space-between">
-						<Typography variant="body1">
-							<Link component={RouterLink} to={channelLink}>
-								{currentVideo.channelTitle}
-							</Link>
-						</Typography>
-						<Typography variant="body1">{publishedAt}</Typography>
-					</Stack>
-				</Stack>
-			);
-		}
-		return null;
-	}, [currentVideo]);
 
 	useEffect(() => {
 		if (currentVideo) {
@@ -87,21 +54,23 @@ const YoutubeVideoQueue = () => {
 			observer.observe(element);
 			return () => observer.unobserve(element);
 		}
-	}, []);
+	}, [currentVideo]);
 
 	return useMemo(
 		() => (
-			<Stack ref={ref} direction="column" height={height}>
-				<Box flex={9}>
-					<YoutubeVideoQueuePlayer playing={true} />
-				</Box>
-				<Box flex={1}>{VideoInfo}</Box>
-				<Box position="fixed" top="25%" right={0}>
-					{currentVideo ? <YoutubeVideoQueueModal currentVideo={currentVideo} /> : <Box />}
-				</Box>
-			</Stack>
+			<YoutubeAuthPage>
+				<Stack ref={ref} direction="column" height={height}>
+					<Box flex={9}>
+						<YoutubeVideoQueuePlayer playing={true} />
+					</Box>
+					<Box flex={1}>{currentVideo ? <YoutubeVideoInformation video={currentVideo} /> : <Box />}</Box>
+					<Box position="fixed" top="25%" right={0}>
+						{currentVideo ? <YoutubeVideoQueueModal currentVideo={currentVideo} /> : <Box />}
+					</Box>
+				</Stack>
+			</YoutubeAuthPage>
 		),
-		[VideoInfo, currentVideo, height]
+		[currentVideo, height]
 	);
 };
 
