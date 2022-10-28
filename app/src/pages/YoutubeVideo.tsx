@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import ReactPlayer from 'react-player';
 import { Box, CircularProgress, Divider, Grid, Stack, Typography } from '@mui/material';
@@ -15,7 +15,6 @@ interface YoutubeVideoProps {
 const YoutubeVideo = (props: YoutubeVideoProps) => {
 	const videoStatus = useYoutubeVideoQuery({ videoID: props.id, relatedLength: 4 });
 
-	const [height, setHeight] = useState('100%');
 	const ref = useRef<HTMLDivElement>(null);
 
 	const [watchVideo] = useAddYoutubeVideoWatchMutation();
@@ -32,25 +31,10 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 		};
 	}, [dispatch]);
 
-	useEffect(() => {
-		const element = ref.current;
-		const observer = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				const { target } = entry;
-				const rect = target.getBoundingClientRect();
-				setHeight(`${window.innerHeight - rect.top}px`);
-			}
-		});
-		if (element) {
-			observer.observe(element);
-			return () => observer.unobserve(element);
-		}
-	}, [video]);
-
 	return useMemo(
 		() => (
 			<YoutubeAuthPage>
-				<Box ref={ref} height={height}>
+				<Box ref={ref}>
 					<Stack
 						direction="row"
 						justifyContent="center"
@@ -66,8 +50,8 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 						<Box />
 					)}
 					{video && relatedVideos ? (
-						<Stack direction="column" spacing={2} height={height}>
-							<Box flex={9}>
+						<Stack direction="column" spacing={2}>
+							<Box height="70vh">
 								<ReactPlayer
 									height="100%"
 									width="100%"
@@ -82,11 +66,9 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 									}}
 								/>
 							</Box>
-							<Box flex={1}>
-								<YoutubeVideoInformation video={video} />
-							</Box>
+							<YoutubeVideoInformation video={video} />
 							<Divider />
-							<Box flex={1} padding={2}>
+							<Box padding={2}>
 								<Typography variant="h6">Related Videos</Typography>
 								<Grid container>
 									{relatedVideos.map((video) => (
@@ -103,7 +85,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 				</Box>
 			</YoutubeAuthPage>
 		),
-		[height, relatedVideos, video, videoStatus.isError, videoStatus.isFetching, videoStatus.isLoading, watchVideo]
+		[relatedVideos, video, videoStatus.isError, videoStatus.isFetching, videoStatus.isLoading, watchVideo]
 	);
 };
 

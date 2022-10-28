@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Stack } from '@mui/material';
 import { hideVideoQueueDisplay, setVideoQueuePlayerVideo, showVideoQueueDisplay } from '../state/youtube';
@@ -9,7 +9,6 @@ import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 import YoutubeVideoInformation from '../components/Youtube/YoutubeVideoInformation';
 
 const YoutubeVideoQueue = () => {
-	const [height, setHeight] = useState('100%');
 	const ref = useRef<HTMLDivElement>(null);
 
 	const dispatch = useDispatch();
@@ -41,36 +40,21 @@ const YoutubeVideoQueue = () => {
 		};
 	}, [dispatch]);
 
-	useEffect(() => {
-		const element = ref.current;
-		const observer = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				const { target } = entry;
-				const rect = target.getBoundingClientRect();
-				setHeight(`${window.innerHeight - rect.top}px`);
-			}
-		});
-		if (element) {
-			observer.observe(element);
-			return () => observer.unobserve(element);
-		}
-	}, [currentVideo]);
-
 	return useMemo(
 		() => (
 			<YoutubeAuthPage>
-				<Stack ref={ref} direction="column" height={height}>
-					<Box flex={9}>
+				<Stack ref={ref} direction="column">
+					<Box height="80vh">
 						<YoutubeVideoQueuePlayer playing={true} />
 					</Box>
-					<Box flex={1}>{currentVideo ? <YoutubeVideoInformation video={currentVideo} /> : <Box />}</Box>
+					{currentVideo ? <YoutubeVideoInformation video={currentVideo} /> : <Box />}
 					<Box position="fixed" top="25%" right={0}>
 						{currentVideo ? <YoutubeVideoQueueModal currentVideo={currentVideo} /> : <Box />}
 					</Box>
 				</Stack>
 			</YoutubeAuthPage>
 		),
-		[currentVideo, height]
+		[currentVideo]
 	);
 };
 
