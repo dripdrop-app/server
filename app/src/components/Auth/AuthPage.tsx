@@ -21,7 +21,7 @@ export const AuthWrapper = (props: AuthWrapperProps) => {
 				</Stack>
 			);
 		} else if (sessionStatus.isSuccess && sessionStatus.currentData) {
-			return children;
+			return <div>{children}</div>;
 		}
 		return unAuthenticatedRender();
 	}, [

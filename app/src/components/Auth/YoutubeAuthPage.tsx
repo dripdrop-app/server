@@ -26,7 +26,7 @@ export const YoutubeAuthWrapper = (props: YoutubeAuthWrapperProps) => {
 			youtubeAuthStatus.currentData.email &&
 			!youtubeAuthStatus.currentData.refresh
 		) {
-			return children;
+			return <div>{children}</div>;
 		}
 		return unAuthenticatedRender();
 	}, [
