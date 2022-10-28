@@ -1,4 +1,4 @@
-import { useMemo, useEffect, ComponentProps } from 'react';
+import { useMemo, useEffect, ComponentProps, Fragment } from 'react';
 import { CircularProgress, Stack } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useCheckYoutubeAuthQuery, useLazyGetOauthLinkQuery } from '../../api/youtube';
@@ -26,7 +26,7 @@ export const YoutubeAuthWrapper = (props: YoutubeAuthWrapperProps) => {
 			youtubeAuthStatus.currentData.email &&
 			!youtubeAuthStatus.currentData.refresh
 		) {
-			return <div>{children}</div>;
+			return <Fragment>{children}</Fragment>;
 		}
 		return unAuthenticatedRender();
 	}, [

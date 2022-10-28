@@ -1,4 +1,4 @@
-import { ComponentProps, useCallback, useMemo, useState } from 'react';
+import { ComponentProps, Fragment, useCallback, useMemo, useState } from 'react';
 import { Stack, Alert, Button, Container, Tab, Tabs, TextField, IconButton, CircularProgress } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useLoginMutation, useCreateMutation, useCheckSessionQuery } from '../../api/auth';
@@ -21,7 +21,7 @@ export const AuthWrapper = (props: AuthWrapperProps) => {
 				</Stack>
 			);
 		} else if (sessionStatus.isSuccess && sessionStatus.currentData) {
-			return <div>{children}</div>;
+			return <Fragment>{children}</Fragment>;
 		}
 		return unAuthenticatedRender();
 	}, [

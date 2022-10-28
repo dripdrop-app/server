@@ -77,13 +77,22 @@ const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
 				</Button>
 				<Modal open={openModal} onClose={() => setOpenModal(false)}>
 					<Box
-						top="10%"
-						left="10%"
-						width="80%"
-						height="80%"
-						position="absolute"
-						padding={4}
-						overflow="scroll"
+						sx={(theme) => ({
+							position: 'absolute',
+							padding: 4,
+							top: '10%',
+							left: '10%',
+							width: '80%',
+							height: '80%',
+							overflow: 'scroll',
+							[theme.breakpoints.down('md')]: {
+								padding: 2,
+								top: 0,
+								left: 0,
+								width: '100%',
+								height: '100%',
+							},
+						})}
 						component={Paper}
 					>
 						<Stack direction="column" spacing={2}>
@@ -99,7 +108,7 @@ const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
 									overflow: 'scroll',
 									height: '65vh',
 									[theme.breakpoints.down('md')]: {
-										height: '60vh',
+										height: '80vh',
 									},
 								})}
 							>

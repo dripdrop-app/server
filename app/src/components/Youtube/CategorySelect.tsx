@@ -83,7 +83,24 @@ const CategorySelect = (props: CategorySelectProps) => {
 					Categories
 				</Button>
 				<Modal open={openModal} onClose={() => setOpenModal(false)}>
-					<Box top="25%" left="25%" width="50%" height="50%" position="absolute" padding={4} component={Paper}>
+					<Box
+						sx={(theme) => ({
+							position: 'absolute',
+							padding: 4,
+							top: '25%',
+							left: '25%',
+							width: '50%',
+							height: '50%',
+							[theme.breakpoints.down('md')]: {
+								padding: 2,
+								top: 0,
+								left: 0,
+								width: '100%',
+								height: '100%',
+							},
+						})}
+						component={Paper}
+					>
 						<Stack direction="column" spacing={2}>
 							<Stack direction="row" justifyContent="space-between">
 								<Typography variant="h6">Categories</Typography>
