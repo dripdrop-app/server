@@ -6,21 +6,20 @@ import re
 import requests
 import traceback
 from asgiref.sync import sync_to_async
-from databases import Database
 from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 from server.logging import logger
-from server.models.main import MusicJob, MusicJobs
-from server.models.api import RedisResponses
+from server.models import DBSession
+from server.models.api import RedisResponses, MusicJob
+from server.models.orm import MusicJobs
 from server.services.boto3 import boto3_service, Boto3Service
 from server.services.image_downloader import image_downloader_service
 from server.services.redis import redis, RedisChannels
-from server.services.rq import queue
 from server.services.youtube_downloader import youtuber_downloader_service
-from server.utils.decorators import decorators
-from sqlalchemy import select, update
+from server.utils.decorators import worker_task
+from sqlalchemy import select
 
 
 class MusicTasker:
@@ -52,7 +51,9 @@ class MusicTasker:
             file_path = os.path.join(job_path, filename)
             new_filename = f"{os.path.splitext(file_path)[0]}.mp3"
             AudioSegment.from_file(file_path).export(
-                new_filename, format="mp3", bitrate="320k"
+                new_filename,
+                format="mp3",
+                bitrate="320k",
             )
             filename = new_filename
         elif job.youtube_url:
@@ -63,7 +64,9 @@ class MusicTasker:
                     filename = f'{".".join(d["filename"].split(".")[:-1])}.mp3'
 
             youtuber_downloader_service.yt_download(
-                link=job.youtube_url, progress_hooks=[updateProgress], folder=job_path
+                link=job.youtube_url,
+                progress_hooks=[updateProgress],
+                folder=job_path,
             )
         return filename
 
@@ -110,19 +113,26 @@ class MusicTasker:
         )
         return new_filename
 
-    @decorators.worker_task
-    async def run_job(self, job_id: str = ..., db: Database = ...):
+    @worker_task
+    async def run_job(
+        self,
+        job_id: str = ...,
+        db: DBSession = ...,
+    ):
         query = select(MusicJobs).where(MusicJobs.id == job_id)
-        row = await db.fetch_one(query)
-        if not row:
+        results = await db.scalars(query)
+        job = results.first()
+        if not job:
             return
         try:
-            job = MusicJob.parse_obj(row)
-            await self.create_job_folder(job=job)
-            filename = await self.retrieve_audio_file(job=job)
-            artwork_info = await self.retrieve_artwork(job=job)
+            music_job = MusicJob.from_orm(job)
+            await self.create_job_folder(job=music_job)
+            filename = await self.retrieve_audio_file(job=music_job)
+            artwork_info = await self.retrieve_artwork(job=music_job)
             new_filename = await self.update_audio_tags(
-                job=job, filename=filename, artwork_info=artwork_info
+                job=music_job,
+                filename=filename,
+                artwork_info=artwork_info,
             )
             file = open(filename, "rb")
             boto3_service.upload_file(
@@ -131,17 +141,13 @@ class MusicTasker:
                 body=file.read(),
                 content_type="audio/mpeg",
             )
-            query = (
-                update(MusicJobs)
-                .where(MusicJobs.id == job_id)
-                .values(completed=True, download_url=new_filename)
-            )
-            await db.execute(query)
+            job.completed = True
+            job.download_url = new_filename
         except Exception:
-            query = update(MusicJobs).where(MusicJobs.id == job_id).values(failed=True)
-            await db.execute(query)
+            job.failed = True
             logger.exception(traceback.format_exc())
         finally:
+            await db.commit()
             await redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL.value,
                 json.dumps(
@@ -152,38 +158,31 @@ class MusicTasker:
                 f"rm -rf {MusicTasker.JOB_DIR}/{job_id}"
             )
 
-    @decorators.worker_task
-    @decorators.exception_handler
-    async def clean_job(self, job: MusicJob = ..., db: Database = ...):
-        try:
-            delete_file = sync_to_async(boto3_service.delete_file)
-            await delete_file(
-                bucket=Boto3Service.S3_ARTWORK_BUCKET,
-                filename=boto3_service.resolve_artwork_url(job.id),
-            )
-            await delete_file(
-                bucket=Boto3Service.S3_MUSIC_BUCKET,
-                filename=boto3_service.resolve_music_url(job.id),
-            )
-        except Exception:
-            logger.exception(traceback.format_exc())
-        query = (
-            update(MusicJobs)
-            .where(MusicJobs.id == job.id)
-            .values(failed=True, completed=False)
-        )
-        await db.execute(query)
-
-    @decorators.worker_task
-    @decorators.exception_handler
-    async def cleanup_jobs(self, db: Database = ...):
+    @worker_task
+    async def cleanup_jobs(self, db: DBSession = ...):
         limit = datetime.now(timezone.utc) - timedelta(days=14)
         query = select(MusicJobs).where(
-            MusicJobs.created_at < limit, MusicJobs.completed.is_(True)
+            MusicJobs.created_at < limit,
+            MusicJobs.completed.is_(True),
         )
-        async for row in db.iterate(query):
-            job = MusicJob.parse_obj(row)
-            queue.enqueue(self.clean_job, kwargs={"job": job}, at_front=True)
+        stream = await db.stream_scalars(query)
+        async for job in stream:
+            music_job = MusicJob.from_orm(job)
+            try:
+                delete_file = sync_to_async(boto3_service.delete_file)
+                await delete_file(
+                    bucket=Boto3Service.S3_ARTWORK_BUCKET,
+                    filename=boto3_service.resolve_artwork_url(music_job.id),
+                )
+                await delete_file(
+                    bucket=Boto3Service.S3_MUSIC_BUCKET,
+                    filename=boto3_service.resolve_music_url(music_job.id),
+                )
+            except Exception:
+                logger.exception(traceback.format_exc())
+            job.failed = True
+            job.completed = False
+            await db.commit()
 
 
 music_tasker = MusicTasker()

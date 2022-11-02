@@ -32,8 +32,7 @@ const CategorySelect = (props: CategorySelectProps) => {
 
 	const categories = useMemo(() => {
 		if (videoCategoriesStatus.isSuccess && videoCategoriesStatus.currentData) {
-			const { categories } = videoCategoriesStatus.currentData;
-			return categories;
+			return videoCategoriesStatus.currentData.categories;
 		}
 		return [];
 	}, [videoCategoriesStatus.currentData, videoCategoriesStatus.isSuccess]);

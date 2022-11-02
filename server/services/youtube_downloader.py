@@ -38,7 +38,10 @@ class YoutubeDownloaderService:
         return info.get("uploader", None)
 
     def yt_download(
-        self, link: str = ..., progress_hooks: list = [], folder: str = ...
+        self,
+        link: str = ...,
+        progress_hooks: list = [],
+        folder: str = ...,
     ):
         ytdl_options = self.ytdlOptions(progress_hooks, folder)
         ydl = yt_dlp.YoutubeDL(ytdl_options)

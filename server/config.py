@@ -4,6 +4,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     env: str
     database_url: str
+    migration_database_url: str
     redis_url: str
     api_key: str
     secret_key: str

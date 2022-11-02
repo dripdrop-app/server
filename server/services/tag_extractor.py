@@ -11,7 +11,11 @@ from typing import Union
 
 
 class TagExtractorService:
-    def read_tags(self, file: Union[str, bytes, None] = None, filename: str = ...):
+    def read_tags(
+        self,
+        file: Union[str, bytes, None] = None,
+        filename: str = ...,
+    ):
         folder_id = str(uuid.uuid4())
         tag_path = os.path.join("tags", folder_id)
         try:

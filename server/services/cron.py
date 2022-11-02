@@ -15,18 +15,22 @@ scheduled_registry = ScheduledJobRegistry(queue=queue)
 class CronService:
     def run_cron_jobs(self):
         video_categories_job = queue.enqueue(
-            youtube_tasker.update_youtube_video_categories, kwargs={"cron": True}
+            youtube_tasker.update_youtube_video_categories,
+            kwargs={"cron": True},
         )
         active_channels_job = queue.enqueue(
-            youtube_tasker.update_active_channels, depends_on=video_categories_job
+            youtube_tasker.update_active_channels,
+            depends_on=video_categories_job,
         )
         update_subscriptions_job = queue.enqueue(
-            youtube_tasker.update_subscriptions, depends_on=active_channels_job
+            youtube_tasker.update_subscriptions,
+            depends_on=active_channels_job,
         )
-        channel_cleanup_job = queue.enqueue(
-            youtube_tasker.channel_cleanup, depends_on=update_subscriptions_job
+        queue.enqueue(
+            youtube_tasker.channel_cleanup,
+            depends_on=update_subscriptions_job,
         )
-        queue.enqueue(music_tasker.cleanup_jobs, depends_on=channel_cleanup_job)
+        queue.enqueue(music_tasker.cleanup_jobs)
 
     def create_cron_job(
         self,

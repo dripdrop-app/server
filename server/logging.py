@@ -1,3 +1,3 @@
 import logging
 
-logger = logging.getLogger('dripdrop')
+logger = logging.getLogger("dripdrop")

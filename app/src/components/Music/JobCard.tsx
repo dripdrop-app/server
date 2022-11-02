@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
+	Button,
 	Card,
 	CardMedia,
 	CardContent,
@@ -11,7 +12,7 @@ import {
 	Stack,
 	TableRow,
 } from '@mui/material';
-import { Download, Delete } from '@mui/icons-material';
+import { Download, Delete, Error } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 import { useRemoveJobMutation } from '../../api/music';
 
@@ -72,11 +73,23 @@ const JobCard = (props: Job) => {
 				</TableContainer>
 			</CardContent>
 			<Stack direction="row" justifyContent="center" paddingY={2} spacing={2} flexWrap="wrap">
-				<Link to={props.downloadUrl} target="_blank" download>
-					<LoadingButton variant="contained" color="success" startIcon={<Download />}>
-						Download
+				<Box display={props.completed || props.failed ? 'none' : 'contents'}>
+					<LoadingButton variant="contained" color="primary" loading={true}>
+						Loading
 					</LoadingButton>
-				</Link>
+				</Box>
+				<Box display={props.completed ? 'contents' : 'none'}>
+					<Link to={props.downloadUrl || ''} target="_blank" download>
+						<Button variant="contained" color="success" startIcon={<Download />}>
+							Download
+						</Button>
+					</Link>
+				</Box>
+				<Box display={props.failed ? 'contents' : 'none'}>
+					<Button variant="contained" color="error" startIcon={<Error />}>
+						Failed
+					</Button>
+				</Box>
 				<LoadingButton
 					variant="contained"
 					color="error"
