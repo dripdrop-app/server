@@ -28,7 +28,7 @@ export const YoutubeVideoLikeButton = (props: VideoButtonsProps) => {
 			<IconButton
 				disabled={loading}
 				onClick={() => (video.liked ? unLikeVideo(video.id) : likeVideo(video.id))}
-				color={video.liked ? 'success' : 'primary'}
+				color={video.liked ? 'success' : 'default'}
 			>
 				<CircularProgress sx={{ display: loading ? 'block' : 'none' }} />
 				<ThumbUp sx={{ display: !loading ? 'block' : 'none' }} />

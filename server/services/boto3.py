@@ -10,8 +10,8 @@ class Boto3Service:
     S3_MUSIC_BUCKET = config.aws_s3_music_bucket
 
     def __init__(self) -> None:
-        self.session = boto3.Session()
-        self.client = self.session.client(
+        self._session = boto3.Session()
+        self._client = self._session.client(
             "s3",
             endpoint_url=Boto3Service.AWS_ENDPOINT_URL,
             region_name=Boto3Service.AWS_REGION_NAME,
@@ -27,12 +27,16 @@ class Boto3Service:
         content_type: str = ...,
         acl="public-read",
     ):
-        self.client.put_object(
-            Bucket=bucket, Key=filename, Body=body, ACL=acl, ContentType=content_type
+        self._client.put_object(
+            Bucket=bucket,
+            Key=filename,
+            Body=body,
+            ACL=acl,
+            ContentType=content_type,
         )
 
     def delete_file(self, bucket: str = ..., filename: str = ...):
-        self.client.delete_object(Bucket=bucket, Key=filename)
+        self._client.delete_object(Bucket=bucket, Key=filename)
 
     def resolve_artwork_url(self, filename: str = ...):
         return f"{Boto3Service.AWS_ENDPOINT_URL}/{Boto3Service.S3_ARTWORK_BUCKET}/{filename}"

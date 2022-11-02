@@ -27,7 +27,10 @@ class RedisService:
         task: Task = None
         try:
             task = asyncio.create_task(
-                self.subscribe(channel=channel, message_handler=handler)
+                self.subscribe(
+                    channel=channel,
+                    message_handler=handler,
+                )
             )
             while True:
                 await websocket.send_json({})
@@ -45,13 +48,16 @@ class RedisService:
                 task.cancel()
 
     async def subscribe(
-        self, channel: RedisChannels = ..., message_handler: Coroutine = ...
+        self,
+        channel: RedisChannels = ...,
+        message_handler: Coroutine = ...,
     ):
         pubsub = redis.pubsub()
         await pubsub.subscribe(channel.value)
         while True:
             message = await pubsub.get_message(
-                ignore_subscribe_messages=True, timeout=1.0
+                ignore_subscribe_messages=True,
+                timeout=1.0,
             )
             if message and message.get("type") == "message":
                 await message_handler(message)

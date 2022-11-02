@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Box, CircularProgress, Grid, Pagination, Typography, Stack, Divider } from '@mui/material';
 import { useJobsQuery } from '../../api/music';
 import JobCard from './JobCard';
@@ -8,13 +8,20 @@ const JobList = () => {
 		page: 1,
 		perPage: 5,
 	});
-	const [jobs, setJobs] = useState<Job[]>([]);
-	const [totalPages, setTotalPages] = useState(1);
 
 	const jobsStatus = useJobsQuery(args);
 
+	const { jobs, totalPages } = useMemo(() => {
+		if (jobsStatus.isSuccess && jobsStatus.currentData) {
+			return jobsStatus.currentData;
+		} else if (jobsStatus.data) {
+			return jobsStatus.data;
+		}
+		return { jobs: [], totalPages: 1 };
+	}, [jobsStatus.currentData, jobsStatus.data, jobsStatus.isSuccess]);
+
 	const renderJobs = useMemo(() => {
-		if (jobsStatus.isLoading || jobsStatus.isFetching) {
+		if (jobsStatus.isLoading) {
 			return (
 				<Stack justifyContent="center">
 					<CircularProgress />
@@ -32,15 +39,7 @@ const JobList = () => {
 				))}
 			</Grid>
 		);
-	}, [jobs, jobsStatus.isFetching, jobsStatus.isLoading]);
-
-	useEffect(() => {
-		if (jobsStatus.isSuccess && jobsStatus.currentData) {
-			const { jobs, totalPages } = jobsStatus.currentData;
-			setJobs(jobs);
-			setTotalPages(totalPages);
-		}
-	}, [jobsStatus.currentData, jobsStatus.isSuccess]);
+	}, [jobs, jobsStatus.isLoading]);
 
 	return useMemo(
 		() => (

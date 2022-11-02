@@ -1,39 +1,25 @@
 import traceback
 from asgiref.sync import sync_to_async
 from functools import wraps
-from inspect import iscoroutinefunction
+from inspect import iscoroutinefunction, signature
 from server.logging import logger
-from server.models.main import init_db
+from server.models import create_session
 
 
-class Decorators:
-    def exception_handler(self, function):
-        @wraps(function)
-        async def wrapper(*args, **kwargs):
-            nonlocal function
+def worker_task(function):
+    @wraps(function)
+    async def wrapper(*args, **kwargs):
+        parameters = signature(function).parameters
+        async with create_session() as db:
+            if "db" in parameters:
+                kwargs["db"] = db
             try:
                 if not iscoroutinefunction(function):
-                    function = sync_to_async(function)
-                return await function(*args, **kwargs)
+                    func = sync_to_async(function)
+                else:
+                    func = function
+                return await func(*args, **kwargs)
             except Exception:
                 logger.error(traceback.format_exc())
-                return None
 
-        return wrapper
-
-    def worker_task(self, function):
-        @wraps(function)
-        async def wrapper(*args, **kwargs):
-            if iscoroutinefunction(function):
-                db = init_db()
-                await db.connect()
-                result = await function(*args, **kwargs, db=db)
-                await db.disconnect()
-                return result
-            func = sync_to_async(function)
-            return await func(*args, **kwargs)
-
-        return wrapper
-
-
-decorators = Decorators()
+    return wrapper
