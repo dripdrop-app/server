@@ -404,36 +404,39 @@ async def get_youtube_video(
                 (YoutubeVideos.category_id == video.category_id)
                 | (YoutubeVideos.channel_id == video.channel_id),
             )
-            .order_by(YoutubeVideos.published_at.desc())
             .alias(name=YoutubeVideos.__tablename__)
         )
-        query = select(
-            videos_query,
-            channel_query.c.title.label("channel_title"),
-            channel_query.c.thumbnail.label("channel_thumbnail"),
-            video_likes_query.c.created_at.label("liked"),
-            video_watches_query.c.created_at.label("watched"),
-            video_queues_query.c.created_at.label("queued"),
-        ).select_from(
-            videos_query.join(
-                channel_query,
-                channel_query.c.id == videos_query.c.channel_id,
+        query = (
+            select(
+                videos_query,
+                channel_query.c.title.label("channel_title"),
+                channel_query.c.thumbnail.label("channel_thumbnail"),
+                video_likes_query.c.created_at.label("liked"),
+                video_watches_query.c.created_at.label("watched"),
+                video_queues_query.c.created_at.label("queued"),
             )
-            .join(
-                video_queues_query,
-                video_queues_query.c.video_id == videos_query.c.id,
-                isouter=True,
+            .select_from(
+                videos_query.join(
+                    channel_query,
+                    channel_query.c.id == videos_query.c.channel_id,
+                )
+                .join(
+                    video_queues_query,
+                    video_queues_query.c.video_id == videos_query.c.id,
+                    isouter=True,
+                )
+                .join(
+                    video_likes_query,
+                    video_likes_query.c.video_id == videos_query.c.id,
+                    isouter=True,
+                )
+                .join(
+                    video_watches_query,
+                    video_watches_query.c.video_id == videos_query.c.id,
+                    isouter=True,
+                )
             )
-            .join(
-                video_likes_query,
-                video_likes_query.c.video_id == videos_query.c.id,
-                isouter=True,
-            )
-            .join(
-                video_watches_query,
-                video_watches_query.c.video_id == videos_query.c.id,
-                isouter=True,
-            )
+            .order_by(videos_query.c.published_at.desc())
         )
         results = await db.execute(query)
         related_videos = results.mappings().fetchmany(related_videos_length)
