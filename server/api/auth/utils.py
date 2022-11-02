@@ -1,7 +1,7 @@
 import bcrypt
-from soupsieve import select
 from server.dependencies import DBSession
 from server.models.orm import Users
+from sqlalchemy import select
 
 
 async def create_new_account(

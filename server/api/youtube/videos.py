@@ -277,7 +277,7 @@ async def get_youtube_video_queue(
         select(YoutubeVideoQueues)
         .where(YoutubeVideoQueues.email == google_account.email)
         .offset(min(index - 1, 0))
-        .order(YoutubeVideoQueues.created_at.asc())
+        .order_by(YoutubeVideoQueues.created_at.asc())
         .alias(name=YoutubeVideoQueues.__tablename__)
     )
     video_watches_query = (
