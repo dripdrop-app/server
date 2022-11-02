@@ -277,7 +277,6 @@ async def get_youtube_video_queue(
         select(YoutubeVideoQueues)
         .where(YoutubeVideoQueues.email == google_account.email)
         .offset(min(index - 1, 0))
-        .order_by(YoutubeVideoQueues.created_at.asc())
         .alias(name=YoutubeVideoQueues.__tablename__)
     )
     video_watches_query = (
@@ -286,32 +285,36 @@ async def get_youtube_video_queue(
         .alias(name=YoutubeVideoWatches.__tablename__)
     )
     channel_query = select(YoutubeChannels).alias(name=YoutubeChannels.__tablename__)
-    query = select(
-        videos_query,
-        channel_query.c.title.label("channel_title"),
-        channel_query.c.thumbnail.label("channel_thumbnail"),
-        video_likes_query.c.created_at.label("liked"),
-        video_watches_query.c.created_at.label("watched"),
-        video_queues_query.c.created_at.label("queued"),
-    ).select_from(
-        video_queues_query.join(
+    query = (
+        select(
             videos_query,
-            video_queues_query.c.video_id == videos_query.c.id,
+            channel_query.c.title.label("channel_title"),
+            channel_query.c.thumbnail.label("channel_thumbnail"),
+            video_likes_query.c.created_at.label("liked"),
+            video_watches_query.c.created_at.label("watched"),
+            video_queues_query.c.created_at.label("queued"),
         )
-        .join(
-            channel_query,
-            channel_query.c.id == videos_query.c.channel_id,
+        .select_from(
+            video_queues_query.join(
+                videos_query,
+                video_queues_query.c.video_id == videos_query.c.id,
+            )
+            .join(
+                channel_query,
+                channel_query.c.id == videos_query.c.channel_id,
+            )
+            .join(
+                video_likes_query,
+                video_likes_query.c.video_id == videos_query.c.id,
+                isouter=True,
+            )
+            .join(
+                video_watches_query,
+                video_watches_query.c.video_id == videos_query.c.id,
+                isouter=True,
+            )
         )
-        .join(
-            video_likes_query,
-            video_likes_query.c.video_id == videos_query.c.id,
-            isouter=True,
-        )
-        .join(
-            video_watches_query,
-            video_watches_query.c.video_id == videos_query.c.id,
-            isouter=True,
-        )
+        .order_by(video_queues_query.c.created_at.asc())
     )
     results = await db.execute(query)
     videos = results.mappings().fetchmany(2 if index - 1 == 0 else 3)
