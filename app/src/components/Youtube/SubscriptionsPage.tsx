@@ -1,12 +1,12 @@
 import { Fragment, useMemo } from 'react';
 import { useYoutubeSubscriptionsQuery } from '../../api/youtube';
 
-interface YoutubeSubscriptionsPageProps extends YoutubeSubscriptionBody {
+interface SubscriptionsPageProps extends YoutubeSubscriptionBody {
 	renderItem: (subscription: YoutubeSubscription, index: number) => JSX.Element;
 	renderLoading: () => JSX.Element;
 }
 
-const YoutubeSubscriptionsPage = (props: YoutubeSubscriptionsPageProps) => {
+const SubscriptionsPage = (props: SubscriptionsPageProps) => {
 	const { renderItem, renderLoading } = props;
 
 	const subscriptionsStatus = useYoutubeSubscriptionsQuery(props);
@@ -34,4 +34,4 @@ const YoutubeSubscriptionsPage = (props: YoutubeSubscriptionsPageProps) => {
 	);
 };
 
-export default YoutubeSubscriptionsPage;
+export default SubscriptionsPage;

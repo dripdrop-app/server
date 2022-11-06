@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Box, CircularProgress, IconButton, Tooltip } from '@mui/material';
+import { CircularProgress, IconButton, Tooltip } from '@mui/material';
 import { AddToQueue, RemoveFromQueue, ThumbUp, Visibility } from '@mui/icons-material';
 import {
 	useAddYoutubeVideoLikeMutation,
@@ -12,7 +12,7 @@ interface VideoButtonsProps {
 	video: YoutubeVideo;
 }
 
-export const YoutubeVideoLikeButton = (props: VideoButtonsProps) => {
+export const VideoLikeButton = (props: VideoButtonsProps) => {
 	const { video } = props;
 
 	const [likeVideo, likeVideoStatus] = useAddYoutubeVideoLikeMutation();
@@ -38,7 +38,7 @@ export const YoutubeVideoLikeButton = (props: VideoButtonsProps) => {
 	);
 };
 
-export const YoutubeVideoQueueButton = (props: VideoButtonsProps) => {
+export const VideoQueueButton = (props: VideoButtonsProps) => {
 	const { video } = props;
 
 	const [queueVideo, queueVideoStatus] = useAddYoutubeVideoQueueMutation();
@@ -65,7 +65,7 @@ export const YoutubeVideoQueueButton = (props: VideoButtonsProps) => {
 	);
 };
 
-export const YoutubeVideoWatchButton = (props: VideoButtonsProps) => {
+export const VideoWatchButton = (props: VideoButtonsProps) => {
 	const { video } = props;
 	const [open, setOpen] = useState(false);
 
@@ -87,20 +87,3 @@ export const YoutubeVideoWatchButton = (props: VideoButtonsProps) => {
 		[open, video.watched, watchedDate]
 	);
 };
-
-const VideoButtons = (props: VideoButtonsProps) => {
-	const { video } = props;
-
-	return useMemo(
-		() => (
-			<Box>
-				<YoutubeVideoLikeButton video={video} />
-				<YoutubeVideoQueueButton video={video} />
-				<YoutubeVideoWatchButton video={video} />
-			</Box>
-		),
-		[video]
-	);
-};
-
-export default VideoButtons;

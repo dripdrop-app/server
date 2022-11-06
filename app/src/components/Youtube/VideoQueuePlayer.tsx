@@ -11,11 +11,11 @@ import {
 	endVideoQueue,
 } from '../../state/youtube';
 
-interface YoutubeVideoQueuePlayerProps {
+interface VideoQueuePlayerProps {
 	playing: boolean;
 }
 
-const YoutubeVideoQueuePlayer = (props: YoutubeVideoQueuePlayerProps) => {
+const VideoQueuePlayer = (props: VideoQueuePlayerProps) => {
 	const playerRef = useRef<ReactPlayer>(null);
 
 	const [watchVideo] = useAddYoutubeVideoWatchMutation();
@@ -53,4 +53,4 @@ const YoutubeVideoQueuePlayer = (props: YoutubeVideoQueuePlayerProps) => {
 	);
 };
 
-export default YoutubeVideoQueuePlayer;
+export default VideoQueuePlayer;

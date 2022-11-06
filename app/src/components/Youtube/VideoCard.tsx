@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Card, CardMedia, CardContent, Typography, Link, Stack, Box } from '@mui/material';
-import { YoutubeVideoQueueButton, YoutubeVideoWatchButton } from './YoutubeVideoButtons';
+import { Card, CardMedia, CardContent, Typography, Link, Stack, Box, Chip } from '@mui/material';
+import { useYoutubeVideoCategoriesQuery } from '../../api/youtube';
+import { VideoQueueButton, VideoWatchButton } from './VideoButtons';
 
 interface VideoCardProps {
 	video: YoutubeVideo;
@@ -11,9 +12,27 @@ const VideoCard = (props: VideoCardProps) => {
 	const { video } = props;
 	const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 	const [cardHovered, setCardHovered] = useState(false);
-
 	const cardRef = useRef<HTMLDivElement>(null);
 	const imageRef = useRef<HTMLImageElement>(null);
+
+	const videoCategoriesStatus = useYoutubeVideoCategoriesQuery({ channelId: undefined });
+
+	const categories = useMemo(() => {
+		if (videoCategoriesStatus.isSuccess && videoCategoriesStatus.currentData) {
+			return videoCategoriesStatus.currentData.categories;
+		} else if (videoCategoriesStatus.data) {
+			return videoCategoriesStatus.data.categories;
+		}
+		return [];
+	}, [videoCategoriesStatus.currentData, videoCategoriesStatus.data, videoCategoriesStatus.isSuccess]);
+
+	const VideoCategoryBadge = useMemo(() => {
+		const category = categories.find((category) => video.categoryId === category.id);
+		if (category) {
+			return <Chip size="small" label={category.name} color="primary" />;
+		}
+		return null;
+	}, [categories, video.categoryId]);
 
 	useEffect(() => {
 		const image = imageRef.current;
@@ -79,6 +98,9 @@ const VideoCard = (props: VideoCardProps) => {
 							width={imageDimensions.width}
 						/>
 					</Link>
+					<Box position="absolute" bottom="5%" right="5%">
+						{VideoCategoryBadge}
+					</Box>
 					<Box
 						sx={(theme) => ({
 							display: cardHovered ? 'block' : 'none',
@@ -92,10 +114,10 @@ const VideoCard = (props: VideoCardProps) => {
 						padding={2}
 					>
 						<Box sx={{ float: 'left' }}>
-							<YoutubeVideoWatchButton video={video} />
+							<VideoWatchButton video={video} />
 						</Box>
 						<Box sx={{ float: 'right' }}>
-							<YoutubeVideoQueueButton video={video} />
+							<VideoQueueButton video={video} />
 						</Box>
 					</Box>
 				</Stack>
@@ -116,7 +138,7 @@ const VideoCard = (props: VideoCardProps) => {
 				</CardContent>
 			</Card>
 		);
-	}, [cardHovered, imageDimensions.height, imageDimensions.width, video]);
+	}, [VideoCategoryBadge, cardHovered, imageDimensions.height, imageDimensions.width, video]);
 };
 
 export default VideoCard;

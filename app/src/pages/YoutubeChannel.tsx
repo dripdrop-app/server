@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Avatar, Box, CircularProgress, Divider, Stack, Typography } from '@mui/material';
 import { useYoutubeChannelQuery } from '../api/youtube';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
-import YoutubeVideosView from '../components/Youtube/YoutubeVideosView';
+import VideosView from '../components/Youtube/VideosView';
 
 interface YoutubeChannelProps {
 	channelId: string;
@@ -40,7 +40,7 @@ const YoutubeChannel = (props: YoutubeChannelProps) => {
 								<Typography variant="h4">{channel.title}</Typography>
 							</Stack>
 							<Divider />
-							<YoutubeVideosView channelId={channelId} />
+							<VideosView channelId={channelId} />
 						</Stack>
 					) : (
 						<Box />

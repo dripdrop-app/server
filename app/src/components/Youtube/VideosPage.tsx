@@ -1,12 +1,12 @@
 import { Fragment, useMemo } from 'react';
 import { useYoutubeVideosQuery } from '../../api/youtube';
 
-interface YoutubeVideosPageProps extends YoutubeVideosBody {
+interface VideosPageProps extends YoutubeVideosBody {
 	renderItem: (video: YoutubeVideo, index: number) => JSX.Element;
 	renderLoading: () => JSX.Element;
 }
 
-const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
+const VideosPage = (props: VideosPageProps) => {
 	const { renderItem, renderLoading } = props;
 
 	const videosStatus = useYoutubeVideosQuery(props);
@@ -31,4 +31,4 @@ const YoutubeVideosPage = (props: YoutubeVideosPageProps) => {
 	);
 };
 
-export default YoutubeVideosPage;
+export default VideosPage;

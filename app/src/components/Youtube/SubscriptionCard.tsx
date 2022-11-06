@@ -6,7 +6,7 @@ interface SubscriptionCardProps {
 	subscription: YoutubeSubscription;
 }
 
-const YoutubeSubscriptionCard = (props: SubscriptionCardProps) => {
+const SubscriptionCard = (props: SubscriptionCardProps) => {
 	const { subscription } = props;
 
 	return useMemo(() => {
@@ -31,4 +31,4 @@ const YoutubeSubscriptionCard = (props: SubscriptionCardProps) => {
 	}, [subscription.channelId, subscription.channelThumbnail, subscription.channelTitle, subscription.publishedAt]);
 };
 
-export default YoutubeSubscriptionCard;
+export default SubscriptionCard;

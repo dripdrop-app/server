@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Stack, Typography, Link } from '@mui/material';
-import { YoutubeVideoWatchButton, YoutubeVideoLikeButton, YoutubeVideoQueueButton } from './YoutubeVideoButtons';
+import { VideoWatchButton, VideoLikeButton, VideoQueueButton } from './VideoButtons';
 
-interface YoutubeVideoInformationProps {
+interface VideoInformationProps {
 	video: YoutubeVideo;
 }
 
-const YoutubeVideoInformation = (props: YoutubeVideoInformationProps) => {
+const VideoInformation = (props: VideoInformationProps) => {
 	const { video } = props;
 
 	const publishedAt = new Date(video.publishedAt).toLocaleDateString();
@@ -19,9 +19,9 @@ const YoutubeVideoInformation = (props: YoutubeVideoInformationProps) => {
 				<Stack direction="row" flexWrap="wrap" justifyContent="space-between">
 					<Typography variant="h6">{video.title}</Typography>
 					<Stack direction="row" alignItems="center">
-						<YoutubeVideoWatchButton video={video} />
-						<YoutubeVideoLikeButton video={video} />
-						<YoutubeVideoQueueButton video={video} />
+						<VideoWatchButton video={video} />
+						<VideoLikeButton video={video} />
+						<VideoQueueButton video={video} />
 					</Stack>
 				</Stack>
 				<Stack direction="row" flexWrap="wrap" justifyContent="space-between">
@@ -38,4 +38,4 @@ const YoutubeVideoInformation = (props: YoutubeVideoInformationProps) => {
 	);
 };
 
-export default YoutubeVideoInformation;
+export default VideoInformation;

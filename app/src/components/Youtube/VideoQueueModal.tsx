@@ -20,14 +20,14 @@ import {
 import { Close, MenuOpen } from '@mui/icons-material';
 import { setVideoQueueIndex } from '../../state/youtube';
 import { useYoutubeVideosQuery } from '../../api/youtube';
-import { YoutubeVideoQueueButton } from './YoutubeVideoButtons';
-import YoutubeVideosPage from './YoutubeVideosPage';
+import { VideoQueueButton } from './VideoButtons';
+import VideosPage from './VideosPage';
 
-interface YoutubeVideoQueueModalProps {
+interface VideoQueueModalProps {
 	currentVideo: YoutubeVideo;
 }
 
-const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
+const VideoQueueModal = (props: VideoQueueModalProps) => {
 	const { currentVideo } = props;
 
 	const [openModal, setOpenModal] = useState(false);
@@ -112,7 +112,7 @@ const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
 									},
 								})}
 							>
-								<YoutubeVideosPage
+								<VideosPage
 									page={filter.page}
 									perPage={filter.perPage}
 									queuedOnly={filter.queuedOnly}
@@ -141,7 +141,7 @@ const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
 													</Stack>
 												</Stack>
 											</ListItemButton>
-											<YoutubeVideoQueueButton video={video} />
+											<VideoQueueButton video={video} />
 										</ListItem>
 									)}
 									renderLoading={() => (
@@ -179,4 +179,4 @@ const YoutubeVideoQueueModal = (props: YoutubeVideoQueueModalProps) => {
 	);
 };
 
-export default YoutubeVideoQueueModal;
+export default VideoQueueModal;

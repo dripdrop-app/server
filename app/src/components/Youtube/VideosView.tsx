@@ -3,15 +3,15 @@ import { Box, Checkbox, CircularProgress, FormControlLabel, Grid, Stack } from '
 import { throttle } from 'lodash';
 import { useYoutubeVideosQuery } from '../../api/youtube';
 import InfiniteScroll from '../InfiniteScroll';
-import YoutubeVideosPage from './YoutubeVideosPage';
-import YoutubeVideoCard from './YoutubeVideoCard';
+import YoutubeVideosPage from './VideosPage';
+import YoutubeVideoCard from './VideoCard';
 import CategorySelect from './CategorySelect';
 
-interface YoutubeVideosViewProps {
+interface VideosViewProps {
 	channelId?: string;
 }
 
-const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
+const VideosView = (props: VideosViewProps) => {
 	const [filter, setFilter] = useState<YoutubeVideosBody>({
 		selectedCategories: [],
 		page: 1,
@@ -108,4 +108,4 @@ const YoutubeVideosView = (props: YoutubeVideosViewProps) => {
 	);
 };
 
-export default YoutubeVideosView;
+export default VideosView;

@@ -3,10 +3,10 @@ import { useDispatch } from 'react-redux';
 import ReactPlayer from 'react-player';
 import { Box, CircularProgress, Divider, Grid, Stack, Typography } from '@mui/material';
 import { useYoutubeVideoQuery, useAddYoutubeVideoWatchMutation } from '../api/youtube';
-import YoutubeVideoCard from '../components/Youtube/YoutubeVideoCard';
+import VideoCard from '../components/Youtube/VideoCard';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 import { hideVideoQueueDisplay, showVideoQueueDisplay } from '../state/youtube';
-import YoutubeVideoInformation from '../components/Youtube/YoutubeVideoInformation';
+import VideoInformation from '../components/Youtube/VideoInformation';
 
 interface YoutubeVideoProps {
 	id: string;
@@ -66,14 +66,14 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 									}}
 								/>
 							</Box>
-							<YoutubeVideoInformation video={video} />
+							<VideoInformation video={video} />
 							<Divider />
 							<Box padding={2}>
 								<Typography variant="h6">Related Videos</Typography>
 								<Grid container>
 									{relatedVideos.map((video) => (
 										<Grid item xs={12} sm={6} md={3} xl={2} padding={1} key={video.id}>
-											<YoutubeVideoCard video={video} />
+											<VideoCard video={video} />
 										</Grid>
 									))}
 								</Grid>

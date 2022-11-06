@@ -3,8 +3,8 @@ import { CircularProgress, Divider, Grid, Stack, Typography } from '@mui/materia
 import { throttle } from 'lodash';
 import { useYoutubeSubscriptionsQuery } from '../api/youtube';
 import InfiniteScroll from '../components/InfiniteScroll';
-import YoutubeSubscriptionsPage from '../components/Youtube/YoutubeSubscriptionsPage';
-import YoutubeSubscriptionCard from '../components/Youtube/YoutubeSubscriptionCard';
+import SubscriptionsPage from '../components/Youtube/SubscriptionsPage';
+import SubscriptionCard from '../components/Youtube/SubscriptionCard';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 
 const YoutubeSubscriptions = () => {
@@ -49,12 +49,12 @@ const YoutubeSubscriptions = () => {
 						items={Array(filter.page).fill(1)}
 						renderItem={(page, index) => (
 							<Grid container>
-								<YoutubeSubscriptionsPage
+								<SubscriptionsPage
 									perPage={filter.perPage}
 									page={index + 1}
 									renderItem={(subscription) => (
 										<Grid item xs={12} sm={6} md={3} xl={2} padding={1}>
-											<YoutubeSubscriptionCard subscription={subscription} />
+											<SubscriptionCard subscription={subscription} />
 										</Grid>
 									)}
 									renderLoading={() => (

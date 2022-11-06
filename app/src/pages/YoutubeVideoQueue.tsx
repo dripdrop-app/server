@@ -3,10 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Box, Stack } from '@mui/material';
 import { hideVideoQueueDisplay, setVideoQueuePlayerVideo, showVideoQueueDisplay } from '../state/youtube';
 import { useYoutubeVideoQueueQuery } from '../api/youtube';
-import YoutubeVideoQueuePlayer from '../components/Youtube/YoutubeVideoQueuePlayer';
-import YoutubeVideoQueueModal from '../components/Youtube/YoutubeVideoQueueModal';
+import VideoQueuePlayer from '../components/Youtube/VideoQueuePlayer';
+import VideoQueueModal from '../components/Youtube/VideoQueueModal';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
-import YoutubeVideoInformation from '../components/Youtube/YoutubeVideoInformation';
+import VideoInformation from '../components/Youtube/VideoInformation';
 
 const YoutubeVideoQueue = () => {
 	const ref = useRef<HTMLDivElement>(null);
@@ -45,11 +45,11 @@ const YoutubeVideoQueue = () => {
 			<YoutubeAuthPage>
 				<Stack ref={ref} direction="column">
 					<Box height="80vh">
-						<YoutubeVideoQueuePlayer playing={true} />
+						<VideoQueuePlayer playing={true} />
 					</Box>
-					{currentVideo ? <YoutubeVideoInformation video={currentVideo} /> : <Box />}
+					{currentVideo ? <VideoInformation video={currentVideo} /> : <Box />}
 					<Box position="fixed" top="25%" right={0}>
-						{currentVideo ? <YoutubeVideoQueueModal currentVideo={currentVideo} /> : <Box />}
+						{currentVideo ? <VideoQueueModal currentVideo={currentVideo} /> : <Box />}
 					</Box>
 				</Stack>
 			</YoutubeAuthPage>
