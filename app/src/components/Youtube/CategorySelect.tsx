@@ -90,6 +90,7 @@ const CategorySelect = (props: CategorySelectProps) => {
 							left: '25%',
 							width: '50%',
 							height: '50%',
+							overflow: 'scroll',
 							[theme.breakpoints.down('md')]: {
 								padding: 2,
 								top: 0,
