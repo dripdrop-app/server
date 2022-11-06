@@ -60,41 +60,43 @@ async def google_oauth2(
     if not user:
         return RedirectResponse("/")
     get_oauth_tokens = sync_to_async(google_api_service.get_oauth_tokens)
-    tokens = await get_oauth_tokens(f"{request.base_url}api/youtube/googleoauth2", code)
-    if tokens:
+    tokens = None
+    try:
+        tokens = await get_oauth_tokens(
+            f"{request.base_url}api/youtube/googleoauth2", code
+        )
         get_user_email = sync_to_async(google_api_service.get_user_email)
         google_email = await get_user_email(tokens.get("access_token"))
-        if google_email:
-            query = select(GoogleAccounts).where(GoogleAccounts.email == google_email)
-            results = await db.scalars(query)
-            google_account = results.first()
-            if google_account:
-                google_account.access_token = tokens["access_token"]
-                google_account.refresh_token = tokens["refresh_token"]
-                google_account.expires = tokens["expires_in"]
-                await db.commit()
-            else:
-                db.add(
-                    GoogleAccounts(
-                        email=google_email,
-                        user_email=email,
-                        access_token=tokens["access_token"],
-                        refresh_token=tokens["refresh_token"],
-                        expires=tokens["expires_in"],
-                    )
+        query = select(GoogleAccounts).where(GoogleAccounts.email == google_email)
+        results = await db.scalars(query)
+        google_account = results.first()
+        if google_account:
+            google_account.access_token = tokens["access_token"]
+            google_account.refresh_token = tokens["refresh_token"]
+            google_account.expires = tokens["expires_in"]
+            await db.commit()
+        else:
+            db.add(
+                GoogleAccounts(
+                    email=google_email,
+                    user_email=email,
+                    access_token=tokens["access_token"],
+                    refresh_token=tokens["refresh_token"],
+                    expires=tokens["expires_in"],
                 )
-                await db.commit()
-            job = queue.enqueue(
-                youtube_tasker.update_youtube_video_categories,
-                args=(False,),
             )
-            queue.enqueue(
-                youtube_tasker.update_user_youtube_subscriptions_job,
-                args=(email,),
-                depends_on=job,
-            )
-    else:
-        logger.warning("Could not retrieve tokens")
+            await db.commit()
+        job = queue.enqueue(
+            youtube_tasker.update_youtube_video_categories,
+            args=(False,),
+        )
+        queue.enqueue(
+            youtube_tasker.update_user_youtube_subscriptions_job,
+            args=(email,),
+            depends_on=job,
+        )
+    except Exception as e:
+        logger.error(e.message)
     return RedirectResponse("/youtube/videos")
 
 
@@ -103,23 +105,14 @@ async def get_youtube_account(
     google_account: GoogleAccount = Depends(get_google_user),
     db: DBSession = Depends(create_db_session),
 ):
-    access_token = google_account.access_token
     if config.env == "production":
-        new_access_token = await youtube_tasker.update_google_access_token(
-            google_account.email
-        )
-        if new_access_token != access_token:
-            access_token = new_access_token
-            query = select(GoogleAccounts).where(
-                GoogleAccounts.email == google_account.email
-            )
-            results = await db.scalars(query)
-            account = results.first()
-            account.access_token = new_access_token
-            await db.commit()
+        await youtube_tasker.update_google_access_token(google_account.email)
+    query = select(GoogleAccounts).where(GoogleAccounts.email == google_account.email)
+    results = await db.scalars(query)
+    account = GoogleAccount.from_orm(results.first())
     return YoutubeResponses.Account(
-        email=google_account.email,
-        refresh=not bool(access_token),
+        email=account.email,
+        refresh=not bool(account.access_token),
     ).dict(by_alias=True)
 
 

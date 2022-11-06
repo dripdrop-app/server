@@ -32,19 +32,21 @@ class YoutubeTasker:
         google_account = GoogleAccount.from_orm(account)
         difference = datetime.now(timezone.utc) - google_account.last_updated
         if difference.seconds >= google_account.expires:
-            refresh_access_token = sync_to_async(
-                google_api_service.refresh_access_token
-            )
-            new_access_token = await refresh_access_token(
-                refresh_token=google_account.refresh_token
-            )
-            if new_access_token:
-                account.access_token = new_access_token["access_token"]
-                account.expires = new_access_token["expires_in"]
+            try:
+                refresh_access_token = sync_to_async(
+                    google_api_service.refresh_access_token
+                )
+                new_access_token = await refresh_access_token(
+                    refresh_token=google_account.refresh_token
+                )
+                if new_access_token:
+                    account.access_token = new_access_token["access_token"]
+                    account.expires = new_access_token["expires_in"]
+                    await db.commit()
+            except Exception:
+                account.access_token = ""
+                account.expires = 0
                 await db.commit()
-                return new_access_token["access_token"]
-            return ""
-        return google_account.access_token
 
     @worker_task
     async def add_update_youtube_subscription(
@@ -220,13 +222,14 @@ class YoutubeTasker:
             RedisChannels.YOUTUBE_SUBSCRIPTION_JOB_CHANNEL.value,
             user_email,
         )
-        access_token = await self.update_google_access_token(
-            google_email=google_account.email
-        )
-        if not access_token:
+        await self.update_google_access_token(google_email=google_account.email)
+        await db.refresh(account)
+        account = results.first()
+        google_account = GoogleAccount.from_orm(account)
+        if not google_account.access_token:
             return
         for subscriptions in google_api_service.get_user_subscriptions(
-            access_token=access_token
+            access_token=google_account.access_token
         ):
             youtube_subscription_channels = list(
                 map(

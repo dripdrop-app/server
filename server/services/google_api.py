@@ -56,7 +56,7 @@ class GoogleAPIService:
         if response.ok:
             return response.json()
         logger.warning(response.text)
-        return None
+        raise Exception("Failed to retrieve oauth tokens")
 
     def refresh_access_token(self, refresh_token: str = ...):
         params = {
@@ -73,7 +73,7 @@ class GoogleAPIService:
         if response.ok:
             return response.json()
         logger.warning(response.text)
-        return None
+        raise Exception("Failed to refresh access token")
 
     def get_user_email(self, access_token: str = ...):
         params = {"fields": "email"}
@@ -87,7 +87,7 @@ class GoogleAPIService:
             json = response.json()
             return json.get("email")
         logger.warning(response.text)
-        return None
+        raise Exception("Failed to retrieve email")
 
     def get_video_categories(self):
         params = {
@@ -104,7 +104,7 @@ class GoogleAPIService:
             json = response.json()
             return json.get("items", [])
         logger.warning(response.text)
-        return []
+        raise Exception("Failed to get video categories")
 
     def get_user_subscriptions(self, access_token: str = ...):
         params = {
@@ -126,8 +126,7 @@ class GoogleAPIService:
                 params["pageToken"] = json.get("nextPageToken", None)
             else:
                 logger.warning(response.text)
-                yield []
-                params["pageToken"] = None
+                raise Exception("Failed to get user subscriptions")
 
     def get_channels_info(self, channel_ids: List[str] = ...):
         params = {
@@ -145,7 +144,7 @@ class GoogleAPIService:
             json = response.json()
             return json.get("items", [])
         logger.warning(response.text)
-        return []
+        raise Exception("Failed to get channel info")
 
     def get_playlist_videos(self, playlist_id: str = ...):
         params = {
@@ -167,8 +166,7 @@ class GoogleAPIService:
                 params["pageToken"] = json.get("nextPageToken", None)
             else:
                 logger.warning(response.text)
-                yield []
-                params["pageToken"] = None
+                raise Exception("Failed to get playlist videos")
 
     def get_videos_info(self, video_ids: str = ...):
         params = {
@@ -184,7 +182,7 @@ class GoogleAPIService:
             json = response.json()
             return json.get("items", [])
         logger.warning(response.text)
-        return []
+        raise Exception("Failed to get info for videos")
 
 
 google_api_service = GoogleAPIService()
