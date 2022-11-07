@@ -224,7 +224,6 @@ class YoutubeTasker:
         )
         await self.update_google_access_token(google_email=google_account.email)
         await db.refresh(account)
-        account = results.first()
         google_account = GoogleAccount.from_orm(account)
         if not google_account.access_token:
             return
