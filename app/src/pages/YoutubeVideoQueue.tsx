@@ -1,24 +1,19 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Stack } from '@mui/material';
-import { hideVideoQueueDisplay, setVideoQueuePlayerVideo, showVideoQueueDisplay } from '../state/youtube';
 import { useYoutubeVideoQueueQuery } from '../api/youtube';
-import VideoQueuePlayer from '../components/Youtube/VideoQueuePlayer';
+import VideoQueuePlayer from '../components/Youtube/VideoPlayer';
 import VideoQueueModal from '../components/Youtube/VideoQueueModal';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 import VideoInformation from '../components/Youtube/VideoInformation';
 
-const YoutubeVideoQueue = () => {
-	const ref = useRef<HTMLDivElement>(null);
+const QUEUE_KEY = `dripdrop-${process.env.NODE_ENV}-queue-index`;
 
-	const dispatch = useDispatch();
-	const { queueIndex } = useSelector((state: RootState) => ({
-		queueIndex: state.youtube.queue.index,
-	}));
+const YoutubeVideoQueue = () => {
+	const [queueIndex, setQueueIndex] = useState(1);
 
 	const videoQueueStatus = useYoutubeVideoQueueQuery(queueIndex);
 
-	const { currentVideo } = useMemo(() => {
+	const { currentVideo, next } = useMemo(() => {
 		if (videoQueueStatus.isSuccess && videoQueueStatus.currentData) {
 			return videoQueueStatus.currentData;
 		} else if (videoQueueStatus.data) {
@@ -28,33 +23,35 @@ const YoutubeVideoQueue = () => {
 	}, [videoQueueStatus.currentData, videoQueueStatus.data, videoQueueStatus.isSuccess]);
 
 	useEffect(() => {
-		if (currentVideo) {
-			dispatch(setVideoQueuePlayerVideo(currentVideo));
+		const storedQueueIndex = window.localStorage.getItem(QUEUE_KEY);
+		if (storedQueueIndex) {
+			setQueueIndex(parseInt(storedQueueIndex));
 		}
-	}, [currentVideo, dispatch]);
+	}, []);
 
 	useEffect(() => {
-		dispatch(hideVideoQueueDisplay());
-		return () => {
-			dispatch(showVideoQueueDisplay());
-		};
-	}, [dispatch]);
+		window.localStorage.setItem(QUEUE_KEY, queueIndex.toString());
+	}, [queueIndex]);
 
 	return useMemo(
 		() => (
 			<YoutubeAuthPage>
-				<Stack ref={ref} direction="column">
+				<Stack direction="column">
 					<Box height="80vh">
-						<VideoQueuePlayer playing={true} />
+						<VideoQueuePlayer video={currentVideo} onEnd={() => setQueueIndex(next ? queueIndex + 1 : 1)} />
 					</Box>
 					{currentVideo ? <VideoInformation video={currentVideo} /> : <Box />}
 					<Box position="fixed" top="25%" right={0}>
-						{currentVideo ? <VideoQueueModal currentVideo={currentVideo} /> : <Box />}
+						<VideoQueueModal
+							currentVideo={currentVideo}
+							setQueueIndex={(newIndex) => setQueueIndex(newIndex)}
+							queueIndex={queueIndex}
+						/>
 					</Box>
 				</Stack>
 			</YoutubeAuthPage>
 		),
-		[currentVideo]
+		[currentVideo, next, queueIndex]
 	);
 };
 

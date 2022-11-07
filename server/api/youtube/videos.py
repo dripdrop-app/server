@@ -276,7 +276,7 @@ async def get_youtube_video_queue(
     video_queues_query = (
         select(YoutubeVideoQueues)
         .where(YoutubeVideoQueues.email == google_account.email)
-        .offset(min(index - 1, 0))
+        .offset(max(index - 2, 0))
         .alias(name=YoutubeVideoQueues.__tablename__)
     )
     video_watches_query = (
@@ -317,10 +317,8 @@ async def get_youtube_video_queue(
         .order_by(video_queues_query.c.created_at.asc())
     )
     results = await db.execute(query)
-    videos = results.mappings().fetchmany(2 if index - 1 == 0 else 3)
-    [prev_video, current_video, next_video] = (
-        [None, *videos] if index - 1 == 0 else videos
-    )
+    videos = results.mappings().fetchmany(2 if index == 1 else 3)
+    [prev_video, current_video, next_video] = [None, *videos] if index == 1 else videos
     if not current_video:
         raise HTTPException(404)
     return YoutubeResponses.VideoQueue(

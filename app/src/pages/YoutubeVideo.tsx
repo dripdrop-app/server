@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useDispatch } from 'react-redux';
-import ReactPlayer from 'react-player';
+import { useMemo, useRef } from 'react';
 import { Box, CircularProgress, Divider, Grid, Stack, Typography } from '@mui/material';
-import { useYoutubeVideoQuery, useAddYoutubeVideoWatchMutation } from '../api/youtube';
+import { useYoutubeVideoQuery } from '../api/youtube';
 import VideoCard from '../components/Youtube/VideoCard';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
-import { hideVideoQueueDisplay, showVideoQueueDisplay } from '../state/youtube';
 import VideoInformation from '../components/Youtube/VideoInformation';
+import VideoPlayer from '../components/Youtube/VideoPlayer';
 
 interface YoutubeVideoProps {
 	id: string;
@@ -17,19 +15,8 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 
 	const ref = useRef<HTMLDivElement>(null);
 
-	const [watchVideo] = useAddYoutubeVideoWatchMutation();
-
-	const dispatch = useDispatch();
-
 	const video = useMemo(() => videoStatus.data?.video, [videoStatus.data?.video]);
 	const relatedVideos = useMemo(() => videoStatus.data?.relatedVideos, [videoStatus.data?.relatedVideos]);
-
-	useEffect(() => {
-		dispatch(hideVideoQueueDisplay());
-		return () => {
-			dispatch(showVideoQueueDisplay());
-		};
-	}, [dispatch]);
 
 	return useMemo(
 		() => (
@@ -52,19 +39,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 					{video && relatedVideos ? (
 						<Stack direction="column" spacing={2}>
 							<Box height="70vh">
-								<ReactPlayer
-									height="100%"
-									width="100%"
-									pip
-									url={`https://youtube.com/embed/${video.id}`}
-									controls={true}
-									playing={true}
-									onProgress={({ playedSeconds }) => {
-										if (playedSeconds > 20 && !video.watched) {
-											watchVideo(video.id);
-										}
-									}}
-								/>
+								<VideoPlayer video={video} />
 							</Box>
 							<VideoInformation video={video} />
 							<Divider />
@@ -85,7 +60,7 @@ const YoutubeVideo = (props: YoutubeVideoProps) => {
 				</Box>
 			</YoutubeAuthPage>
 		),
-		[relatedVideos, video, videoStatus.isError, videoStatus.isFetching, videoStatus.isLoading, watchVideo]
+		[relatedVideos, video, videoStatus.isError, videoStatus.isFetching, videoStatus.isLoading]
 	);
 };
 

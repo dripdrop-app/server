@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useMemo, useState } from 'react';
 import {
 	List,
 	Paper,
@@ -18,17 +17,18 @@ import {
 	IconButton,
 } from '@mui/material';
 import { Close, MenuOpen } from '@mui/icons-material';
-import { setVideoQueueIndex } from '../../state/youtube';
 import { useYoutubeVideosQuery } from '../../api/youtube';
 import { VideoQueueButton } from './VideoButtons';
 import VideosPage from './VideosPage';
 
 interface VideoQueueModalProps {
-	currentVideo: YoutubeVideo;
+	currentVideo: YoutubeVideo | null;
+	queueIndex: number;
+	setQueueIndex: (newIndex: number) => void;
 }
 
 const VideoQueueModal = (props: VideoQueueModalProps) => {
-	const { currentVideo } = props;
+	const { currentVideo, queueIndex, setQueueIndex } = props;
 
 	const [openModal, setOpenModal] = useState(false);
 	const [filter, setFilter] = useState<YoutubeVideosBody>({
@@ -37,11 +37,6 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		queuedOnly: true,
 		selectedCategories: [],
 	});
-
-	const dispatch = useDispatch();
-	const { queueIndex } = useSelector((state: RootState) => ({
-		queueIndex: state.youtube.queue.index,
-	}));
 
 	const videosStatus = useYoutubeVideosQuery(filter);
 
@@ -53,11 +48,6 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 		}
 		return 1;
 	}, [videosStatus.currentData, videosStatus.data, videosStatus.isSuccess]);
-
-	const getVideoIndex = useCallback(
-		(index: number) => (filter.page - 1) * filter.perPage + index + 1,
-		[filter.page, filter.perPage]
-	);
 
 	useEffect(() => {
 		const currentVideoPage = Math.ceil(queueIndex / filter.perPage);
@@ -122,13 +112,12 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 											divider
 											sx={{
 												border: (theme) =>
-													video.id === currentVideo.id ? `1px solid ${theme.palette.primary.dark}` : '',
+													video.id === currentVideo?.id ? `1px solid ${theme.palette.primary.dark}` : '',
 											}}
 										>
 											<ListItemButton
 												onClick={() => {
-													console.log(getVideoIndex(index));
-													dispatch(setVideoQueueIndex(getVideoIndex(index)));
+													setQueueIndex((filter.page - 1) * filter.perPage + index + 1);
 													setOpenModal(false);
 												}}
 											>
@@ -172,9 +161,8 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 			filter.queuedOnly,
 			filter.selectedCategories,
 			totalPages,
-			currentVideo.id,
-			getVideoIndex,
-			dispatch,
+			currentVideo,
+			setQueueIndex,
 		]
 	);
 };
