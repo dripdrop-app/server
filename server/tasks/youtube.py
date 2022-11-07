@@ -62,7 +62,7 @@ class YoutubeTasker:
         )
         query = select(YoutubeSubscriptions).where(
             YoutubeSubscriptions.id == subscription_id,
-            email=google_email,
+            YoutubeSubscriptions.email == google_email,
         )
         results = await db.scalars(query)
         subscription = results.first()
