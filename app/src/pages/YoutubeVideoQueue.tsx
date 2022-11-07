@@ -19,8 +19,11 @@ const YoutubeVideoQueue = () => {
 		} else if (videoQueueStatus.data) {
 			return videoQueueStatus.data;
 		}
+		if (queueIndex !== 1) {
+			setQueueIndex(queueIndex - 1);
+		}
 		return { currentVideo: null, prev: false, next: false };
-	}, [videoQueueStatus.currentData, videoQueueStatus.data, videoQueueStatus.isSuccess]);
+	}, [queueIndex, videoQueueStatus.currentData, videoQueueStatus.data, videoQueueStatus.isSuccess]);
 
 	useEffect(() => {
 		const storedQueueIndex = window.localStorage.getItem(QUEUE_KEY);
