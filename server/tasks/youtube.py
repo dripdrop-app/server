@@ -16,7 +16,7 @@ from server.models.orm import (
 from server.services.redis import redis, RedisChannels
 from server.services.google_api import google_api_service
 from server.utils.decorators import worker_task
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 
 
 class YoutubeTasker:
@@ -345,13 +345,16 @@ class YoutubeTasker:
 
     @worker_task
     async def channel_cleanup(self, db: DBSession = ...):
-        pass
-        # limit = datetime.now(timezone.utc) - timedelta(days=7)
-        # query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
-        # stream = await db.stream_scalars(query)
-        # async for channel in stream:
-        #     await db.delete(channel)
-        #     await db.commit()
+        limit = datetime.now(timezone.utc) - timedelta(days=7)
+        query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
+        stream = await db.stream_scalars(query)
+        async for channel in stream:
+            youtube_channel = YoutubeChannel.from_orm(channel)
+            query = delete(YoutubeSubscriptions).where(
+                YoutubeSubscriptions.channel_id == youtube_channel.id
+            )
+            await db.execute(query)
+            await db.commit()
 
 
 youtube_tasker = YoutubeTasker()
