@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
 	List,
-	Paper,
 	ListItem,
 	ListItemButton,
 	Stack,
@@ -10,11 +9,13 @@ import {
 	ListItemText,
 	CircularProgress,
 	Box,
-	Modal,
 	Button,
 	Typography,
 	Pagination,
 	IconButton,
+	Dialog,
+	DialogTitle,
+	DialogContent,
 } from '@mui/material';
 import { Close, MenuOpen } from '@mui/icons-material';
 import { useYoutubeVideosQuery } from '../../api/youtube';
@@ -65,93 +66,78 @@ const VideoQueueModal = (props: VideoQueueModalProps) => {
 				>
 					Queue
 				</Button>
-				<Modal open={openModal} onClose={() => setOpenModal(false)}>
-					<Box
-						sx={(theme) => ({
-							position: 'absolute',
-							padding: 4,
-							top: '10%',
-							left: '10%',
-							width: '80%',
-							height: '80%',
-							overflow: 'scroll',
-							[theme.breakpoints.down('md')]: {
-								padding: 2,
-								top: 0,
-								left: 0,
-								width: '100%',
-								height: '100%',
-							},
-						})}
-						component={Paper}
-					>
-						<Stack direction="column" spacing={2}>
-							<Stack direction="row" justifyContent="space-between">
-								<Typography variant="h6">Queue</Typography>
-								<IconButton onClick={() => setOpenModal(false)}>
-									<Close />
-								</IconButton>
-							</Stack>
-							<List
-								disablePadding
-								sx={(theme) => ({
-									overflow: 'scroll',
-									height: '65vh',
-									[theme.breakpoints.down('md')]: {
-										height: '80vh',
-									},
-								})}
-							>
-								<VideosPage
-									page={filter.page}
-									perPage={filter.perPage}
-									queuedOnly={filter.queuedOnly}
-									selectedCategories={filter.selectedCategories}
-									renderItem={(video, index) => (
-										<ListItem
-											divider
-											sx={{
-												border: (theme) =>
-													video.id === currentVideo?.id ? `1px solid ${theme.palette.primary.dark}` : '',
+				<Dialog open={openModal} onClose={() => setOpenModal(false)} fullWidth maxWidth="md">
+					<DialogTitle>
+						<Stack direction="row" alignItems="center" justifyContent="space-between">
+							<Typography variant="h6">Queue</Typography>
+							<IconButton onClick={() => setOpenModal(false)}>
+								<Close />
+							</IconButton>
+						</Stack>
+					</DialogTitle>
+					<DialogContent dividers>
+						<List
+							disablePadding
+							sx={(theme) => ({
+								overflow: 'scroll',
+								height: '65vh',
+								[theme.breakpoints.down('md')]: {
+									height: '80vh',
+								},
+							})}
+						>
+							<VideosPage
+								page={filter.page}
+								perPage={filter.perPage}
+								queuedOnly={filter.queuedOnly}
+								selectedCategories={filter.selectedCategories}
+								renderItem={(video, index) => (
+									<ListItem
+										divider
+										sx={{
+											backgroundColor: (theme) => (video.id === currentVideo?.id ? theme.palette.primary.main : ''),
+										}}
+									>
+										<ListItemButton
+											onClick={() => {
+												setQueueIndex((filter.page - 1) * filter.perPage + index + 1);
+												setOpenModal(false);
 											}}
 										>
-											<ListItemButton
-												onClick={() => {
-													setQueueIndex((filter.page - 1) * filter.perPage + index + 1);
-													setOpenModal(false);
-												}}
-											>
-												<Stack direction="row" flexWrap="wrap">
-													<Stack direction="row" flexWrap="wrap" alignItems="center">
-														<ListItemAvatar>
-															<Avatar alt={video.title} src={video.thumbnail} />
-														</ListItemAvatar>
-														<ListItemText primary={video.title} secondary={video.channelTitle} />
-													</Stack>
+											<Stack direction="row" alignItems="center">
+												<ListItemAvatar>
+													<Avatar alt={video.title} src={video.thumbnail} />
+												</ListItemAvatar>
+												<Stack direction="column">
+													<ListItemText primary={video.title} secondary={video.channelTitle} />
+													<ListItemText
+														sx={{ display: video.id === currentVideo?.id ? 'block' : 'none' }}
+														primary="Now Playing"
+													/>
 												</Stack>
-											</ListItemButton>
-											<VideoQueueButton video={video} />
-										</ListItem>
-									)}
-									renderLoading={() => (
-										<Stack direction="row" justifyContent="center">
-											<CircularProgress />
-										</Stack>
-									)}
-								/>
-							</List>
-							<Stack direction="row" justifyContent="center">
-								<Pagination
-									page={filter.page}
-									count={totalPages}
-									color="primary"
-									shape="rounded"
-									onChange={(e, newPage) => setFilter((prevState) => ({ ...prevState, page: newPage }))}
-								/>
-							</Stack>
-						</Stack>
-					</Box>
-				</Modal>
+											</Stack>
+										</ListItemButton>
+										<VideoQueueButton video={video} />
+									</ListItem>
+								)}
+								renderLoading={() => (
+									<Stack direction="row" justifyContent="center">
+										<CircularProgress />
+									</Stack>
+								)}
+							/>
+						</List>
+					</DialogContent>
+					<Stack direction="row" justifyContent="center" padding={2}>
+						<Pagination
+							page={filter.page}
+							count={totalPages}
+							color="primary"
+							shape="rounded"
+							onChange={(e, newPage) => setFilter((prevState) => ({ ...prevState, page: newPage }))}
+						/>
+					</Stack>
+				</Dialog>
 			</Box>
 		),
 		[

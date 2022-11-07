@@ -1,14 +1,15 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo } from 'react';
 import {
 	Box,
 	Button,
 	Checkbox,
-	Divider,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 	FormControlLabel,
 	FormGroup,
 	IconButton,
-	Modal,
-	Paper,
 	Stack,
 	SxProps,
 	Theme,
@@ -67,7 +68,7 @@ const CategorySelect = (props: CategorySelectProps) => {
 
 	return useMemo(
 		() => (
-			<Fragment>
+			<Box>
 				<Button
 					sx={sx}
 					variant="contained"
@@ -81,49 +82,33 @@ const CategorySelect = (props: CategorySelectProps) => {
 				>
 					Categories
 				</Button>
-				<Modal open={openModal} onClose={() => setOpenModal(false)}>
-					<Box
-						sx={(theme) => ({
-							position: 'absolute',
-							padding: 4,
-							top: '25%',
-							left: '25%',
-							width: '50%',
-							height: '50%',
-							overflow: 'scroll',
-							[theme.breakpoints.down('md')]: {
-								padding: 2,
-								top: 0,
-								left: 0,
-								width: '100%',
-								height: '100%',
-							},
-						})}
-						component={Paper}
-					>
-						<Stack direction="column" spacing={2}>
-							<Stack direction="row" justifyContent="space-between">
-								<Typography variant="h6">Categories</Typography>
-								<IconButton onClick={() => setOpenModal(false)}>
-									<Close />
-								</IconButton>
-							</Stack>
-							<Divider />
-							<Stack direction="row" flexWrap="wrap" spacing={2}>
-								<FormGroup>{RenderCategories}</FormGroup>
-							</Stack>
-							<Button
-								onClick={() => {
-									onChange(selectedCategories);
-									setOpenModal(false);
-								}}
-							>
-								Confirm
-							</Button>
+				<Dialog open={openModal} onClose={() => setOpenModal(false)} scroll="paper" fullWidth maxWidth="md">
+					<DialogTitle>
+						<Stack direction="row" alignItems="center" justifyContent="space-between">
+							<Typography variant="h6">Categories</Typography>
+							<IconButton onClick={() => setOpenModal(false)}>
+								<Close />
+							</IconButton>
 						</Stack>
-					</Box>
-				</Modal>
-			</Fragment>
+					</DialogTitle>
+					<DialogContent dividers>
+						<Stack direction="row" flexWrap="wrap" spacing={2}>
+							<FormGroup>{RenderCategories}</FormGroup>
+						</Stack>
+					</DialogContent>
+					<DialogActions>
+						<Button
+							variant="contained"
+							onClick={() => {
+								onChange(selectedCategories);
+								setOpenModal(false);
+							}}
+						>
+							Confirm
+						</Button>
+					</DialogActions>
+				</Dialog>
+			</Box>
 		),
 		[RenderCategories, currentCategories, onChange, openModal, selectedCategories, sx]
 	);
