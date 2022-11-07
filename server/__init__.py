@@ -18,7 +18,6 @@ app = FastAPI(
     title="DripDrop",
     on_startup=[cron_service.start_cron_jobs],
     on_shutdown=[cron_service.end_cron_jobs],
-    responses={400: {}},
     dependencies=[Depends(get_user)],
     routes=api_router.routes,
 )
@@ -37,7 +36,7 @@ app.mount(
 @app.get(
     "/cron/run",
     dependencies=[Depends(get_admin_user)],
-    responses={403: {}},
+    responses={403: {"description": "Not an admin user"}},
     tags=["Cron"],
 )
 async def run_cronjobs():

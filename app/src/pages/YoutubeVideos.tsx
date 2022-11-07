@@ -4,7 +4,7 @@ import VideosView from '../components/Youtube/VideosView';
 import YoutubeAuthPage from '../components/Auth/YoutubeAuthPage';
 
 interface YoutubeVideosProps {
-	channelID?: string;
+	channelId?: string;
 }
 
 const YoutubeVideos = (props: YoutubeVideosProps) => {
@@ -14,11 +14,11 @@ const YoutubeVideos = (props: YoutubeVideosProps) => {
 				<Stack direction="column" spacing={2}>
 					<Typography variant="h4">Videos</Typography>
 					<Divider />
-					<VideosView channelId={props.channelID} />
+					<VideosView channelId={props.channelId} />
 				</Stack>
 			</YoutubeAuthPage>
 		),
-		[props.channelID]
+		[props.channelId]
 	);
 };
 

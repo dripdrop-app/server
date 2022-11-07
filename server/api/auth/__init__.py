@@ -30,10 +30,7 @@ async def check_session(user: User = Depends(get_authenticated_user)):
 @auth_api.post(
     "/login",
     response_model=AuthResponses.User,
-    responses={
-        401: {},
-        404: {},
-    },
+    responses={401: {}, 404: {"description": "Account not found"}},
 )
 async def login(
     email: str = Body(...),
@@ -44,13 +41,13 @@ async def login(
     results = await db.scalars(query)
     account = results.first()
     if not account:
-        raise HTTPException(404, "Account not found.")
+        raise HTTPException(404)
     account = User.from_orm(account)
     if not bcrypt.checkpw(
         password.encode("utf-8"),
         account.password.get_secret_value().encode("utf-8"),
     ):
-        raise HTTPException(400, "Email or Password is incorrect.")
+        raise HTTPException(400)
     session_id = str(uuid.uuid4())
     db.add(Sessions(id=session_id, user_email=email))
     await db.commit()
@@ -70,9 +67,7 @@ async def login(
 @auth_api.get(
     "/logout",
     dependencies=[Depends(get_authenticated_user)],
-    responses={
-        401: {},
-    },
+    responses={401: {}},
 )
 async def logout():
     response = Response(None, 200)
@@ -101,5 +96,5 @@ async def create_account(
             db=db,
         )
     except Exception as e:
-        raise HTTPException(400, e.message)
+        raise HTTPException(400, detail=e.message)
     return AuthResponses.User(email=email, admin=False)

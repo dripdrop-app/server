@@ -11,7 +11,7 @@ interface YoutubeVideoProps {
 }
 
 const YoutubeVideo = (props: YoutubeVideoProps) => {
-	const videoStatus = useYoutubeVideoQuery({ videoID: props.id, relatedLength: 4 });
+	const videoStatus = useYoutubeVideoQuery({ videoId: props.id, relatedLength: 4 });
 
 	const ref = useRef<HTMLDivElement>(null);
 

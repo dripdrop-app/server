@@ -37,7 +37,6 @@ music_jobs_api = APIRouter(
     prefix="/jobs",
     tags=["Music Jobs"],
     dependencies=[Depends(get_authenticated_user)],
-    responses={401: {}},
 )
 
 
@@ -185,7 +184,7 @@ async def create_job_from_file(
     return Response(None, 202)
 
 
-@music_jobs_api.delete("/delete", responses={404: {}})
+@music_jobs_api.delete("/delete", responses={404: {"description": "Job not found"}})
 async def delete_job(
     job_id: str = Query(...),
     db: DBSession = Depends(create_db_session),

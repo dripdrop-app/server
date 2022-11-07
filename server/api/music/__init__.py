@@ -32,7 +32,7 @@ music_api.include_router(router=music_jobs_api)
 @music_api.get(
     "/grouping",
     response_model=MusicResponses.Grouping,
-    responses={400: {}},
+    responses={400: {"description": "Unable to get grouping"}},
 )
 async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     try:
@@ -47,7 +47,7 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
 @music_api.get(
     "/artwork",
     response_model=MusicResponses.ArtworkURL,
-    responses={400: {}},
+    responses={400: {"description": "Unable to get artwork"}},
 )
 async def get_artwork(artwork_url: str = Query(...)):
     try:

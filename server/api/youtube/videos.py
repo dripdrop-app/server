@@ -25,7 +25,6 @@ youtube_videos_api = APIRouter(
     prefix="/videos",
     tags=["YouTube Videos"],
     dependencies=[Depends(get_google_user)],
-    responses={401: {}},
 )
 
 
@@ -65,17 +64,30 @@ async def get_youtube_video_categories(
     return YoutubeResponses.VideoCategories(categories=categories).dict(by_alias=True)
 
 
-@youtube_videos_api.get("/{page}/{per_page}", response_model=YoutubeResponses.Videos)
+@youtube_videos_api.get(
+    "/{page}/{per_page}",
+    response_model=YoutubeResponses.Videos,
+    responses={400: {"description": "Video Categories must be an integer"}},
+)
 async def get_youtube_videos(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
-    video_categories: list[int] = Query([]),
+    video_categories: str = Query(""),
     channel_id: str = Query(None),
     liked_only: bool = Query(False),
     queued_only: bool = Query(False),
     google_account: GoogleAccount = Depends(get_google_user),
     db: DBSession = Depends(create_db_session),
 ):
+    try:
+        if video_categories:
+            video_categories = list(
+                map(lambda category: int(category), video_categories.split(","))
+            )
+    except Exception as e:
+        print(e)
+        raise HTTPException(400)
+
     videos_query = (
         select(YoutubeVideos)
         .where(
@@ -161,7 +173,9 @@ async def get_youtube_videos(
     )
 
 
-@youtube_videos_api.put("/watch")
+@youtube_videos_api.put(
+    "/watch", responses={400: {"description": "Failed to watch to video"}}
+)
 async def add_youtube_video_watch(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -180,7 +194,9 @@ async def add_youtube_video_watch(
     raise HTTPException(400)
 
 
-@youtube_videos_api.put("/like")
+@youtube_videos_api.put(
+    "/like", responses={400: {"description": "Failed to like video"}}
+)
 async def add_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -199,7 +215,9 @@ async def add_youtube_video_like(
     raise HTTPException(400)
 
 
-@youtube_videos_api.delete("/like", responses={404: {}})
+@youtube_videos_api.delete(
+    "/like", responses={404: {"description": "Could not remove video like"}}
+)
 async def delete_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -219,7 +237,9 @@ async def delete_youtube_video_like(
     return Response(None, 200)
 
 
-@youtube_videos_api.put("/queue", responses={400: {}})
+@youtube_videos_api.put(
+    "/queue", responses={400: {"description": "Could not add video to queue"}}
+)
 async def add_youtube_video_queue(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -238,7 +258,9 @@ async def add_youtube_video_queue(
     raise HTTPException(400)
 
 
-@youtube_videos_api.delete("/queue", responses={404: {}})
+@youtube_videos_api.delete(
+    "/queue", responses={404: {"description": "Could not deleted video queue"}}
+)
 async def delete_youtube_video_queue(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
@@ -260,7 +282,7 @@ async def delete_youtube_video_queue(
 @youtube_videos_api.get(
     "/queue",
     response_model=YoutubeResponses.VideoQueue,
-    responses={404: {}},
+    responses={404: {"description": "Video in queue not found"}},
 )
 async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
@@ -332,7 +354,7 @@ async def get_youtube_video_queue(
     "",
     dependencies=[Depends(get_google_user)],
     response_model=YoutubeResponses.Video,
-    responses={404: {}},
+    responses={404: {"description": "Could not find Youtube video"}},
 )
 async def get_youtube_video(
     video_id: str = Query(...),

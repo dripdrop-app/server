@@ -49,14 +49,14 @@ const musicApi = api.injectEndpoints({
 			},
 		}),
 		removeJob: build.mutation<undefined, string>({
-			query: (jobID) => ({
+			query: (jobId) => ({
 				url: `/music/jobs/delete`,
-				params: { job_id: jobID },
+				params: { job_id: jobId },
 				method: 'DELETE',
 			}),
-			invalidatesTags: (result, error, jobID) => {
+			invalidatesTags: (result, error, jobId) => {
 				if (!error) {
-					return [{ type: 'MusicJob', id: jobID }];
+					return [{ type: 'MusicJob', id: jobId }];
 				}
 				return [];
 			},

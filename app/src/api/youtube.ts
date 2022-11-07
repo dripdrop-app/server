@@ -19,9 +19,9 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		youtubeVideo: build.query<YoutubeVideoResponse, YoutubeVideoBody>({
-			query: ({ videoID, relatedLength }) => ({
+			query: ({ videoId, relatedLength }) => ({
 				url: '/youtube/videos',
-				params: { video_id: videoID, related_videos_length: relatedLength },
+				params: { video_id: videoId, related_videos_length: relatedLength },
 			}),
 			providesTags: (result) => {
 				if (result) {
@@ -69,37 +69,37 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		addYoutubeVideoLike: build.mutation<undefined, string>({
-			query: (videoID) => ({ url: `/youtube/videos/like`, params: { video_id: videoID }, method: 'PUT' }),
-			invalidatesTags: (result, error, videoID) => {
+			query: (videoId) => ({ url: `/youtube/videos/like`, params: { video_id: videoId }, method: 'PUT' }),
+			invalidatesTags: (result, error, videoId) => {
 				if (!error) {
-					return [{ type: 'YoutubeVideo', id: videoID }, { type: 'YoutubeVideoLike' }];
+					return [{ type: 'YoutubeVideo', id: videoId }, { type: 'YoutubeVideoLike' }];
 				}
 				return [];
 			},
 		}),
 		deleteYoutubeVideoLike: build.mutation<undefined, string>({
-			query: (videoID) => ({
+			query: (videoId) => ({
 				url: `/youtube/videos/like`,
-				params: { video_id: videoID },
+				params: { video_id: videoId },
 				method: 'DELETE',
 			}),
-			invalidatesTags: (result, error, videoID) => {
+			invalidatesTags: (result, error, videoId) => {
 				if (!error) {
-					return [{ type: 'YoutubeVideo', id: videoID }, { type: 'YoutubeVideoLike' }];
+					return [{ type: 'YoutubeVideo', id: videoId }, { type: 'YoutubeVideoLike' }];
 				}
 				return [];
 			},
 		}),
 		addYoutubeVideoQueue: build.mutation<undefined, string>({
-			query: (videoID) => ({
+			query: (videoId) => ({
 				url: `/youtube/videos/queue`,
-				params: { video_id: videoID },
+				params: { video_id: videoId },
 				method: 'PUT',
 			}),
-			invalidatesTags: (result, error, videoID) => {
+			invalidatesTags: (result, error, videoId) => {
 				if (!error) {
 					return [
-						{ type: 'YoutubeVideo', id: videoID },
+						{ type: 'YoutubeVideo', id: videoId },
 						{ type: 'YoutubeVideoQueue' },
 						{ type: 'YoutubeVideoQueueIndex' },
 					];
@@ -108,15 +108,15 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		deleteYoutubeVideoQueue: build.mutation<undefined, string>({
-			query: (videoID) => ({
+			query: (videoId) => ({
 				url: `/youtube/videos/queue`,
-				params: { video_id: videoID },
+				params: { video_id: videoId },
 				method: 'DELETE',
 			}),
-			invalidatesTags: (result, error, videoID) => {
+			invalidatesTags: (result, error, videoId) => {
 				if (!error) {
 					return [
-						{ type: 'YoutubeVideo', id: videoID },
+						{ type: 'YoutubeVideo', id: videoId },
 						{ type: 'YoutubeVideoQueue' },
 						{ type: 'YoutubeVideoQueueIndex' },
 					];
@@ -125,14 +125,14 @@ const youtubeApi = api.injectEndpoints({
 			},
 		}),
 		addYoutubeVideoWatch: build.mutation<undefined, string>({
-			query: (videoID) => ({
+			query: (videoId) => ({
 				url: `/youtube/videos/watch`,
-				params: { video_id: videoID },
+				params: { video_id: videoId },
 				method: 'PUT',
 			}),
-			invalidatesTags: (result, error, videoID) => {
+			invalidatesTags: (result, error, videoId) => {
 				if (!error) {
-					return [{ type: 'YoutubeVideo', id: videoID }];
+					return [{ type: 'YoutubeVideo', id: videoId }];
 				}
 				return [];
 			},

@@ -71,7 +71,7 @@ interface YoutubeVideosResponse {
 }
 
 interface YoutubeVideoBody {
-	videoID: string;
+	videoId: string;
 	relatedLength?: number;
 }
 

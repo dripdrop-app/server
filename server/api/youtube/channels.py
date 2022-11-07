@@ -11,7 +11,11 @@ youtube_channels_api = APIRouter(
 )
 
 
-@youtube_channels_api.get("", response_model=YoutubeChannel)
+@youtube_channels_api.get(
+    "",
+    response_model=YoutubeChannel,
+    responses={404: {"description": "Youtube Channel not found"}},
+)
 async def get_youtube_channel(
     channel_id: str = Query(...),
     db: DBSession = Depends(create_db_session),

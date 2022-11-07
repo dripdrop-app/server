@@ -36,14 +36,16 @@ youtube_api = APIRouter(
     prefix="/youtube",
     tags=["YouTube"],
     dependencies=[Depends(get_authenticated_user)],
-    responses={401: {}},
+    responses={403: {"description": "Google account not connected"}},
 )
 youtube_api.include_router(youtube_videos_api)
 youtube_api.include_router(youtube_subscriptions_api)
 youtube_api.include_router(youtube_channels_api)
 
 
-@youtube_api.get("/googleoauth2", responses={401: {}})
+@youtube_api.get(
+    "/googleoauth2", responses={400: {"description": "Error getting oauth tokens"}}
+)
 async def google_oauth2(
     request: Request,
     state: str = Query(...),
