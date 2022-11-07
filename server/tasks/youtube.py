@@ -345,12 +345,13 @@ class YoutubeTasker:
 
     @worker_task
     async def channel_cleanup(self, db: DBSession = ...):
-        limit = datetime.now(timezone.utc) - timedelta(days=7)
-        query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
-        stream = await db.stream_scalars(query)
-        async for channel in stream:
-            await db.delete(channel)
-            await db.commit()
+        pass
+        # limit = datetime.now(timezone.utc) - timedelta(days=7)
+        # query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
+        # stream = await db.stream_scalars(query)
+        # async for channel in stream:
+        #     await db.delete(channel)
+        #     await db.commit()
 
 
 youtube_tasker = YoutubeTasker()
