@@ -355,6 +355,8 @@ class YoutubeTasker:
             )
             await db.execute(query)
             await db.commit()
+            await db.delete(channel)
+            await db.commit()
 
 
 youtube_tasker = YoutubeTasker()
