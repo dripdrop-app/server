@@ -7,7 +7,7 @@ services:
     restart: always
     volumes:
       - ./data/server/logs:/src/logs
-      - ./build:/src/build
+      - ../build:/src/build
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.server
