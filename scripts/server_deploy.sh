@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ ! -d $HOME/dripdrop ] || git clone https://github.com/MohamedRaffik/dripdrop
+[ ! -d $HOME/dripdrop ] || git clone https://github.com/dripdrop-app/server.git
 cd $HOME/dripdrop
 git pull --rebase
 mkdir -p build
