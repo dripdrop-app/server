@@ -19,17 +19,8 @@ services:
         condition: service_healthy
     ports:
       - $SERVER_PORT:$SERVER_PORT
-  web:
-    container_name: web
-    restart: always
-    volumes:
-      - ./:/src
-    env_file: .env
-    build:
-      dockerfile: dockerfiles/Dockerfile.dev.web
-    entrypoint: npm --prefix app start
-    ports:
-      - $PORT:$PORT
+    networks:
+      - dripdrop
   worker:
     platform: linux/amd64
     container_name: worker
@@ -40,12 +31,13 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.worker
-    entrypoint: watchfiles 'python worker.py' ./worker.py
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - dripdrop
   postgres:
     image: postgres:14
     container_name: postgres
@@ -63,6 +55,8 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_HOST_AUTH_METHOD: md5
+    networks:
+      - dripdrop
   redis:
     image: redis
     container_name: redis
@@ -72,4 +66,14 @@ services:
       interval: 10s
       start_period: 1s
       timeout: 1m30s
+    volumes:
+      - ./data/redis:/data
     env_file: '.env'
+    environment:
+      REDIS_ARGS: --save 20 1
+    networks:
+      - dripdrop
+
+networks:
+  dripdrop:
+    external: true

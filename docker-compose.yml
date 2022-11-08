@@ -27,7 +27,6 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.worker
-    entrypoint: python worker.py
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,4 +60,8 @@ services:
       interval: 10s
       start_period: 1s
       timeout: 1m30s
+    volumes:
+      - ./data/redis:/data
     env_file: '.env'
+    environment:
+      REDIS_ARGS: --save 20 1

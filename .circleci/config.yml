@@ -3,21 +3,11 @@ version: 2
 jobs:
   build and deploy:
     docker:
-      - image: node
+      - image: python
     steps:
-      - checkout
       - run:
-          name: Install Client Dependencies and Build
-          command: npm --prefix app install && NODE_ENV=production npm --prefix app run build
-      - run:
-          name: Create Server App Directory
-          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "mkdir -p ~/build"
-      - run:
-          name: Copy Client to Server
-          command: 'scp -vr ./app/build $SSH_USER@$SSH_HOST:~'
-      - run:
-          name: Copy Deploy Script to Server
-          command: scp -v ./scripts/deploy.sh $SSH_USER@$SSH_HOST:~
+          name: Copy Server Deploy Script to VM
+          command: scp -v ./scripts/web_deploy.sh $SSH_USER@$SSH_HOST:~
       - run:
           name: Deploy Over SSH
           command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "chmod +x ./deploy.sh && ./deploy.sh"
