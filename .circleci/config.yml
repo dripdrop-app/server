@@ -5,6 +5,7 @@ jobs:
     docker:
       - image: python
     steps:
+      - checkout
       - run:
           name: Copy Server Deploy Script to VM
           command: scp -o StrictHostKeyChecking=no -v ./scripts/server_deploy.sh $SSH_USER@$SSH_HOST:~
