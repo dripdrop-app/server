@@ -5,7 +5,8 @@ do
     echo 'Waiting on build'
     sleep 10
 done
-touch $HOME/build.txt[ ! -d $HOME/dripdrop ] || git clone https://github.com/dripdrop-app/server.git
+touch $HOME/build.txt
+[ ! -d $HOME/dripdrop ] || git clone https://github.com/dripdrop-app/server.git
 cd $HOME/dripdrop
 git pull --rebase
 mkdir -p build
