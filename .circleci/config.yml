@@ -7,7 +7,7 @@ jobs:
     steps:
       - run:
           name: Copy Server Deploy Script to VM
-          command: scp -v ./scripts/web_deploy.sh $SSH_USER@$SSH_HOST:~
+          command: scp -o StrictHostKeyChecking=no -v ./scripts/web_deploy.sh $SSH_USER@$SSH_HOST:~
       - run:
           name: Deploy Over SSH
           command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "chmod +x ./deploy.sh && ./deploy.sh"
