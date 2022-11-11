@@ -1,6 +1,5 @@
 from logging.config import fileConfig
-from server.models import MIGRATION_DATABASE_URL
-from server.models.orm import metadata
+from dripdrop.models import MIGRATION_DATABASE_URL, metadata
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 

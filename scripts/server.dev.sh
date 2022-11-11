@@ -2,4 +2,4 @@
 
 set -e
 alembic upgrade head
-uvicorn server:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT --log-config ./config/logging.yml
+uvicorn dripdrop:app --reload --reload-dir dripdrop --host 0.0.0.0 --port $SERVER_PORT --log-config ./config/logging.yml
