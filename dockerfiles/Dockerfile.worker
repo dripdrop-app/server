@@ -9,4 +9,3 @@ WORKDIR /src
 COPY . .
 RUN poetry export -f requirements.txt --output requirements.txt
 RUN pip install -r requirements.txt
-ENTRYPOINT [ "python", "worker.py" ]

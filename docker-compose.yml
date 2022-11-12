@@ -28,6 +28,7 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.worker
+    entrypoint: python worker.py
     depends_on:
       postgres:
         condition: service_healthy
