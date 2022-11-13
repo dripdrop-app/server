@@ -41,7 +41,7 @@ jobs:
             "
       - run:
           name: Copy repo to VM
-          command: scp -o StrictHostKeyChecking=no -vr . $SSH_USER@$SSH_HOST:~/dripdrop
+          command: scp -o StrictHostKeyChecking=no -vr ./ $SSH_USER@$SSH_HOST:~/dripdrop
       - run:
           name: Deploy Over SSH
           command: |
