@@ -11,7 +11,12 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.server
-    entrypoint: ./scripts/server.dev.sh
+    entrypoint: |
+      bash -c "
+        set -e
+        alembic upgrade head
+        gunicorn dripdrop:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c ./config/gunicorn.py
+      "
     depends_on:
       postgres:
         condition: service_healthy
