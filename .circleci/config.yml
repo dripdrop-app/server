@@ -32,6 +32,7 @@ jobs:
           name: Wait until build queue is cleared
           command: |
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
+              set -e
               while [ -f ~/build.txt ]
               do
                 echo 'Waiting on build'
@@ -46,8 +47,8 @@ jobs:
           name: Deploy Over SSH
           command: |
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
+              set -e
               \cp -r ~/build ~/dripdrop
-              cd ~/dripdrop
               docker compose -f docker-compose.yml build --progress plain
               docker compose -f docker-compose.yml down
               docker compose -f docker-compose.yml up -d
