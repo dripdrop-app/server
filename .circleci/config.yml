@@ -29,18 +29,6 @@ jobs:
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
       - run:
-          name: Wait until build queue is cleared
-          command: |
-            ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
-              set -e
-              while [ -f ~/build.txt ]
-              do
-                echo 'Waiting on build'
-                sleep 10
-              done
-              touch ~/build.txt
-            "
-      - run:
           name: Copy repo to VM
           command: scp -o StrictHostKeyChecking=no -vr $(pwd) $SSH_USER@$SSH_HOST:~/dripdrop
       - run:
@@ -53,7 +41,6 @@ jobs:
               docker compose -f docker-compose.yml build --progress plain
               docker compose -f docker-compose.yml down
               docker compose -f docker-compose.yml up -d
-              rm ~/build.txt
             "
 workflows:
   version: 2
