@@ -31,7 +31,7 @@ jobs:
       - run:
           name: Wait until build queue is cleared
           command: |
-            ssh -o StrictHostKeyChecking=no -v $SSH_USER:$SSH_HOST "
+            ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
               while [ -f ~/build.txt ]
               do
                 echo 'Waiting on build'
@@ -41,7 +41,7 @@ jobs:
             "
       - run:
           name: Copy repo to VM
-          command: scp -o StrictHostKeyChecking=no -vr . $SSH_USER:$SSH_HOST:~/dripdrop
+          command: scp -o StrictHostKeyChecking=no -vr . $SSH_USER@$SSH_HOST:~/dripdrop
       - run:
           name: Deploy Over SSH
           command: |
