@@ -15,7 +15,7 @@ services:
       bash -c "
         set -e
         alembic upgrade head
-        uvicorn server:app --reload --reload-dir server --host 0.0.0.0 --port $SERVER_PORT --log-config ./config/logging.yml
+        uvicorn dripdrop:app --reload --reload-dir dripdrop --host 0.0.0.0 --port $SERVER_PORT --log-config ./config/logging.yml
       "
     depends_on:
       postgres:
@@ -36,6 +36,7 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev.worker
+    entrypoint: watchfiles 'python worker.py' ./worker.py
     depends_on:
       postgres:
         condition: service_healthy

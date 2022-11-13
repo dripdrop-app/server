@@ -10,4 +10,3 @@ COPY ./poetry.lock ./poetry.lock
 COPY ./pyproject.toml ./pyproject.toml
 RUN poetry export -f requirements.txt --output requirements.txt
 RUN pip install -r requirements.txt
-ENTRYPOINT [ "watchfiles", "python worker.py", "./worker.py" ]

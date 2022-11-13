@@ -15,7 +15,7 @@ services:
       bash -c "
         set -e
         alembic upgrade head
-        gunicorn server:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c ./config/gunicorn.py
+        gunicorn dripdrop:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c ./config/gunicorn.py
       "
     depends_on:
       postgres:
@@ -33,6 +33,7 @@ services:
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.worker
+    entrypoint: python worker.py
     depends_on:
       postgres:
         condition: service_healthy
