@@ -1,10 +1,9 @@
-import dateutil.parser
 import jwt
 import traceback
 from .settings import settings
 from .logging import logger
 from .models import create_session, AsyncSession, User, Users
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import HTTPException, status, Request, WebSocket, Depends
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -27,7 +26,7 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
         expires = payload.get("exp", None)
         if not expires:
             return None
-        if dateutil.parser.parse(expires) < datetime.utcnow():
+        if expires < datetime.now(timezone.utc).timestamp():
             pass
         email = payload.get("email", None)
         if email:
@@ -37,7 +36,6 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
             return User.from_orm(user)
     except jwt.PyJWTError:
         logger.exception(traceback.format_exc())
-    finally:
         return None
 
 

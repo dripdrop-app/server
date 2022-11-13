@@ -1,7 +1,13 @@
 import traceback
 from .jobs import jobs_api
 from .models import youtube_regex
-from .responses import GroupingResponse, ArtworkUrlResponse, TagsResponse
+from .responses import (
+    GroupingResponse,
+    ArtworkUrlResponse,
+    TagsResponse,
+    GroupingErrorResponse,
+    ArtworkErrorResponse,
+)
 from asgiref.sync import sync_to_async
 from dripdrop.dependencies import get_authenticated_user
 from dripdrop.logging import logger
@@ -22,7 +28,7 @@ app.include_router(router=jobs_api)
 @app.get(
     "/grouping",
     response_model=GroupingResponse,
-    responses={status.HTTP_400_BAD_REQUEST: {"description": "Unable to get grouping"}},
+    responses={status.HTTP_400_BAD_REQUEST: {"description": GroupingErrorResponse}},
 )
 async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     try:
@@ -32,14 +38,14 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to get grouping"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=GroupingErrorResponse
         )
 
 
 @app.get(
     "/artwork",
     response_model=ArtworkUrlResponse,
-    responses={status.HTTP_400_BAD_REQUEST: {"description": "Unable to get artwork"}},
+    responses={status.HTTP_400_BAD_REQUEST: {"description": ArtworkErrorResponse}},
 )
 async def get_artwork(artwork_url: str = Query(...)):
     try:
@@ -49,7 +55,7 @@ async def get_artwork(artwork_url: str = Query(...)):
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to get artwork"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=ArtworkErrorResponse
         )
 
 

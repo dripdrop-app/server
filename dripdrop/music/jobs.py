@@ -7,6 +7,7 @@ from .responses import (
     MusicChannelResponse,
     JobsResponse,
     JobUpdateResponse,
+    JobNotFoundResponse,
 )
 from .tasks import music_tasker
 from .utils import handle_artwork_url
@@ -61,7 +62,7 @@ async def get_jobs(
     count_query = select(func.count(query.c.id))
     count = await db.scalar(count_query)
     total_pages = math.ceil(count / per_page)
-    return JobsResponse.AllJobs(jobs=jobs, total_pages=total_pages).dict(by_alias=True)
+    return JobsResponse(jobs=jobs, total_pages=total_pages)
 
 
 @jobs_api.websocket("/listen")
@@ -187,7 +188,8 @@ async def create_job_from_file(
 
 
 @jobs_api.delete(
-    "/delete", responses={status.HTTP_404_NOT_FOUND: {"description": "Job not found"}}
+    "/delete",
+    responses={status.HTTP_404_NOT_FOUND: {"description": JobNotFoundResponse}},
 )
 async def delete_job(
     job_id: str = Query(...),
@@ -197,7 +199,9 @@ async def delete_job(
     results = await db.scalars(query)
     job = results.first()
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=JobNotFoundResponse
+        )
     music_job = MusicJob.from_orm(job)
     await db.delete(job)
     await db.commit()

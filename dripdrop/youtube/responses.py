@@ -1,10 +1,10 @@
 from .models import YoutubeVideo, YoutubeSubscription, YoutubeVideoCategory
 from datetime import datetime
-from pydantic import BaseModel
+from dripdrop.responses import ResponseBaseModel
 from typing import Optional, List
 
 
-class YoutubeVideoResponse(YoutubeVideo):
+class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):
     channel_title: str
     channel_thumbnail: str
     liked: Optional[datetime]
@@ -12,40 +12,40 @@ class YoutubeVideoResponse(YoutubeVideo):
     watched: Optional[datetime]
 
 
-class YoutubeSubscriptionResponse(YoutubeSubscription):
+class YoutubeSubscriptionResponse(ResponseBaseModel, YoutubeSubscription):
     channel_title: str
     channel_thumbnail: str
 
 
-class AccountResponse(BaseModel):
+class AccountResponse(ResponseBaseModel):
     email: str
     refresh: bool
 
 
-class VideoCategoriesResponse(BaseModel):
+class VideoCategoriesResponse(ResponseBaseModel):
     categories: List[YoutubeVideoCategory]
 
 
-class VideosResponse(BaseModel):
+class VideosResponse(ResponseBaseModel):
     videos: List[YoutubeVideoResponse]
     total_pages: int
 
 
-class VideoResponse(BaseModel):
+class VideoResponse(ResponseBaseModel):
     video: YoutubeVideoResponse
     related_videos: List[YoutubeVideoResponse]
 
 
-class VideoQueueResponse(BaseModel):
+class VideoQueueResponse(ResponseBaseModel):
     prev: bool
     next: bool
     current_video: YoutubeVideoResponse
 
 
-class SubscriptionsResponse(BaseModel):
+class SubscriptionsResponse(ResponseBaseModel):
     subscriptions: List[YoutubeSubscriptionResponse]
 
 
-class SubscriptionUpdateResponse(BaseModel):
+class SubscriptionUpdateResponse(ResponseBaseModel):
     type = "SUBSCRIPITON_STATE"
     status: bool

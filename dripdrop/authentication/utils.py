@@ -1,6 +1,7 @@
-import bcrypt
-from dripdrop.dependencies import AsyncSession
+from .responses import AccountExistsResponse
+from dripdrop.dependencies import AsyncSession, password_context
 from dripdrop.models import Users
+from fastapi import HTTPException, status
 from sqlalchemy import select
 
 
@@ -11,8 +12,10 @@ async def create_new_account(
     results = await db.scalars(query)
     user = results.first()
     if user:
-        raise Exception(message=f"Account with email `{email}` exists.")
-    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=AccountExistsResponse
+        )
+    hashed_pw = password_context.hash(password.encode("utf-8"))
     account = Users(
         email=email,
         password=hashed_pw.decode("utf-8"),

@@ -1,22 +1,28 @@
 from .models import MusicJob
-from pydantic import BaseModel
+from dripdrop.responses import ResponseBaseModel
 from typing import Optional, List, Literal
 
 
-class MusicChannelResponse(BaseModel):
+class MusicChannelResponse(ResponseBaseModel):
     type: Literal["STARTED", "COMPLETED"]
     job_id: str
 
 
-class GroupingResponse(BaseModel):
+class GroupingResponse(ResponseBaseModel):
     grouping: str
 
 
-class ArtworkUrlResponse(BaseModel):
+GroupingErrorResponse = "Unable to get grouping"
+
+
+class ArtworkUrlResponse(ResponseBaseModel):
     artwork_url: str
 
 
-class TagsResponse(BaseModel):
+ArtworkErrorResponse = "Unable to get artwork"
+
+
+class TagsResponse(ResponseBaseModel):
     title: Optional[str]
     artist: Optional[str]
     album: Optional[str]
@@ -24,11 +30,14 @@ class TagsResponse(BaseModel):
     artwork_url: Optional[str]
 
 
-class JobsResponse(BaseModel):
+class JobsResponse(ResponseBaseModel):
     jobs: List[MusicJob]
     total_pages: int
 
 
-class JobUpdateResponse(BaseModel):
+JobNotFoundResponse = "Job not found"
+
+
+class JobUpdateResponse(ResponseBaseModel):
     type: Literal["COMPLETED", "STARTED"]
     job: MusicJob

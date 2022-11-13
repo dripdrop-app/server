@@ -1,12 +1,15 @@
+import os
 import requests
-from bs4 import BeautifulSoup
+from urllib import parse
 
 
 class ImageDownloaderService:
     def download_image(self, artwork: str = ...):
         data = requests.get(artwork)
-        if data.headers["Content-Type"].split("/")[0] == "image":
-            return data.content
+        content_type = data.headers.get("Content-Type", None)
+        if content_type:
+            if content_type.split("/")[0] == "image":
+                return data.content
 
     def resolve_artwork(self, artwork: str = ...):
         img_links = self._get_images(artwork)
@@ -14,23 +17,33 @@ class ImageDownloaderService:
             if "artworks" in img_link and "500x500" in img_link:
                 return img_link
 
-    def valid_image_url(self, artwork: str = ...):
-        data = requests.get(artwork)
-        return data.headers["Content-Type"].split("/")[0] == "image"
+    def is_valid_url(url: str) -> bool:
+        u = parse.urlparse(url)
+        # Check if scheme(http or https) and netloc(domain) are not empty
+        return u[0] != "" and u[1] != ""
 
     def _get_images(self, url: str = ...) -> list:
-        response = requests.get(url)
-        html = response.text
-        soup = BeautifulSoup(html, "html.parser")
-        image_extensions = (".jpg", ".ico", "png", ".jpeg")
-        image_tags = soup.select("img[src]")
-        valid_tags = list(
-            filter(
-                lambda tag: tag.__dict__["attrs"]["src"].endswith(image_extensions),
-                image_tags,
-            )
+        response = requests.get(
+            url,
+            headers={
+                "User-Agent": (
+                    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101"
+                    "Firefox/12.0"
+                )
+            },
         )
-        links = list(map(lambda tag: tag.__dict__["attrs"]["src"], valid_tags))
+        html = response.text
+        image_extensions = [".jpg", ".ico", "png", ".jpeg"]
+        links = set()
+        for element in html.split('"'):
+            if "/" in element:
+                for img in image_extensions:
+                    if element.endswith(img):
+                        link = element.replace("\\", "")
+                        if "http" != link[:4]:
+                            link = os.path.join(url, link)
+                        if self.is_valid_url(link):
+                            links.add(element.replace("\\", ""))
         return links
 
 
