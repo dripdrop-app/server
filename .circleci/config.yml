@@ -7,12 +7,51 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Copy Server Deploy Script to VM
-          command: scp -o StrictHostKeyChecking=no -v ./scripts/deploy.sh $SSH_USER@$SSH_HOST:~
+          name: Export Environment Variables
+          command: |
+            touch .env
+            echo -e "API_KEY=$API_KEY\n" >> .env
+            echo -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID\n" >> .env
+            echo -e "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL\n" >> .env
+            echo -e "AWS_REGION_NAME=$AWS_REGION_NAME\n" >> .env
+            echo -e "AWS_S3_ARTWORK_BUCKET=$AWS_S3_ARTWORK_BUCKET\n" >> .env
+            echo -e "AWS_S3_MUSIC_BUCKET=$AWS_S3_MUSIC_BUCKET\n" >> .env
+            echo -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\n" >> .env
+            echo -e "DATABASE_URL=$DATABASE_URL\n" >> .env
+            echo -e "ENV=$ENV\n" >> .env
+            echo -e "GOOGLE_API_KEY=$GOOGLE_API_KEY\n" >> .env
+            echo -e "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID\n" >> .env
+            echo -e "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET\n" >> .env
+            echo -e "MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL\n" >> .env
+            echo -e "POSTGRES_PASSWORD=$POSTGRES_PASSWORD\n" >> .env
+            echo -e "POSTGRES_USER=$POSTGRES_USER\n" >> .env
+            echo -e "REDIS_URL=$REDIS_URL\n" >> .env
+            echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
+            echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
+      - run:
+          name: Wait until build queue is cleared
+          command: |
+            ssh -o StrictHostKeyChecking=no -v $SSH_USER:$SSH_HOST "
+              while [ -f ~/build.txt ]
+              do
+                echo 'Waiting on build'
+                sleep 10
+              done
+              touch ~/build.txt
+            "
+      - run:
+          name: Copy repo to VM
+          command: scp -o StrictHostKeyChecking=no -vr . $SSH_USER:$SSH_HOST:~/dripdrop
       - run:
           name: Deploy Over SSH
-          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "chmod +x ./deploy.sh && ./deploy.sh"
-
+          command: |
+            ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
+              \cp -r ~/build ~/dripdrop
+              docker compose -f docker-compose.yml build --progress plain
+              docker compose -f docker-compose.yml down
+              docker compose -f docker-compose.yml up -d
+              rm ~/build.txt
+            "
 workflows:
   version: 2
   deploy:
