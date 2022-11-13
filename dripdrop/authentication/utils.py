@@ -13,11 +13,11 @@ async def create_new_account(
     if user:
         raise Exception(message=f"Account with email `{email}` exists.")
     hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-    db.add(
-        Users(
-            email=email,
-            password=hashed_pw.decode("utf-8"),
-            admin=False,
-        )
+    account = Users(
+        email=email,
+        password=hashed_pw.decode("utf-8"),
+        admin=False,
     )
+    db.add(account)
     await db.commit()
+    return account

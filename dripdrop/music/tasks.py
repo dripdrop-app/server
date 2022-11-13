@@ -8,7 +8,7 @@ import traceback
 from .models import MusicJobs, MusicJob
 from .responses import MusicChannelResponse
 from asgiref.sync import sync_to_async
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
@@ -159,7 +159,7 @@ class MusicTasker:
 
     @worker_task
     async def cleanup_jobs(self, db: AsyncSession = ...):
-        limit = datetime.now(timezone.utc) - timedelta(days=14)
+        limit = datetime.utcnow() - timedelta(days=14)
         query = select(MusicJobs).where(
             MusicJobs.created_at < limit, MusicJobs.completed.is_(True)
         )

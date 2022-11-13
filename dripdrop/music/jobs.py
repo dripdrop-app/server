@@ -13,7 +13,6 @@ from .utils import handle_artwork_url
 from asgiref.sync import sync_to_async
 from dripdrop.dependencies import (
     get_authenticated_user,
-    get_authenticated_websocket_user,
     create_db_session,
     AsyncSession,
     User,
@@ -68,7 +67,7 @@ async def get_jobs(
 @jobs_api.websocket("/listen")
 async def listen_jobs(
     websocket: WebSocket,
-    user: User = Depends(get_authenticated_websocket_user),
+    user: User = Depends(get_authenticated_user),
     db: AsyncSession = Depends(create_db_session),
 ):
     async def handler(msg):

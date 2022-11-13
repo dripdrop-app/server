@@ -12,7 +12,7 @@ from .models import (
     YoutubeVideoCategories,
 )
 from asgiref.sync import sync_to_async
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from dripdrop.logging import logger
 from dripdrop.models import AsyncSession
 from dripdrop.services.redis import redis, RedisChannels
@@ -30,7 +30,7 @@ class YoutubeTasker:
         results = await db.scalars(query)
         account = results.first()
         google_account = GoogleAccount.from_orm(account)
-        difference = datetime.now(timezone.utc) - google_account.last_updated
+        difference = datetime.utcnow() - google_account.last_updated
         if difference.seconds >= google_account.expires:
             try:
                 refresh_access_token = sync_to_async(
@@ -100,7 +100,7 @@ class YoutubeTasker:
                     title=channel_title,
                     thumbnail=channel_thumbnail,
                     upload_playlist_id=channel_upload_playlist_id,
-                    last_updated=datetime.now(timezone.utc) - timedelta(days=32),
+                    last_updated=datetime.utcnow() - timedelta(days=32),
                 )
             )
         await db.commit()
@@ -130,7 +130,6 @@ class YoutubeTasker:
                     channel_id=video_channel_id,
                     published_at=video_published_at,
                     category_id=video_category_id,
-                    created_at=datetime.now(timezone.utc),
                 )
             )
         await db.commit()
@@ -298,7 +297,7 @@ class YoutubeTasker:
             )
             if len(recent_uploaded_playlist_videos) < len(uploaded_playlist_videos):
                 break
-        channel.last_updated = datetime.now(timezone.utc)
+        channel.last_updated = datetime.utcnow()
         await db.commit()
 
     @worker_task
@@ -328,7 +327,7 @@ class YoutubeTasker:
 
     @worker_task
     async def channel_cleanup(self, db: AsyncSession = ...):
-        limit = datetime.now(timezone.utc) - timedelta(days=7)
+        limit = datetime.utcnow() - timedelta(days=7)
         query = select(YoutubeChannels).where(YoutubeChannels.last_updated < limit)
         stream = await db.stream_scalars(query)
         async for channel in stream:
