@@ -12,6 +12,7 @@ from .responses import (
 from .tasks import music_tasker
 from .utils import handle_artwork_url
 from asgiref.sync import sync_to_async
+from datetime import datetime, timezone
 from dripdrop.dependencies import (
     get_authenticated_user,
     create_db_session,
@@ -55,7 +56,7 @@ async def get_jobs(
 ):
     query = (
         select(MusicJobs)
-        .where(MusicJobs.user_email == user.email)
+        .where(MusicJobs.user_email == user.email, MusicJobs.deleted_at.is_(None))
         .order_by(MusicJobs.created_at.desc())
     )
     results = await db.scalars(query.offset((page - 1) * per_page))
@@ -80,6 +81,7 @@ async def listen_jobs(
         query = select(MusicJobs).where(
             MusicJobs.user_email == user.email,
             MusicJobs.id == job_id,
+            MusicJobs.deleted_at.is_(None),
         )
         results = await db.scalars(query)
         job = results.first()
@@ -208,12 +210,14 @@ async def delete_job(
             status_code=status.HTTP_404_NOT_FOUND, detail=JobNotFoundResponse
         )
     music_job = MusicJob.from_orm(job)
-    await db.delete(job)
+    delete_file = sync_to_async(boto3_service.delete_file)
+    if music_job.artwork_url:
+        await delete_file(
+            bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=music_job.artwork_url
+        )
+    await delete_file(
+        bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.download_url
+    )
+    job.deleted_at = datetime.now(timezone.utc)
     await db.commit()
-    try:
-        delete_file = sync_to_async(boto3_service.delete_file)
-        await delete_file(bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=music_job.id)
-        await delete_file(bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.id)
-    except Exception:
-        logger.exception(traceback.format_exc())
     return Response(None)

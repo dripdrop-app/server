@@ -38,6 +38,11 @@ class Boto3Service:
     def delete_file(self, bucket: str = ..., filename: str = ...):
         self._client.delete_object(Bucket=bucket, Key=filename)
 
+    def delete_folder(self, bucket: str = ..., folder: str = ...):
+        response = self._client.list_objects_v2(Bucket=bucket, Prefix=folder)
+        for object in response["Contents"]:
+            self.delete_file(bucket=bucket, filename=object["key"])
+
     def resolve_artwork_url(self, filename: str = ...):
         return f"{Boto3Service.AWS_ENDPOINT_URL}/{Boto3Service.S3_ARTWORK_BUCKET}/{filename}"
 

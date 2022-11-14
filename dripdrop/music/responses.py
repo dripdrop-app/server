@@ -3,6 +3,10 @@ from dripdrop.responses import ResponseBaseModel
 from typing import Optional, List, Literal
 
 
+class MusicJobResponse(ResponseBaseModel, MusicJob):
+    pass
+
+
 class MusicChannelResponse(ResponseBaseModel):
     type: Literal["STARTED", "COMPLETED"]
     job_id: str
@@ -31,7 +35,7 @@ class TagsResponse(ResponseBaseModel):
 
 
 class JobsResponse(ResponseBaseModel):
-    jobs: List[MusicJob]
+    jobs: List[MusicJobResponse]
     total_pages: int
 
 
@@ -40,4 +44,4 @@ JobNotFoundResponse = "Job not found"
 
 class JobUpdateResponse(ResponseBaseModel):
     type: Literal["COMPLETED", "STARTED"]
-    job: MusicJob
+    job: MusicJobResponse
