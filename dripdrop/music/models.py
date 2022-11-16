@@ -36,6 +36,7 @@ class MusicJobs(OrmBase):
         nullable=False,
         server_default=text("NOW()"),
     )
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
     user = relationship("Users", back_populates="music_jobs")
 
 

@@ -1,10 +1,10 @@
+import math
 from .dependencies import get_google_user
 from .models import YoutubeSubscriptions, YoutubeChannels, GoogleAccount
 from .responses import SubscriptionsResponse
 from fastapi import Path, APIRouter, Depends
 from dripdrop.dependencies import AsyncSession, create_db_session
-
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 subscriptions_api = APIRouter(
     prefix="/subscriptions",
@@ -41,8 +41,11 @@ async def get_youtube_subscriptions(
             )
         )
         .order_by(YoutubeChannels.title)
-        .offset((page - 1) * per_page)
     )
-    results = await db.execute(query)
+    results = await db.execute(query.offset((page - 1) * per_page))
     subscriptions = results.mappings().fetchmany(per_page)
-    return SubscriptionsResponse(subscriptions=subscriptions).dict(by_alias=True)
+    count = await db.scalar(select(func.count(query.c.id)))
+    total_pages = math.ceil(count / per_page)
+    return SubscriptionsResponse(
+        subscriptions=subscriptions, total_pages=total_pages
+    ).dict(by_alias=True)

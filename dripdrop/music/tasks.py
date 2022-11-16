@@ -161,7 +161,9 @@ class MusicTasker:
     async def cleanup_jobs(self, db: AsyncSession = ...):
         limit = datetime.now(timezone.utc) - timedelta(days=14)
         query = select(MusicJobs).where(
-            MusicJobs.created_at < limit, MusicJobs.completed.is_(True)
+            MusicJobs.created_at < limit,
+            MusicJobs.completed.is_(True),
+            MusicJobs.deleted_at.is_(None),
         )
         stream = await db.stream_scalars(query)
         async for job in stream:
@@ -170,16 +172,15 @@ class MusicTasker:
                 delete_file = sync_to_async(boto3_service.delete_file)
                 await delete_file(
                     bucket=Boto3Service.S3_ARTWORK_BUCKET,
-                    filename=boto3_service.resolve_artwork_url(music_job.id),
+                    filename=boto3_service.resolve_artwork_url(music_job.artwork_url),
                 )
                 await delete_file(
                     bucket=Boto3Service.S3_MUSIC_BUCKET,
-                    filename=boto3_service.resolve_music_url(music_job.id),
+                    filename=boto3_service.resolve_music_url(music_job.download_url),
                 )
             except Exception:
                 logger.exception(traceback.format_exc())
-            job.failed = True
-            job.completed = False
+            job.deleted_at = True
             await db.commit()
 
 

@@ -12,6 +12,7 @@ from .responses import (
 from .tasks import music_tasker
 from .utils import handle_artwork_url
 from asgiref.sync import sync_to_async
+from datetime import datetime, timezone
 from dripdrop.dependencies import (
     get_authenticated_user,
     create_db_session,
@@ -33,6 +34,7 @@ from fastapi import (
     UploadFile,
     HTTPException,
     status,
+    Form,
 )
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, func
@@ -54,7 +56,7 @@ async def get_jobs(
 ):
     query = (
         select(MusicJobs)
-        .where(MusicJobs.user_email == user.email)
+        .where(MusicJobs.user_email == user.email, MusicJobs.deleted_at.is_(None))
         .order_by(MusicJobs.created_at.desc())
     )
     results = await db.scalars(query.offset((page - 1) * per_page))
@@ -79,6 +81,7 @@ async def listen_jobs(
         query = select(MusicJobs).where(
             MusicJobs.user_email == user.email,
             MusicJobs.id == job_id,
+            MusicJobs.deleted_at.is_(None),
         )
         results = await db.scalars(query)
         job = results.first()
@@ -104,12 +107,12 @@ async def listen_jobs(
 
 @jobs_api.post("/create/youtube", status_code=status.HTTP_201_CREATED)
 async def create_job_from_youtube(
-    youtubeUrl: str = Query(..., regex=youtube_regex),
-    artworkUrl: Optional[str] = Query(None),
-    title: str = Query(...),
-    artist: str = Query(...),
-    album: str = Query(...),
-    grouping: str = Query(""),
+    youtube_url: str = Form(..., regex=youtube_regex),
+    artwork_url: Optional[str] = Form(None),
+    title: str = Form(...),
+    artist: str = Form(...),
+    album: str = Form(...),
+    grouping: str = Form(""),
     user: User = Depends(get_authenticated_user),
     db: AsyncSession = Depends(create_db_session),
 ):
@@ -117,9 +120,11 @@ async def create_job_from_youtube(
     db.add(
         MusicJobs(
             id=job_id,
-            youtube_url=youtubeUrl,
+            youtube_url=youtube_url,
             download_url=None,
-            artwork_url=await handle_artwork_url(job_id=job_id, artwork_url=artworkUrl),
+            artwork_url=await handle_artwork_url(
+                job_id=job_id, artwork_url=artwork_url
+            ),
             title=title,
             artist=artist,
             album=album,
@@ -142,11 +147,11 @@ async def create_job_from_youtube(
 @jobs_api.post("/create/file", status_code=status.HTTP_201_CREATED)
 async def create_job_from_file(
     file: UploadFile = File(...),
-    artworkUrl: Optional[str] = Query(None),
-    title: str = Query(...),
-    artist: str = Query(...),
-    album: str = Query(...),
-    grouping: str = Query(""),
+    artwork_url: Optional[str] = Form(None),
+    title: str = Form(...),
+    artist: str = Form(...),
+    album: str = Form(...),
+    grouping: str = Form(""),
     user: User = Depends(get_authenticated_user),
     db: AsyncSession = Depends(create_db_session),
 ):
@@ -167,7 +172,9 @@ async def create_job_from_file(
             id=job_id,
             youtube_url=None,
             download_url=None,
-            artwork_url=await handle_artwork_url(job_id=job_id, artwork_url=artworkUrl),
+            artwork_url=await handle_artwork_url(
+                job_id=job_id, artwork_url=artwork_url
+            ),
             title=title,
             artist=artist,
             album=album,
@@ -203,12 +210,14 @@ async def delete_job(
             status_code=status.HTTP_404_NOT_FOUND, detail=JobNotFoundResponse
         )
     music_job = MusicJob.from_orm(job)
-    await db.delete(job)
+    delete_file = sync_to_async(boto3_service.delete_file)
+    if music_job.artwork_url:
+        await delete_file(
+            bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=music_job.artwork_url
+        )
+    await delete_file(
+        bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.download_url
+    )
+    job.deleted_at = datetime.now(timezone.utc)
     await db.commit()
-    try:
-        delete_file = sync_to_async(boto3_service.delete_file)
-        await delete_file(bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=music_job.id)
-        await delete_file(bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.id)
-    except Exception:
-        logger.exception(traceback.format_exc())
     return Response(None)
