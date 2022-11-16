@@ -44,6 +44,7 @@ class VideoQueueResponse(ResponseBaseModel):
 
 class SubscriptionsResponse(ResponseBaseModel):
     subscriptions: List[YoutubeSubscriptionResponse]
+    total_pages: int
 
 
 class SubscriptionUpdateResponse(ResponseBaseModel):
