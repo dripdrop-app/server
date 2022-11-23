@@ -348,7 +348,13 @@ async def get_youtube_video_queue(
     )
     results = await db.execute(query)
     videos = results.mappings().fetchmany(2 if index == 1 else 3)
-    [prev_video, current_video, next_video] = [None, *videos] if index == 1 else videos
+    [prev_video, current_video, next_video] = [None] * 3
+    if index != 1 and videos:
+        prev_video = videos.pop(0)
+    if videos:
+        current_video = videos.pop(0)
+    if videos:
+        next_video = videos.pop(0)
     if not current_video:
         raise HTTPException(404)
     return VideoQueueResponse(
