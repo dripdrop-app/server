@@ -36,7 +36,7 @@ jobs:
           command: |
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
               cd ~/dripdrop
-              git reset --hard
+              git reset --hard HEAD
               git pull
               mv ~/.env ~/dripdrop             
             "
