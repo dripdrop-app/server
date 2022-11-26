@@ -34,7 +34,7 @@ jobs:
       - run:
           name: Update repo on VM
           command: |
-            ssh -o StrictHostKeyChecking=no -v $SSH_USER@SSH_HOST "
+            ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
               cd ~/dripdrop
               git checkout origin/main
               git pull
