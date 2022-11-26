@@ -215,9 +215,10 @@ async def delete_job(
         await delete_file(
             bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=music_job.artwork_url
         )
-    await delete_file(
-        bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.download_url
-    )
+    if music_job.download_url:
+        await delete_file(
+            bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.download_url
+        )
     job.deleted_at = datetime.now(timezone.utc)
     await db.commit()
     return Response(None)
