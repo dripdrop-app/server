@@ -131,7 +131,11 @@ async def get_youtube_videos(
     )
     subscription_query = (
         select(YoutubeSubscriptions)
-        .where(YoutubeSubscriptions.email == google_account.email)
+        .where(
+            YoutubeSubscriptions.email == google_account.email
+            if not channel_id
+            else YoutubeSubscriptions.id.is_not(None)
+        )
         .alias(name=YoutubeSubscriptions.__tablename__)
     )
     query = select(
