@@ -25,6 +25,7 @@ jobs:
             echo -e "MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL\n" >> .env
             echo -e "POSTGRES_PASSWORD=$POSTGRES_PASSWORD\n" >> .env
             echo -e "POSTGRES_USER=$POSTGRES_USER\n" >> .env
+            echo -e "POSTGRES_DB=$POSTGRES_DB\n" >> .env
             echo -e "REDIS_URL=$REDIS_URL\n" >> .env
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
