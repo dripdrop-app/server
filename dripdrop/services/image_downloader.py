@@ -48,10 +48,3 @@ class ImageDownloaderService:
 
 
 image_downloader_service = ImageDownloaderService()
-
-if __name__ == "__main__":
-    print(
-        image_downloader_service.download_image(
-            "https://soundcloud.com/nba-youngboy/youngboy-never-broke-again-put"
-        )
-    )

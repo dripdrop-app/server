@@ -1,5 +1,6 @@
 from datetime import datetime
-from dripdrop.models import ApiBase, OrmBase, Users
+from dripdrop.models import ApiBase, OrmBase
+from dripdrop.authentication.models import Users
 from sqlalchemy import (
     Column,
     String,

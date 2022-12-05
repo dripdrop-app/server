@@ -2,8 +2,8 @@ import traceback
 from asgiref.sync import sync_to_async
 from functools import wraps
 from inspect import iscoroutinefunction, signature
+from dripdrop.database import create_session
 from dripdrop.logging import logger
-from dripdrop.models import create_session
 
 
 def worker_task(function):

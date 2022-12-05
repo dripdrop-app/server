@@ -87,10 +87,11 @@ async def listen_jobs(
         job = results.first()
         if job:
             try:
-                job = MusicJob.from_orm(job)
                 await websocket.send_json(
                     jsonable_encoder(
-                        JobUpdateResponse(type=type, job=job).dict(by_alias=True)
+                        JobUpdateResponse(type=type, job=MusicJob.from_orm(job)).dict(
+                            by_alias=True
+                        )
                     )
                 )
             except Exception:

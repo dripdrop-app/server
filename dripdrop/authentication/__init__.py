@@ -7,6 +7,7 @@ from .responses import (
 )
 from .utils import create_new_account
 from datetime import timedelta, datetime, timezone
+from dripdrop.authentication.models import User, Users
 from dripdrop.settings import settings
 from dripdrop.dependencies import (
     AsyncSession,
@@ -17,7 +18,6 @@ from dripdrop.dependencies import (
     COOKIE_NAME,
     TWO_WEEKS_EXPIRATION,
 )
-from dripdrop.models import User, Users
 from fastapi import FastAPI, Body, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import PlainTextResponse, JSONResponse

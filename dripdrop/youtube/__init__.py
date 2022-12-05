@@ -6,6 +6,7 @@ from .subscriptions import subscriptions_api
 from .tasks import youtube_tasker
 from .videos import videos_api
 from asgiref.sync import sync_to_async
+from dripdrop.authentication.models import User, Users
 from dripdrop.settings import settings
 from dripdrop.dependencies import (
     get_authenticated_user,
@@ -13,7 +14,6 @@ from dripdrop.dependencies import (
     AsyncSession,
 )
 from dripdrop.logging import logger
-from dripdrop.models import User, Users
 from dripdrop.services.google_api import google_api_service
 from dripdrop.services.rq import queue
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status

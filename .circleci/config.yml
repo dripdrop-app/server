@@ -49,9 +49,8 @@ jobs:
               set -e
               \cp -r ~/build ~/dripdrop
               cd ~/dripdrop
-              docker compose -f docker-compose.yml build --progress plain
-              docker compose -f docker-compose.yml down
-              docker compose -f docker-compose.yml up -d
+              docker compose -f docker-compose.yml build --progress plain server
+              docker compose -f docker-compose.yml up --no-deps -d server
             "
 workflows:
   version: 2

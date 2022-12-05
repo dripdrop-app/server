@@ -6,6 +6,8 @@ RUN pip install -U pip
 RUN pip install poetry
 RUN mkdir -p /src
 WORKDIR /src
-COPY . .
+COPY ./poetry.lock ./poetry.lock
+COPY ./pyproject.toml ./pyproject.toml
 RUN poetry export -f requirements.txt --output requirements.txt
-RUN pip install -r requirements.txt
+RUN bash -c "python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+COPY . .

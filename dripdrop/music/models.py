@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
-from dripdrop.models import ApiBase, OrmBase, Users
+from dripdrop.authentication.models import Users
+from dripdrop.models import ApiBase, OrmBase
 from dripdrop.services.boto3 import boto3_service
 from sqlalchemy import Column, String, text, TIMESTAMP, ForeignKey, Boolean
 from sqlalchemy.orm import relationship

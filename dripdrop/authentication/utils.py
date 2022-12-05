@@ -1,6 +1,6 @@
 from .responses import AccountExistsResponse
+from dripdrop.authentication.models import Users
 from dripdrop.dependencies import AsyncSession, password_context
-from dripdrop.models import Users
 from fastapi import HTTPException, status
 from sqlalchemy import select
 
