@@ -16,11 +16,7 @@ async def create_new_account(
             status_code=status.HTTP_400_BAD_REQUEST, detail=AccountExistsResponse
         )
     hashed_pw = password_context.hash(password.encode("utf-8"))
-    account = Users(
-        email=email,
-        password=hashed_pw.decode("utf-8"),
-        admin=False,
-    )
+    account = Users(email=email, password=hashed_pw, admin=False)
     db.add(account)
     await db.commit()
     return account

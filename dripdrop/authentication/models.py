@@ -1,7 +1,7 @@
 from datetime import datetime
-from dripdrop.models import OrmBase
+from dripdrop.models import OrmBase, get_current_time
 from pydantic import BaseModel, SecretStr
-from sqlalchemy import Column, String, Boolean, text, TIMESTAMP
+from sqlalchemy import Column, String, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
 
 
@@ -13,7 +13,7 @@ class Users(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
     google_account = relationship(
         "GoogleAccounts",

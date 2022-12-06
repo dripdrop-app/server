@@ -1,14 +1,24 @@
 from contextlib import asynccontextmanager
 from dripdrop.settings import settings
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
-MIGRATION_DATABASE_URL = settings.migration_database_url
-DATABASE_URL = settings.database_url
+database_url = URL.create(
+    drivername="postgresql+asyncpg",
+    username=settings.postgres_user,
+    password=settings.postgres_password,
+    host=settings.postgres_host,
+    database=settings.postgres_database,
+)
+
+migration_database_url = database_url
+migration_database_url.set(drivername="postgresql")
+
 
 engine = create_async_engine(
-    DATABASE_URL,
+    database_url,
     poolclass=NullPool,
     echo=False,
 )

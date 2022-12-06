@@ -1,9 +1,9 @@
 import re
 from datetime import datetime
 from dripdrop.authentication.models import Users
-from dripdrop.models import ApiBase, OrmBase
+from dripdrop.models import ApiBase, OrmBase, get_current_time
 from dripdrop.services.boto3 import boto3_service
-from sqlalchemy import Column, String, text, TIMESTAMP, ForeignKey, Boolean
+from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from typing import Optional
 
@@ -35,7 +35,7 @@ class MusicJobs(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
     user = relationship("Users", back_populates="music_jobs")

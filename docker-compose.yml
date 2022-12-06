@@ -10,13 +10,13 @@ services:
       - ../build:/src/build
     env_file: .env
     build:
-      dockerfile: dockerfiles/Dockerfile.server
+      dockerfile: dockerfiles/Dockerfile
     entrypoint: |
       bash -c "
         set -e
         source venv/bin/activate
         alembic upgrade head
-        gunicorn dripdrop:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c ./config/gunicorn.py
+        gunicorn dripdrop.app:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c ./config/gunicorn.py
       "
     depends_on:
       postgres:
@@ -33,13 +33,13 @@ services:
       - ./data/worker/logs:/src/logs
     env_file: .env
     build:
-      dockerfile: |
-        bash -c "
-          set -e
-          source venv/bin/activate
-          dockerfiles/Dockerfile.worker
-        "
-    entrypoint: python worker.py
+      dockerfile: dockerfiles/Dockerfile
+    entrypoint: |
+      bash -c "
+        set -e
+        source venv/bin/activate
+        python worker.py
+      "
     depends_on:
       postgres:
         condition: service_healthy
