@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 
-test_engine = create_engine("sqlite:///./test.sqlite", echo=False)
+test_engine = create_engine("sqlite:///test.sqlite", echo=False)
 async_test_engine = create_async_engine(
-    "sqlite+aiosqlite:///./test.sqlite", poolclass=NullPool, echo=False
+    "sqlite+aiosqlite:///test.sqlite", poolclass=NullPool, echo=False
 )
 
 
@@ -20,7 +20,6 @@ def setup():
     OrmBase.metadata.drop_all(bind=test_engine)
     OrmBase.metadata.create_all(bind=test_engine)
     yield
-    OrmBase.metadata.drop_all(bind=test_engine)
 
 
 @pytest.fixture()

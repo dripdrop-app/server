@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     google_client_id: str
     google_client_secret: str
     google_api_key: str
-    postgres_database: str
+    postgres_db: str
     postgres_host: str
     postgres_password: str
     postgres_user: str
