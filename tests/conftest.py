@@ -44,3 +44,20 @@ def create_user(client: TestClient):
             )
 
     return _create_user
+
+
+@pytest.fixture()
+def create_and_login_user(create_user):
+    def _create_and_login_user(email: str = ..., password: str = ..., admin=False):
+        # Creating user also logins them in
+        create_user(email, password, admin)
+
+    return _create_and_login_user
+
+
+TEST_EMAIL = "testuser@gmail.com"
+TEST_PASSWORD = "testpassword"
+
+
+class APIEndpoints:
+    base_path = "/api"
