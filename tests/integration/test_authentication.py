@@ -27,6 +27,13 @@ def check_user_auth_response(json: dict = ..., email: str = ..., admin: bool = .
 
 
 class TestCreate:
+    def test_create_duplicate_user(self, client: TestClient, create_user):
+        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+        response = client.post(
+            AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     def test_create_user(self, client: TestClient):
         response = client.post(
             AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
@@ -35,24 +42,8 @@ class TestCreate:
         assert response.cookies.get(COOKIE_NAME, None) is not None
         check_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
 
-    def test_create_duplicate_user(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
-        response = client.post(
-            AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
-        )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
 
 class TestLogin:
-    def test_login_user(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
-        response = client.post(
-            AuthEndpoints.login, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.cookies.get(COOKIE_NAME, None) is not None
-        check_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
-
     def test_login_with_incorrect_password(self, client: TestClient, create_user):
         create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
         response = client.post(
@@ -68,13 +59,22 @@ class TestLogin:
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_login_user(self, client: TestClient, create_user):
+        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+        response = client.post(
+            AuthEndpoints.login, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.cookies.get(COOKIE_NAME, None) is not None
+        check_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
+
 
 class TestSession:
-    def test_check_session_when_not_logged_in(self, client: TestClient):
+    def test_session_when_not_logged_in(self, client: TestClient):
         response = client.get(AuthEndpoints.session)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_check_session_after_creating_account(self, client: TestClient):
+    def test_session_after_creating_account(self, client: TestClient):
         response = client.post(
             AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
@@ -83,7 +83,7 @@ class TestSession:
         assert response.status_code == status.HTTP_200_OK
         check_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
 
-    def test_check_session_after_login(self, client: TestClient, create_user):
+    def test_session_after_login(self, client: TestClient, create_user):
         create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
         response = client.post(
             AuthEndpoints.login, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}

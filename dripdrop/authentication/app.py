@@ -56,8 +56,8 @@ async def login(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     user = User.from_orm(account)
     verified, new_hashed_pw = password_context.verify_and_update(
-        secret=password.encode("utf-8"),
-        hash=user.password.get_secret_value().encode("utf-8"),
+        secret=password,
+        hash=user.password.get_secret_value(),
     )
     if new_hashed_pw:
         account.password = new_hashed_pw

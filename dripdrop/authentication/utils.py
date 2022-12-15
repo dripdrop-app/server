@@ -15,7 +15,7 @@ async def create_new_account(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=AccountExistsResponse
         )
-    hashed_pw = password_context.hash(password.encode("utf-8"))
+    hashed_pw = password_context.hash(password)
     account = Users(email=email, password=hashed_pw, admin=False)
     db.add(account)
     await db.commit()
