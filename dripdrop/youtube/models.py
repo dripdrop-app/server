@@ -1,6 +1,7 @@
 from datetime import datetime
 from dripdrop.models import ApiBase, OrmBase, get_current_time
 from dripdrop.authentication.models import Users
+from pydantic import Field
 from sqlalchemy import (
     Column,
     String,
@@ -94,8 +95,8 @@ class YoutubeChannels(OrmBase):
 class YoutubeChannel(ApiBase):
     id: str
     title: str
-    thumbnail: Optional[str]
-    upload_playlist_id: Optional[str]
+    thumbnail: Optional[str] = Field(None)
+    upload_playlist_id: Optional[str] = Field(None)
     created_at: datetime
     last_updated: datetime
 

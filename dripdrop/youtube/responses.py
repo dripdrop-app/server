@@ -1,15 +1,16 @@
 from .models import YoutubeVideo, YoutubeSubscription, YoutubeVideoCategory
 from datetime import datetime
 from dripdrop.responses import ResponseBaseModel
+from pydantic import Field
 from typing import Optional, List
 
 
 class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):
     channel_title: str
     channel_thumbnail: str
-    liked: Optional[datetime]
-    queued: Optional[datetime]
-    watched: Optional[datetime]
+    liked: Optional[datetime] = Field(None)
+    queued: Optional[datetime] = Field(None)
+    watched: Optional[datetime] = Field(None)
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel, YoutubeSubscription):
