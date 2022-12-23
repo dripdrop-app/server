@@ -48,7 +48,7 @@ jobs:
           command: pytest
       
 
-  build and deploy:
+  deploy:
     docker:
       - image: python:3.10
     steps:
@@ -81,7 +81,8 @@ workflows:
   version: 2
   deploy:
     jobs:
-      - build and deploy:
+      - build_and_test
+      - deploy:
           filters:
             branches:
               only: main # only deploy on the main branch
