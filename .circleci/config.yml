@@ -70,7 +70,7 @@ jobs:
           name: Update repo on VM
           command: |
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
-              mv ~/dripdrop-new/* ~/dripdrop/*
+              mv ~/dripdrop-new/* ~/dripdrop/
               rm -rf ~/dripdrop-new
             "
       - run:
