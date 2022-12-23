@@ -1,5 +1,6 @@
 import json
 import math
+import re
 import traceback
 import uuid
 from .models import MusicJob, MusicJobs, youtube_regex
@@ -156,6 +157,11 @@ async def create_job_from_file(
     user: User = Depends(get_authenticated_user),
     db: AsyncSession = Depends(create_db_session),
 ):
+    if not re.match("audio/(wav|mpeg)", file.content_type):
+        raise HTTPException(
+            detail="File is incorrect format", status_code=status.HTTP_400_BAD_REQUEST
+        )
+
     job_id = str(uuid.uuid4())
     try:
         upload_file = sync_to_async(boto3_service.upload_file)

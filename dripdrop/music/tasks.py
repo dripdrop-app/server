@@ -124,7 +124,7 @@ class MusicTasker:
         results = await db.scalars(query)
         job = results.first()
         if not job:
-            return
+            raise Exception(f"Job with id ({job_id}) not found")
         try:
             music_job = MusicJob.from_orm(job)
             await self.create_job_folder(job=music_job)
