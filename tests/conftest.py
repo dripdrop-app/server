@@ -26,6 +26,10 @@ def base_mock(*args, **kwargs):
     return
 
 
+async def async_base_mock(*args, **kwargs):
+    return
+
+
 @pytest.fixture(autouse=True)
 def setup_database():
     session_maker.configure(bind=async_test_engine)
@@ -42,7 +46,7 @@ def mock_queue(monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture(autouse=True)
 def mock_redis(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(redis, "publish", base_mock)
+    monkeypatch.setattr(redis, "publish", async_base_mock)
 
 
 @pytest.fixture()
