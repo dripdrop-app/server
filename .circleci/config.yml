@@ -2,6 +2,7 @@ version: 2.1
 
 commands:
   install_packages:
+    description: 'Install packages and dependencies'
     steps:
       - run:
           command: |
@@ -11,7 +12,9 @@ commands:
             pip install poetry
             poetry export -f requirements.txt --output requirements.txt
             pip install -r requirements.txt
+
   export_environment:
+    description: 'Export environment variables'
     steps:
       - run:
           command: |
@@ -23,15 +26,15 @@ commands:
             echo -e "AWS_S3_ARTWORK_BUCKET=$AWS_S3_ARTWORK_BUCKET\n" >> .env
             echo -e "AWS_S3_MUSIC_BUCKET=$AWS_S3_MUSIC_BUCKET\n" >> .env
             echo -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\n" >> .env
-            echo -e "DATABASE_URL=$DATABASE_URL\n" >> .env
             echo -e "ENV=$ENV\n" >> .env
             echo -e "GOOGLE_API_KEY=$GOOGLE_API_KEY\n" >> .env
             echo -e "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID\n" >> .env
             echo -e "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET\n" >> .env
             echo -e "MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL\n" >> .env
+            echo -e "POSTGRES_DB=$POSTGRES_DB\n" >> .env
+            echo -e "POSTGRES_HOST=$POSTGRES_HOST\n" >> .env
             echo -e "POSTGRES_PASSWORD=$POSTGRES_PASSWORD\n" >> .env
             echo -e "POSTGRES_USER=$POSTGRES_USER\n" >> .env
-            echo -e "POSTGRES_DB=$POSTGRES_DB\n" >> .env
             echo -e "REDIS_URL=$REDIS_URL\n" >> .env
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
@@ -46,7 +49,6 @@ jobs:
       - run:
           name: Run Tests
           command: pytest
-      
 
   deploy:
     docker:
@@ -77,6 +79,7 @@ jobs:
               docker compose -f docker-compose.yml build --progress plain server
               docker compose -f docker-compose.yml up --no-deps -d server
             "
+            
 workflows:
   version: 2
   deploy:
