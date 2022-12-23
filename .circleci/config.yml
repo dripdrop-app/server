@@ -65,7 +65,7 @@ jobs:
       - export_environment
       - run:
           name: Copy repo to VM
-          command: rm test.sqlite && scp -o StrictHostKeyChecking=no -vr $(pwd) $SSH_USER@$SSH_HOST:~/dripdrop-new
+          command: scp -o StrictHostKeyChecking=no -vr $(pwd) $SSH_USER@$SSH_HOST:~/dripdrop-new
       - run:
           name: Update repo on VM
           command: |
