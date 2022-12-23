@@ -80,6 +80,7 @@ async def login(
         ),
         headers={"Authorization": f"Bearer {token}"},
     )
+    print("env", settings.env)
     response.set_cookie(
         COOKIE_NAME,
         value=token,
