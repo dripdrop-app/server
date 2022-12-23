@@ -1,66 +1,82 @@
 import base64
 import io
-import mutagen
+import mutagen.id3
 import os
-import subprocess
+import re
 import traceback
 import uuid
 from dripdrop.logging import logger
 from dripdrop.music.responses import TagsResponse
-from typing import Union
+from typing import Union, Optional
 
 
 class TagExtractorService:
+    _TAGS_FOLDER = "tags"
+    _TITLE_TAG = "TIT2"
+    _ARTIST_TAG = "TPE1"
+    _ALBUM_TAG = "TALB"
+    _GROUPING_TAG = "TIT1"
+    _ARTWORK_TAG = "APIC:"
+
+    def _create_folder(self):
+        folder_id = str(uuid.uuid4())
+        tag_path = os.path.join(TagExtractorService._TAGS_FOLDER, folder_id)
+        try:
+            os.mkdir("tags")
+        except FileExistsError:
+            logger.exception(traceback.format_exc())
+        os.mkdir(tag_path)
+        return tag_path
+
+    def _get_tag(
+        self, tags: mutagen.id3.ID3 = ..., tag_name: str = ...
+    ) -> Optional[str]:
+        tag = tags.get(tag_name)
+        if tag:
+            return tag.text[0]
+        return None
+
+    def _get_artwork_as_base64(self, tags: mutagen.id3.ID3 = ...) -> Optional[str]:
+        buffer = None
+        mime_type = None
+        for tag_name in tags.keys():
+            if re.match(TagExtractorService._ARTWORK_TAG, tag_name):
+                tag = tags.get(tag_name)
+                buffer = io.BytesIO(tag.data)
+                mime_type = tag.mime
+                base64_string = base64.b64encode(buffer.getvalue()).decode()
+                return f"data:{mime_type};base64,{base64_string}"
+        return None
+
+    def _clean_up(self, tag_path: str = ...):
+        try:
+            for item in os.scandir(tag_path):
+                if os.path.isfile(item):
+                    os.remove(item)
+            os.removedirs(tag_path)
+        except Exception:
+            pass
+
     def read_tags(
         self,
         file: Union[str, bytes, None] = None,
         filename: str = ...,
     ):
-        folder_id = str(uuid.uuid4())
-        tag_path = os.path.join("tags", folder_id)
+        tag_path = self._create_folder()
         try:
-            try:
-                os.mkdir("tags")
-            except FileExistsError:
-                logger.exception(traceback.format_exc())
-            os.mkdir(tag_path)
-            filepath = os.path.join(tag_path, filename)
-            with open(filepath, "wb") as f:
+            file_path = os.path.join(tag_path, filename)
+            with open(file_path, "wb") as f:
                 f.write(file)
-            audio_file = mutagen.File(filepath)
-            title = (
-                audio_file.tags["TIT2"].text[0]
-                if audio_file.tags.get("TIT2", None)
-                else ""
+
+            tags = mutagen.id3.ID3(file_path)
+            title = self._get_tag(tags=tags, tag_name=TagExtractorService._TITLE_TAG)
+            artist = self._get_tag(tags=tags, tag_name=TagExtractorService._ARTIST_TAG)
+            album = self._get_tag(tags=tags, tag_name=TagExtractorService._ALBUM_TAG)
+            grouping = self._get_tag(
+                tags=tags, tag_name=TagExtractorService._GROUPING_TAG
             )
-            artist = (
-                audio_file.tags["TPE1"].text[0]
-                if audio_file.tags.get("TPE1", None)
-                else ""
-            )
-            album = (
-                audio_file.tags["TALB"].text[0]
-                if audio_file.tags.get("TALB", None)
-                else ""
-            )
-            grouping = (
-                audio_file.tags["TIT1"].text[0]
-                if audio_file.tags.get("TIT1", None)
-                else ""
-            )
-            imageKeys = list(
-                filter(lambda key: key.find("APIC") != -1, audio_file.keys())
-            )
-            buffer = None
-            mimeType = None
-            if imageKeys:
-                mimeType = audio_file[imageKeys[0]].mime
-                buffer = io.BytesIO(audio_file[imageKeys[0]].data)
-            subprocess.run(["rm", "-rf", tag_path])
-            artwork_url = None
-            if buffer:
-                base64_string = base64.b64encode(buffer.getvalue()).decode()
-                artwork_url = f"data:{mimeType};base64,{base64_string}"
+            artwork_url = self._get_artwork_as_base64(tags=tags)
+            self._clean_up(tag_path=tag_path)
             return TagsResponse(
                 title=title,
                 artist=artist,
@@ -69,11 +85,9 @@ class TagExtractorService:
                 artwork_url=artwork_url,
             )
         except Exception:
-            subprocess.run(["rm", "-rf", tag_path])
+            self._clean_up(tag_path=tag_path)
             logger.exception(traceback.format_exc())
-            return TagsResponse(
-                title=None, artist=None, album=None, grouping=None, artwork_url=None
-            )
+            return TagsResponse()
 
 
 tag_extractor_service = TagExtractorService()

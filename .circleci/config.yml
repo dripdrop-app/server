@@ -1,13 +1,27 @@
-version: 2
+version: 2.1
 
-jobs:
-  build and deploy:
-    docker:
-      - image: python
+commands:
+  install_packages:
     steps:
-      - checkout
       - run:
-          name: Export Environment Variables
+          name: Install packages and dependencies
+          command: |
+            apt-get -y update
+            apt-get -y upgrade
+            apt-get install -y ffmpeg
+            pip install poetry
+            poetry export -f requirements.txt --output requirements.txt
+            pip install -r requirements.txt
+
+  export_environment:
+    parameters:
+      env:
+        type: enum
+        default: production
+        enum: [production, testing]  
+    steps:
+      - run:
+          name: Export environment variables
           command: |
             touch .env
             echo -e "API_KEY=$API_KEY\n" >> .env
@@ -17,18 +31,38 @@ jobs:
             echo -e "AWS_S3_ARTWORK_BUCKET=$AWS_S3_ARTWORK_BUCKET\n" >> .env
             echo -e "AWS_S3_MUSIC_BUCKET=$AWS_S3_MUSIC_BUCKET\n" >> .env
             echo -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\n" >> .env
-            echo -e "DATABASE_URL=$DATABASE_URL\n" >> .env
-            echo -e "ENV=$ENV\n" >> .env
+            echo -e "ENV=<< parameters.env >>\n" >> .env
             echo -e "GOOGLE_API_KEY=$GOOGLE_API_KEY\n" >> .env
             echo -e "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID\n" >> .env
             echo -e "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET\n" >> .env
             echo -e "MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL\n" >> .env
+            echo -e "POSTGRES_DB=$POSTGRES_DB\n" >> .env
+            echo -e "POSTGRES_HOST=$POSTGRES_HOST\n" >> .env
             echo -e "POSTGRES_PASSWORD=$POSTGRES_PASSWORD\n" >> .env
             echo -e "POSTGRES_USER=$POSTGRES_USER\n" >> .env
-            echo -e "POSTGRES_DB=$POSTGRES_DB\n" >> .env
             echo -e "REDIS_URL=$REDIS_URL\n" >> .env
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
+
+jobs:
+  build and test:
+    docker:
+      - image: python:3.10
+    steps:
+      - checkout
+      - install_packages
+      - export_environment:
+          env: testing
+      - run:
+          name: Run Tests
+          command: pytest -s
+
+  deploy:
+    docker:
+      - image: python:3.10
+    steps:
+      - checkout
+      - export_environment
       - run:
           name: Copy env file to VM
           command: scp -o StrictHostKeyChecking=no -vr .env $SSH_USER@$SSH_HOST:~
@@ -49,15 +83,16 @@ jobs:
               set -e
               \cp -r ~/build ~/dripdrop
               cd ~/dripdrop
-              docker compose -f docker-compose.yml build --progress plain
-              docker compose -f docker-compose.yml down
-              docker compose -f docker-compose.yml up -d
+              docker compose -f docker-compose.yml build --progress plain server
+              docker compose -f docker-compose.yml up --no-deps -d server
             "
+            
 workflows:
   version: 2
   deploy:
     jobs:
-      - build and deploy:
+      - build and test
+      - deploy:
           filters:
             branches:
               only: main # only deploy on the main branch

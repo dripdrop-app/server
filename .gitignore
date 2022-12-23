@@ -143,3 +143,4 @@ setup/*.pgsql
 
 data
 logs
+*.sqlite*

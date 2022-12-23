@@ -1,9 +1,10 @@
 import re
 from datetime import datetime
-from dripdrop.models import ApiBase, OrmBase, Users
+from dripdrop.authentication.models import Users
+from dripdrop.models import ApiBase, OrmBase, get_current_time
 from dripdrop.services.boto3 import boto3_service
-from sqlalchemy import Column, String, text, TIMESTAMP, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from pydantic import Field
+from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 from typing import Optional
 
 youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
@@ -34,19 +35,18 @@ class MusicJobs(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
-    user = relationship("Users", back_populates="music_jobs")
 
 
 class MusicJob(ApiBase):
     id: str
     user_email: str
-    filename: Optional[str]
-    youtube_url: Optional[str]
-    download_url: Optional[str]
-    artwork_url: Optional[str]
+    filename: Optional[str] = Field(None)
+    youtube_url: Optional[str] = Field(None)
+    download_url: Optional[str] = Field(None)
+    artwork_url: Optional[str] = Field(None)
     title: str
     artist: str
     album: str

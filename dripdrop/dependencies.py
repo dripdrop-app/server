@@ -1,8 +1,9 @@
 import jwt
 import traceback
+from .database import create_session, AsyncSession
 from .settings import settings
 from .logging import logger
-from .models import create_session, AsyncSession, User, Users
+from dripdrop.authentication.models import User, Users
 from datetime import datetime, timezone
 from fastapi import HTTPException, status, Request, WebSocket, Depends
 from passlib.context import CryptContext

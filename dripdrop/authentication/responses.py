@@ -1,5 +1,5 @@
 from datetime import datetime
-from dripdrop.models import User
+from dripdrop.authentication.models import User
 from dripdrop.responses import ResponseBaseModel
 from pydantic import SecretStr, Field
 

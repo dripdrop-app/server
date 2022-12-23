@@ -1,5 +1,6 @@
 from .models import MusicJob
 from dripdrop.responses import ResponseBaseModel
+from pydantic import Field
 from typing import Optional, List, Literal
 
 
@@ -27,11 +28,11 @@ ArtworkErrorResponse = "Unable to get artwork"
 
 
 class TagsResponse(ResponseBaseModel):
-    title: Optional[str]
-    artist: Optional[str]
-    album: Optional[str]
-    grouping: Optional[str]
-    artwork_url: Optional[str]
+    title: Optional[str] = Field(None)
+    artist: Optional[str] = Field(None)
+    album: Optional[str] = Field(None)
+    grouping: Optional[str] = Field(None)
+    artwork_url: Optional[str] = Field(None)
 
 
 class JobsResponse(ResponseBaseModel):

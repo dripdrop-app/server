@@ -12,8 +12,8 @@ from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
+from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
-from dripdrop.models import AsyncSession
 from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.image_downloader import image_downloader_service
 from dripdrop.services.redis import redis, RedisChannels
@@ -124,7 +124,7 @@ class MusicTasker:
         results = await db.scalars(query)
         job = results.first()
         if not job:
-            return
+            raise Exception(f"Job with id ({job_id}) not found")
         try:
             music_job = MusicJob.from_orm(job)
             await self.create_job_folder(job=music_job)

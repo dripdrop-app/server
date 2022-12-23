@@ -1,15 +1,15 @@
 from datetime import datetime
-from dripdrop.models import ApiBase, OrmBase, Users
+from dripdrop.models import ApiBase, OrmBase, get_current_time
+from dripdrop.authentication.models import Users
+from pydantic import Field
 from sqlalchemy import (
     Column,
     String,
-    text,
     TIMESTAMP,
     ForeignKey,
     Boolean,
     Integer,
 )
-from sqlalchemy.orm import relationship
 from typing import Optional
 
 
@@ -38,26 +38,14 @@ class GoogleAccounts(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
     last_updated = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
-        server_onupdate=text("NOW()"),
+        default=get_current_time,
+        onupdate=get_current_time,
     )
-    user = relationship(
-        "Users",
-        back_populates="google_account",
-        uselist=False,
-    )
-    subscriptions = relationship(
-        "YoutubeSubscriptions",
-        back_populates="google_account",
-    )
-    likes = relationship("YoutubeVideoLikes", back_populates="google_account")
-    queues = relationship("YoutubeVideoQueues", back_populates="google_account")
-    watches = relationship("YoutubeVideoWatches", back_populates="google_account")
 
 
 class GoogleAccount(ApiBase):
@@ -80,22 +68,20 @@ class YoutubeChannels(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
     last_updated = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_onupdate=text("NOW()"),
+        onupdate=get_current_time,
     )
-    subscriptions = relationship("YoutubeSubscriptions", back_populates="channel")
-    videos = relationship("YoutubeVideos", back_populates="channel")
 
 
 class YoutubeChannel(ApiBase):
     id: str
     title: str
-    thumbnail: Optional[str]
-    upload_playlist_id: Optional[str]
+    thumbnail: Optional[str] = Field(None)
+    upload_playlist_id: Optional[str] = Field(None)
     created_at: datetime
     last_updated: datetime
 
@@ -125,10 +111,8 @@ class YoutubeSubscriptions(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
-    channel = relationship("YoutubeChannels", back_populates="subscriptions")
-    google_account = relationship("GoogleAccounts", back_populates="subscriptions")
 
 
 class YoutubeSubscription(ApiBase):
@@ -146,9 +130,8 @@ class YoutubeVideoCategories(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
-    videos = relationship("YoutubeVideos", back_populates="category")
 
 
 class YoutubeVideoCategory(ApiBase):
@@ -184,13 +167,8 @@ class YoutubeVideos(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
-    channel = relationship("YoutubeChannels", back_populates="videos")
-    category = relationship("YoutubeVideoCategories", back_populates="videos")
-    likes = relationship("YoutubeVideoLikes", back_populates="video")
-    queues = relationship("YoutubeVideoQueues", back_populates="video")
-    watches = relationship("YoutubeVideoWatches", back_populates="video")
 
 
 class YoutubeVideo(ApiBase):
@@ -228,10 +206,8 @@ class YoutubeVideoLikes(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
-    google_account = relationship("GoogleAccounts", back_populates="likes")
-    video = relationship("YoutubeVideos", back_populates="likes")
 
 
 class YoutubeVideoLike(ApiBase):
@@ -265,10 +241,8 @@ class YoutubeVideoQueues(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
-    google_account = relationship("GoogleAccounts", back_populates="queues")
-    video = relationship("YoutubeVideos", back_populates="queues")
 
 
 class YoutubeVideoQueue(ApiBase):
@@ -302,10 +276,8 @@ class YoutubeVideoWatches(OrmBase):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        server_default=text("NOW()"),
+        default=get_current_time,
     )
-    google_account = relationship("GoogleAccounts", back_populates="watches")
-    video = relationship("YoutubeVideos", back_populates="watches")
 
 
 class YoutubeVideoWatch(ApiBase):
