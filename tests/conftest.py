@@ -5,6 +5,7 @@ from dripdrop.database import session_maker
 from dripdrop.dependencies import password_context, COOKIE_NAME
 from dripdrop.models import OrmBase
 from dripdrop.services.rq import queue
+from dripdrop.services.redis import redis
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, insert
@@ -21,6 +22,10 @@ async_test_engine = create_async_engine(
 )
 
 
+def base_mock(*args, **kwargs):
+    return
+
+
 @pytest.fixture(autouse=True)
 def setup_database():
     session_maker.configure(bind=async_test_engine)
@@ -31,11 +36,13 @@ def setup_database():
 
 @pytest.fixture(autouse=True)
 def mock_queue(monkeypatch: pytest.MonkeyPatch):
-    def mock_enqueue(*args, **kwargs):
-        return
+    monkeypatch.setattr(queue, "enqueue", base_mock)
+    monkeypatch.setattr(queue, "enqueue_at", base_mock)
 
-    monkeypatch.setattr(queue, "enqueue", mock_enqueue)
-    monkeypatch.setattr(queue, "enqueue_at", mock_enqueue)
+
+@pytest.fixture(autouse=True)
+def mock_redis(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(redis, "publish", base_mock)
 
 
 @pytest.fixture()
