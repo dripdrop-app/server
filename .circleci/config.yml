@@ -52,6 +52,7 @@ jobs:
       - checkout
       - install_packages
       - export_environment
+        - env: testing
       - run:
           name: Run Tests
           command: pytest -s
