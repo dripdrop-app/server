@@ -13,7 +13,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 
-test_engine = create_engine("sqlite:///test.sqlite", echo=False)
+test_engine = create_engine(
+    "sqlite:///test.sqlite", echo=False, connect_args={"check_same_thread": False}
+)
 async_test_engine = create_async_engine(
     "sqlite+aiosqlite:///test.sqlite", poolclass=NullPool, echo=False
 )
