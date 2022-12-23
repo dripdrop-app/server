@@ -30,12 +30,10 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
         if expires < datetime.now(timezone.utc).timestamp():
             pass
         email = payload.get("email", None)
-        print("email", email)
         if email:
             query = select(Users).where(Users.email == email)
             results = await db.scalars(query)
             user = results.first()
-            print(user)
             return User.from_orm(user)
     except jwt.PyJWTError:
         logger.exception(traceback.format_exc())
@@ -52,7 +50,6 @@ async def get_user(
         cookies = connection.cookies
         headers = connection.headers
         token = cookies.get(COOKIE_NAME, headers.get("Authorization", None))
-        print("token", token)
         if token:
             return await get_user_from_token(token=token, db=db)
     return None

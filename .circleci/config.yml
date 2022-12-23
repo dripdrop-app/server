@@ -49,7 +49,7 @@ jobs:
       - export_environment
       - run:
           name: Run Tests
-          command: pytest
+          command: pytest -s
 
   deploy:
     docker:

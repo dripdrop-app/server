@@ -72,6 +72,7 @@ def create_and_login_user(client: TestClient, create_user):
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.cookies.get(COOKIE_NAME, None) is not None
+        print(response.cookies.get(COOKIE_NAME, None))
 
     return _create_and_login_user
 
