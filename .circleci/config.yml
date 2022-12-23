@@ -4,7 +4,7 @@ commands:
   install_packages:
     steps:
       - run:
-          name: 'Install packages and dependencies'
+          name: Install packages and dependencies
           command: |
             apt-get -y update
             apt-get -y upgrade
@@ -17,11 +17,11 @@ commands:
     parameters:
       env:
         type: enum
-        default: 'production'
-        enum: ['production', 'testing']  
+        default: production
+        enum: [production, testing]  
     steps:
       - run:
-          name: 'Export environment variables'
+          name: Export environment variables
           command: |
             touch .env
             echo -e "API_KEY=$API_KEY\n" >> .env
@@ -52,7 +52,7 @@ jobs:
       - checkout
       - install_packages
       - export_environment
-        - env: testing
+          env: testing
       - run:
           name: Run Tests
           command: pytest -s
