@@ -5,7 +5,6 @@ from dripdrop.models import ApiBase, OrmBase, get_current_time
 from dripdrop.services.boto3 import boto3_service
 from pydantic import Field
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
 from typing import Optional
 
 youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
@@ -39,7 +38,6 @@ class MusicJobs(OrmBase):
         default=get_current_time,
     )
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
-    user = relationship("Users", back_populates="music_jobs")
 
 
 class MusicJob(ApiBase):

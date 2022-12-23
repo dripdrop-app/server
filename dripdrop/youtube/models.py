@@ -10,7 +10,6 @@ from sqlalchemy import (
     Boolean,
     Integer,
 )
-from sqlalchemy.orm import relationship
 from typing import Optional
 
 
@@ -47,18 +46,6 @@ class GoogleAccounts(OrmBase):
         default=get_current_time,
         onupdate=get_current_time,
     )
-    user = relationship(
-        "Users",
-        back_populates="google_account",
-        uselist=False,
-    )
-    subscriptions = relationship(
-        "YoutubeSubscriptions",
-        back_populates="google_account",
-    )
-    likes = relationship("YoutubeVideoLikes", back_populates="google_account")
-    queues = relationship("YoutubeVideoQueues", back_populates="google_account")
-    watches = relationship("YoutubeVideoWatches", back_populates="google_account")
 
 
 class GoogleAccount(ApiBase):
@@ -88,8 +75,6 @@ class YoutubeChannels(OrmBase):
         nullable=False,
         onupdate=get_current_time,
     )
-    subscriptions = relationship("YoutubeSubscriptions", back_populates="channel")
-    videos = relationship("YoutubeVideos", back_populates="channel")
 
 
 class YoutubeChannel(ApiBase):
@@ -128,8 +113,6 @@ class YoutubeSubscriptions(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-    channel = relationship("YoutubeChannels", back_populates="subscriptions")
-    google_account = relationship("GoogleAccounts", back_populates="subscriptions")
 
 
 class YoutubeSubscription(ApiBase):
@@ -149,7 +132,6 @@ class YoutubeVideoCategories(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-    videos = relationship("YoutubeVideos", back_populates="category")
 
 
 class YoutubeVideoCategory(ApiBase):
@@ -187,11 +169,6 @@ class YoutubeVideos(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-    channel = relationship("YoutubeChannels", back_populates="videos")
-    category = relationship("YoutubeVideoCategories", back_populates="videos")
-    likes = relationship("YoutubeVideoLikes", back_populates="video")
-    queues = relationship("YoutubeVideoQueues", back_populates="video")
-    watches = relationship("YoutubeVideoWatches", back_populates="video")
 
 
 class YoutubeVideo(ApiBase):
@@ -231,8 +208,6 @@ class YoutubeVideoLikes(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-    google_account = relationship("GoogleAccounts", back_populates="likes")
-    video = relationship("YoutubeVideos", back_populates="likes")
 
 
 class YoutubeVideoLike(ApiBase):
@@ -268,8 +243,6 @@ class YoutubeVideoQueues(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-    google_account = relationship("GoogleAccounts", back_populates="queues")
-    video = relationship("YoutubeVideos", back_populates="queues")
 
 
 class YoutubeVideoQueue(ApiBase):
@@ -305,8 +278,6 @@ class YoutubeVideoWatches(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-    google_account = relationship("GoogleAccounts", back_populates="watches")
-    video = relationship("YoutubeVideos", back_populates="watches")
 
 
 class YoutubeVideoWatch(ApiBase):
