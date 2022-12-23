@@ -1,18 +1,11 @@
-import pytest
 from ..conftest import APIEndpoints, TEST_EMAIL, TEST_PASSWORD
 from fastapi import status
 from fastapi.testclient import TestClient
-from dripdrop.services.cron import cron_service
 
 
 class AdminEndpoints:
     base_url = f"{APIEndpoints.base_path}/admin"
     cron = f"{base_url}/cron/run"
-
-
-@pytest.fixture(autouse=True)
-def patch_cron_run(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(cron_service, "run_cron_jobs", lambda: None)
 
 
 class TestRunCron:

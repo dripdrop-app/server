@@ -1,13 +1,19 @@
 version: 2
 
-jobs:
-  build and deploy:
-    docker:
-      - image: python
+commands:
+  install_packages:
     steps:
-      - checkout
       - run:
-          name: Export Environment Variables
+          command: |
+            apt-get -y update
+            apt-get -y upgrade
+            apt-get install -y ffmpeg
+            pip install poetry
+            poetry export -f requirements.txt --output requirements.txt
+            pip install -r requirements.txt
+  export_environment:
+    steps:
+      - run:
           command: |
             touch .env
             echo -e "API_KEY=$API_KEY\n" >> .env
@@ -29,6 +35,25 @@ jobs:
             echo -e "REDIS_URL=$REDIS_URL\n" >> .env
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
+
+jobs:
+  build_and_test:
+    docker:
+      - image: python:3.10
+    steps:
+      - checkout
+      - install_packages
+      - run:
+          name: Run Tests
+          command: pytest
+      
+
+  build and deploy:
+    docker:
+      - image: python:3.10
+    steps:
+      - checkout
+      - export_environment
       - run:
           name: Copy env file to VM
           command: scp -o StrictHostKeyChecking=no -vr .env $SSH_USER@$SSH_HOST:~

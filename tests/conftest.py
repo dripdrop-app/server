@@ -4,9 +4,11 @@ from dripdrop.authentication.models import Users
 from dripdrop.database import session_maker
 from dripdrop.dependencies import password_context
 from dripdrop.models import OrmBase
+from dripdrop.services.rq import queue
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, insert
+from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -25,6 +27,15 @@ def setup_database():
     yield
 
 
+@pytest.fixture(autouse=True)
+def mock_queue(monkeypatch: pytest.MonkeyPatch):
+    def mock_enqueue(*args, **kwargs):
+        return
+
+    monkeypatch.setattr(queue, "enqueue", mock_enqueue)
+    monkeypatch.setattr(queue, "enqueue_at", mock_enqueue)
+
+
 @pytest.fixture()
 def client():
     client = TestClient(app)
@@ -32,12 +43,16 @@ def client():
 
 
 @pytest.fixture()
-def create_user():
+def db():
+    return test_engine.connect()
+
+
+@pytest.fixture()
+def create_user(db: Connection):
     def _create_user(email: str = ..., password: str = ..., admin=False):
         assert type(email) is str
         assert type(password) is str
-        connection = test_engine.connect()
-        connection.execute(
+        db.execute(
             insert(Users).values(
                 email=email, password=password_context.hash(password), admin=admin
             )

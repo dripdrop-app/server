@@ -44,12 +44,12 @@ class TestArtwork:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_artwork_with_valid_image_url(self, client: TestClient):
+        artwork_url = (
+            "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
+        )
         response = client.get(
             MusicEndpoints.artwork,
-            params={
-                "artwork_url": "https://dripdrop-space.nyc3.digitaloceanspaces.com/"
-                + "artwork/dripdrop.png"
-            },
+            params={"artwork_url": artwork_url},
         )
         assert response.status_code == status.HTTP_200_OK
         json = response.json()
