@@ -46,6 +46,7 @@ jobs:
     steps:
       - checkout
       - install_packages
+      - export_environment
       - run:
           name: Run Tests
           command: pytest
