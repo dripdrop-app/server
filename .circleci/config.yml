@@ -2,9 +2,9 @@ version: 2.1
 
 commands:
   install_packages:
-    description: 'Install packages and dependencies'
     steps:
       - run:
+          name: 'Install packages and dependencies'
           command: |
             apt-get -y update
             apt-get -y upgrade
@@ -14,9 +14,9 @@ commands:
             pip install -r requirements.txt
 
   export_environment:
-    description: 'Export environment variables'
     steps:
       - run:
+          name: 'Export environment variables'
           command: |
             touch .env
             echo -e "API_KEY=$API_KEY\n" >> .env
@@ -40,7 +40,7 @@ commands:
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
 
 jobs:
-  build_and_test:
+  build and test:
     docker:
       - image: python:3.10
     steps:
@@ -84,7 +84,7 @@ workflows:
   version: 2
   deploy:
     jobs:
-      - build_and_test
+      - build and test
       - deploy:
           filters:
             branches:

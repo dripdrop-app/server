@@ -2,7 +2,7 @@ import pytest
 from dripdrop.app import app
 from dripdrop.authentication.models import Users
 from dripdrop.database import session_maker
-from dripdrop.dependencies import password_context
+from dripdrop.dependencies import password_context, COOKIE_NAME
 from dripdrop.models import OrmBase
 from dripdrop.services.rq import queue
 from fastapi import status
@@ -71,6 +71,7 @@ def create_and_login_user(client: TestClient, create_user):
             "/api/auth/login", json={"email": email, "password": password}
         )
         assert response.status_code == status.HTTP_200_OK
+        assert response.cookies.get(COOKIE_NAME, None) is not None
 
     return _create_and_login_user
 
