@@ -51,7 +51,7 @@ jobs:
     steps:
       - checkout
       - install_packages
-      - export_environment
+      - export_environment:
           env: testing
       - run:
           name: Run Tests
