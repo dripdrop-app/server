@@ -22,6 +22,7 @@ commands:
             apt-get -y update
             apt-get -y upgrade
             apt-get install -y ffmpeg
+            apt-get install -y redis
             python -m venv venv
             source venv/bin/activate
             pip install poetry
@@ -115,7 +116,6 @@ jobs:
   build and test:
     docker:
       - image: python:3.10
-      - image: redis
     steps:
       - checkout
       - install_packages
