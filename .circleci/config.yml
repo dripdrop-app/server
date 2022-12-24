@@ -55,6 +55,7 @@ jobs:
             echo "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> $BASH_ENV
             echo "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL" >> $BASH_ENV
             echo "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> $BASH_ENV
+            echo "REDIS_URL=$TEST_REDIS_URL" >> $BASH_ENV
             source $BASH_ENV
             source venv/bin/activate
             pytest -s
