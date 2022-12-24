@@ -1,19 +1,6 @@
 version: 2.1
 
 commands:
-  export_variable_to_env_file:
-    parameters:
-      variable_name:
-        type: string
-      value:
-        type: string
-    steps:
-      - run:
-          name: Export << parameters.variable_name >> to env file 
-          command: |
-            [ -f .env ] || touch .env
-            echo "<< parameters.variable_name >>=<< parameters.value >>" >> .env
-
   install_packages:
     steps:
       - run:
@@ -35,82 +22,47 @@ commands:
         type: boolean
         default: false
     steps:
-      - export_variable_to_env_file:
-          variable_name: API_KEY
-          value: $API_KEY
-      - export_variable_to_env_file:
-          variable_name: AWS_REGION_NAME
-          value: $AWS_REGION_NAME
-      - export_variable_to_env_file:
-          variable_name: AWS_S3_ARTWORK_BUCKET
-          value: $AWS_S3_ARTWORK_BUCKET
-      - export_variable_to_env_file:
-          variable_name: AWS_S3_MUSIC_BUCKET
-          value: $AWS_S3_MUSIC_BUCKET
-      - export_variable_to_env_file:
-          variable_name: GOOGLE_API_KEY
-          value: $GOOGLE_API_KEY
-      - export_variable_to_env_file:
-          variable_name: GOOGLE_CLIENT_ID
-          value: $GOOGLE_CLIENT_ID    
-      - export_variable_to_env_file:
-          variable_name: GOOGLE_CLIENT_SECRET
-          value: $GOOGLE_CLIENT_SECRET
-      - export_variable_to_env_file:
-          variable_name: POSTGRES_DB
-          value: $POSTGRES_DB
-      - export_variable_to_env_file:
-          variable_name: POSTGRES_HOST
-          value: $POSTGRES_HOST
-      - export_variable_to_env_file:
-          variable_name: POSTGRES_PASSWORD
-          value: $POSTGRES_PASSWORD
-      - export_variable_to_env_file:
-          variable_name: POSTGRES_HOST
-          value: $POSTGRES_HOST
-      - export_variable_to_env_file:
-          variable_name: SECRET_KEY
-          value: $SECRET_KEY
-      - export_variable_to_env_file:
-          variable_name: SERVER_PORT
-          value: $SERVER_PORT
+      - run:
+          name: Export environment variables
+          command: |
+            touch .env
+            echo "API_KEY=$API_KEY" >> .env
+            echo "AWS_REGION_NAME=$AWS_REGION_NAME" >> .env
+            echo "AWS_S3_ARTWORK_BUCKET=$AWS_S3_ARTWORK_BUCKET" >> .env
+            echo "AWS_S3_MUSIC_BUCKET=$AWS_S3_MUSIC_BUCKET" >> .env
+            echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
+            echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+            echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+            echo "MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL" >> .env
+            echo "POSTGRES_DB=$POSTGRES_DB" >> .env
+            echo "POSTGRES_HOST=$POSTGRES_HOST" >> .env
+            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
+            echo "POSTGRES_USER=$POSTGRES_USER" >> .env
+            echo "SECRET_KEY=$SECRET_KEY" >> .env
+            echo "SERVER_PORT=$SERVER_PORT" >> .env
       - when:
           condition: << parameters.test >>
           steps:
-            - export_variable_to_env_file:
-                variable_name: ENV
-                value: testing
-            - export_variable_to_env_file:
-                variable_name: AWS_ACCESS_KEY_ID
-                value: $TEST_AWS_ACCESS_KEY_ID
-            - export_variable_to_env_file:
-                variable_name: AWS_ENDPOINT_URL
-                value: $TEST_AWS_ENDPOINT_URL
-            - export_variable_to_env_file:
-                variable_name: AWS_SECRET_ACCESS_KEY
-                value: $TEST_AWS_SECRET_ACCESS_KEY
-            - export_variable_to_env_file:
-                variable_name: REDIS_URL
-                value: $TEST_REDIS_URL
+            - run:
+                name: Export test variables
+                command: |
+                  echo "ENV=testing" >> .env
+                  echo "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> .env
+                  echo "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL" >> .env
+                  echo "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> .env
+                  echo "REDIS_URL=$TEST_REDIS_URL" >> .env
       - when:
           condition:
             not: << parameters.test >>
           steps:
-            - export_variable_to_env_file:
-                variable_name: ENV
-                value: $ENV
-            - export_variable_to_env_file:
-                variable_name: AWS_ACCESS_KEY_ID
-                value: $AWS_ACCESS_KEY_ID
-            - export_variable_to_env_file:
-                variable_name: AWS_ENDPOINT_URL
-                value: $AWS_ENDPOINT_URL
-            - export_variable_to_env_file:
-                variable_name: AWS_SECRET_ACCESS_KEY
-                value: $AWS_SECRET_ACCESS_KEY
-            - export_variable_to_env_file:
-                variable_name: REDIS_URL
-                value: $REDIS_URL
+            - run:
+                name: Export production variables
+                command: |
+                  echo "ENV=$ENV" >> .env
+                  echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+                  echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
+                  echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+                  echo "REDIS_URL=$REDIS_URL" >> .env
 
 jobs:
   build and test:
@@ -153,7 +105,7 @@ jobs:
             "
       - run:
           name: Sync repo to VM
-          command: rsync -arzP -e 'ssh -o StrictHostKeyChecking=no' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop --exclude=data
+          command: rsync -arzP 'ssh -o StrictHostKeyChecking=no' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop --exclude=data
       - run:
           name: Deploy Over SSH
           command: |
