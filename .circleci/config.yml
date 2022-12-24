@@ -53,13 +53,11 @@ jobs:
           name: Run Tests
           command: |
             source venv/bin/activate
+            ENV=testing 
+            AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID 
+            AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL  
+            AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY
             pytest -s
-          environment:
-            ENV: testing
-            AWS_ACCESS_KEY_ID: $TEST_AWS_ACCESS_KEY_ID
-            AWS_ENDPOINT_URL: $TEST_AWS_ENDPOINT_URL
-            AWS_SECRET_ACCESS_KEY: $TEST_AWS_SECRET_ACCESS_KEY
-            REDIS_URL: $TEST_REDIS_URL
 
   deploy:
     docker:

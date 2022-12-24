@@ -9,7 +9,6 @@ from fastapi import WebSocket, WebSocketDisconnect
 from typing import Coroutine
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
-print(settings)
 redis = aioredis.from_url(settings.redis_url)
 
 
