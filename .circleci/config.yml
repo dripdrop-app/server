@@ -9,6 +9,8 @@ commands:
             apt-get -y update
             apt-get -y upgrade
             apt-get install -y ffmpeg
+            python -m venv venv
+            source venv/bin/activate
             pip install poetry
             poetry export -f requirements.txt --output requirements.txt
             pip install -r requirements.txt
@@ -71,7 +73,9 @@ jobs:
           test: true
       - run:
           name: Run Tests
-          command: pytest -s
+          command: |
+            source venv/bin/activate
+            pytest -s
 
   deploy:
     docker:
