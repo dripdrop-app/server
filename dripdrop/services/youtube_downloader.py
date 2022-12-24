@@ -1,4 +1,5 @@
 import yt_dlp
+from asgiref.sync import sync_to_async
 from dripdrop.logging import logger
 
 
@@ -25,6 +26,10 @@ class YoutubeDownloaderService:
         ydl = yt_dlp.YoutubeDL(ytdl_options)
         info = ydl.extract_info(link, download=False)
         return info.get("uploader", None)
+
+    async def async_extract_info(self, link: str = ...):
+        extract_info = sync_to_async(self.extract_info)
+        return await extract_info(link=link)
 
     def yt_download(
         self,

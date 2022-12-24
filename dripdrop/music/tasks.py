@@ -7,7 +7,6 @@ import requests
 import traceback
 from .models import MusicJobs, MusicJob
 from .responses import MusicChannelResponse
-from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
@@ -169,12 +168,11 @@ class MusicTasker:
         async for job in stream:
             music_job = MusicJob.from_orm(job)
             try:
-                delete_file = sync_to_async(boto3_service.delete_file)
-                await delete_file(
+                await boto3_service.async_delete_file(
                     bucket=Boto3Service.S3_ARTWORK_BUCKET,
                     filename=boto3_service.resolve_artwork_url(music_job.artwork_url),
                 )
-                await delete_file(
+                await boto3_service.async_delete_file(
                     bucket=Boto3Service.S3_MUSIC_BUCKET,
                     filename=boto3_service.resolve_music_url(music_job.download_url),
                 )

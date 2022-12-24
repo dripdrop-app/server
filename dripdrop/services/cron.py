@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from dripdrop.settings import settings
@@ -31,6 +32,10 @@ class CronService:
             depends_on=update_subscriptions_job,
         )
         queue.enqueue(music_tasker.cleanup_jobs)
+
+    async def async_run_cron_jobs(self):
+        run_cron_jobs = sync_to_async(self.run_cron_jobs)
+        return await run_cron_jobs()
 
     def create_cron_job(
         self,

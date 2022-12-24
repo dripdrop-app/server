@@ -5,9 +5,10 @@ import os
 import re
 import traceback
 import uuid
+from asgiref.sync import sync_to_async
 from dripdrop.logging import logger
 from dripdrop.music.responses import TagsResponse
-from typing import Union, Optional
+from typing import Optional
 
 
 class TagExtractorService:
@@ -59,7 +60,7 @@ class TagExtractorService:
 
     def read_tags(
         self,
-        file: Union[str, bytes, None] = None,
+        file: bytes = ...,
         filename: str = ...,
     ):
         tag_path = self._create_folder()
@@ -88,6 +89,14 @@ class TagExtractorService:
             self._clean_up(tag_path=tag_path)
             logger.exception(traceback.format_exc())
             return TagsResponse()
+
+    async def async_read_tags(
+        self,
+        file: bytes = ...,
+        filename: str = ...,
+    ):
+        read_tags = sync_to_async(self.read_tags)
+        return await read_tags(file=file, filename=filename)
 
 
 tag_extractor_service = TagExtractorService()
