@@ -38,15 +38,15 @@ def setup_database():
     yield
 
 
-@pytest.fixture(autouse=True)
-def mock_queue(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(queue, "enqueue", base_mock)
-    monkeypatch.setattr(queue, "enqueue_at", base_mock)
+# @pytest.fixture(autouse=True)
+# def mock_queue(monkeypatch: pytest.MonkeyPatch):
+#     monkeypatch.setattr(queue, "enqueue", base_mock)
+#     monkeypatch.setattr(queue, "enqueue_at", base_mock)
 
 
-@pytest.fixture(autouse=True)
-def mock_redis(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(redis, "publish", async_base_mock)
+# @pytest.fixture(autouse=True)
+# def mock_redis(monkeypatch: pytest.MonkeyPatch):
+#     monkeypatch.setattr(redis, "publish", async_base_mock)
 
 
 @pytest.fixture()

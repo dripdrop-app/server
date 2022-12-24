@@ -44,7 +44,7 @@ commands:
           condition: << parameters.test >>
           steps:
             - run:
-                name: Exporting test variables
+                name: Export test variables
                 command: |
                   echo -e "ENV=testing\n" >> .env
                   echo -e "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID\n" >> .env
@@ -55,7 +55,7 @@ commands:
             not: << parameters.test >>
           steps:
             - run:
-                name: Exporting production variables
+                name: Export production variables
                 command: |
                   echo -e "ENV=$ENV\n" >> .env
                   echo -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID\n" >> .env
@@ -66,6 +66,7 @@ jobs:
   build and test:
     docker:
       - image: python:3.10
+      - image: redis
     steps:
       - checkout
       - install_packages
@@ -109,7 +110,6 @@ jobs:
           command: |
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
               set -e
-              rsync -arzP ~/build ~/dripdrop
               cd ~/dripdrop
               docker compose -f docker-compose.yml build --progress plain server
               docker compose -f docker-compose.yml up --no-deps -d server
