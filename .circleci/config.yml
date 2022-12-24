@@ -39,30 +39,27 @@ commands:
             echo -e "REDIS_URL=$REDIS_URL\n" >> .env
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
-        - when:
-            condition: << parameters.testing >>
-            steps:
-              - run: 
-                  name: Exporting test variables
-                  command: |
-                    echo -e "ENV=testing\n" >> .env
-                    echo -e "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID\n" >> .env
-                    echo -e "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL\n" >> .env
-                    echo -e "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY\n" >> .env
-        - when:
-            condition: 
-              not: << parameters.testing >>
-            steps:
-              - run: 
-                  name: Exporting test variables
-                  command: |
-                    echo -e "ENV=$ENV\n" >> .env
-                    echo -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID\n" >> .env
-                    echo -e "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL\n" >> .env
-                    echo -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\n" >> .env
-
-
-
+      - when:
+          condition: << parameters.testing >>
+          steps:
+            - run:
+                name: Exporting test variables
+                command: |
+                  echo -e "ENV=testing\n" >> .env
+                  echo -e "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID\n" >> .env
+                  echo -e "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL\n" >> .env
+                  echo -e "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY\n" >> .env
+      - when:
+          condition:
+            not: << parameters.testing >>
+          steps:
+            - run:
+                name: Exporting test variables
+                command: |
+                  echo -e "ENV=$ENV\n" >> .env
+                  echo -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID\n" >> .env
+                  echo -e "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL\n" >> .env
+                  echo -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\n" >> .env
 
 jobs:
   build and test:
@@ -101,7 +98,7 @@ jobs:
               docker compose -f docker-compose.yml build --progress plain server
               docker compose -f docker-compose.yml up --no-deps -d server
             "
-            
+
 workflows:
   version: 2
   deploy:
