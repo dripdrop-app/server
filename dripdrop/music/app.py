@@ -8,7 +8,6 @@ from .responses import (
     GroupingErrorResponse,
     ArtworkErrorResponse,
 )
-from asgiref.sync import sync_to_async
 from dripdrop.dependencies import get_authenticated_user
 from dripdrop.logging import logger
 from dripdrop.services.image_downloader import image_downloader_service
@@ -32,8 +31,9 @@ app.include_router(router=jobs_api)
 )
 async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
     try:
-        extract_info = sync_to_async(youtuber_downloader_service.extract_info)
-        uploader = await extract_info(link=youtube_url)
+        uploader = await youtuber_downloader_service.async_extract_info(
+            link=youtube_url
+        )
         return GroupingResponse(grouping=uploader).dict(by_alias=True)
     except Exception:
         logger.exception(traceback.format_exc())
@@ -49,8 +49,9 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
 )
 async def get_artwork(artwork_url: str = Query(...)):
     try:
-        resolve_artwork = sync_to_async(image_downloader_service.resolve_artwork)
-        artwork_url = await resolve_artwork(artwork=artwork_url)
+        artwork_url = await image_downloader_service.async_resolve_artwork(
+            artwork=artwork_url
+        )
         return ArtworkUrlResponse(artwork_url=artwork_url).dict(by_alias=True)
     except Exception:
         logger.exception(traceback.format_exc())
@@ -61,6 +62,7 @@ async def get_artwork(artwork_url: str = Query(...)):
 
 @app.post("/tags", response_model=TagsResponse)
 async def get_tags(file: UploadFile = File(...)):
-    read_tags = sync_to_async(tag_extractor_service.read_tags)
-    tags = await read_tags(file=await file.read(), filename=file.filename)
+    tags = await tag_extractor_service.async_read_tags(
+        file=await file.read(), filename=file.filename
+    )
     return TagsResponse(**tags.dict(by_alias=False))

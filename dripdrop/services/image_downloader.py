@@ -1,5 +1,6 @@
 import os
 import requests
+from asgiref.sync import sync_to_async
 from urllib import parse
 
 
@@ -13,14 +14,6 @@ class ImageDownloaderService:
         if content_type:
             if content_type.split("/")[0] == "image":
                 return data.content
-
-    def resolve_artwork(self, artwork: str = ...):
-        if artwork.endswith(tuple(self.image_extensions)):
-            return artwork
-        img_links = self._get_images(artwork)
-        for img_link in img_links:
-            if "artworks" in img_link and "500x500" in img_link:
-                return img_link
 
     def is_valid_url(self, url: str = ...) -> bool:
         u = parse.urlparse(url)
@@ -49,6 +42,18 @@ class ImageDownloaderService:
                         if self.is_valid_url(url=link):
                             links.add(element.replace("\\", ""))
         return links
+
+    def resolve_artwork(self, artwork: str = ...):
+        if artwork.endswith(tuple(self.image_extensions)):
+            return artwork
+        img_links = self._get_images(artwork)
+        for img_link in img_links:
+            if "artworks" in img_link and "500x500" in img_link:
+                return img_link
+
+    async def async_resolve_artwork(self, artwork: str = ...):
+        resolve_artwork = sync_to_async(self.resolve_artwork)
+        return await resolve_artwork(artwork=artwork)
 
 
 image_downloader_service = ImageDownloaderService()

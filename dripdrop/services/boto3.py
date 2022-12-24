@@ -1,4 +1,5 @@
 import boto3
+from asgiref.sync import sync_to_async
 from dripdrop.settings import settings
 
 
@@ -35,13 +36,29 @@ class Boto3Service:
             ContentType=content_type,
         )
 
+    async def async_upload_file(
+        self,
+        bucket: str = ...,
+        filename: str = ...,
+        body: bytes = ...,
+        content_type: str = ...,
+        acl="public-read",
+    ):
+        upload_file = sync_to_async(self.upload_file)
+        return await upload_file(
+            bucket=bucket,
+            filename=filename,
+            body=body,
+            content_type=content_type,
+            acl=acl,
+        )
+
     def delete_file(self, bucket: str = ..., filename: str = ...):
         self._client.delete_object(Bucket=bucket, Key=filename)
 
-    def delete_folder(self, bucket: str = ..., folder: str = ...):
-        response = self._client.list_objects_v2(Bucket=bucket, Prefix=folder)
-        for object in response["Contents"]:
-            self.delete_file(bucket=bucket, filename=object["key"])
+    async def async_delete_file(self, bucket: str = ..., filename: str = ...):
+        delete_file = sync_to_async(self.delete_file)
+        return await delete_file(bucket=bucket, filename=filename)
 
     def resolve_artwork_url(self, filename: str = ...):
         return f"{Boto3Service.AWS_ENDPOINT_URL}/{Boto3Service.S3_ARTWORK_BUCKET}/{filename}"

@@ -12,7 +12,6 @@ from .responses import (
 )
 from .tasks import music_tasker
 from .utils import handle_artwork_url
-from asgiref.sync import sync_to_async
 from datetime import datetime, timezone
 from dripdrop.dependencies import (
     get_authenticated_user,
@@ -164,8 +163,7 @@ async def create_job_from_file(
 
     job_id = str(uuid.uuid4())
     try:
-        upload_file = sync_to_async(boto3_service.upload_file)
-        await upload_file(
+        await boto3_service.async_upload_file(
             bucket=Boto3Service.S3_MUSIC_BUCKET,
             filename=f"{job_id}/{file.filename}",
             body=await file.read(),
@@ -217,13 +215,12 @@ async def delete_job(
             status_code=status.HTTP_404_NOT_FOUND, detail=JobNotFoundResponse
         )
     music_job = MusicJob.from_orm(job)
-    delete_file = sync_to_async(boto3_service.delete_file)
     if music_job.artwork_url:
-        await delete_file(
+        await boto3_service.async_delete_file(
             bucket=Boto3Service.S3_ARTWORK_BUCKET, filename=music_job.artwork_url
         )
     if music_job.download_url:
-        await delete_file(
+        await boto3_service.async_delete_file(
             bucket=Boto3Service.S3_MUSIC_BUCKET, filename=music_job.download_url
         )
     job.deleted_at = datetime.now(timezone.utc)

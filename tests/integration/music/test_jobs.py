@@ -63,6 +63,11 @@ class TestCreateFileJob:
         rows = results.fetchall()
         assert len(rows) == 1
         job = MusicJob.from_orm(rows[0])
+        file_location = f"{Boto3Service.S3_MUSIC_BUCKET}/{job.id}/{job.filename}"
+        response = requests.get(
+            f"https://dripdrop-space-test.nyc3.digitaloceanspaces.com/{file_location}"
+        )
+        assert response.status_code == 200
         boto3_service.delete_file(
             bucket=Boto3Service.S3_MUSIC_BUCKET, filename=f"{job.id}/{job.filename}"
         )

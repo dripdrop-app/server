@@ -1,6 +1,5 @@
 import base64
 import re
-from asgiref.sync import sync_to_async
 from dripdrop.services.boto3 import Boto3Service, boto3_service
 from typing import Optional
 
@@ -14,8 +13,7 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...
             data = dataString.encode()
             data_bytes = base64.b64decode(data)
             artwork_filename = f"{job_id}/artwork.{extension}"
-            upload_file = sync_to_async(boto3_service.upload_file)
-            await upload_file(
+            await boto3_service.async_upload_file(
                 bucket=Boto3Service.S3_ARTWORK_BUCKET,
                 filename=artwork_filename,
                 body=data_bytes,
