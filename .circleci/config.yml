@@ -9,18 +9,13 @@ commands:
             apt-get -y update
             apt-get -y upgrade
             apt-get install -y ffmpeg
-            apt-get install -y redis
             python -m venv venv
             source venv/bin/activate
             pip install poetry
             poetry export -f requirements.txt --output requirements.txt
             pip install -r requirements.txt
 
-  export_environment:
-    parameters:
-      test:
-        type: boolean
-        default: false
+  export_environment_to_file:
     steps:
       - run:
           name: Export environment variables
@@ -40,51 +35,38 @@ commands:
             echo "POSTGRES_USER=$POSTGRES_USER" >> .env
             echo "SECRET_KEY=$SECRET_KEY" >> .env
             echo "SERVER_PORT=$SERVER_PORT" >> .env
-      - when:
-          condition: << parameters.test >>
-          steps:
-            - run:
-                name: Export test variables
-                command: |
-                  echo "ENV=testing" >> .env
-                  echo "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> .env
-                  echo "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL" >> .env
-                  echo "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> .env
-                  echo "REDIS_URL=$TEST_REDIS_URL" >> .env
-      - when:
-          condition:
-            not: << parameters.test >>
-          steps:
-            - run:
-                name: Export production variables
-                command: |
-                  echo "ENV=$ENV" >> .env
-                  echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
-                  echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
-                  echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
-                  echo "REDIS_URL=$REDIS_URL" >> .env
+            echo "ENV=$ENV" >> .env
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+            echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+            echo "REDIS_URL=$REDIS_URL" >> .env
 
 jobs:
   build and test:
     docker:
       - image: python:3.10
+          
     steps:
       - checkout
       - install_packages
-      - export_environment:
-          test: true
       - run:
           name: Run Tests
           command: |
             source venv/bin/activate
             pytest -s
+          environment:
+            ENV: testing
+            AWS_ACCESS_KEY_ID: $TEST_AWS_ACCESS_KEY_ID
+            AWS_ENDPOINT_URL: $TEST_AWS_ENDPOINT_URL
+            AWS_SECRET_ACCESS_KEY: $TEST_AWS_SECRET_ACCESS_KEY
+            REDIS_URL: $TEST_REDIS_URL
 
   deploy:
     docker:
       - image: python:3.10
+      - image: redis
     steps:
       - checkout
-      - export_environment
       - run:
           name: Install rsync
           command: |
@@ -103,6 +85,7 @@ jobs:
               [ -d ~/data/backup ] || mkdir ~/data/backup
               docker exec postgres pg_dump -U dripdrop dripdrop > ~/data/backup/db.sql
             "
+      - export_environment_to_file
       - run:
           name: Sync repo to VM
           command: rsync -arzP 'ssh -o StrictHostKeyChecking=no' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop --exclude=data
