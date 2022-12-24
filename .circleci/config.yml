@@ -15,7 +15,7 @@ commands:
 
   export_environment:
     parameters:
-      testing:
+      test:
         type: boolean
         default: false
     steps:
@@ -40,7 +40,7 @@ commands:
             echo -e "SECRET_KEY=$SECRET_KEY\n" >> .env
             echo -e "SERVER_PORT=$SERVER_PORT\n" >> .env
       - when:
-          condition: << parameters.testing >>
+          condition: << parameters.test >>
           steps:
             - run:
                 name: Exporting test variables
@@ -51,7 +51,7 @@ commands:
                   echo -e "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY\n" >> .env
       - when:
           condition:
-            not: << parameters.testing >>
+            not: << parameters.test >>
           steps:
             - run:
                 name: Exporting production variables
@@ -69,7 +69,7 @@ jobs:
       - checkout
       - install_packages
       - export_environment:
-          testing: true
+          test: true
       - run:
           name: Run Tests
           command: pytest -s
