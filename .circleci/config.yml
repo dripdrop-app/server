@@ -52,9 +52,9 @@ jobs:
       - run:
           name: Use test environment variables
           command: |
-            echo 'AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID' >> $BASH_ENV
-            echo 'AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL' >> $BASH_ENV
-            echo 'AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY' >> $BASH_ENV
+            echo "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> $BASH_ENV
+            echo "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL" >> $BASH_ENV
+            echo "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> $BASH_ENV
       - run:
           name: Run Tests
           command: |
