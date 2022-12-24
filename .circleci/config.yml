@@ -49,6 +49,7 @@ commands:
                   echo -e "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID\n" >> .env
                   echo -e "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL\n" >> .env
                   echo -e "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY\n" >> .env
+                  echo -e "REDIS_URL=$TEST_REDIS_URL\n" >> .env
       - when:
           condition:
             not: << parameters.test >>
