@@ -64,6 +64,11 @@ jobs:
       - checkout
       - export_environment
       - run:
+          name: Install rsync
+          command: |
+            apt-get -y update
+            apt-get install -y rsync
+      - run:
           name: Sync repo to VM
           command: rsync -azP $(pwd)/ $SSH_USER@SSH_HOST:~/dripdrop --exclude=data
       - run:
