@@ -3,14 +3,14 @@ version: 2.1
 commands:
   export_variable_to_env_file:
     parameters:
-      name:
+      variable_name:
         type: string
       value:
         type: string
     steps:
       - run: |
           [ -f .env ] || touch .env
-          echo "<< parameters.name >>=<< parameters.value >>" >> .env
+          echo "<< parameters.variable_name >>=<< parameters.value >>" >> .env
 
   install_packages:
     steps:
@@ -33,7 +33,7 @@ commands:
         default: false
     steps:
       - export_variable_to_env_file:
-          name: API_KEY
+          variable_name: API_KEY
           value: $API_KEY
       - run:
           name: Export environment variables
