@@ -35,7 +35,6 @@ class MusicTasker:
 
     def retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
         if job.filename:
-            print(job)
             res = requests.get(job.filename)
             audio_file_path = os.path.join(job_path, job.original_filename)
             with open(audio_file_path, "wb") as f:
