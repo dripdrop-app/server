@@ -8,10 +8,10 @@ from .responses import (
     GroupingErrorResponse,
     ArtworkErrorResponse,
 )
+from .utils import async_read_tags
 from dripdrop.dependencies import get_authenticated_user
 from dripdrop.logging import logger
 from dripdrop.services.image_downloader import image_downloader_service
-from dripdrop.services.tag_extractor import tag_extractor_service
 from dripdrop.services.youtube_downloader import youtuber_downloader_service
 from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, status
 
@@ -62,7 +62,5 @@ async def get_artwork(artwork_url: str = Query(...)):
 
 @app.post("/tags", response_model=TagsResponse)
 async def get_tags(file: UploadFile = File(...)):
-    tags = await tag_extractor_service.async_read_tags(
-        file=await file.read(), filename=file.filename
-    )
+    tags = await async_read_tags(file=await file.read(), filename=file.filename)
     return TagsResponse(**tags.dict(by_alias=False))

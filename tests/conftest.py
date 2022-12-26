@@ -1,17 +1,19 @@
+import multiprocessing
 import pytest
 from dripdrop.app import app
 from dripdrop.authentication.models import Users
 from dripdrop.database import session_maker
 from dripdrop.dependencies import password_context, COOKIE_NAME
 from dripdrop.models import OrmBase
-from dripdrop.services.rq import queue
-from dripdrop.services.redis import redis
+from dripdrop.settings import settings
 from fastapi import status
 from fastapi.testclient import TestClient
+from redis import Redis
 from sqlalchemy import create_engine, insert
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
+from worker import run_worker as _run_worker
 
 
 test_engine = create_engine(
@@ -22,31 +24,12 @@ async_test_engine = create_async_engine(
 )
 
 
-def base_mock(*args, **kwargs):
-    return
-
-
-async def async_base_mock(*args, **kwargs):
-    return
-
-
 @pytest.fixture(autouse=True)
 def setup_database():
     session_maker.configure(bind=async_test_engine)
     OrmBase.metadata.drop_all(bind=test_engine)
     OrmBase.metadata.create_all(bind=test_engine)
     yield
-
-
-# @pytest.fixture(autouse=True)
-# def mock_queue(monkeypatch: pytest.MonkeyPatch):
-#     monkeypatch.setattr(queue, "enqueue", base_mock)
-#     monkeypatch.setattr(queue, "enqueue_at", base_mock)
-
-
-# @pytest.fixture(autouse=True)
-# def mock_redis(monkeypatch: pytest.MonkeyPatch):
-#     monkeypatch.setattr(redis, "publish", async_base_mock)
 
 
 @pytest.fixture()
@@ -85,6 +68,17 @@ def create_and_login_user(client: TestClient, create_user):
         assert response.cookies.get(COOKIE_NAME, None) is not None
 
     return _create_and_login_user
+
+
+@pytest.fixture()
+def run_worker():
+    connection = Redis.from_url(settings.redis_url)
+    connection.flushall()
+    connection.close()
+    process = multiprocessing.Process(None, target=_run_worker)
+    process.start()
+    yield
+    process.terminate()
 
 
 TEST_EMAIL = "testuser@gmail.com"

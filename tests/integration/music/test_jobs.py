@@ -1,7 +1,10 @@
+import os
 import requests
+import time
 from ...conftest import APIEndpoints, TEST_EMAIL
 from dripdrop.music.models import MusicJobs, MusicJob
 from dripdrop.services.boto3 import boto3_service, Boto3Service
+from dripdrop.services.audio_tag import AudioTagService
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -38,7 +41,7 @@ class TestCreateFileJob:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_creating_file_job_with_valid_file(
-        self, client: TestClient, db: Connection
+        self, client: TestClient, db: Connection, run_worker
     ):
         response = requests.get(
             "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/test/07%20tun%20suh.mp3"
@@ -57,15 +60,39 @@ class TestCreateFileJob:
             },
         )
         assert response.status_code == status.HTTP_201_CREATED
-        results = db.execute(
-            select(MusicJobs).where(MusicJobs.user_email == TEST_EMAIL)
-        )
-        rows = results.fetchall()
-        assert len(rows) == 1
-        job = MusicJob.from_orm(rows[0])
-        file_location = f"{Boto3Service.S3_MUSIC_BUCKET}/{job.id}/{job.filename}"
-        response = requests.get(f"{Boto3Service.AWS_ENDPOINT_URL}/{file_location}")
+
+        job = None
+        ticks = 0
+        while True:
+            results = db.execute(
+                select(MusicJobs).where(MusicJobs.user_email == TEST_EMAIL)
+            )
+            rows = results.fetchall()
+            assert len(rows) == 1
+            job = MusicJob.from_orm(rows[0])
+            if job.completed or ticks > 60:
+                break
+            time.sleep(1)
+            ticks += 1
+
+        response = requests.get(job.download_url)
         assert response.status_code == 200
+
+        with open("test.mp3", "wb") as file:
+            file.write(response.content)
+
+        audio_tag_service = AudioTagService("test.mp3")
+        assert audio_tag_service.title == "test"
+        assert audio_tag_service.artist == "test artist"
+        assert audio_tag_service.album == "test album"
+        assert audio_tag_service.grouping == "test grouping"
+
+        os.remove("test.mp3")
         boto3_service.delete_file(
-            bucket=Boto3Service.S3_MUSIC_BUCKET, filename=f"{job.id}/{job.filename}"
+            bucket=Boto3Service.S3_MUSIC_BUCKET,
+            filename=f"{job.id}/{job.original_filename}",
+        )
+        boto3_service.delete_file(
+            bucket=Boto3Service.S3_MUSIC_BUCKET,
+            filename=f"{job.id}/{job.download_filename}",
         )

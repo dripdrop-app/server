@@ -60,7 +60,7 @@ async def get_jobs(
         .order_by(MusicJobs.created_at.desc())
     )
     results = await db.scalars(query.offset((page - 1) * per_page))
-    jobs = list(map(lambda job: MusicJob.from_orm(job), results.fetchmany(per_page)))
+    jobs = list(map(lambda job: job, results.fetchmany(per_page)))
     count_query = select(func.count(query.c.id))
     count = await db.scalar(count_query)
     total_pages = math.ceil(count / per_page)
