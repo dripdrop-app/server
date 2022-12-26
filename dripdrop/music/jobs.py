@@ -165,7 +165,7 @@ async def create_job_from_file(
     try:
         await boto3_service.async_upload_file(
             bucket=Boto3Service.S3_MUSIC_BUCKET,
-            filename=f"{job_id}/{file.filename}",
+            filename=f"{job_id}/old_{file.filename}",
             body=await file.read(),
             content_type=file.content_type,
         )
@@ -184,7 +184,7 @@ async def create_job_from_file(
             artist=artist,
             album=album,
             grouping=grouping,
-            filename=file.filename,
+            filename=f'old_{file.filename}',
             completed=False,
             failed=False,
             user_email=user.email,
