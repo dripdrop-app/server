@@ -34,6 +34,7 @@ class MusicTasker:
         return job_path
 
     def retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
+        filename = None
         if job.filename:
             res = requests.get(job.filename)
             audio_file_path = os.path.join(job_path, job.original_filename)
@@ -48,7 +49,6 @@ class MusicTasker:
             )
             return new_audio_file_path
         elif job.youtube_url:
-            filename = None
 
             def updateProgress(d):
                 nonlocal filename
@@ -116,7 +116,6 @@ class MusicTasker:
             new_filename = (
                 sanitize_filename(f"{music_job.title} {music_job.artist}") + ".mp3"
             )
-
             with open(filename, "rb") as file:
                 boto3_service.upload_file(
                     bucket=Boto3Service.S3_MUSIC_BUCKET,

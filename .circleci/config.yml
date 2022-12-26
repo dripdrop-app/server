@@ -95,8 +95,8 @@ jobs:
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
               set -e
               cd ~/dripdrop
-              docker compose -f docker-compose.yml build --progress plain server
-              docker compose -f docker-compose.yml up --no-deps -d server
+              docker compose -f docker-compose.yml build --progress plain server worker
+              docker compose -f docker-compose.yml up --no-deps -d server worker
             "
 
 workflows:
