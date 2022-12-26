@@ -3,7 +3,7 @@ from datetime import datetime
 from dripdrop.authentication.models import Users
 from dripdrop.models import ApiBase, OrmBase, get_current_time
 from dripdrop.services.boto3 import boto3_service
-from pydantic import Field
+from pydantic import Field, root_validator
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 from typing import Optional
 
@@ -44,9 +44,12 @@ class MusicJob(ApiBase):
     id: str
     user_email: str
     filename: Optional[str] = Field(None)
+    original_filename: Optional[str] = Field(None)
     youtube_url: Optional[str] = Field(None)
     download_url: Optional[str] = Field(None)
+    download_filename: Optional[str] = Field(None)
     artwork_url: Optional[str] = Field(None)
+    artwork_filename: Optional[str] = Field(None)
     title: str
     artist: str
     album: str
@@ -55,17 +58,22 @@ class MusicJob(ApiBase):
     failed: bool
     created_at: datetime
 
-    def __init__(self, **data) -> None:
-        super().__init__(**data)
-        if data.get("artwork_url") and not re.search(
-            "^http(s)?://", data["artwork_url"]
-        ):
-            self.artwork_url = boto3_service.resolve_artwork_url(
-                filename=data["artwork_url"]
-            )
-        if data.get("download_url") and not re.search(
-            "^http(s)?://", data["download_url"]
-        ):
-            self.download_url = boto3_service.resolve_music_url(
-                filename=data["download_url"]
-            )
+    @root_validator()
+    def resolve_url(cls, values):
+        id = values["id"]
+
+        def _resolve_url(key: str = ..., resolver=...):
+            value = values.get(key)
+            if value and not re.search("^http(s)?://", value):
+                values[key] = resolver(filename=f"{id}/{value}")
+                if key == "artwork_url":
+                    values["artwork_filename"] = value
+                elif key == "download_url":
+                    values["download_filename"] = value
+                elif key == "filename":
+                    values["original_filename"] = value
+
+        _resolve_url(key="artwork_url", resolver=boto3_service.resolve_artwork_url)
+        _resolve_url(key="download_url", resolver=boto3_service.resolve_music_url)
+        _resolve_url(key="filename", resolver=boto3_service.resolve_music_url)
+        return values
