@@ -1,21 +1,29 @@
 import re
 from datetime import datetime
-from dripdrop.authentication.models import Users
-from dripdrop.models import ApiBase, OrmBase, get_current_time
+from dripdrop.authentication.models import User
 from dripdrop.services.boto3 import boto3_service
-from pydantic import Field, root_validator
+from dripdrop.utils import get_current_time
+from pydantic import Field, root_validator, BaseModel
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
+from sqlalchemy.orm import declarative_base
 from typing import Optional
 
 youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
 
+Base = declarative_base()
 
-class MusicJobs(OrmBase):
+
+class ApiBase(BaseModel):
+    class Config:
+        orm_mode = True
+
+
+class MusicJobs(Base):
     __tablename__ = "music_jobs"
     id = Column(String, primary_key=True)
     user_email = Column(
         ForeignKey(
-            Users.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="music_jobs_user_email_fkey",

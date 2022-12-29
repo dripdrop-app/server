@@ -1,10 +1,10 @@
 import multiprocessing
 import pytest
 from dripdrop.app import app
-from dripdrop.authentication.models import Users
-from dripdrop.database import session_maker
+from dripdrop.authentication.models import User
+from dripdrop.models.database import db as Db
+from dripdrop.models.register import metadata
 from dripdrop.dependencies import password_context, COOKIE_NAME
-from dripdrop.models import OrmBase
 from dripdrop.settings import settings
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -26,9 +26,9 @@ async_test_engine = create_async_engine(
 
 @pytest.fixture(autouse=True)
 def setup_database():
-    session_maker.configure(bind=async_test_engine)
-    OrmBase.metadata.drop_all(bind=test_engine)
-    OrmBase.metadata.create_all(bind=test_engine)
+    Db.async_session_maker.configure(bind=async_test_engine)
+    metadata.drop_all(bind=test_engine)
+    metadata.create_all(bind=test_engine)
     yield
 
 
@@ -49,7 +49,7 @@ def create_user(db: Connection):
         assert type(email) is str
         assert type(password) is str
         db.execute(
-            insert(Users).values(
+            insert(User).values(
                 email=email, password=password_context.hash(password), admin=admin
             )
         )

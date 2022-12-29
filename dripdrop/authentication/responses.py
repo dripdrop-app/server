@@ -1,11 +1,12 @@
 from datetime import datetime
-from dripdrop.authentication.models import User
 from dripdrop.responses import ResponseBaseModel
 from pydantic import SecretStr, Field
 
 
-class UserResponse(User):
+class UserResponse(ResponseBaseModel):
+    email: str
     password: SecretStr = Field(..., exclude=True)
+    admin: bool
     created_at: datetime = Field(..., exclude=True)
 
 

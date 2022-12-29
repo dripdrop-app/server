@@ -13,7 +13,7 @@ from .models import (
 )
 from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, timezone
-from dripdrop.database import AsyncSession
+from dripdrop.models.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.services.redis import redis, RedisChannels
 from dripdrop.services.google_api import google_api_service

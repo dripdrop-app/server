@@ -6,7 +6,7 @@ from .subscriptions import subscriptions_api
 from .tasks import youtube_tasker
 from .videos import videos_api
 from asgiref.sync import sync_to_async
-from dripdrop.authentication.models import User, Users
+from dripdrop.authentication.models import User
 from dripdrop.settings import settings
 from dripdrop.dependencies import (
     get_authenticated_user,
@@ -48,9 +48,9 @@ async def google_oauth2(
     if error:
         raise HTTPException(400)
     email = state
-    query = select(Users).where(Users.email == email)
+    query = select(User).where(User.email == email)
     results = await db.scalars(query)
-    user = results.first()
+    user: User | None = results.first()
     if not user:
         return RedirectResponse("/")
     get_oauth_tokens = sync_to_async(google_api_service.get_oauth_tokens)

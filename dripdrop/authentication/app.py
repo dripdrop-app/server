@@ -7,7 +7,7 @@ from .responses import (
 )
 from .utils import create_new_account
 from datetime import timedelta, datetime, timezone
-from dripdrop.authentication.models import User, Users
+from dripdrop.authentication.models import User
 from dripdrop.settings import settings
 from dripdrop.dependencies import (
     AsyncSession,
@@ -49,15 +49,13 @@ async def login(
     password: str = Body(..., min_length=8),
     db: AsyncSession = Depends(create_db_session),
 ):
-    query = select(Users).where(Users.email == email)
+    query = select(User).where(User.email == email)
     results = await db.scalars(query)
-    account = results.first()
+    account: User | None = results.first()
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    user = User.from_orm(account)
     verified, new_hashed_pw = password_context.verify_and_update(
-        secret=password,
-        hash=user.password.get_secret_value(),
+        secret=password, hash=account.password
     )
     if new_hashed_pw:
         account.password = new_hashed_pw
@@ -68,7 +66,7 @@ async def login(
         )
     token = jwt.encode(
         payload={
-            "email": user.email,
+            "email": account.email,
             "exp": datetime.now(timezone.utc) + timedelta(days=14),
         },
         key=settings.secret_key,
@@ -76,7 +74,7 @@ async def login(
     )
     response = JSONResponse(
         content=jsonable_encoder(
-            AuthenticatedResponse(access_token=token, token_type="bearer", user=user)
+            AuthenticatedResponse(access_token=token, token_type="bearer", user=account)
         ),
         headers={"Authorization": f"Bearer {token}"},
     )

@@ -1,9 +1,9 @@
 import jwt
 import traceback
-from .database import create_session, AsyncSession
+from .models.database import db, AsyncSession
 from .settings import settings
 from .logging import logger
-from dripdrop.authentication.models import User, Users
+from dripdrop.authentication.models import User
 from datetime import datetime, timezone
 from fastapi import HTTPException, status, Request, WebSocket, Depends
 from passlib.context import CryptContext
@@ -17,8 +17,8 @@ password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 async def create_db_session():
-    async with create_session() as db:
-        yield db
+    async with db.async_create_session() as session:
+        yield session
 
 
 async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
@@ -31,10 +31,10 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
             pass
         email = payload.get("email", None)
         if email:
-            query = select(Users).where(Users.email == email)
+            query = select(User).where(User.email == email)
             results = await db.scalars(query)
-            user = results.first()
-            return User.from_orm(user)
+            user: Union[User, None] = results.first()
+            return user
     except jwt.PyJWTError:
         logger.exception(traceback.format_exc())
         return None

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from typing import Union
 from yt_dlp.utils import sanitize_filename
-from dripdrop.database import AsyncSession
+from dripdrop.models.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.audio_tag import AudioTagService

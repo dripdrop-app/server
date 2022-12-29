@@ -1,7 +1,7 @@
 from datetime import datetime
-from dripdrop.models import ApiBase, OrmBase, get_current_time
-from dripdrop.authentication.models import Users
-from pydantic import Field
+from dripdrop.authentication.models import User
+from dripdrop.utils import get_current_time
+from pydantic import Field, BaseModel
 from sqlalchemy import (
     Column,
     String,
@@ -10,16 +10,25 @@ from sqlalchemy import (
     Boolean,
     Integer,
 )
+from sqlalchemy.orm import declarative_base
 from typing import Optional
 
 
-class GoogleAccounts(OrmBase):
+Base = declarative_base()
+
+
+class ApiBase(BaseModel):
+    class Config:
+        orm_mode = True
+
+
+class GoogleAccounts(Base):
     __tablename__ = "google_accounts"
 
     email = Column(String, primary_key=True)
     user_email = Column(
         ForeignKey(
-            Users.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="google_accounts_user_email_fkey",
@@ -59,7 +68,7 @@ class GoogleAccount(ApiBase):
     last_updated: datetime
 
 
-class YoutubeChannels(OrmBase):
+class YoutubeChannels(Base):
     __tablename__ = "youtube_channels"
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
@@ -86,7 +95,7 @@ class YoutubeChannel(ApiBase):
     last_updated: datetime
 
 
-class YoutubeSubscriptions(OrmBase):
+class YoutubeSubscriptions(Base):
     __tablename__ = "youtube_subscriptions"
     id = Column(String, primary_key=True)
     channel_id = Column(
@@ -123,7 +132,7 @@ class YoutubeSubscription(ApiBase):
     created_at: datetime
 
 
-class YoutubeVideoCategories(OrmBase):
+class YoutubeVideoCategories(Base):
     __tablename__ = "youtube_video_categories"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
@@ -140,7 +149,7 @@ class YoutubeVideoCategory(ApiBase):
     created_at: datetime
 
 
-class YoutubeVideos(OrmBase):
+class YoutubeVideos(Base):
     __tablename__ = "youtube_videos"
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
@@ -181,7 +190,7 @@ class YoutubeVideo(ApiBase):
     created_at: datetime
 
 
-class YoutubeVideoLikes(OrmBase):
+class YoutubeVideoLikes(Base):
     __tablename__ = "youtube_video_likes"
     email = Column(
         ForeignKey(
@@ -216,7 +225,7 @@ class YoutubeVideoLike(ApiBase):
     created_at: datetime
 
 
-class YoutubeVideoQueues(OrmBase):
+class YoutubeVideoQueues(Base):
     __tablename__ = "youtube_video_queues"
     email = Column(
         ForeignKey(
@@ -251,7 +260,7 @@ class YoutubeVideoQueue(ApiBase):
     created_at: datetime
 
 
-class YoutubeVideoWatches(OrmBase):
+class YoutubeVideoWatches(Base):
     __tablename__ = "youtube_video_watches"
     email = Column(
         ForeignKey(

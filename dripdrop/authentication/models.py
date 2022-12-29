@@ -1,10 +1,12 @@
-from datetime import datetime
-from dripdrop.models import OrmBase, get_current_time
-from pydantic import BaseModel, SecretStr
-from sqlalchemy import Column, String, Boolean, TIMESTAMP
+from dripdrop.utils import get_current_time
+from sqlalchemy import Column
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.types import String, Boolean, TIMESTAMP
+
+Base = declarative_base()
 
 
-class Users(OrmBase):
+class User(Base):
     __tablename__ = "users"
     email = Column(String, primary_key=True)
     password = Column(String, nullable=False)
@@ -14,15 +16,3 @@ class Users(OrmBase):
         nullable=False,
         default=get_current_time,
     )
-
-
-class ApiBase(BaseModel):
-    class Config:
-        orm_mode = True
-
-
-class User(ApiBase):
-    email: str
-    password: SecretStr
-    admin: bool
-    created_at: datetime
