@@ -60,10 +60,12 @@ class Boto3Service:
         delete_file = sync_to_async(self.delete_file)
         return await delete_file(bucket=bucket, filename=filename)
 
-    def resolve_artwork_url(self, filename: str = ...):
+    @staticmethod
+    def resolve_artwork_url(filename: str = ...):
         return f"{Boto3Service.AWS_ENDPOINT_URL}/{Boto3Service.S3_ARTWORK_BUCKET}/{filename}"
 
-    def resolve_music_url(self, filename: str = ...):
+    @staticmethod
+    def resolve_music_url(filename: str = ...):
         return (
             f"{Boto3Service.AWS_ENDPOINT_URL}/{Boto3Service.S3_MUSIC_BUCKET}/{filename}"
         )

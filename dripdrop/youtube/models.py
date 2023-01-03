@@ -1,5 +1,6 @@
 from datetime import datetime
 from dripdrop.authentication.models import User
+from dripdrop.models.base import Base
 from dripdrop.utils import get_current_time
 from pydantic import Field, BaseModel
 from sqlalchemy import (
@@ -10,11 +11,7 @@ from sqlalchemy import (
     Boolean,
     Integer,
 )
-from sqlalchemy.orm import declarative_base
 from typing import Optional
-
-
-Base = declarative_base()
 
 
 class ApiBase(BaseModel):

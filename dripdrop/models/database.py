@@ -53,4 +53,4 @@ class Database:
             session.close()
 
 
-db = Database()
+database = Database()

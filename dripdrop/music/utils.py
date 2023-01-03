@@ -4,15 +4,19 @@ import re
 import shutil
 import traceback
 import uuid
-from .responses import TagsResponse
 from asgiref.sync import sync_to_async
+from typing import Optional
+
 from dripdrop.logging import logger
 from dripdrop.services.audio_tag import AudioTagService
 from dripdrop.services.boto3 import Boto3Service, boto3_service
-from typing import Optional
+
+from .models import MusicJob
+from .responses import TagsResponse
 
 
 async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...):
+    artwork_filename = None
     if artwork_url:
         is_base64 = re.search("^data:image/", artwork_url)
         if is_base64:
@@ -27,8 +31,23 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...
                 body=data_bytes,
                 content_type=f"image/{extension}",
             )
-            artwork_url = f"artwork.{extension}"
-    return artwork_url
+            artwork_url = Boto3Service.resolve_artwork_url(filename=artwork_filename)
+    return artwork_url, artwork_filename
+
+
+async def cleanup_job(job: MusicJob):
+    await boto3_service.async_delete_file(
+        bucket=Boto3Service.S3_ARTWORK_BUCKET,
+        filename=f"{job.id}/{job.artwork_filename}",
+    )
+    await boto3_service.async_delete_file(
+        bucket=Boto3Service.S3_MUSIC_BUCKET,
+        filename=f"{job.id}/{job.download_filename}",
+    )
+    await boto3_service.async_delete_file(
+        bucket=Boto3Service.S3_MUSIC_BUCKET,
+        filename=f"{job.id}/{job.original_filename}",
+    )
 
 
 async def async_read_tags(file: bytes = ..., filename: str = ...):

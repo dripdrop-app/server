@@ -1,22 +1,27 @@
-from .responses import AccountExistsResponse
-from dripdrop.authentication.models import User
-from dripdrop.dependencies import AsyncSession, password_context
-from fastapi import HTTPException, status
+import jwt
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import select
 
+from dripdrop.dependencies import ALGORITHM
+from dripdrop.models.database import AsyncSession
+from dripdrop.settings import settings
 
-async def create_new_account(
-    email: str = ..., password: str = ..., db: AsyncSession = ...
-):
+from .models import User
+
+
+async def find_user_by_email(email: str = ..., session: AsyncSession = ...):
     query = select(User).where(User.email == email)
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     user: User | None = results.first()
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=AccountExistsResponse
-        )
-    hashed_pw = password_context.hash(password)
-    account = User(email=email, password=hashed_pw, admin=False)
-    db.add(account)
-    await db.commit()
-    return account
+    return user
+
+
+def create_jwt(email: str = ...):
+    return jwt.encode(
+        payload={
+            "email": email,
+            "exp": datetime.now(timezone.utc) + timedelta(days=14),
+        },
+        key=settings.secret_key,
+        algorithm=ALGORITHM,
+    )

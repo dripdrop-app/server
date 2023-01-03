@@ -2,6 +2,7 @@ import os
 import requests
 import time
 from ...conftest import APIEndpoints, TEST_EMAIL
+from datetime import datetime
 from dripdrop.music.models import MusicJobs, MusicJob
 from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.audio_tag import AudioTagService
@@ -62,7 +63,7 @@ class TestCreateFileJob:
         assert response.status_code == status.HTTP_201_CREATED
 
         job = None
-        ticks = 0
+        start_time = datetime.now()
         while True:
             results = db.execute(
                 select(MusicJobs).where(MusicJobs.user_email == TEST_EMAIL)
@@ -70,10 +71,13 @@ class TestCreateFileJob:
             rows = results.fetchall()
             assert len(rows) == 1
             job = MusicJob.from_orm(rows[0])
-            if job.completed or ticks > 60:
+            assert job.failed is not True
+            current_time = datetime.now()
+            duration = current_time - start_time
+            assert duration.seconds < 240
+            if job.completed:
                 break
             time.sleep(1)
-            ticks += 1
 
         response = requests.get(job.download_url)
         assert response.status_code == 200

@@ -1,9 +1,8 @@
-from dripdrop.utils import get_current_time
 from sqlalchemy import Column
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.types import String, Boolean, TIMESTAMP
 
-Base = declarative_base()
+from dripdrop.models.base import Base
+from dripdrop.utils import get_current_time
 
 
 class User(Base):

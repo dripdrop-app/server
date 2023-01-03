@@ -1,23 +1,20 @@
 import jwt
 import traceback
-from .models.database import db, AsyncSession
+from .models.database import database, AsyncSession
 from .settings import settings
 from .logging import logger
 from dripdrop.authentication.models import User
 from datetime import datetime, timezone
 from fastapi import HTTPException, status, Request, WebSocket, Depends
-from passlib.context import CryptContext
 from sqlalchemy import select
 from typing import Union
 
 ALGORITHM = "HS256"
-TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
 COOKIE_NAME = "token"
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 async def create_db_session():
-    async with db.async_create_session() as session:
+    async with database.async_create_session() as session:
         yield session
 
 

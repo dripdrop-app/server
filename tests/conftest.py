@@ -1,9 +1,8 @@
 import multiprocessing
 import pytest
 from dripdrop.app import app
-from dripdrop.authentication.models import User
-from dripdrop.models.database import db as Db
-from dripdrop.models.register import metadata
+from dripdrop.authentication.models import User, Base
+from dripdrop.models.database import database
 from dripdrop.dependencies import password_context, COOKIE_NAME
 from dripdrop.settings import settings
 from fastapi import status
@@ -26,9 +25,9 @@ async_test_engine = create_async_engine(
 
 @pytest.fixture(autouse=True)
 def setup_database():
-    Db.async_session_maker.configure(bind=async_test_engine)
-    metadata.drop_all(bind=test_engine)
-    metadata.create_all(bind=test_engine)
+    database.async_session_maker.configure(bind=async_test_engine)
+    Base.metadata.drop_all(bind=test_engine)
+    Base.metadata.create_all(bind=test_engine)
     yield
 
 

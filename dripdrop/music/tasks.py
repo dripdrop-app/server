@@ -3,12 +3,12 @@ import os
 import requests
 import shutil
 import traceback
-from .models import MusicJobs, MusicJob
-from .responses import MusicChannelResponse
 from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
-from typing import Union
+from sqlalchemy import select
+from typing import Union, AsyncIterable
 from yt_dlp.utils import sanitize_filename
+
 from dripdrop.models.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.services.boto3 import boto3_service, Boto3Service
@@ -17,7 +17,10 @@ from dripdrop.services.image_downloader import image_downloader_service
 from dripdrop.services.redis import redis, RedisChannels
 from dripdrop.services.youtube_downloader import youtuber_downloader_service
 from dripdrop.utils import worker_task
-from sqlalchemy import select
+
+from .models import MusicJob
+from .responses import MusicChannelResponse
+from .utils import cleanup_job
 
 
 class MusicTasker:
@@ -35,9 +38,11 @@ class MusicTasker:
 
     def retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
         filename = None
-        if job.filename:
-            res = requests.get(job.filename)
-            audio_file_path = os.path.join(job_path, job.original_filename)
+        if job.filename_url:
+            res = requests.get(job.filename_url)
+            audio_file_path = os.path.join(
+                job_path, f"temp{os.path.splitext(job.original_filename)[1]}"
+            )
             with open(audio_file_path, "wb") as f:
                 f.write(res.content)
 
@@ -63,11 +68,12 @@ class MusicTasker:
         return filename
 
     def retrieve_artwork(self, job: MusicJob = ...):
-        artwork_url = job.artwork_url
-        if artwork_url:
+        if job.artwork_url:
             try:
-                imageData = image_downloader_service.download_image(artwork=artwork_url)
-                extension = os.path.splitext(artwork_url)[0]
+                imageData = image_downloader_service.download_image(
+                    artwork=job.artwork_url
+                )
+                extension = os.path.splitext(job.artwork_url)[0]
                 return {"image": imageData, "extension": extension}
             except Exception:
                 logger.exception(traceback.format_exc())
@@ -94,44 +100,43 @@ class MusicTasker:
     async def run_job(
         self,
         job_id: str = ...,
-        db: AsyncSession = ...,
+        session: AsyncSession = ...,
     ):
-        query = select(MusicJobs).where(MusicJobs.id == job_id)
-        results = await db.scalars(query)
-        job = results.first()
+        query = select(MusicJob).where(MusicJob.id == job_id)
+        results = await session.scalars(query)
+        job: MusicJob | None = results.first()
         if not job:
             raise Exception(f"Job with id ({job_id}) not found")
 
         job_path = None
         try:
-            music_job = MusicJob.from_orm(job)
-            job_path = self.create_job_folder(job=music_job)
-            filename = self.retrieve_audio_file(job_path=job_path, job=music_job)
-            artwork_info = self.retrieve_artwork(job=music_job)
+            job_path = self.create_job_folder(job=job)
+            filename = self.retrieve_audio_file(job_path=job_path, job=job)
+            artwork_info = self.retrieve_artwork(job=job)
             self.update_audio_tags(
-                job=music_job,
+                job=job,
                 filename=filename,
                 artwork_info=artwork_info,
             )
-            new_filename = (
-                sanitize_filename(f"{music_job.title} {music_job.artist}") + ".mp3"
-            )
+            new_filename = sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
+            new_filename = f"{job.id}/{new_filename}"
             with open(filename, "rb") as file:
                 boto3_service.upload_file(
                     bucket=Boto3Service.S3_MUSIC_BUCKET,
-                    filename=f"{music_job.id}/{new_filename}",
+                    filename=new_filename,
                     body=file.read(),
                     content_type="audio/mpeg",
                 )
             job.completed = True
-            job.download_url = new_filename
+            job.download_filename = new_filename
+            job.download_url = Boto3Service.resolve_music_url(filename=new_filename)
         except Exception:
             job.failed = True
             logger.exception(traceback.format_exc())
         finally:
-            await db.commit()
+            await session.commit()
             await redis.publish(
-                RedisChannels.MUSIC_JOB_CHANNEL.value,
+                RedisChannels.MUSIC_JOB_CHANNEL,
                 json.dumps(
                     MusicChannelResponse(job_id=job_id, type="COMPLETED").dict()
                 ),
@@ -140,33 +145,21 @@ class MusicTasker:
                 shutil.rmtree(job_path)
 
     @worker_task
-    async def cleanup_jobs(self, db: AsyncSession = ...):
+    async def cleanup_jobs(self, session: AsyncSession = ...):
         limit = datetime.now(timezone.utc) - timedelta(days=14)
-        query = select(MusicJobs).where(
-            MusicJobs.created_at < limit,
-            MusicJobs.completed.is_(True),
-            MusicJobs.deleted_at.is_(None),
+        query = select(MusicJob).where(
+            MusicJob.created_at < limit,
+            MusicJob.completed.is_(True),
+            MusicJob.deleted_at.is_(None),
         )
-        stream = await db.stream_scalars(query)
+        stream: AsyncIterable[MusicJob] = await session.stream_scalars(query)
         async for job in stream:
-            music_job = MusicJob.from_orm(job)
             try:
-                await boto3_service.async_delete_file(
-                    bucket=Boto3Service.S3_ARTWORK_BUCKET,
-                    filename=f"{music_job.id}/{music_job.artwork_filename}",
-                )
-                await boto3_service.async_delete_file(
-                    bucket=Boto3Service.S3_MUSIC_BUCKET,
-                    filename=f"{music_job.id}/{music_job.download_url}",
-                )
-                await boto3_service.async_delete_file(
-                    bucket=Boto3Service.S3_MUSIC_BUCKET,
-                    filename=f"{music_job.id}/{music_job.original_filename}",
-                )
+                await cleanup_job(job=job)
             except Exception:
                 logger.exception(traceback.format_exc())
             job.deleted_at = datetime.now(timezone.utc)
-            await db.commit()
+            await session.commit()
 
 
 music_tasker = MusicTasker()

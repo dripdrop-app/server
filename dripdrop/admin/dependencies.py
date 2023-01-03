@@ -1,7 +1,8 @@
 from fastapi import Depends, status, HTTPException
+from typing import Union
+
 from dripdrop.authentication.models import User
 from dripdrop.dependencies import get_user
-from typing import Union
 
 
 async def get_admin_user(user: Union[None, User] = Depends(get_user)):

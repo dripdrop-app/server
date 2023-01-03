@@ -1,11 +1,25 @@
-from .models import MusicJob
-from dripdrop.responses import ResponseBaseModel
 from pydantic import Field
 from typing import Optional, List, Literal
 
+from dripdrop.responses import ResponseBaseModel
 
-class MusicJobResponse(ResponseBaseModel, MusicJob):
-    pass
+
+class MusicJobResponse(ResponseBaseModel):
+    artwork_url: Optional[str] = Field(None)
+    artwork_filename: Optional[str] = Field(None)
+    original_filename: Optional[str] = Field(None)
+    filename_url: Optional[str] = Field(None)
+    youtube_url: Optional[str] = Field(None)
+    download_filename: Optional[str] = Field(None)
+    download_url: Optional[str] = Field(None)
+    title: str
+    artist: str
+    album: str
+    grouping: Optional[str] = Field(None)
+    completed: bool
+    failed: bool
+
+    # Add root validator to fix filenames (remove all slashes except last)
 
 
 class MusicChannelResponse(ResponseBaseModel):
@@ -17,14 +31,8 @@ class GroupingResponse(ResponseBaseModel):
     grouping: str
 
 
-GroupingErrorResponse = "Unable to get grouping"
-
-
 class ArtworkUrlResponse(ResponseBaseModel):
     artwork_url: str
-
-
-ArtworkErrorResponse = "Unable to get artwork"
 
 
 class TagsResponse(ResponseBaseModel):
@@ -40,9 +48,12 @@ class JobsResponse(ResponseBaseModel):
     total_pages: int
 
 
-JobNotFoundResponse = "Job not found"
-
-
 class JobUpdateResponse(ResponseBaseModel):
     type: Literal["COMPLETED", "STARTED"]
     job: MusicJobResponse
+
+
+class ErrorMessages:
+    JOB_NOT_FOUND = "Job not found"
+    GROUPING_ERROR = "Unable to get grouping"
+    ARTWORK_ERROR = "Unable to get artwork"
