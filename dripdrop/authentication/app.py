@@ -66,9 +66,7 @@ async def login(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    return AuthenticatedResponse(
-        email=email, access_token=create_jwt(email=email), user=user
-    )
+    return AuthenticatedResponse(access_token=create_jwt(email=email), user=user)
 
 
 @app.get(
@@ -102,9 +100,7 @@ async def create_account(
         )
 
     hashed_pw = password_context.hash(password)
-    account = User(email=email, password=hashed_pw, admin=False)
-    session.add(account)
+    user = User(email=email, password=hashed_pw, admin=False)
+    session.add(user)
     await session.commit()
-    return AuthenticatedResponse(
-        email=email, access_token=create_jwt(email=email), user=user
-    )
+    return AuthenticatedResponse(access_token=create_jwt(email=email), user=user)

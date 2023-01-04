@@ -133,6 +133,8 @@ async def create_job_from_youtube(
             artist=artist,
             album=album,
             grouping=grouping,
+            completed=False,
+            failed=False,
         )
     )
     await session.commit()
@@ -191,6 +193,8 @@ async def create_job_from_file(
             artist=artist,
             album=album,
             grouping=grouping,
+            completed=False,
+            failed=False,
         )
     )
     await session.commit()

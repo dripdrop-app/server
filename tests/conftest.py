@@ -1,10 +1,5 @@
 import multiprocessing
 import pytest
-from dripdrop.app import app
-from dripdrop.authentication.models import User, Base
-from dripdrop.models.database import database
-from dripdrop.dependencies import password_context, COOKIE_NAME
-from dripdrop.settings import settings
 from fastapi import status
 from fastapi.testclient import TestClient
 from redis import Redis
@@ -12,6 +7,14 @@ from sqlalchemy import create_engine, insert
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
+
+from dripdrop.app import app
+from dripdrop.authentication.app import password_context
+from dripdrop.authentication.models import User
+from dripdrop.dependencies import COOKIE_NAME
+from dripdrop.models.database import database
+from dripdrop.models.base import Base
+from dripdrop.settings import settings
 from worker import run_worker as _run_worker
 
 

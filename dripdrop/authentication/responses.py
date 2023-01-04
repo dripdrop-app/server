@@ -5,6 +5,8 @@ from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.responses import ResponseBaseModel
 from dripdrop.settings import settings
 
+from .models import User
+
 TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
 
 
@@ -14,8 +16,13 @@ class UserResponseModel(ResponseBaseModel):
 
 
 class UserResponse(JSONResponse):
-    def __init__(self, user: UserResponseModel = ...):
-        super().__init__(content=user.dict(), status_code=status.HTTP_200_OK)
+    def __init__(self, user: User = ...):
+        super().__init__(
+            content=UserResponseModel(email=user.email, admin=user.admin).dict(
+                by_alias=True
+            ),
+            status_code=status.HTTP_200_OK,
+        )
 
 
 class AuthenticatedResponseModel(ResponseBaseModel):
@@ -25,13 +32,11 @@ class AuthenticatedResponseModel(ResponseBaseModel):
 
 
 class AuthenticatedResponse(JSONResponse):
-    def __init__(
-        self, email: str = ..., access_token: str = ..., user: UserResponseModel = ...
-    ):
+    def __init__(self, access_token: str = ..., user: UserResponseModel = ...):
         super().__init__(
             content=AuthenticatedResponseModel(
-                email=email, access_token=access_token, user=user
-            ).dict(),
+                access_token=access_token, user=user, token_type="Bearer"
+            ).dict(by_alias=True),
             status_code=status.HTTP_200_OK,
             headers={"Authorization": f"Bearer {access_token}"},
         )

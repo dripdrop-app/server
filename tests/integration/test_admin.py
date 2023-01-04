@@ -1,6 +1,7 @@
-from ..conftest import APIEndpoints, TEST_EMAIL, TEST_PASSWORD
 from fastapi import status
 from fastapi.testclient import TestClient
+
+from ..conftest import APIEndpoints, TEST_EMAIL, TEST_PASSWORD
 
 
 class AdminEndpoints:

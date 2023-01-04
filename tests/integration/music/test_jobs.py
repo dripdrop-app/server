@@ -1,15 +1,17 @@
 import os
 import requests
 import time
-from ...conftest import APIEndpoints, TEST_EMAIL
 from datetime import datetime
-from dripdrop.music.models import MusicJobs, MusicJob
-from dripdrop.services.boto3 import boto3_service, Boto3Service
-from dripdrop.services.audio_tag import AudioTagService
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.engine import Connection
+
+from dripdrop.music.models import MusicJob
+from dripdrop.services.boto3 import boto3_service, Boto3Service
+from dripdrop.services.audio_tag import AudioTagService
+
+from ...conftest import APIEndpoints, TEST_EMAIL
 
 
 class MusicJobEndpoints:
@@ -66,11 +68,10 @@ class TestCreateFileJob:
         start_time = datetime.now()
         while True:
             results = db.execute(
-                select(MusicJobs).where(MusicJobs.user_email == TEST_EMAIL)
+                select(MusicJob).where(MusicJob.user_email == TEST_EMAIL)
             )
-            rows = results.fetchall()
-            assert len(rows) == 1
-            job = MusicJob.from_orm(rows[0])
+            job: MusicJob | None = results.first()
+            assert job is not None
             assert job.failed is not True
             current_time = datetime.now()
             duration = current_time - start_time

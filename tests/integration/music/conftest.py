@@ -1,4 +1,5 @@
 import pytest
+
 from ...conftest import TEST_EMAIL, TEST_PASSWORD
 
 

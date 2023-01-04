@@ -1,5 +1,5 @@
 from dripdrop.authentication.models import User
-from dripdrop.music.models import MusicJobs
+from dripdrop.music.models import MusicJob
 from dripdrop.youtube.models import (
     GoogleAccounts,
     YoutubeChannels,
@@ -17,7 +17,7 @@ from .base import Base
 __all__ = [
     Base,
     User,
-    MusicJobs,
+    MusicJob,
     GoogleAccounts,
     YoutubeChannels,
     YoutubeSubscriptions,

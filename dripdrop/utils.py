@@ -12,8 +12,8 @@ def worker_task(function):
     async def wrapper(*args, **kwargs):
         parameters = signature(function).parameters
         async with database.async_create_session() as session:
-            if "db" in parameters:
-                kwargs["db"] = session
+            if "session" in parameters:
+                kwargs["session"] = session
             try:
                 if not iscoroutinefunction(function):
                     func = sync_to_async(function)
