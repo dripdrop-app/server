@@ -38,7 +38,7 @@ services:
       bash -c "
         set -e
         source venv/bin/activate
-        python worker.py
+        python worker.py --logging
       "
     depends_on:
       postgres:
