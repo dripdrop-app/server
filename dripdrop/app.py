@@ -1,12 +1,13 @@
-from .admin.app import app as admin_app
-from .authentication.app import app as auth_app
-from .music.app import app as music_app
-from .youtube.app import app as youtube_app
-from dripdrop.settings import settings
-from dripdrop.services.cron import cron_service
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from dripdrop.settings import settings
+from dripdrop.services.cron import cron_service
+
+from .apps.admin.app import app as admin_app
+from .apps.authentication.app import app as auth_app
+from .apps.music.app import app as music_app
+from .apps.youtube.app import app as youtube_app
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(

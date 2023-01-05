@@ -4,12 +4,12 @@ from datetime import datetime, timezone, timedelta
 from rq.registry import ScheduledJobRegistry
 from typing import Callable
 
-from dripdrop.settings import settings
+from dripdrop.apps.music.tasks import music_tasker
+from dripdrop.apps.youtube.tasks import youtube_tasker
 from dripdrop.logging import logger
-from dripdrop.music.tasks import music_tasker
 from dripdrop.redis import redis
 from dripdrop.rq import queue
-from dripdrop.youtube.tasks import youtube_tasker
+from dripdrop.settings import settings
 
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 

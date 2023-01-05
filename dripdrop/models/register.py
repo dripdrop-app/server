@@ -1,6 +1,6 @@
-from dripdrop.authentication.models import User
-from dripdrop.music.models import MusicJob
-from dripdrop.youtube.models import (
+from dripdrop.apps.authentication.models import User
+from dripdrop.apps.music.models import MusicJob
+from dripdrop.apps.youtube.models import (
     GoogleAccounts,
     YoutubeChannels,
     YoutubeSubscriptions,

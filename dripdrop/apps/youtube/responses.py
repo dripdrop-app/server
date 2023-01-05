@@ -1,8 +1,10 @@
-from .models import YoutubeVideo, YoutubeSubscription, YoutubeVideoCategory
 from datetime import datetime
-from dripdrop.responses import ResponseBaseModel
 from pydantic import Field
 from typing import Optional, List
+
+from dripdrop.responses import ResponseBaseModel
+
+from .models import YoutubeVideo, YoutubeSubscription, YoutubeVideoCategory
 
 
 class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):

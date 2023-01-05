@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager, contextmanager
-from dripdrop.settings import settings
 from sqlalchemy.engine import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
+
+from dripdrop.settings import settings
 
 
 class Database:

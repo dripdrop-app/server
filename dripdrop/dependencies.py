@@ -5,7 +5,7 @@ from fastapi import HTTPException, status, Request, WebSocket, Depends
 from sqlalchemy import select
 from typing import Union
 
-from dripdrop.authentication.models import User
+from dripdrop.apps.authentication.models import User
 
 from .models.database import database, AsyncSession
 from .settings import settings

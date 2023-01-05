@@ -1,7 +1,7 @@
 from fastapi import Depends, status, HTTPException
 from typing import Union
 
-from dripdrop.authentication.models import User
+from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import get_user
 
 

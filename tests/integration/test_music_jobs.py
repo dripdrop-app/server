@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.engine import Connection
 
-from dripdrop.music.models import MusicJob
+from dripdrop.apps.music.models import MusicJob
 from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.audio_tag import AudioTagService
 

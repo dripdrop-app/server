@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from sqlalchemy import select
 
-from dripdrop.authentication.models import User
+from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import (
     get_authenticated_user,
     create_db_session,

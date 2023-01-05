@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 
-from dripdrop.authentication.models import User
+from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base
 from dripdrop.utils import get_current_time
 

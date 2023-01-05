@@ -1,8 +1,11 @@
+from fastapi import APIRouter, HTTPException, Depends, Query, status
+from sqlalchemy import select
+
+from dripdrop.dependencies import AsyncSession, create_db_session
+
 from .dependencies import get_google_user
 from .models import YoutubeChannel, YoutubeChannels
-from fastapi import APIRouter, HTTPException, Depends, Query, status
-from dripdrop.dependencies import AsyncSession, create_db_session
-from sqlalchemy import select
+
 
 channels_api = APIRouter(
     prefix="/channels",

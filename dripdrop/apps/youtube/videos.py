@@ -1,5 +1,11 @@
 import math
 import traceback
+from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
+from sqlalchemy import select, func
+
+from dripdrop.dependencies import create_db_session, AsyncSession
+from dripdrop.logging import logger
+
 from .dependencies import get_google_user, GoogleAccount
 from .models import (
     YoutubeVideoCategory,
@@ -17,10 +23,6 @@ from .responses import (
     VideoQueueResponse,
     VideoResponse,
 )
-from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
-from dripdrop.dependencies import create_db_session, AsyncSession
-from dripdrop.logging import logger
-from sqlalchemy import select, func
 
 videos_api = APIRouter(
     prefix="/videos",

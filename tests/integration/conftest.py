@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 from dripdrop.app import app
-from dripdrop.authentication.app import password_context
-from dripdrop.authentication.models import User
+from dripdrop.apps.authentication.app import password_context
+from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.models.database import database
 from dripdrop.models.base import Base

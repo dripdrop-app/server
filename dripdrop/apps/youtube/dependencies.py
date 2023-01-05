@@ -1,12 +1,14 @@
-from .models import GoogleAccount, GoogleAccounts
-from dripdrop.authentication.models import User
+from fastapi import Depends, HTTPException, status
+from sqlalchemy import select
+
+from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import (
     get_authenticated_user,
     create_db_session,
     AsyncSession,
 )
-from fastapi import Depends, HTTPException, status
-from sqlalchemy import select
+
+from .models import GoogleAccount, GoogleAccounts
 
 
 async def get_google_user(

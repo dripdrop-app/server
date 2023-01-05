@@ -3,7 +3,6 @@ from fastapi.responses import PlainTextResponse
 from passlib.context import CryptContext
 from pydantic import EmailStr
 
-from dripdrop.authentication.models import User
 from dripdrop.dependencies import (
     create_db_session,
     get_authenticated_user,
@@ -11,6 +10,7 @@ from dripdrop.dependencies import (
     AsyncSession,
 )
 
+from .models import User
 from .responses import (
     AuthenticatedResponse,
     AuthenticatedResponseModel,
