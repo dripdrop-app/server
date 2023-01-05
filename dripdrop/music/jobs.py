@@ -29,8 +29,9 @@ from dripdrop.dependencies import (
 )
 from dripdrop.logging import logger
 from dripdrop.services.boto3 import boto3_service, Boto3Service
-from dripdrop.services.redis import redis_service, RedisChannels, redis
-from dripdrop.services.rq import queue
+from dripdrop.redis import redis
+from dripdrop.rq import queue
+from dripdrop.services.redis import redis_service, RedisChannels
 
 from .models import MusicJob, youtube_regex
 from .responses import (

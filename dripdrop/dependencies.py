@@ -1,19 +1,21 @@
 import jwt
 import traceback
-from .models.database import database, AsyncSession
-from .settings import settings
-from .logging import logger
-from dripdrop.authentication.models import User
 from datetime import datetime, timezone
 from fastapi import HTTPException, status, Request, WebSocket, Depends
 from sqlalchemy import select
 from typing import Union
 
+from dripdrop.authentication.models import User
+
+from .models.database import database, AsyncSession
+from .settings import settings
+from .logging import logger
+
 ALGORITHM = "HS256"
 COOKIE_NAME = "token"
 
 
-async def create_db_session():
+async def create_db_session() -> AsyncSession:
     async with database.async_create_session() as session:
         yield session
 

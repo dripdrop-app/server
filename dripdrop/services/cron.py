@@ -1,14 +1,15 @@
 from asgiref.sync import sync_to_async
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
-from dripdrop.settings import settings
-from dripdrop.logging import logger
-from dripdrop.services.redis import redis
-from dripdrop.services.rq import queue
-from dripdrop.music.tasks import music_tasker
-from dripdrop.youtube.tasks import youtube_tasker
 from rq.registry import ScheduledJobRegistry
 from typing import Callable
+
+from dripdrop.settings import settings
+from dripdrop.logging import logger
+from dripdrop.music.tasks import music_tasker
+from dripdrop.redis import redis
+from dripdrop.rq import queue
+from dripdrop.youtube.tasks import youtube_tasker
 
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 

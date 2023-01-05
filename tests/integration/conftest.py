@@ -1,8 +1,10 @@
-import multiprocessing
+import asyncio
+import os
 import pytest
+import subprocess
+import time
 from fastapi import status
 from fastapi.testclient import TestClient
-from redis import Redis
 from sqlalchemy import create_engine, insert
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -15,15 +17,32 @@ from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.models.database import database
 from dripdrop.models.base import Base
 from dripdrop.settings import settings
-from worker import run_worker as _run_worker
 
 
 test_engine = create_engine(
-    "sqlite:///test.sqlite", echo=False, connect_args={"check_same_thread": False}
+    settings.test_database_url,
+    echo=False,
+    connect_args={"check_same_thread": False},
 )
 async_test_engine = create_async_engine(
-    "sqlite+aiosqlite:///test.sqlite", poolclass=NullPool, echo=False
+    settings.test_async_database_url, poolclass=NullPool, echo=False
 )
+
+# Fix found here https://github.com/pytest-dev/pytest-asyncio/issues/207
+# Need to create a single event loop that all instances will use
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session")
+def client(event_loop):
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture(autouse=True)
@@ -32,12 +51,6 @@ def setup_database():
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     yield
-
-
-@pytest.fixture()
-def client():
-    client = TestClient(app)
-    yield client
 
 
 @pytest.fixture()
@@ -73,14 +86,24 @@ def create_and_login_user(client: TestClient, create_user):
 
 
 @pytest.fixture()
+def create_default_user(create_and_login_user):
+    create_and_login_user(email=TEST_EMAIL, password=TEST_PASSWORD, admin=False)
+
+
+@pytest.fixture()
 def run_worker():
-    connection = Redis.from_url(settings.redis_url)
-    connection.flushall()
-    connection.close()
-    process = multiprocessing.Process(None, target=_run_worker)
-    process.start()
+    process = subprocess.Popen(
+        ["python", "worker.py"],
+        env={
+            **os.environ,
+            "ASYNC_DATABASE_URL": settings.test_async_database_url,
+            "DATABASE_URL": settings.test_database_url,
+        },
+    )
     yield
-    process.terminate()
+    process.kill()
+    while process.poll() is None:
+        time.sleep(1)
 
 
 TEST_EMAIL = "testuser@gmail.com"

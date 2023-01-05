@@ -1,3 +1,19 @@
+from asgiref.sync import sync_to_async
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi.responses import PlainTextResponse, RedirectResponse
+from sqlalchemy import select
+
+from dripdrop.authentication.models import User
+from dripdrop.dependencies import (
+    get_authenticated_user,
+    create_db_session,
+    AsyncSession,
+)
+from dripdrop.rq import queue
+from dripdrop.logging import logger
+from dripdrop.services.google_api import google_api_service
+from dripdrop.settings import settings
+
 from .channels import channels_api
 from .dependencies import get_google_user
 from .models import GoogleAccount, GoogleAccounts
@@ -5,20 +21,6 @@ from .responses import AccountResponse
 from .subscriptions import subscriptions_api
 from .tasks import youtube_tasker
 from .videos import videos_api
-from asgiref.sync import sync_to_async
-from dripdrop.authentication.models import User
-from dripdrop.settings import settings
-from dripdrop.dependencies import (
-    get_authenticated_user,
-    create_db_session,
-    AsyncSession,
-)
-from dripdrop.logging import logger
-from dripdrop.services.google_api import google_api_service
-from dripdrop.services.rq import queue
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.responses import PlainTextResponse, RedirectResponse
-from sqlalchemy import select
 
 app = FastAPI(
     openapi_tags=["YouTube"],

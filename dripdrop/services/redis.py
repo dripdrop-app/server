@@ -1,14 +1,12 @@
-import aioredis
 import asyncio
 import traceback
 from asyncio import Task
-from dripdrop.settings import settings
-from dripdrop.logging import logger
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Coroutine
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
-redis = aioredis.from_url(settings.redis_url)
+from dripdrop.logging import logger
+from dripdrop.redis import redis
 
 
 class RedisChannels:
@@ -48,11 +46,11 @@ class RedisService:
 
     async def subscribe(
         self,
-        channel: RedisChannels = ...,
+        channel: str = ...,
         message_handler: Coroutine = ...,
     ):
         pubsub = redis.pubsub()
-        await pubsub.subscribe(channel.value)
+        await pubsub.subscribe(channel)
         while True:
             message = await pubsub.get_message(
                 ignore_subscribe_messages=True,

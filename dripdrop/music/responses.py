@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, root_validator
 from typing import Optional, List, Literal
 
 from dripdrop.responses import ResponseBaseModel
@@ -19,7 +19,13 @@ class MusicJobResponse(ResponseBaseModel):
     completed: bool
     failed: bool
 
-    # Add root validator to fix filenames (remove all slashes except last)
+    @root_validator
+    def fix_filenames(cls, values):
+        for key in ["artwork_filename", "original_filename", "download_filename"]:
+            value: str | None = values.get(key)
+            if value:
+                values[key] = value.split("/")[-1]
+        return values
 
 
 class MusicChannelResponse(ResponseBaseModel):

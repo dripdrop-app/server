@@ -1,10 +1,11 @@
 import traceback
 from asgiref.sync import sync_to_async
 from datetime import datetime, timezone
-from dripdrop.models.database import database
-from dripdrop.logging import logger
 from functools import wraps
 from inspect import iscoroutinefunction, signature
+
+from dripdrop.models.database import database
+from dripdrop.logging import logger
 
 
 def worker_task(function):

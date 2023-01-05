@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from dripdrop.dependencies import COOKIE_NAME
 
-from ..conftest import TEST_EMAIL, TEST_PASSWORD, APIEndpoints
+from .conftest import TEST_EMAIL, TEST_PASSWORD, APIEndpoints
 
 
 class AuthEndpoints(APIEndpoints):

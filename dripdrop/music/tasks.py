@@ -11,10 +11,11 @@ from yt_dlp.utils import sanitize_filename
 
 from dripdrop.models.database import AsyncSession
 from dripdrop.logging import logger
+from dripdrop.redis import redis
 from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.audio_tag import AudioTagService
 from dripdrop.services.image_downloader import image_downloader_service
-from dripdrop.services.redis import redis, RedisChannels
+from dripdrop.services.redis import RedisChannels
 from dripdrop.services.youtube_downloader import youtuber_downloader_service
 from dripdrop.utils import worker_task
 
@@ -97,11 +98,7 @@ class MusicTasker:
             )
 
     @worker_task
-    async def run_job(
-        self,
-        job_id: str = ...,
-        session: AsyncSession = ...,
-    ):
+    async def run_job(self, job_id: str = ..., session: AsyncSession = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
         results = await session.scalars(query)
         job: MusicJob | None = results.first()
