@@ -50,7 +50,13 @@ jobs_api = APIRouter(
 )
 
 
-@jobs_api.get("/{page}/{per_page}", response_model=JobsResponse)
+@jobs_api.get(
+    "/{page}/{per_page}",
+    response_model=JobsResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.PAGE_NOT_FOUND}
+    },
+)
 async def get_jobs(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
@@ -64,9 +70,13 @@ async def get_jobs(
     )
     results = await session.scalars(query.offset((page - 1) * per_page))
     jobs = list(map(lambda job: job, results.fetchmany(per_page)))
-    count_query = select(func.count(query.c.id))
+    count_query = select(func.count(query.subquery().c.id))
     count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
+    if page > total_pages:
+        raise HTTPException(
+            detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
+        )
     return JobsResponse(jobs=jobs, total_pages=total_pages)
 
 
@@ -107,7 +117,11 @@ async def listen_jobs(
     )
 
 
-@jobs_api.post("/create", status_code=status.HTTP_201_CREATED)
+@jobs_api.post(
+    "/create",
+    status_code=status.HTTP_201_CREATED,
+    responses={status.HTTP_500_INTERNAL_SERVER_ERROR: {}},
+)
 async def create_job(
     file: Optional[UploadFile] = File(None),
     youtube_url: Optional[str] = Form(None, regex=youtube_regex),
@@ -121,18 +135,18 @@ async def create_job(
 ):
     if file and youtube_url:
         raise HTTPException(
-            detail="'file' and 'youtube_url' cannot both be defined",
+            detail=ErrorMessages.CREATE_JOB_BOTH_DEFINED,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
     elif file is None and youtube_url is None:
         raise HTTPException(
-            detail="'file' or 'youtube_url' must be defined",
+            detail=ErrorMessages.CREATE_JOB_NOT_DEFINED,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
     if file:
         if not re.match("audio/(wav|mpeg)", file.content_type):
             raise HTTPException(
-                detail="File is incorrect format",
+                detail=ErrorMessages.FILE_INCORRECT_FORMAT,
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
     job_id = str(uuid.uuid4())
@@ -141,7 +155,7 @@ async def create_job(
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
-            detail="Failed to upload audio file",
+            detail=ErrorMessages.FAILED_AUDIO_FILE_UPLOAD,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
     try:
@@ -151,7 +165,7 @@ async def create_job(
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
-            detail="Failed to upload artwork",
+            detail=ErrorMessages.FAILED_IMAGE_UPLOAD,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
     session.add(

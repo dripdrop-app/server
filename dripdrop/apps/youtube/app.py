@@ -105,9 +105,7 @@ async def get_youtube_account(
     query = select(GoogleAccounts).where(GoogleAccounts.email == google_account.email)
     results = await db.scalars(query)
     account = GoogleAccount.from_orm(results.first())
-    return AccountResponse(
-        email=account.email, refresh=not bool(account.access_token)
-    ).dict(by_alias=True)
+    return AccountResponse(email=account.email, refresh=not bool(account.access_token))
 
 
 @app.get("/oauth", response_class=PlainTextResponse)

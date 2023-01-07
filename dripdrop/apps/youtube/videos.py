@@ -64,7 +64,7 @@ async def get_youtube_video_categories(
             results.all(),
         )
     )
-    return VideoCategoriesResponse(categories=categories).dict(by_alias=True)
+    return VideoCategoriesResponse(categories=categories)
 
 
 @videos_api.get(
@@ -182,7 +182,7 @@ async def get_youtube_videos(
     videos = results.mappings().fetchmany(per_page)
     count = await db.scalar(select(func.count(query.c.id)))
     total_pages = math.ceil(count / per_page)
-    return VideosResponse(videos=videos, total_pages=total_pages).dict(by_alias=True)
+    return VideosResponse(videos=videos, total_pages=total_pages)
 
 
 @videos_api.put(
@@ -365,7 +365,7 @@ async def get_youtube_video_queue(
         raise HTTPException(404)
     return VideoQueueResponse(
         current_video=current_video, prev=bool(prev_video), next=bool(next_video)
-    ).dict(by_alias=True)
+    )
 
 
 @videos_api.get(
@@ -478,4 +478,4 @@ async def get_youtube_video(
         )
         results = await db.execute(query)
         related_videos = results.mappings().fetchmany(related_videos_length)
-    return VideoResponse(video=video, related_videos=related_videos).dict(by_alias=True)
+    return VideoResponse(video=video, related_videos=related_videos)

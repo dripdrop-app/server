@@ -11,7 +11,7 @@ app = FastAPI(openapi_tags=["Admin"])
 @app.get(
     "/cron/run",
     dependencies=[Depends(get_admin_user)],
-    responses={status.HTTP_403_FORBIDDEN: {"description": "Not an admin user"}},
+    responses={status.HTTP_403_FORBIDDEN: {}},
 )
 async def run_cronjobs():
     await cron_service.async_run_cron_jobs()

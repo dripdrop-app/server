@@ -66,7 +66,7 @@ async def cleanup_job(job: MusicJob):
     )
 
 
-async def async_read_tags(file: bytes = ..., filename: str = ...):
+async def async_read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:
     def create_tags_directory():
         TAGS_FOLDER = "tags"
         folder_id = str(uuid.uuid4())
@@ -110,5 +110,5 @@ async def async_read_tags(file: bytes = ..., filename: str = ...):
             logger.exception(traceback.format_exc())
             return TagsResponse()
 
-    read_tags = sync_to_async(read_tags)
-    return await read_tags(file=file, filename=filename)
+    _read_tags = sync_to_async(read_tags)
+    return await _read_tags(file=file, filename=filename)

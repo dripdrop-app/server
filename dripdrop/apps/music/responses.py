@@ -1,4 +1,5 @@
-from pydantic import Field, root_validator
+from datetime import datetime
+from pydantic import Field, validator
 from typing import Optional, List, Literal
 
 from dripdrop.responses import ResponseBaseModel
@@ -18,14 +19,13 @@ class MusicJobResponse(ResponseBaseModel):
     grouping: Optional[str] = Field(None)
     completed: bool
     failed: bool
+    created_at: datetime
 
-    @root_validator
-    def fix_filenames(cls, values):
-        for key in ["artwork_filename", "original_filename", "download_filename"]:
-            value: str | None = values.get(key)
-            if value:
-                values[key] = value.split("/")[-1]
-        return values
+    @validator("artwork_filename", "original_filename", "download_filename")
+    def fix_filename(cls, value):
+        if value:
+            return value.split("/")[-1]
+        return value
 
 
 class MusicChannelResponse(ResponseBaseModel):
@@ -63,3 +63,9 @@ class ErrorMessages:
     JOB_NOT_FOUND = "Job not found"
     GROUPING_ERROR = "Unable to get grouping"
     ARTWORK_ERROR = "Unable to get artwork"
+    PAGE_NOT_FOUND = "Page not found"
+    CREATE_JOB_BOTH_DEFINED = "'file' and 'youtube_url' cannot both be defined"
+    CREATE_JOB_NOT_DEFINED = "'file' or 'youtube_url' must be defined"
+    FILE_INCORRECT_FORMAT = "File is incorrect format"
+    FAILED_AUDIO_FILE_UPLOAD = "Failed to upload audio file"
+    FAILED_IMAGE_UPLOAD = "Failed to upload artwork"

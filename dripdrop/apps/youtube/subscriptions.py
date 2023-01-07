@@ -48,6 +48,4 @@ async def get_youtube_subscriptions(
     subscriptions = results.mappings().fetchmany(per_page)
     count = await db.scalar(select(func.count(query.c.id)))
     total_pages = math.ceil(count / per_page)
-    return SubscriptionsResponse(
-        subscriptions=subscriptions, total_pages=total_pages
-    ).dict(by_alias=True)
+    return SubscriptionsResponse(subscriptions=subscriptions, total_pages=total_pages)

@@ -2,10 +2,10 @@ import os
 import pytest
 import requests
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from sqlalchemy.engine import Connection
 
 from dripdrop.apps.music.models import MusicJob
@@ -40,24 +40,59 @@ def create_user(create_default_user):
     pass
 
 
+@pytest.fixture()
+def create_music_job(db: Connection):
+    def _create_music_job(
+        id: str = ...,
+        email: str = ...,
+        artwork_url: str | None = None,
+        artwork_filename: str | None = None,
+        original_filename: str | None = None,
+        filename_url: str | None = None,
+        youtube_url: str | None = None,
+        download_filename: str | None = None,
+        download_url: str | None = None,
+        title: str = ...,
+        artist: str = ...,
+        album: str = ...,
+        grouping: str | None = None,
+        completed: bool = False,
+        failed: bool = False,
+        deleted_at: datetime = None,
+    ):
+        db.execute(
+            insert(MusicJob).values(
+                id=id,
+                user_email=email,
+                artwork_url=artwork_url,
+                artwork_filename=artwork_filename,
+                original_filename=original_filename,
+                filename_url=filename_url,
+                youtube_url=youtube_url,
+                download_filename=download_filename,
+                download_url=download_url,
+                title=title,
+                artist=artist,
+                album=album,
+                grouping=grouping,
+                completed=completed,
+                failed=failed,
+                created_at=datetime.now(timezone.utc),
+                deleted_at=deleted_at,
+            )
+        )
+
+    return _create_music_job
+
+
 class MusicJobEndpoints:
     base_url = "/api/music/jobs"
-    jobs = f"{base_url}/1/1"
     listen = f"{base_url}/listen"
     create_job = f"{base_url}/create"
     delete_job = f"{base_url}/delete"
 
 
-def assert_job(
-    db: Connection = ...,
-    title: str = ...,
-    artist: str = ...,
-    album: str = ...,
-    grouping: str | None = None,
-    artwork: bytes | None = None,
-    completed: bool | None = None,
-    failed: bool | None = None,
-):
+def wait_for_job_completion(db: Connection = ...):
     job = None
     start_time = datetime.now()
     while True:
@@ -70,6 +105,20 @@ def assert_job(
         if job.completed or job.failed:
             break
         time.sleep(1)
+    return job
+
+
+def assert_job(
+    db: Connection = ...,
+    title: str = ...,
+    artist: str = ...,
+    album: str = ...,
+    grouping: str | None = None,
+    artwork: bytes | None = None,
+    completed: bool | None = None,
+    failed: bool | None = None,
+):
+    job = wait_for_job_completion(db=db)
     if completed is not None:
         assert job.completed == completed
     if failed is not None:
@@ -273,3 +322,76 @@ class TestCreateYoutubeJob:
             completed=True,
             failed=False,
         )
+
+
+test_music_job = {
+    "id": "testid",
+    "email": TEST_EMAIL,
+    **test_file_params,
+}
+
+
+class TestGetJobs:
+    def assert_jobs_response(
+        self, json: dict = ..., jobs_length: int = ..., total_pages: int = ...
+    ):
+        assert len(json["jobs"]) == jobs_length
+        assert json.get("totalPages") == total_pages
+
+    def test_get_jobs_with_no_results(self, client: TestClient):
+        response = client.get(f"{MusicJobEndpoints.base_url}/1/10")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_jobs_with_out_of_range_page(
+        self, client: TestClient, create_music_job
+    ):
+        for i in range(15):
+            create_music_job(**{**test_music_job, "id": f"test_{i}"})
+        response = client.get(f"{MusicJobEndpoints.base_url}/3/10")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_jobs_with_single_result(self, client: TestClient, create_music_job):
+        create_music_job(**test_music_job)
+        response = client.get(f"{MusicJobEndpoints.base_url}/1/10")
+        assert response.status_code == status.HTTP_200_OK
+        self.assert_jobs_response(json=response.json(), jobs_length=1, total_pages=1)
+
+    def test_get_jobs_with_partial_page(self, client: TestClient, create_music_job):
+        for i in range(15):
+            create_music_job(**{**test_music_job, "id": f"test_{i}"})
+        response = client.get(f"{MusicJobEndpoints.base_url}/1/20")
+        assert response.status_code == status.HTTP_200_OK
+        self.assert_jobs_response(json=response.json(), jobs_length=15, total_pages=1)
+
+    def test_get_jobs_with_multiple_pages(self, client: TestClient, create_music_job):
+        for i in range(20):
+            create_music_job(**{**test_music_job, "id": f"test_{i}"})
+        response = client.get(f"{MusicJobEndpoints.base_url}/1/10")
+        assert response.status_code == status.HTTP_200_OK
+        self.assert_jobs_response(json=response.json(), jobs_length=10, total_pages=2)
+
+    def test_get_jobs_with_deleted_jobs(self, client: TestClient, create_music_job):
+        for i in range(10):
+            create_music_job(
+                **{
+                    **test_music_job,
+                    "id": f"test_{i}",
+                    "deleted_at": datetime.now(timezone.utc) if i % 2 == 0 else None,
+                }
+            )
+        response = client.get(f"{MusicJobEndpoints.base_url}/1/5")
+        assert response.status_code == status.HTTP_200_OK
+        self.assert_jobs_response(json=response.json(), jobs_length=5, total_pages=1)
+
+    def test_get_jobs_are_in_descending_order(
+        self, client: TestClient, create_music_job
+    ):
+        for i in range(5):
+            create_music_job(**{**test_music_job, "id": f"test_{i}"})
+            time.sleep(1)
+        response = client.get(f"{MusicJobEndpoints.base_url}/1/5")
+        assert response.status_code == status.HTTP_200_OK
+        self.assert_jobs_response(json=response.json(), jobs_length=5, total_pages=1)
+        jobs = response.json()["jobs"]
+        for i in range(1, len(jobs)):
+            assert jobs[i]["createdAt"] < jobs[i - 1]["createdAt"]

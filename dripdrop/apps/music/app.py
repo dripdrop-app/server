@@ -37,7 +37,7 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
         uploader = await youtuber_downloader_service.async_extract_info(
             link=youtube_url
         )
-        return GroupingResponse(grouping=uploader).dict(by_alias=True)
+        return GroupingResponse(grouping=uploader)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
@@ -57,7 +57,7 @@ async def get_artwork(artwork_url: str = Query(...)):
         artwork_url = await image_downloader_service.async_resolve_artwork(
             artwork=artwork_url
         )
-        return ArtworkUrlResponse(artwork_url=artwork_url).dict(by_alias=True)
+        return ArtworkUrlResponse(artwork_url=artwork_url)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
@@ -68,4 +68,4 @@ async def get_artwork(artwork_url: str = Query(...)):
 @app.post("/tags", response_model=TagsResponse)
 async def get_tags(file: UploadFile = File(...)):
     tags = await async_read_tags(file=await file.read(), filename=file.filename)
-    return TagsResponse(**tags.dict(by_alias=False))
+    return tags

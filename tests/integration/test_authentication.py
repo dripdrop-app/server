@@ -14,18 +14,16 @@ class AuthEndpoints:
     logout = f"{base_path}/logout"
 
 
-def check_session_response(json: dict = ..., email: str = ..., admin: bool = ...):
-    assert "email" in json
-    assert json["email"] == email
-    assert "admin" in json
-    assert json["admin"] is admin
+def assert_session_response(json: dict = ..., email: str = ..., admin: bool = ...):
+    assert json.get("email") == email
+    assert json.get("admin") == admin
 
 
-def check_user_auth_response(json: dict = ..., email: str = ..., admin: bool = ...):
+def assert_user_auth_response(json: dict = ..., email: str = ..., admin: bool = ...):
     assert "accessToken" in json
     assert "tokenType" in json
     assert "user" in json
-    check_session_response(json=json["user"], email=email, admin=admin)
+    assert_session_response(json=json["user"], email=email, admin=admin)
 
 
 class TestCreate:
@@ -42,7 +40,7 @@ class TestCreate:
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.cookies.get(COOKIE_NAME, None) is not None
-        check_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
 
 
 class TestLogin:
@@ -68,7 +66,7 @@ class TestLogin:
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.cookies.get(COOKIE_NAME, None) is not None
-        check_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
 
 
 class TestSession:
@@ -83,7 +81,7 @@ class TestSession:
         assert response.status_code == status.HTTP_200_OK
         response = client.get(AuthEndpoints.session)
         assert response.status_code == status.HTTP_200_OK
-        check_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
 
     def test_session_after_login(self, client: TestClient, create_user):
         create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
@@ -93,7 +91,7 @@ class TestSession:
         assert response.status_code == status.HTTP_200_OK
         response = client.get(AuthEndpoints.session)
         assert response.status_code == status.HTTP_200_OK
-        check_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
 
 
 class TestLogout:
