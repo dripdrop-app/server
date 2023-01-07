@@ -13,8 +13,8 @@ from sqlalchemy.pool import NullPool
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
 from dripdrop.apps.authentication.models import User
+from dripdrop.database import database
 from dripdrop.dependencies import COOKIE_NAME
-from dripdrop.models.database import database
 from dripdrop.models.base import Base
 from dripdrop.settings import settings
 
@@ -108,7 +108,3 @@ def run_worker():
 
 TEST_EMAIL = "testuser@gmail.com"
 TEST_PASSWORD = "testpassword"
-
-
-class APIEndpoints:
-    base_path = "/api"

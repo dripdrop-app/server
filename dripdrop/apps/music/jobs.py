@@ -11,11 +11,11 @@ from fastapi import (
     Response,
     Path,
     WebSocket,
-    File,
     UploadFile,
     HTTPException,
     status,
     Form,
+    File,
 )
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, func
@@ -28,7 +28,6 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.logging import logger
-from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.redis import redis
 from dripdrop.rq import queue
 from dripdrop.services.redis import redis_service, RedisChannels
@@ -41,7 +40,7 @@ from .responses import (
     ErrorMessages,
 )
 from .tasks import music_tasker
-from .utils import handle_artwork_url, cleanup_job
+from .utils import handle_artwork_url, cleanup_job, handle_audio_file
 
 
 jobs_api = APIRouter(
@@ -108,78 +107,51 @@ async def listen_jobs(
     )
 
 
-@jobs_api.post("/create/youtube", status_code=status.HTTP_201_CREATED)
-async def create_job_from_youtube(
-    youtube_url: str = Form(..., regex=youtube_regex),
+@jobs_api.post("/create", status_code=status.HTTP_201_CREATED)
+async def create_job(
+    file: Optional[UploadFile] = File(None),
+    youtube_url: Optional[str] = Form(None, regex=youtube_regex),
     artwork_url: Optional[str] = Form(None),
     title: str = Form(...),
     artist: str = Form(...),
     album: str = Form(...),
-    grouping: str = Form(""),
+    grouping: Optional[str] = Form(None),
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    job_id = str(uuid.uuid4())
-    artwork_url, artwork_filename = await handle_artwork_url(
-        job_id=job_id, artwork_url=artwork_url
-    )
-    session.add(
-        MusicJob(
-            id=job_id,
-            user_email=user.email,
-            artwork_url=artwork_url,
-            artwork_filename=artwork_filename,
-            youtube_url=youtube_url,
-            title=title,
-            artist=artist,
-            album=album,
-            grouping=grouping,
-            completed=False,
-            failed=False,
-        )
-    )
-    await session.commit()
-    queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
-    await redis.publish(
-        RedisChannels.MUSIC_JOB_CHANNEL,
-        json.dumps(MusicChannelResponse(job_id=job_id, type="STARTED").dict()),
-    )
-    return Response(None, status_code=status.HTTP_201_CREATED)
-
-
-@jobs_api.post("/create/file", status_code=status.HTTP_201_CREATED)
-async def create_job_from_file(
-    file: UploadFile = File(...),
-    artwork_url: Optional[str] = Form(None),
-    title: str = Form(...),
-    artist: str = Form(...),
-    album: str = Form(...),
-    grouping: str = Form(""),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
-):
-    if not re.match("audio/(wav|mpeg)", file.content_type):
+    if file and youtube_url:
         raise HTTPException(
-            detail="File is incorrect format", status_code=status.HTTP_400_BAD_REQUEST
+            detail="'file' and 'youtube_url' cannot both be defined",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
-
+    elif file is None and youtube_url is None:
+        raise HTTPException(
+            detail="'file' or 'youtube_url' must be defined",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+    if file:
+        if not re.match("audio/(wav|mpeg)", file.content_type):
+            raise HTTPException(
+                detail="File is incorrect format",
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
     job_id = str(uuid.uuid4())
-    artwork_url, artwork_filename = await handle_artwork_url(
-        job_id=job_id, artwork_url=artwork_url
-    )
-    new_filename = f"{job_id}/old/{file.filename}"
-    filename_url = Boto3Service.resolve_music_url(filename=new_filename)
     try:
-        await boto3_service.async_upload_file(
-            bucket=Boto3Service.S3_MUSIC_BUCKET,
-            filename=new_filename,
-            body=await file.read(),
-            content_type=file.content_type,
-        )
+        filename_url, filename = await handle_audio_file(job_id=job_id, file=file)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
             detail="Failed to upload audio file",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    try:
+        artwork_url, artwork_filename = await handle_artwork_url(
+            job_id=job_id, artwork_url=artwork_url
+        )
+    except Exception:
+        logger.exception(traceback.format_exc())
+        raise HTTPException(
+            detail="Failed to upload artwork",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
     session.add(
@@ -188,8 +160,9 @@ async def create_job_from_file(
             user_email=user.email,
             artwork_url=artwork_url,
             artwork_filename=artwork_filename,
-            original_filename=new_filename,
+            original_filename=filename,
             filename_url=filename_url,
+            youtube_url=youtube_url,
             title=title,
             artist=artist,
             album=album,

@@ -9,7 +9,7 @@ from sqlalchemy import select
 from typing import Union, AsyncIterable
 from yt_dlp.utils import sanitize_filename
 
-from dripdrop.models.database import AsyncSession
+from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.redis import redis
 from dripdrop.services.boto3 import boto3_service, Boto3Service

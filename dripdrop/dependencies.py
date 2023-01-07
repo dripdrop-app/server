@@ -7,7 +7,7 @@ from typing import Union
 
 from dripdrop.apps.authentication.models import User
 
-from .models.database import database, AsyncSession
+from .database import database, AsyncSession
 from .settings import settings
 from .logging import logger
 

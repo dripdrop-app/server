@@ -1,37 +1,37 @@
+import pytest
 import re
 import requests
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from .conftest import APIEndpoints
+
+@pytest.fixture(autouse=True)
+def create_user(create_default_user):
+    pass
 
 
 class MusicEndpoints:
-    base_url = f"{APIEndpoints.base_path}/music"
+    base_url = "/api/music"
     grouping = f"{base_url}/grouping"
     artwork = f"{base_url}/artwork"
     tags = f"{base_url}/tags"
 
 
 class TestGrouping:
-    def test_grouping_with_invalid_url(self, client: TestClient, create_default_user):
+    def test_grouping_with_invalid_url(self, client: TestClient):
         response = client.get(
             MusicEndpoints.grouping, params={"youtube_url": "https://invalidurl"}
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_grouping_with_invalid_youtube_url(
-        self, client: TestClient, create_default_user
-    ):
+    def test_grouping_with_invalid_youtube_url(self, client: TestClient):
         response = client.get(
             MusicEndpoints.grouping,
             params={"youtube_url": "https://www.youtube.com/watch?v=fooddip"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_grouping_with_valid_youtube_url(
-        self, client: TestClient, create_default_user
-    ):
+    def test_grouping_with_valid_youtube_url(self, client: TestClient):
         response = client.get(
             MusicEndpoints.grouping,
             params={"youtube_url": "https://www.youtube.com/watch?v=FCrJNvJ-NIU"},
@@ -42,15 +42,13 @@ class TestGrouping:
 
 
 class TestArtwork:
-    def test_artwork_with_invalid_url(self, client: TestClient, create_default_user):
+    def test_artwork_with_invalid_url(self, client: TestClient):
         response = client.get(
             MusicEndpoints.artwork, params={"artwork_url": "https://invalidurl"}
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_artwork_with_valid_image_url(
-        self, client: TestClient, create_default_user
-    ):
+    def test_artwork_with_valid_image_url(self, client: TestClient):
         artwork_url = (
             "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
         )
@@ -65,9 +63,7 @@ class TestArtwork:
             == "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
         )
 
-    def test_artwork_with_valid_soundcloud_url(
-        self, client: TestClient, create_default_user
-    ):
+    def test_artwork_with_valid_soundcloud_url(self, client: TestClient):
         response = client.get(
             MusicEndpoints.artwork,
             params={
@@ -91,7 +87,7 @@ class TestTags:
         assert json["album"] == album
         assert json["grouping"] == grouping
 
-    def test_tags_with_an_invalid_file(self, client: TestClient, create_default_user):
+    def test_tags_with_an_invalid_file(self, client: TestClient):
         response = requests.get(
             "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
         )
@@ -106,9 +102,7 @@ class TestTags:
             grouping=None,
         )
 
-    def test_tags_with_a_mp3_without_tags(
-        self, client: TestClient, create_default_user
-    ):
+    def test_tags_with_a_mp3_without_tags(self, client: TestClient):
         response = requests.get(
             "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/test/sample4.mp3"
         )
@@ -123,7 +117,7 @@ class TestTags:
             grouping=None,
         )
 
-    def test_tags_with_a_valid_mp3_file(self, client: TestClient, create_default_user):
+    def test_tags_with_a_valid_mp3_file(self, client: TestClient):
         response = requests.get(
             "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/"
             + "test/Criminal%20Sinny%20&%20Fako.mp3"

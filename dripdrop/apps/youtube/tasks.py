@@ -5,7 +5,7 @@ from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, func, delete
 
-from dripdrop.models.database import AsyncSession
+from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.redis import redis
 from dripdrop.services.google_api import google_api_service

@@ -1,11 +1,11 @@
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from .conftest import APIEndpoints, TEST_EMAIL, TEST_PASSWORD
+from .conftest import TEST_EMAIL, TEST_PASSWORD
 
 
 class AdminEndpoints:
-    base_url = f"{APIEndpoints.base_path}/admin"
+    base_url = "/api/admin"
     cron = f"{base_url}/cron/run"
 
 

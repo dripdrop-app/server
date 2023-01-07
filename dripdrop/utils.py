@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from functools import wraps
 from inspect import iscoroutinefunction, signature
 
-from dripdrop.models.database import database
+from dripdrop.database import database
 from dripdrop.logging import logger
 
 

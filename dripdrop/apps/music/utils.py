@@ -5,6 +5,7 @@ import shutil
 import traceback
 import uuid
 from asgiref.sync import sync_to_async
+from fastapi import UploadFile
 from typing import Optional
 
 from dripdrop.logging import logger
@@ -33,6 +34,21 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...
             )
             artwork_url = Boto3Service.resolve_artwork_url(filename=artwork_filename)
     return artwork_url, artwork_filename
+
+
+async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
+    filename_url = None
+    filename = None
+    if file:
+        filename = f"{job_id}/old/{file.filename}"
+        filename_url = Boto3Service.resolve_music_url(filename=filename)
+        await boto3_service.async_upload_file(
+            bucket=Boto3Service.S3_MUSIC_BUCKET,
+            filename=filename,
+            body=await file.read(),
+            content_type=file.content_type,
+        )
+    return filename_url, filename
 
 
 async def cleanup_job(job: MusicJob):
