@@ -47,12 +47,17 @@ jobs:
       - image: python:3.10
       - image: redis
       - image: postgres:14
+        environment:
+          POSTGRES_PASSWORD: $DATABASE_PASSWORD
+          POSTGRES_HOST_AUTH_METHOD: trust
     steps:
       - checkout
       - install_packages
       - run:
           name: Run Tests
-          command: pytest
+          command: |
+            source venv/bin/activate
+            pytest
           environment:
             ENV: testing
 
