@@ -25,14 +25,15 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...
             dataString = ",".join(artwork_url.split(",")[1:])
             data = dataString.encode()
             data_bytes = base64.b64decode(data)
-            artwork_filename = f"{job_id}/artwork.{extension}"
+            artwork_filename = (
+                f"{Boto3Service.S3_ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
+            )
             await boto3_service.async_upload_file(
-                bucket=Boto3Service.S3_ARTWORK_BUCKET,
                 filename=artwork_filename,
                 body=data_bytes,
                 content_type=f"image/{extension}",
             )
-            artwork_url = Boto3Service.resolve_artwork_url(filename=artwork_filename)
+            artwork_url = Boto3Service.resolve_url(filename=artwork_filename)
     return artwork_url, artwork_filename
 
 
@@ -40,10 +41,9 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
     filename_url = None
     filename = None
     if file:
-        filename = f"{job_id}/old/{file.filename}"
-        filename_url = Boto3Service.resolve_music_url(filename=filename)
+        filename = f"{Boto3Service.S3_MUSIC_FOLDER}/{job_id}/old/{file.filename}"
+        filename_url = Boto3Service.resolve_url(filename=filename)
         await boto3_service.async_upload_file(
-            bucket=Boto3Service.S3_MUSIC_BUCKET,
             filename=filename,
             body=await file.read(),
             content_type=file.content_type,
@@ -53,16 +53,13 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
 
 async def cleanup_job(job: MusicJob):
     await boto3_service.async_delete_file(
-        bucket=Boto3Service.S3_ARTWORK_BUCKET,
-        filename=f"{job.id}/{job.artwork_filename}",
+        filename=job.artwork_filename,
     )
     await boto3_service.async_delete_file(
-        bucket=Boto3Service.S3_MUSIC_BUCKET,
-        filename=f"{job.id}/{job.download_filename}",
+        filename=job.download_filename,
     )
     await boto3_service.async_delete_file(
-        bucket=Boto3Service.S3_MUSIC_BUCKET,
-        filename=f"{job.id}/{job.original_filename}",
+        filename=job.original_filename,
     )
 
 

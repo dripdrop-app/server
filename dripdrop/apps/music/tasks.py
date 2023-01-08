@@ -116,17 +116,16 @@ class MusicTasker:
                 artwork_info=artwork_info,
             )
             new_filename = sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
-            new_filename = f"{job.id}/{new_filename}"
+            new_filename = f"{Boto3Service.S3_MUSIC_FOLDER}/{job.id}/{new_filename}"
             with open(filename, "rb") as file:
                 boto3_service.upload_file(
-                    bucket=Boto3Service.S3_MUSIC_BUCKET,
                     filename=new_filename,
                     body=file.read(),
                     content_type="audio/mpeg",
                 )
             job.completed = True
             job.download_filename = new_filename
-            job.download_url = Boto3Service.resolve_music_url(filename=new_filename)
+            job.download_url = Boto3Service.resolve_url(filename=new_filename)
         except Exception:
             job.failed = True
             logger.exception(traceback.format_exc())
