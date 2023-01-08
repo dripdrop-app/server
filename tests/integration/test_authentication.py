@@ -3,8 +3,6 @@ from fastapi.testclient import TestClient
 
 from dripdrop.dependencies import COOKIE_NAME
 
-from .conftest import TEST_EMAIL, TEST_PASSWORD
-
 
 class AuthEndpoints:
     base_path = "/api/auth"
@@ -14,59 +12,62 @@ class AuthEndpoints:
     logout = f"{base_path}/logout"
 
 
-def assert_session_response(json: dict = ..., email: str = ..., admin: bool = ...):
-    assert json.get("email") == email
-    assert json.get("admin") == admin
-
-
-def assert_user_auth_response(json: dict = ..., email: str = ..., admin: bool = ...):
-    assert "accessToken" in json
-    assert "tokenType" in json
-    assert "user" in json
-    assert_session_response(json=json["user"], email=email, admin=admin)
-
-
 class TestCreate:
-    def test_create_duplicate_user(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+    def test_create_duplicate_user(
+        self, client: TestClient, create_user, test_email, test_password
+    ):
+        create_user(email=test_email, password=test_password)
         response = client.post(
-            AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            AuthEndpoints.create, json={"email": test_email, "password": test_password}
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_create_user(self, client: TestClient):
+    def test_create_user(
+        self, client: TestClient, test_email, test_password, assert_user_auth_response
+    ):
         response = client.post(
-            AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            AuthEndpoints.create, json={"email": test_email, "password": test_password}
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.cookies.get(COOKIE_NAME, None) is not None
-        assert_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_user_auth_response(json=response.json(), email=test_email, admin=False)
 
 
 class TestLogin:
-    def test_login_with_incorrect_password(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+    def test_login_with_incorrect_password(
+        self, client: TestClient, create_user, test_email, test_password
+    ):
+        create_user(email=test_email, password=test_password)
         response = client.post(
             AuthEndpoints.login,
-            json={"email": TEST_EMAIL, "password": "incorrectpassword"},
+            json={"email": test_email, "password": "incorrectpassword"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_login_with_non_existent_email(self, client: TestClient):
+    def test_login_with_non_existent_email(
+        self, client: TestClient, test_email, test_password
+    ):
         response = client.post(
             AuthEndpoints.login,
-            json={"email": TEST_EMAIL, "password": TEST_PASSWORD},
+            json={"email": test_email, "password": test_password},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_login_user(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+    def test_login_user(
+        self,
+        client: TestClient,
+        create_user,
+        test_email,
+        test_password,
+        assert_user_auth_response,
+    ):
+        create_user(email=test_email, password=test_password)
         response = client.post(
-            AuthEndpoints.login, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            AuthEndpoints.login, json={"email": test_email, "password": test_password}
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.cookies.get(COOKIE_NAME, None) is not None
-        assert_user_auth_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_user_auth_response(json=response.json(), email=test_email, admin=False)
 
 
 class TestSession:
@@ -74,24 +75,33 @@ class TestSession:
         response = client.get(AuthEndpoints.session)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_session_after_creating_account(self, client: TestClient):
+    def test_session_after_creating_account(
+        self, client: TestClient, test_email, test_password, assert_session_response
+    ):
         response = client.post(
-            AuthEndpoints.create, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            AuthEndpoints.create, json={"email": test_email, "password": test_password}
         )
         assert response.status_code == status.HTTP_200_OK
         response = client.get(AuthEndpoints.session)
         assert response.status_code == status.HTTP_200_OK
-        assert_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_session_response(json=response.json(), email=test_email, admin=False)
 
-    def test_session_after_login(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+    def test_session_after_login(
+        self,
+        client: TestClient,
+        create_user,
+        test_email,
+        test_password,
+        assert_session_response,
+    ):
+        create_user(email=test_email, password=test_password)
         response = client.post(
-            AuthEndpoints.login, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            AuthEndpoints.login, json={"email": test_email, "password": test_password}
         )
         assert response.status_code == status.HTTP_200_OK
         response = client.get(AuthEndpoints.session)
         assert response.status_code == status.HTTP_200_OK
-        assert_session_response(json=response.json(), email=TEST_EMAIL, admin=False)
+        assert_session_response(json=response.json(), email=test_email, admin=False)
 
 
 class TestLogout:
@@ -99,10 +109,16 @@ class TestLogout:
         response = client.get(AuthEndpoints.logout)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_logout_when_logged_in(self, client: TestClient, create_user):
-        create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
+    def test_logout_when_logged_in(
+        self,
+        client: TestClient,
+        create_user,
+        test_email,
+        test_password,
+    ):
+        create_user(email=test_email, password=test_password)
         response = client.post(
-            AuthEndpoints.login, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            AuthEndpoints.login, json={"email": test_email, "password": test_password}
         )
         assert response.status_code == status.HTTP_200_OK
         response = client.get(AuthEndpoints.logout)

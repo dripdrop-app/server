@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture(autouse=True)
 def create_user(create_default_user):
-    pass
+    create_default_user(admin=False)
 
 
 class MusicEndpoints:

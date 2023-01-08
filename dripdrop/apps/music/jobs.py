@@ -107,7 +107,6 @@ async def listen_jobs(
                 )
             except Exception:
                 logger.exception(traceback.format_exc())
-        return
 
     await websocket.accept()
     await redis_service.create_websocket_redis_channel_listener(

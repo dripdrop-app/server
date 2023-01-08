@@ -21,7 +21,6 @@ from .utils import find_user_by_email, create_jwt
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 app = FastAPI(openapi_tags=["Authentication"])
 
 
@@ -53,20 +52,17 @@ async def login(
     user = await find_user_by_email(email=email, session=session)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
     verified, new_hashed_pw = password_context.verify_and_update(
         secret=password, hash=user.password
     )
     if new_hashed_pw:
         user.password = new_hashed_pw
         await session.commit()
-
     if not verified:
         raise HTTPException(
             detail=ErrorMessages.IncorrectCredentials,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-
     return AuthenticatedResponse(access_token=create_jwt(email=email), user=user)
 
 
@@ -99,7 +95,6 @@ async def create_account(
         raise HTTPException(
             detail=ErrorMessages.AccountExists, status_code=status.HTTP_400_BAD_REQUEST
         )
-
     hashed_pw = password_context.hash(password)
     user = User(email=email, password=hashed_pw, admin=False)
     session.add(user)
