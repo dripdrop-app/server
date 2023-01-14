@@ -133,9 +133,7 @@ class MusicTasker:
             await session.commit()
             await redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL,
-                json.dumps(
-                    MusicChannelResponse(job_id=job_id, type="COMPLETED").dict()
-                ),
+                json.dumps(MusicChannelResponse(job_id=job_id).dict()),
             )
             if job_path:
                 shutil.rmtree(job_path)

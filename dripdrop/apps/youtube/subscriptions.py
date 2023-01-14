@@ -1,12 +1,12 @@
 import math
-from fastapi import Path, APIRouter, Depends
+from fastapi import Path, APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, func
 
 from dripdrop.dependencies import AsyncSession, create_db_session
 
 from .dependencies import get_google_user
-from .models import YoutubeSubscriptions, YoutubeChannels, GoogleAccount
-from .responses import SubscriptionsResponse
+from .models import YoutubeSubscription, YoutubeChannel, GoogleAccount
+from .responses import SubscriptionsResponse, ErrorMessages
 
 subscriptions_api = APIRouter(
     prefix="/subscriptions",
@@ -26,26 +26,30 @@ async def get_youtube_subscriptions(
     db: AsyncSession = Depends(create_db_session),
 ):
     subscription_query = (
-        select(YoutubeSubscriptions)
-        .where(YoutubeSubscriptions.email == google_account.email)
-        .alias(name=YoutubeSubscriptions.__tablename__)
+        select(YoutubeSubscription)
+        .where(YoutubeSubscription.email == google_account.email)
+        .alias(name=YoutubeSubscription.__tablename__)
     )
     query = (
         select(
             subscription_query,
-            YoutubeChannels.title.label("channel_title"),
-            YoutubeChannels.thumbnail.label("channel_thumbnail"),
+            YoutubeChannel.title.label("channel_title"),
+            YoutubeChannel.thumbnail.label("channel_thumbnail"),
         )
         .select_from(
             subscription_query.join(
-                YoutubeChannels,
-                YoutubeChannels.id == YoutubeSubscriptions.channel_id,
+                YoutubeChannel,
+                YoutubeChannel.id == YoutubeSubscription.channel_id,
             )
         )
-        .order_by(YoutubeChannels.title)
+        .order_by(YoutubeChannel.title)
     )
     results = await db.execute(query.offset((page - 1) * per_page))
-    subscriptions = results.mappings().fetchmany(per_page)
-    count = await db.scalar(select(func.count(query.c.id)))
+    subscriptions: list[YoutubeSubscription] = results.mappings().fetchmany(per_page)
+    count: int = await db.scalar(select(func.count(query.c.id)))
     total_pages = math.ceil(count / per_page)
+    if page > total_pages:
+        raise HTTPException(
+            detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
+        )
     return SubscriptionsResponse(subscriptions=subscriptions, total_pages=total_pages)

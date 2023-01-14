@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import Field, validator
-from typing import Optional, List, Literal
+from typing import Optional, List
 
 from dripdrop.responses import ResponseBaseModel
 
@@ -29,7 +29,6 @@ class MusicJobResponse(ResponseBaseModel):
 
 
 class MusicChannelResponse(ResponseBaseModel):
-    type: Literal["STARTED", "COMPLETED"]
     job_id: str
 
 
@@ -55,7 +54,6 @@ class JobsResponse(ResponseBaseModel):
 
 
 class JobUpdateResponse(ResponseBaseModel):
-    type: Literal["COMPLETED", "STARTED"]
     job: MusicJobResponse
 
 

@@ -4,8 +4,8 @@ from sqlalchemy import select
 from dripdrop.dependencies import AsyncSession, create_db_session
 
 from .dependencies import get_google_user
-from .models import YoutubeChannel, YoutubeChannels
-
+from .models import YoutubeChannel
+from .responses import YoutubeChannelResponse, ErrorMessages
 
 channels_api = APIRouter(
     prefix="/channels",
@@ -16,17 +16,20 @@ channels_api = APIRouter(
 
 @channels_api.get(
     "",
-    response_model=YoutubeChannel,
-    responses={status.HTTP_404_NOT_FOUND: {"description": "Youtube Channel not found"}},
+    response_model=YoutubeChannelResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.CHANNEL_NOT_FOUND}
+    },
 )
 async def get_youtube_channel(
     channel_id: str = Query(...), db: AsyncSession = Depends(create_db_session)
 ):
-    query = select(YoutubeChannels).where(YoutubeChannels.id == channel_id)
+    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
     results = await db.scalars(query)
-    channel = results.first()
+    channel: YoutubeChannel | None = results.first()
     if not channel:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Youtube Channel not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorMessages.CHANNEL_NOT_FOUND,
         )
-    return YoutubeChannel.from_orm(channel).dict(by_alias=True)
+    return YoutubeChannelResponse(title=channel.title, thumbnail=channel.thumbnail)

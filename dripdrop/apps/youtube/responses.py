@@ -4,29 +4,46 @@ from typing import Optional, List
 
 from dripdrop.responses import ResponseBaseModel
 
-from .models import YoutubeVideo, YoutubeSubscription, YoutubeVideoCategory
-
-
-class YoutubeVideoResponse(ResponseBaseModel, YoutubeVideo):
-    channel_title: str
-    channel_thumbnail: str
-    liked: Optional[datetime] = Field(None)
-    queued: Optional[datetime] = Field(None)
-    watched: Optional[datetime] = Field(None)
-
-
-class YoutubeSubscriptionResponse(ResponseBaseModel, YoutubeSubscription):
-    channel_title: str
-    channel_thumbnail: str
-
 
 class AccountResponse(ResponseBaseModel):
     email: str
     refresh: bool
 
 
-class VideoCategoriesResponse(ResponseBaseModel):
-    categories: List[YoutubeVideoCategory]
+class YoutubeChannelResponse(ResponseBaseModel):
+    title: str
+    thumbnail: str
+
+
+class YoutubeSubscriptionResponse(ResponseBaseModel):
+    channel_title: str
+    channel_thumbnail: str
+
+
+class SubscriptionsResponse(ResponseBaseModel):
+    subscriptions: List[YoutubeSubscriptionResponse]
+    total_pages: int
+
+
+class YoutubeVideoCategoryResponse(ResponseBaseModel):
+    id: int
+    name: str
+
+
+class YoutubeVideoCategoriesResponse(ResponseBaseModel):
+    categories: list[YoutubeVideoCategoryResponse]
+
+
+class YoutubeVideoResponse(ResponseBaseModel):
+    title: str
+    thumbnail: str
+    category_id: int
+    published_at: datetime
+    channel_title: str
+    channel_thumbnail: str
+    liked: Optional[datetime] = Field(None)
+    queued: Optional[datetime] = Field(None)
+    watched: Optional[datetime] = Field(None)
 
 
 class VideosResponse(ResponseBaseModel):
@@ -45,11 +62,6 @@ class VideoQueueResponse(ResponseBaseModel):
     current_video: YoutubeVideoResponse
 
 
-class SubscriptionsResponse(ResponseBaseModel):
-    subscriptions: List[YoutubeSubscriptionResponse]
-    total_pages: int
-
-
-class SubscriptionUpdateResponse(ResponseBaseModel):
-    type = "SUBSCRIPITON_STATE"
-    status: bool
+class ErrorMessages:
+    CHANNEL_NOT_FOUND = "Youtube Channel not found"
+    PAGE_NOT_FOUND = "Page not found"

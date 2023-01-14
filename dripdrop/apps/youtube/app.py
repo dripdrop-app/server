@@ -16,7 +16,7 @@ from dripdrop.settings import settings
 
 from .channels import channels_api
 from .dependencies import get_google_user
-from .models import GoogleAccount, GoogleAccounts
+from .models import GoogleAccount
 from .responses import AccountResponse
 from .subscriptions import subscriptions_api
 from .tasks import youtube_tasker
@@ -63,9 +63,9 @@ async def google_oauth2(
         )
         get_user_email = sync_to_async(google_api_service.get_user_email)
         google_email = await get_user_email(tokens.get("access_token"))
-        query = select(GoogleAccounts).where(GoogleAccounts.email == google_email)
+        query = select(GoogleAccount).where(GoogleAccount.email == google_email)
         results = await db.scalars(query)
-        google_account = results.first()
+        google_account: GoogleAccount | None = results.first()
         if google_account:
             google_account.access_token = tokens["access_token"]
             google_account.refresh_token = tokens["refresh_token"]
@@ -73,7 +73,7 @@ async def google_oauth2(
             await db.commit()
         else:
             db.add(
-                GoogleAccounts(
+                GoogleAccount(
                     email=google_email,
                     user_email=email,
                     access_token=tokens["access_token"],
@@ -102,9 +102,9 @@ async def get_youtube_account(
 ):
     if settings.env == "production":
         await youtube_tasker.update_google_access_token(google_account.email)
-    query = select(GoogleAccounts).where(GoogleAccounts.email == google_account.email)
+    query = select(GoogleAccount).where(GoogleAccount.email == google_account.email)
     results = await db.scalars(query)
-    account = GoogleAccount.from_orm(results.first())
+    account: GoogleAccount = results.first()
     return AccountResponse(email=account.email, refresh=not bool(account.access_token))
 
 

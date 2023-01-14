@@ -13,15 +13,12 @@ def test_logout_when_not_logged_in(client: TestClient):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_logout_when_logged_in(
-    client: TestClient,
-    create_user,
-    test_email,
-    test_password,
-):
-    create_user(email=test_email, password=test_password)
+def test_logout_when_logged_in(client: TestClient, create_user):
+    TEST_EMAIL = "user@gmail.com"
+    TEST_PASSWORD = "password"
+    create_user(email=TEST_EMAIL, password=TEST_PASSWORD)
     response = client.post(
-        LOGIN_URL, json={"email": test_email, "password": test_password}
+        LOGIN_URL, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
     )
     assert response.status_code == status.HTTP_200_OK
     response = client.get(LOGOUT_URL)

@@ -12,26 +12,26 @@ def test_session_when_not_logged_in(client: TestClient):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_session_after_creating_account(
-    client: TestClient, test_email, test_password, assert_session_response
-):
+def test_session_after_creating_account(client: TestClient):
+    TEST_EMAIL = "user@gmail.com"
+    TEST_PASSWORD = "password"
     response = client.post(
-        CREATE_URL, json={"email": test_email, "password": test_password}
+        CREATE_URL, json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
     )
     assert response.status_code == status.HTTP_200_OK
     response = client.get(SESSION_URL)
     assert response.status_code == status.HTTP_200_OK
-    assert_session_response(json=response.json(), email=test_email, admin=False)
+    json = response.json()
+    assert json.get("email") == TEST_EMAIL
+    assert json.get("admin") is False
 
 
-def test_session_after_login(
-    client: TestClient,
-    create_and_login_user,
-    test_email,
-    test_password,
-    assert_session_response,
-):
-    create_and_login_user(email=test_email, password=test_password)
+def test_session_after_login(client: TestClient, create_and_login_user):
+    TEST_EMAIL = "user@gmail.com"
+    TEST_PASSWORD = "password"
+    create_and_login_user(email=TEST_EMAIL, password=TEST_PASSWORD)
     response = client.get(SESSION_URL)
     assert response.status_code == status.HTTP_200_OK
-    assert_session_response(json=response.json(), email=test_email, admin=False)
+    json = response.json()
+    assert json.get("email") == TEST_EMAIL
+    assert json.get("admin") is False

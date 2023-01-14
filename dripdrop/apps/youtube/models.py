@@ -1,28 +1,18 @@
-from datetime import datetime
-from pydantic import Field, BaseModel
 from sqlalchemy import (
     Column,
     String,
     TIMESTAMP,
     ForeignKey,
-    Boolean,
     Integer,
 )
-from typing import Optional
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base
 from dripdrop.utils import get_current_time
 
 
-class ApiBase(BaseModel):
-    class Config:
-        orm_mode = True
-
-
-class GoogleAccounts(Base):
+class GoogleAccount(Base):
     __tablename__ = "google_accounts"
-
     email = Column(String, primary_key=True)
     user_email = Column(
         ForeignKey(
@@ -37,11 +27,6 @@ class GoogleAccounts(Base):
     access_token = Column(String, nullable=False)
     refresh_token = Column(String, nullable=False)
     expires = Column(Integer, nullable=False)
-    subscriptions_loading = Column(
-        Boolean,
-        nullable=False,
-        server_default="0",
-    )
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -55,18 +40,7 @@ class GoogleAccounts(Base):
     )
 
 
-class GoogleAccount(ApiBase):
-    email: str
-    user_email: str
-    access_token: str
-    refresh_token: str
-    expires: int
-    subscriptions_loading: bool
-    created_at: datetime
-    last_updated: datetime
-
-
-class YoutubeChannels(Base):
+class YoutubeChannel(Base):
     __tablename__ = "youtube_channels"
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
@@ -84,21 +58,12 @@ class YoutubeChannels(Base):
     )
 
 
-class YoutubeChannel(ApiBase):
-    id: str
-    title: str
-    thumbnail: Optional[str] = Field(None)
-    upload_playlist_id: Optional[str] = Field(None)
-    created_at: datetime
-    last_updated: datetime
-
-
-class YoutubeSubscriptions(Base):
+class YoutubeSubscription(Base):
     __tablename__ = "youtube_subscriptions"
     id = Column(String, primary_key=True)
     channel_id = Column(
         ForeignKey(
-            YoutubeChannels.id,
+            YoutubeChannel.id,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_subscriptions_channel_id_fkey",
@@ -107,7 +72,7 @@ class YoutubeSubscriptions(Base):
     )
     email = Column(
         ForeignKey(
-            GoogleAccounts.email,
+            GoogleAccount.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_subscriptions_email_fkey",
@@ -122,15 +87,7 @@ class YoutubeSubscriptions(Base):
     )
 
 
-class YoutubeSubscription(ApiBase):
-    id: str
-    channel_id: str
-    email: str
-    published_at: datetime
-    created_at: datetime
-
-
-class YoutubeVideoCategories(Base):
+class YoutubeVideoCategory(Base):
     __tablename__ = "youtube_video_categories"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
@@ -141,20 +98,14 @@ class YoutubeVideoCategories(Base):
     )
 
 
-class YoutubeVideoCategory(ApiBase):
-    id: int
-    name: str
-    created_at: datetime
-
-
-class YoutubeVideos(Base):
+class YoutubeVideo(Base):
     __tablename__ = "youtube_videos"
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
     thumbnail = Column(String, nullable=False)
     channel_id = Column(
         ForeignKey(
-            YoutubeChannels.id,
+            YoutubeChannel.id,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_videos_channel_id_fkey",
@@ -163,7 +114,7 @@ class YoutubeVideos(Base):
     )
     category_id = Column(
         ForeignKey(
-            YoutubeVideoCategories.id,
+            YoutubeVideoCategory.id,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_videos_category_id_fkey",
@@ -178,21 +129,11 @@ class YoutubeVideos(Base):
     )
 
 
-class YoutubeVideo(ApiBase):
-    id: str
-    title: str
-    thumbnail: str
-    channel_id: str
-    category_id: int
-    published_at: datetime
-    created_at: datetime
-
-
-class YoutubeVideoLikes(Base):
+class YoutubeVideoLike(Base):
     __tablename__ = "youtube_video_likes"
     email = Column(
         ForeignKey(
-            GoogleAccounts.email,
+            GoogleAccount.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_likes_email_fkey",
@@ -202,7 +143,7 @@ class YoutubeVideoLikes(Base):
     )
     video_id = Column(
         ForeignKey(
-            YoutubeVideos.id,
+            YoutubeVideo.id,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_likes_video_id_fkey",
@@ -217,17 +158,11 @@ class YoutubeVideoLikes(Base):
     )
 
 
-class YoutubeVideoLike(ApiBase):
-    email: str
-    video_id: str
-    created_at: datetime
-
-
-class YoutubeVideoQueues(Base):
+class YoutubeVideoQueue(Base):
     __tablename__ = "youtube_video_queues"
     email = Column(
         ForeignKey(
-            GoogleAccounts.email,
+            GoogleAccount.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_queues_email_fkey",
@@ -237,7 +172,7 @@ class YoutubeVideoQueues(Base):
     )
     video_id = Column(
         ForeignKey(
-            YoutubeVideos.id,
+            YoutubeVideo.id,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_queues_video_id_fkey",
@@ -252,17 +187,11 @@ class YoutubeVideoQueues(Base):
     )
 
 
-class YoutubeVideoQueue(ApiBase):
-    email: str
-    video_id: str
-    created_at: datetime
-
-
-class YoutubeVideoWatches(Base):
+class YoutubeVideoWatch(Base):
     __tablename__ = "youtube_video_watches"
     email = Column(
         ForeignKey(
-            GoogleAccounts.email,
+            GoogleAccount.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_watches_email_fkey",
@@ -272,7 +201,7 @@ class YoutubeVideoWatches(Base):
     )
     video_id = Column(
         ForeignKey(
-            YoutubeVideos.id,
+            YoutubeVideo.id,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_watches_video_id_fkey",
@@ -285,9 +214,3 @@ class YoutubeVideoWatches(Base):
         nullable=False,
         default=get_current_time,
     )
-
-
-class YoutubeVideoWatch(ApiBase):
-    email: str
-    video_id: str
-    created_at: datetime

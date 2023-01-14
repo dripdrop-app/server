@@ -93,8 +93,3 @@ def create_and_login_user(client: TestClient, create_user):
         assert response.cookies.get(COOKIE_NAME, None) is not None
 
     return _create_and_login_user
-
-
-@pytest.fixture
-def create_and_login_default_user(create_and_login_user, test_email, test_password):
-    create_and_login_user(email=test_email, password=test_password, admin=True)

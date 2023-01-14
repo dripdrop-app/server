@@ -90,7 +90,6 @@ async def listen_jobs(
         message = json.loads(msg.get("data").decode())
         message = MusicChannelResponse.parse_obj(message)
         job_id = message.job_id
-        type = message.type
         query = select(MusicJob).where(
             MusicJob.user_email == user.email,
             MusicJob.id == job_id,
@@ -101,9 +100,7 @@ async def listen_jobs(
         if job:
             try:
                 await websocket.send_json(
-                    jsonable_encoder(
-                        JobUpdateResponse(type=type, job=job).dict(by_alias=True)
-                    )
+                    jsonable_encoder(JobUpdateResponse(job=job).dict(by_alias=True))
                 )
             except Exception:
                 logger.exception(traceback.format_exc())
@@ -188,7 +185,7 @@ async def create_job(
     queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
-        json.dumps(MusicChannelResponse(job_id=job_id, type="STARTED").dict()),
+        json.dumps(MusicChannelResponse(job_id=job_id).dict()),
     )
     return Response(None, status_code=status.HTTP_201_CREATED)
 
