@@ -1,3 +1,4 @@
+from datetime import timezone
 from pydantic import BaseSettings
 
 
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     test_aws_secret_access_key: str
     test_database_url: str
     test_redis_url: str
-    test_timezone: bool | None = True
+    test_timezone: timezone | None = timezone.utc
 
     class Config:
         env_file = ".env"
