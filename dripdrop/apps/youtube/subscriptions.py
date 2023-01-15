@@ -46,7 +46,7 @@ async def get_youtube_subscriptions(
     )
     results = await db.execute(query.offset((page - 1) * per_page))
     subscriptions: list[YoutubeSubscription] = results.mappings().fetchmany(per_page)
-    count: int = await db.scalar(select(func.count(query.c.id)))
+    count: int = await db.scalar(select(func.count(query.subquery().columns.id)))
     total_pages = math.ceil(count / per_page)
     if page > total_pages:
         raise HTTPException(

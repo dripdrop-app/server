@@ -70,7 +70,7 @@ async def get_jobs(
     )
     results = await session.scalars(query.offset((page - 1) * per_page))
     jobs = list(map(lambda job: job, results.fetchmany(per_page)))
-    count_query = select(func.count(query.subquery().c.id))
+    count_query = select(func.count(query.subquery().columns.id))
     count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
     if page > total_pages:

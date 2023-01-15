@@ -1,25 +1,35 @@
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
 SUBSCRIPTIONS_URL = "/api/youtube/subscriptions"
 
 
-# @pytest.mark.noauth
-# def test_subscriptions_when_not_logged_in(client: TestClient):
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
-#     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+def test_subscriptions_when_not_logged_in(client: TestClient):
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-# @pytest.mark.nogoogleauth
-# def test_subscriptions_with_no_google_account(client: TestClient):
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
-#     assert response.status_code == status.HTTP_403_FORBIDDEN
+def test_subscriptions_with_no_google_account(
+    client: TestClient, create_and_login_user
+):
+    create_and_login_user(email="user@gmail.com", password="password")
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-# def test_subscriptions_with_no_results(client: TestClient):
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
-#     assert response.status_code == status.HTTP_404_NOT_FOUND
+def test_subscriptions_with_no_results(
+    client: TestClient, create_and_login_user, create_google_account
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # def test_subscriptions_out_of_range_page(
