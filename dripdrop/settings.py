@@ -41,6 +41,5 @@ if settings.env == "testing":
     settings.async_database_url = settings.test_async_database_url
     settings.database_url = settings.test_database_url
     settings.redis_url = settings.test_redis_url
-    settings.test_timezone = (
-        None if settings.database_url.startswith("sqlite") else True
-    )
+    if settings.database_url.startswith("sqlite"):
+        settings.test_timezone = None
