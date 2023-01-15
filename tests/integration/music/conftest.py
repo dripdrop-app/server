@@ -8,8 +8,8 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from fastapi import status
-from sqlalchemy import select, insert
-from sqlalchemy.engine import Connection
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from dripdrop.apps.music.models import MusicJob
 from dripdrop.services.audio_tag import AudioTagService
@@ -88,7 +88,7 @@ def test_base64_image(test_image_file):
 
 
 @pytest.fixture
-def create_music_job(db: Connection):
+def create_music_job(session: Session):
     def _create_music_job(
         id: str = ...,
         email: str = ...,
@@ -107,35 +107,38 @@ def create_music_job(db: Connection):
         failed: bool = False,
         deleted_at: datetime | None = None,
     ):
-        db.execute(
-            insert(MusicJob).values(
-                id=id,
-                user_email=email,
-                artwork_url=artwork_url,
-                artwork_filename=artwork_filename,
-                original_filename=original_filename,
-                filename_url=filename_url,
-                youtube_url=youtube_url,
-                download_filename=download_filename,
-                download_url=download_url,
-                title=title,
-                artist=artist,
-                album=album,
-                grouping=grouping,
-                completed=completed,
-                failed=failed,
-                deleted_at=deleted_at,
-            )
+        job = MusicJob(
+            id=id,
+            user_email=email,
+            artwork_url=artwork_url,
+            artwork_filename=artwork_filename,
+            original_filename=original_filename,
+            filename_url=filename_url,
+            youtube_url=youtube_url,
+            download_filename=download_filename,
+            download_url=download_url,
+            title=title,
+            artist=artist,
+            album=album,
+            grouping=grouping,
+            completed=completed,
+            failed=failed,
+            deleted_at=deleted_at,
         )
+        session.add(job)
+        session.commit()
+        return job
 
     return _create_music_job
 
 
 @pytest.fixture
-def wait_for_running_job_to_complete(db: Connection, function_timeout):
+def wait_for_running_job_to_complete(session: Session, function_timeout):
     def _wait_for_job_to_complete(email: str = ..., timeout: int = ...):
         def _check_job():
-            results = db.execute(select(MusicJob).where(MusicJob.user_email == email))
+            results = session.execute(
+                select(MusicJob).where(MusicJob.user_email == email)
+            )
             job: MusicJob | None = results.first()
             assert job is not None
             if job.completed or job.failed:

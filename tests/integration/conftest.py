@@ -3,8 +3,7 @@ import time
 from datetime import datetime
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy import insert
-from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Session
 
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
@@ -28,8 +27,9 @@ def setup_database():
 
 
 @pytest.fixture
-def db():
-    return database.engine.connect()
+def session():
+    with database.create_session() as session:
+        yield session
 
 
 # Fix found here https://github.com/pytest-dev/pytest-asyncio/issues/207
@@ -69,15 +69,14 @@ def function_timeout():
 
 
 @pytest.fixture
-def create_user(db: Connection):
+def create_user(session: Session):
     def _create_user(email: str = ..., password: str = ..., admin=False):
         assert type(email) is str
         assert type(password) is str
-        db.execute(
-            insert(User).values(
-                email=email, password=password_context.hash(password), admin=admin
-            )
-        )
+        user = User(email=email, password=password_context.hash(password), admin=admin)
+        session.add(user)
+        session.commit()
+        return user
 
     return _create_user
 
