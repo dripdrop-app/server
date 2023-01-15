@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from fastapi import status
 from fastapi.testclient import TestClient
 
+from dripdrop.settings import settings
+
 JOBS_URL = "/api/music/jobs"
 
 
@@ -64,7 +66,9 @@ def test_get_jobs_with_single_result(
             "grouping": job.grouping,
             "completed": job.completed,
             "failed": job.failed,
-            "createdAt": job.created_at.replace(tzinfo=None).isoformat(),
+            "createdAt": job.created_at.replace(
+                tzinfo=settings.test_timezone
+            ).isoformat(),
         }
     ]
 
@@ -107,7 +111,9 @@ def test_get_jobs_with_multiple_pages(
                 "grouping": jobs[i].grouping,
                 "completed": jobs[i].completed,
                 "failed": jobs[i].failed,
-                "createdAt": jobs[i].created_at.replace(tzinfo=None).isoformat(),
+                "createdAt": jobs[i]
+                .created_at.replace(tzinfo=settings.test_timezone)
+                .isoformat(),
             },
             range(2, 0, -1),
         )
@@ -153,7 +159,9 @@ def test_get_jobs_with_deleted_jobs(
                 "grouping": jobs[i].grouping,
                 "completed": jobs[i].completed,
                 "failed": jobs[i].failed,
-                "createdAt": jobs[i].created_at.replace(tzinfo=None).isoformat(),
+                "createdAt": jobs[i]
+                .created_at.replace(tzinfo=settings.test_timezone)
+                .isoformat(),
             },
             range(2, -1, -2),
         )
@@ -198,7 +206,9 @@ def test_get_jobs_only_for_logged_in_user(
             "grouping": job.grouping,
             "completed": job.completed,
             "failed": job.failed,
-            "createdAt": job.created_at.replace(tzinfo=None).isoformat(),
+            "createdAt": job.created_at.replace(
+                tzinfo=settings.test_timezone
+            ).isoformat(),
         }
     ]
 

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     test_aws_secret_access_key: str
     test_database_url: str
     test_redis_url: str
+    test_timezone: bool | None = True
 
     class Config:
         env_file = ".env"
@@ -39,3 +40,6 @@ if settings.env == "testing":
     settings.async_database_url = settings.test_async_database_url
     settings.database_url = settings.test_database_url
     settings.redis_url = settings.test_redis_url
+    settings.test_timezone = (
+        None if settings.database_url.startswith("sqlite") else True
+    )
