@@ -7,10 +7,9 @@ CREATE_URL = "/api/auth/create"
 
 
 def test_create_duplicate_user(client: TestClient, create_user):
-    TEST_EMAIL = "user@gmail.com"
-    create_user(email=TEST_EMAIL, password="password")
+    user = create_user(email="user@gmail.com", password="password")
     response = client.post(
-        CREATE_URL, json={"email": TEST_EMAIL, "password": "password"}
+        CREATE_URL, json={"email": user.email, "password": "password"}
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 

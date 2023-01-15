@@ -28,8 +28,7 @@ def test_creating_youtube_job_with_valid_youtube_url(
     wait_for_running_job_to_complete,
     run_worker,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
         CREATE_URL,
         data={
@@ -41,7 +40,7 @@ def test_creating_youtube_job_with_valid_youtube_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=TEST_EMAIL, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -60,8 +59,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
     get_tags_from_job,
     run_worker,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
         CREATE_URL,
         data={
@@ -74,7 +72,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=TEST_EMAIL, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -95,8 +93,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
     get_tags_from_job,
     run_worker,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
         CREATE_URL,
         data={
@@ -109,7 +106,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=TEST_EMAIL, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"

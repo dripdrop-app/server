@@ -43,16 +43,6 @@ def client():
 
 
 @pytest.fixture
-def test_email():
-    return "testuser@gmail.com"
-
-
-@pytest.fixture
-def test_password():
-    return "testpassword"
-
-
-@pytest.fixture
 def function_timeout():
     def _function_timeout(timeout: int = ..., function=...):
         start_time = datetime.now()
@@ -84,11 +74,12 @@ def create_user(session: Session):
 @pytest.fixture
 def create_and_login_user(client: TestClient, create_user):
     def _create_and_login_user(email: str = ..., password: str = ..., admin=False):
-        create_user(email, password, admin)
+        user = create_user(email=email, password=password, admin=admin)
         response = client.post(
             "/api/auth/login", json={"email": email, "password": password}
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.cookies.get(COOKIE_NAME, None) is not None
+        return user
 
     return _create_and_login_user

@@ -19,12 +19,11 @@ def test_get_jobs_with_no_results(client: TestClient, create_and_login_user):
 def test_get_jobs_with_out_of_range_page(
     client: TestClient, create_and_login_user, create_music_job
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email="user@gmail.com", password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     for i in range(2):
         create_music_job(
             id=i,
-            email=TEST_EMAIL,
+            email=user.email,
             title="title",
             artist="artist",
             album="album",
@@ -38,11 +37,10 @@ def test_get_jobs_with_single_result(
     create_and_login_user,
     create_music_job,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     job = create_music_job(
         id="1",
-        email=TEST_EMAIL,
+        email=user.email,
         title="title",
         artist="artist",
         album="album",
@@ -76,13 +74,12 @@ def test_get_jobs_with_multiple_pages(
     create_and_login_user,
     create_music_job,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     jobs = list(
         map(
             lambda i: create_music_job(
                 id=i,
-                email=TEST_EMAIL,
+                email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
@@ -122,13 +119,12 @@ def test_get_jobs_with_deleted_jobs(
     create_and_login_user,
     create_music_job,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     jobs = list(
         map(
             lambda i: create_music_job(
                 id=i,
-                email=TEST_EMAIL,
+                email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
@@ -164,18 +160,60 @@ def test_get_jobs_with_deleted_jobs(
     )
 
 
+def test_get_jobs_only_for_logged_in_user(
+    client: TestClient, create_and_login_user, create_user, create_music_job
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    other_user = create_user(email="other@gmail.com", password="password")
+    job = create_music_job(
+        id="1",
+        email=user.email,
+        title="title_1",
+        artist="artist",
+        album="album",
+    )
+    create_music_job(
+        id="2",
+        email=other_user.email,
+        title="title_2",
+        artist="artist",
+        album="album",
+    )
+    response = client.get(f"{JOBS_URL}/1/4")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json.get("totalPages") == 1
+    assert json.get("jobs") == [
+        {
+            "artworkUrl": job.artwork_url,
+            "artworkFilename": job.artwork_filename,
+            "originalFilename": job.original_filename,
+            "filenameUrl": job.filename_url,
+            "youtubeUrl": job.youtube_url,
+            "downloadFilename": job.download_filename,
+            "downloadUrl": job.download_url,
+            "title": job.title,
+            "artist": job.artist,
+            "album": job.album,
+            "grouping": job.grouping,
+            "completed": job.completed,
+            "failed": job.failed,
+            "createdAt": job.created_at.replace(tzinfo=None).isoformat(),
+        }
+    ]
+
+
 def test_get_jobs_are_in_descending_order(
     client: TestClient,
     create_and_login_user,
     create_music_job,
 ):
-    TEST_EMAIL = "user@gmail.com"
-    create_and_login_user(email=TEST_EMAIL, password="password")
+    user = create_and_login_user(email="user@gmail.com", password="password")
     jobs = list(
         map(
             lambda i: create_music_job(
                 id=i,
-                email=TEST_EMAIL,
+                email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",

@@ -136,7 +136,7 @@ def create_music_job(session: Session):
 def wait_for_running_job_to_complete(session: Session, function_timeout):
     def _wait_for_job_to_complete(email: str = ..., timeout: int = ...):
         def _check_job():
-            results = session.execute(
+            results = session.scalars(
                 select(MusicJob).where(MusicJob.user_email == email)
             )
             job: MusicJob | None = results.first()
