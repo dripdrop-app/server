@@ -32,94 +32,181 @@ def test_subscriptions_with_no_results(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# def test_subscriptions_out_of_range_page(
-#     client: TestClient, create_channel, create_subscription, test_email
-# ):
-#     create_channel(
-#         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="1", channel_id="1", email=test_email)
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/2/10")
-#     assert response.status_code == status.HTTP_404_NOT_FOUND
+def test_subscriptions_out_of_range_page(
+    client: TestClient,
+    create_and_login_user,
+    create_google_account,
+    create_channel,
+    create_subscription,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    google_user = create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    channel = create_channel(
+        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    response = client.get(f"{SUBSCRIPTIONS_URL}/2/1")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# def test_subscriptions_with_single_result(
-#     client: TestClient, create_channel, create_subscription, test_email
-# ):
-#     create_channel(
-#         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="1", channel_id="1", email=test_email)
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
-#     assert response.status_code == status.HTTP_200_OK
-#     json = response.json()
-#     assert json.get("subscriptions") == [
-#         {"channelTitle": "channel", "channelThumbnail": "thumbnail"}
-#     ]
-#     assert json.get("totalPages") == 1
+def test_subscriptions_with_single_result(
+    client: TestClient,
+    create_and_login_user,
+    create_google_account,
+    create_channel,
+    create_subscription,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    google_user = create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    channel = create_channel(
+        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json.get("subscriptions") == [
+        {"channelTitle": channel.title, "channelThumbnail": channel.thumbnail}
+    ]
+    assert json.get("totalPages") == 1
 
 
-# def test_subscriptions_with_multiple_pages(
-#     client: TestClient, create_channel, create_subscription, test_email
-# ):
-#     create_channel(
-#         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="1", channel_id="1", email=test_email)
-#     create_subscription(id="2", channel_id="1", email=test_email)
-#     create_subscription(id="3", channel_id="1", email=test_email)
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
-#     assert response.status_code == status.HTTP_200_OK
-#     json = response.json()
-#     assert json.get("subscriptions") == [
-#         {"channelTitle": "channel", "channelThumbnail": "thumbnail"}
-#     ]
-#     assert json.get("totalPages") == 3
+def test_subscriptions_with_multiple_pages(
+    client: TestClient,
+    create_and_login_user,
+    create_google_account,
+    create_channel,
+    create_subscription,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    google_user = create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    channels = list(
+        map(
+            lambda i: create_channel(
+                id=i,
+                title=f"channel_{i}",
+                thumbnail="thumbnail",
+                upload_playlist_id="1",
+            ),
+            range(3),
+        )
+    )
+    for i, channel in enumerate(channels):
+        create_subscription(id=i, channel_id=channel.id, email=google_user.email)
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json.get("subscriptions") == [
+        {"channelTitle": channels[0].title, "channelThumbnail": channels[0].thumbnail}
+    ]
+    assert json.get("totalPages") == 3
 
 
-# def test_subscriptions_for_logged_in_google_account(
-#     client: TestClient, create_user, create_channel, create_subscription, test_email
-# ):
-#     OTHER_USER_EMAIL = "otheruser@gmail.com"
-#     create_user(email=OTHER_USER_EMAIL, password="testpassword")
-#     create_channel(
-#         id="1", title="channel1", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="1", channel_id="1", email=test_email)
-#     create_channel(
-#         id="2", title="channel2", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="2", channel_id="2", email=OTHER_USER_EMAIL)
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/2")
-#     assert response.status_code == status.HTTP_200_OK
-#     json = response.json()
-#     assert json.get("subscriptions") == [
-#         {"channelTitle": "channel1", "channelThumbnail": "thumbnail"}
-#     ]
-#     assert json.get("totalPages") == 1
+def test_subscriptions_for_logged_in_google_account(
+    client: TestClient,
+    create_and_login_user,
+    create_user,
+    create_google_account,
+    create_channel,
+    create_subscription,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    google_user = create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    other_user = create_user(email="otheruser@gmail.com", password="password")
+    other_google_user = create_google_account(
+        email="othergoogle@gmail.com",
+        user_email=other_user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    channels = list(
+        map(
+            lambda i: create_channel(
+                id=i,
+                title=f"channel_{i}",
+                thumbnail="thumbnail",
+                upload_playlist_id="1",
+            ),
+            range(2),
+        )
+    )
+    create_subscription(id=2, channel_id=channels[1].id, email=other_google_user.email)
+    create_subscription(id=1, channel_id=channels[0].id, email=google_user.email)
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/2")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json.get("subscriptions") == [
+        {
+            "channelTitle": channels[0].title,
+            "channelThumbnail": channels[0].thumbnail,
+        }
+    ]
+    assert json.get("totalPages") == 1
 
 
-# def test_subscriptions_are_in_descending_order_by_title(
-#     client: TestClient, create_channel, create_subscription, test_email
-# ):
-#     create_channel(
-#         id="1", title="channel1", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="1", channel_id="1", email=test_email)
-#     create_channel(
-#         id="2", title="channel2", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="2", channel_id="2", email=test_email)
-#     create_channel(
-#         id="3", title="channel3", thumbnail="thumbnail", upload_playlist_id="1"
-#     )
-#     create_subscription(id="3", channel_id="3", email=test_email)
-#     response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
-#     assert response.status_code == status.HTTP_200_OK
-#     json = response.json()
-#     assert json.get("subscriptions") == [
-#         {"channelTitle": "channel1", "channelThumbnail": "thumbnail"},
-#         {"channelTitle": "channel2", "channelThumbnail": "thumbnail"},
-#         {"channelTitle": "channel3", "channelThumbnail": "thumbnail"},
-#     ]
-#     assert json.get("totalPages") == 1
+def test_subscriptions_are_in_descending_order_by_title(
+    client: TestClient,
+    create_and_login_user,
+    create_google_account,
+    create_channel,
+    create_subscription,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    google_user = create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="",
+        refresh_token="",
+        expires=1000,
+    )
+    channels = list(
+        map(
+            lambda i: create_channel(
+                id=i,
+                title=f"channel_{i}",
+                thumbnail="thumbnail",
+                upload_playlist_id="1",
+            ),
+            range(3),
+        )
+    )
+    for i, channel in enumerate(channels):
+        create_subscription(id=i, channel_id=channel.id, email=google_user.email)
+    response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json.get("subscriptions") == list(
+        map(
+            lambda channel: {
+                "channelTitle": channel.title,
+                "channelThumbnail": channel.thumbnail,
+            },
+            channels,
+        )
+    )
+    assert json.get("totalPages") == 1
