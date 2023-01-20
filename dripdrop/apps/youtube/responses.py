@@ -11,13 +11,16 @@ class AccountResponse(ResponseBaseModel):
 
 
 class YoutubeChannelResponse(ResponseBaseModel):
+    id: str
     title: str
     thumbnail: str
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel):
+    channel_id: str
     channel_title: str
     channel_thumbnail: str
+    published_at: datetime
 
 
 class SubscriptionsResponse(ResponseBaseModel):
@@ -35,6 +38,7 @@ class YoutubeVideoCategoriesResponse(ResponseBaseModel):
 
 
 class YoutubeVideoResponse(ResponseBaseModel):
+    id: str
     title: str
     thumbnail: str
     category_id: int
@@ -65,3 +69,9 @@ class VideoQueueResponse(ResponseBaseModel):
 class ErrorMessages:
     CHANNEL_NOT_FOUND = "Youtube Channel not found"
     PAGE_NOT_FOUND = "Page not found"
+    VIDEO_CATEGORIES_INVALID = "Video Categories must be an integer"
+    VIDEO_NOT_FOUND = "Video not found"
+    REMOVE_VIDEO_LIKE_ERROR = "Could not remove video like"
+    ADD_VIDEO_QUEUE_ERROR = "Could not add video to queue"
+    REMOVE_VIDEO_QUEUE_ERROR = "Could not delete video queue"
+    VIDEO_QUEUE_NOT_FOUND = "Video in queue not found"

@@ -20,17 +20,17 @@ class CronService:
             youtube_tasker.update_youtube_video_categories,
             kwargs={"cron": True},
         )
-        active_channels_job = queue.enqueue(
-            youtube_tasker.update_active_channels,
-            depends_on=video_categories_job,
-        )
         update_subscriptions_job = queue.enqueue(
             youtube_tasker.update_subscriptions,
-            depends_on=active_channels_job,
+            depends_on=video_categories_job,
+        )
+        active_channels_job = queue.enqueue(
+            youtube_tasker.update_active_channels,
+            depends_on=update_subscriptions_job,
         )
         queue.enqueue(
             youtube_tasker.channel_cleanup,
-            depends_on=update_subscriptions_job,
+            depends_on=active_channels_job,
         )
         queue.enqueue(music_tasker.cleanup_jobs)
 

@@ -32,4 +32,6 @@ async def get_youtube_channel(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.CHANNEL_NOT_FOUND,
         )
-    return YoutubeChannelResponse(title=channel.title, thumbnail=channel.thumbnail)
+    return YoutubeChannelResponse(
+        id=channel.id, title=channel.title, thumbnail=channel.thumbnail
+    )

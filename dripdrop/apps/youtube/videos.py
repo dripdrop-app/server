@@ -17,6 +17,7 @@ from .models import (
     YoutubeVideoWatch,
 )
 from .responses import (
+    ErrorMessages,
     YoutubeVideoCategoriesResponse,
     VideosResponse,
     VideoQueueResponse,
@@ -46,7 +47,7 @@ async def get_youtube_video_categories(
     )
     query = channel_query.join(
         YoutubeVideo,
-        YoutubeVideo.channel_id == channel_query.c.id,
+        YoutubeVideo.channel_id == channel_query.columns.id,
     ).join(
         YoutubeVideoCategory,
         YoutubeVideoCategory.id == YoutubeVideo.category_id,
@@ -66,7 +67,7 @@ async def get_youtube_video_categories(
     response_model=VideosResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {
-            "description": "Video Categories must be an integer"
+            "description": ErrorMessages.VIDEO_CATEGORIES_INVALID
         }
     },
 )
@@ -89,7 +90,7 @@ async def get_youtube_videos(
         logger.exception(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Video Categories must be an integer",
+            detail=ErrorMessages.VIDEO_CATEGORIES_INVALID,
         )
 
     videos_query = (
@@ -136,52 +137,54 @@ async def get_youtube_videos(
     )
     query = select(
         videos_query,
-        channel_query.c.title.label("channel_title"),
-        channel_query.c.thumbnail.label("channel_thumbnail"),
-        video_likes_query.c.created_at.label("liked"),
-        video_watches_query.c.created_at.label("watched"),
-        video_queues_query.c.created_at.label("queued"),
+        channel_query.columns.title.label("channel_title"),
+        channel_query.columns.thumbnail.label("channel_thumbnail"),
+        video_likes_query.columns.created_at.label("liked"),
+        video_watches_query.columns.created_at.label("watched"),
+        video_queues_query.columns.created_at.label("queued"),
     ).select_from(
         subscription_query.join(
             channel_query,
-            channel_query.c.id == YoutubeSubscription.channel_id,
+            channel_query.columns.id == YoutubeSubscription.channel_id,
         )
         .join(
             videos_query,
-            videos_query.c.channel_id == channel_query.c.id,
+            videos_query.columns.channel_id == channel_query.columns.id,
         )
         .join(
             video_likes_query,
-            video_likes_query.c.video_id == videos_query.c.id,
+            video_likes_query.columns.video_id == videos_query.columns.id,
             isouter=not liked_only,
         )
         .join(
             video_queues_query,
-            video_queues_query.c.video_id == videos_query.c.id,
+            video_queues_query.columns.video_id == videos_query.columns.id,
             isouter=not queued_only,
         )
         .join(
             video_watches_query,
-            video_watches_query.c.video_id == videos_query.c.id,
+            video_watches_query.columns.video_id == videos_query.columns.id,
             isouter=True,
         )
     )
     if liked_only:
-        query = query.order_by(video_likes_query.c.created_at.desc())
+        query = query.order_by(video_likes_query.columns.created_at.desc())
     elif queued_only:
-        query = query.order_by(video_queues_query.c.created_at.asc())
+        query = query.order_by(video_queues_query.columns.created_at.asc())
     else:
-        query = query.order_by(videos_query.c.published_at.desc())
+        query = query.order_by(videos_query.columns.published_at.desc())
     results = await db.execute(query.offset((page - 1) * per_page))
     videos = results.mappings().fetchmany(per_page)
-    count = await db.scalar(select(func.count(query.c.id)))
+    count = await db.scalar(select(func.count(query.columns.id)))
     total_pages = math.ceil(count / per_page)
     return VideosResponse(videos=videos, total_pages=total_pages)
 
 
 @videos_api.put(
     "/watch",
-    responses={status.HTTP_404_NOT_FOUND: {"description": "Video not found"}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND}
+    },
 )
 async def add_youtube_video_watch(
     video_id: str = Query(...),
@@ -198,12 +201,16 @@ async def add_youtube_video_watch(
         db.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
         await db.commit()
         return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video not found")
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
+    )
 
 
 @videos_api.put(
     "/like",
-    responses={status.HTTP_404_NOT_FOUND: {"description": "Video not found"}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND}
+    },
 )
 async def add_youtube_video_like(
     video_id: str = Query(...),
@@ -220,11 +227,18 @@ async def add_youtube_video_like(
         db.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
         await db.commit()
         return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video not found")
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
+    )
 
 
 @videos_api.delete(
-    "/like", responses={404: {"description": "Could not remove video like"}}
+    "/like",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessages.REMOVE_VIDEO_LIKE_ERROR
+        }
+    },
 )
 async def delete_youtube_video_like(
     video_id: str = Query(...),
@@ -239,14 +253,22 @@ async def delete_youtube_video_like(
     results = await db.scalars(query)
     like = results.first()
     if not like:
-        raise HTTPException(404)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorMessages.REMOVE_VIDEO_LIKE_ERROR,
+        )
     await db.delete(like)
     await db.commit()
-    return Response(None, 200)
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.put(
-    "/queue", responses={400: {"description": "Could not add video to queue"}}
+    "/queue",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": ErrorMessages.ADD_VIDEO_QUEUE_ERROR
+        }
+    },
 )
 async def add_youtube_video_queue(
     video_id: str = Query(...),
@@ -262,12 +284,20 @@ async def add_youtube_video_queue(
     if not queue:
         db.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
         await db.commit()
-        return Response(None, 200)
-    raise HTTPException(400)
+        return Response(None, status_code=status.HTTP_200_OK)
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=ErrorMessages.ADD_VIDEO_QUEUE_ERROR,
+    )
 
 
 @videos_api.delete(
-    "/queue", responses={404: {"description": "Could not deleted video queue"}}
+    "/queue",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessages.REMOVE_VIDEO_QUEUE_ERROR
+        }
+    },
 )
 async def delete_youtube_video_queue(
     video_id: str = Query(...),
@@ -281,16 +311,21 @@ async def delete_youtube_video_queue(
     results = await db.scalars(query)
     queue = results.first()
     if not queue:
-        raise HTTPException(404)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorMessages.REMOVE_VIDEO_QUEUE_ERROR,
+        )
     await db.delete(queue)
     await db.commit()
-    return Response(None, 200)
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.get(
     "/queue",
     response_model=VideoQueueResponse,
-    responses={404: {"description": "Video in queue not found"}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_QUEUE_NOT_FOUND}
+    },
 )
 async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
@@ -318,33 +353,33 @@ async def get_youtube_video_queue(
     query = (
         select(
             videos_query,
-            channel_query.c.title.label("channel_title"),
-            channel_query.c.thumbnail.label("channel_thumbnail"),
-            video_likes_query.c.created_at.label("liked"),
-            video_watches_query.c.created_at.label("watched"),
-            video_queues_query.c.created_at.label("queued"),
+            channel_query.columns.title.label("channel_title"),
+            channel_query.columns.thumbnail.label("channel_thumbnail"),
+            video_likes_query.columns.created_at.label("liked"),
+            video_watches_query.columns.created_at.label("watched"),
+            video_queues_query.columns.created_at.label("queued"),
         )
         .select_from(
             video_queues_query.join(
                 videos_query,
-                video_queues_query.c.video_id == videos_query.c.id,
+                video_queues_query.columns.video_id == videos_query.columns.id,
             )
             .join(
                 channel_query,
-                channel_query.c.id == videos_query.c.channel_id,
+                channel_query.columns.id == videos_query.columns.channel_id,
             )
             .join(
                 video_likes_query,
-                video_likes_query.c.video_id == videos_query.c.id,
+                video_likes_query.columns.video_id == videos_query.columns.id,
                 isouter=True,
             )
             .join(
                 video_watches_query,
-                video_watches_query.c.video_id == videos_query.c.id,
+                video_watches_query.columns.video_id == videos_query.columns.id,
                 isouter=True,
             )
         )
-        .order_by(video_queues_query.c.created_at.asc())
+        .order_by(video_queues_query.columns.created_at.asc())
     )
     results = await db.execute(query)
     videos = results.mappings().fetchmany(2 if index == 1 else 3)
@@ -356,7 +391,10 @@ async def get_youtube_video_queue(
     if videos:
         next_video = videos.pop(0)
     if not current_video:
-        raise HTTPException(404)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorMessages.VIDEO_QUEUE_NOT_FOUND,
+        )
     return VideoQueueResponse(
         current_video=current_video, prev=bool(prev_video), next=bool(next_video)
     )
@@ -366,7 +404,9 @@ async def get_youtube_video_queue(
     "",
     dependencies=[Depends(get_google_user)],
     response_model=VideoResponse,
-    responses={404: {"description": "Could not find Youtube video"}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Could not find Youtube video"}
+    },
 )
 async def get_youtube_video(
     video_id: str = Query(...),
@@ -397,29 +437,29 @@ async def get_youtube_video(
     channel_query = select(YoutubeChannel).alias(name=YoutubeChannel.__tablename__)
     query = select(
         videos_query,
-        channel_query.c.title.label("channel_title"),
-        channel_query.c.thumbnail.label("channel_thumbnail"),
-        video_likes_query.c.created_at.label("liked"),
-        video_watches_query.c.created_at.label("watched"),
-        video_queues_query.c.created_at.label("queued"),
+        channel_query.columns.title.label("channel_title"),
+        channel_query.columns.thumbnail.label("channel_thumbnail"),
+        video_likes_query.columns.created_at.label("liked"),
+        video_watches_query.columns.created_at.label("watched"),
+        video_queues_query.columns.created_at.label("queued"),
     ).select_from(
         videos_query.join(
             channel_query,
-            channel_query.c.id == videos_query.c.channel_id,
+            channel_query.columns.id == videos_query.columns.channel_id,
         )
         .join(
             video_queues_query,
-            video_queues_query.c.video_id == videos_query.c.id,
+            video_queues_query.columns.video_id == videos_query.columns.id,
             isouter=True,
         )
         .join(
             video_likes_query,
-            video_likes_query.c.video_id == videos_query.c.id,
+            video_likes_query.columns.video_id == videos_query.columns.id,
             isouter=True,
         )
         .join(
             video_watches_query,
-            video_watches_query.c.video_id == videos_query.c.id,
+            video_watches_query.columns.video_id == videos_query.columns.id,
             isouter=True,
         )
     )
@@ -441,34 +481,34 @@ async def get_youtube_video(
         query = (
             select(
                 videos_query,
-                channel_query.c.title.label("channel_title"),
-                channel_query.c.thumbnail.label("channel_thumbnail"),
-                video_likes_query.c.created_at.label("liked"),
-                video_watches_query.c.created_at.label("watched"),
-                video_queues_query.c.created_at.label("queued"),
+                channel_query.columns.title.label("channel_title"),
+                channel_query.columns.thumbnail.label("channel_thumbnail"),
+                video_likes_query.columns.created_at.label("liked"),
+                video_watches_query.columns.created_at.label("watched"),
+                video_queues_query.columns.created_at.label("queued"),
             )
             .select_from(
                 videos_query.join(
                     channel_query,
-                    channel_query.c.id == videos_query.c.channel_id,
+                    channel_query.columns.id == videos_query.columns.channel_id,
                 )
                 .join(
                     video_queues_query,
-                    video_queues_query.c.video_id == videos_query.c.id,
+                    video_queues_query.columns.video_id == videos_query.columns.id,
                     isouter=True,
                 )
                 .join(
                     video_likes_query,
-                    video_likes_query.c.video_id == videos_query.c.id,
+                    video_likes_query.columns.video_id == videos_query.columns.id,
                     isouter=True,
                 )
                 .join(
                     video_watches_query,
-                    video_watches_query.c.video_id == videos_query.c.id,
+                    video_watches_query.columns.video_id == videos_query.columns.id,
                     isouter=True,
                 )
             )
-            .order_by(videos_query.c.published_at.desc())
+            .order_by(videos_query.columns.published_at.desc())
         )
         results = await db.execute(query)
         related_videos = results.mappings().fetchmany(related_videos_length)

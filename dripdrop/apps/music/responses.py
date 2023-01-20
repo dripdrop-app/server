@@ -6,6 +6,7 @@ from dripdrop.responses import ResponseBaseModel
 
 
 class MusicJobResponse(ResponseBaseModel):
+    id: str
     artwork_url: Optional[str] = Field(None)
     artwork_filename: Optional[str] = Field(None)
     original_filename: Optional[str] = Field(None)
