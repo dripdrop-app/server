@@ -148,10 +148,7 @@ class MusicTasker:
         )
         stream: AsyncIterable[MusicJob] = await session.stream_scalars(query)
         async for job in stream:
-            try:
-                await cleanup_job(job=job)
-            except Exception:
-                logger.exception(traceback.format_exc())
+            await cleanup_job(job=job)
             job.deleted_at = datetime.now(timezone.utc)
             await session.commit()
 

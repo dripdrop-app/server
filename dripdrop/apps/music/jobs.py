@@ -205,10 +205,7 @@ async def delete_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
-    try:
-        await cleanup_job(job=job)
-    except Exception:
-        logger.exception(traceback.format_exc())
+    await cleanup_job(job=job)
     job.deleted_at = datetime.now(timezone.utc)
     await session.commit()
     return Response(None)

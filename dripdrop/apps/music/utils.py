@@ -52,15 +52,18 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
 
 
 async def cleanup_job(job: MusicJob):
-    await boto3_service.async_delete_file(
-        filename=job.artwork_filename,
-    )
-    await boto3_service.async_delete_file(
-        filename=job.download_filename,
-    )
-    await boto3_service.async_delete_file(
-        filename=job.original_filename,
-    )
+    if job.artwork_filename:
+        await boto3_service.async_delete_file(
+            filename=job.artwork_filename,
+        )
+    if job.download_filename:
+        await boto3_service.async_delete_file(
+            filename=job.download_filename,
+        )
+    if job.original_filename:
+        await boto3_service.async_delete_file(
+            filename=job.original_filename,
+        )
 
 
 async def async_read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:

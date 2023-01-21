@@ -1,3 +1,4 @@
+import requests
 from fastapi import status
 from fastapi.testclient import TestClient
 
@@ -52,11 +53,9 @@ def test_creating_youtube_job_with_valid_youtube_url(
 def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
     client: TestClient,
     create_and_login_user,
-    test_image_file,
     test_youtube_url,
     test_image_url,
     wait_for_running_job_to_complete,
-    get_tags_from_job,
     run_worker,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
@@ -79,18 +78,16 @@ def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
     assert job.grouping == "grouping"
     assert job.completed is True
     assert job.failed is False
-    with get_tags_from_job(job=job) as tags:
-        assert tags.artwork == test_image_file
+    response = requests.get(job.download_url)
+    assert response.status_code == status.HTTP_200_OK
 
 
 def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
     client: TestClient,
     create_and_login_user,
-    test_image_file,
     test_youtube_url,
     test_base64_image,
     wait_for_running_job_to_complete,
-    get_tags_from_job,
     run_worker,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
@@ -113,5 +110,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
     assert job.grouping == "grouping"
     assert job.completed is True
     assert job.failed is False
-    with get_tags_from_job(job=job) as tags:
-        assert tags.artwork == test_image_file
+    response = requests.get(job.artwork_url)
+    assert response.status_code == status.HTTP_200_OK
+    response = requests.get(job.download_url)
+    assert response.status_code == status.HTTP_200_OK

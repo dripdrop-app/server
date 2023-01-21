@@ -62,7 +62,7 @@ class Boto3Service:
 
     async def async_delete_file(self, filename: str = ...):
         delete_file = sync_to_async(self.delete_file)
-        return await delete_file(bucket=Boto3Service.S3_BUCKET, filename=filename)
+        return await delete_file(filename=filename)
 
     def list_objects(self):
         continuation_token = ""
