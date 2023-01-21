@@ -1,3 +1,4 @@
+import traceback
 from asgiref.sync import sync_to_async
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import PlainTextResponse, RedirectResponse
@@ -90,8 +91,8 @@ async def google_oauth2(
             args=(email,),
             depends_on=job,
         )
-    except Exception as e:
-        logger.error(e.message)
+    except Exception:
+        logger.error(traceback.format_exc())
     return RedirectResponse("/youtube/videos")
 
 
