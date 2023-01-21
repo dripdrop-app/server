@@ -1,6 +1,8 @@
 from fastapi import status
 from fastapi.testclient import TestClient
 
+from dripdrop.settings import settings
+
 SUBSCRIPTIONS_URL = "/api/youtube/subscriptions"
 
 
@@ -73,12 +75,21 @@ def test_subscriptions_with_single_result(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    subscription = create_subscription(
+        id="1", channel_id=channel.id, email=google_user.email
+    )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
     assert json.get("subscriptions") == [
-        {"channelTitle": channel.title, "channelThumbnail": channel.thumbnail}
+        {
+            "channelId": channel.id,
+            "channelTitle": channel.title,
+            "channelThumbnail": channel.thumbnail,
+            "publishedAt": subscription.published_at.replace(
+                tzinfo=settings.test_timezone
+            ).isoformat(),
+        }
     ]
     assert json.get("totalPages") == 1
 
@@ -101,7 +112,7 @@ def test_subscriptions_with_multiple_pages(
     channels = list(
         map(
             lambda i: create_channel(
-                id=i,
+                id=str(i),
                 title=f"channel_{i}",
                 thumbnail="thumbnail",
                 upload_playlist_id="1",
@@ -109,13 +120,22 @@ def test_subscriptions_with_multiple_pages(
             range(3),
         )
     )
-    for i, channel in enumerate(channels):
-        create_subscription(id=i, channel_id=channel.id, email=google_user.email)
+    subscriptions = [
+        create_subscription(id=str(i), channel_id=channel.id, email=google_user.email)
+        for i, channel in enumerate(channels)
+    ]
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
     assert json.get("subscriptions") == [
-        {"channelTitle": channels[0].title, "channelThumbnail": channels[0].thumbnail}
+        {
+            "channelId": channels[0].id,
+            "channelTitle": channels[0].title,
+            "channelThumbnail": channels[0].thumbnail,
+            "publishedAt": subscriptions[0]
+            .published_at.replace(tzinfo=settings.test_timezone)
+            .isoformat(),
+        }
     ]
     assert json.get("totalPages") == 3
 
@@ -144,26 +164,29 @@ def test_subscriptions_for_logged_in_google_account(
         refresh_token="",
         expires=1000,
     )
-    channels = list(
-        map(
-            lambda i: create_channel(
-                id=i,
-                title=f"channel_{i}",
-                thumbnail="thumbnail",
-                upload_playlist_id="1",
-            ),
-            range(2),
-        )
+    channel = create_channel(
+        id="1", title="channel_1", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id=2, channel_id=channels[1].id, email=other_google_user.email)
-    create_subscription(id=1, channel_id=channels[0].id, email=google_user.email)
+    other_channel = create_channel(
+        id="2", title="channel_2", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    create_subscription(
+        id="1", channel_id=other_channel.id, email=other_google_user.email
+    )
+    subscription = create_subscription(
+        id="2", channel_id=channel.id, email=google_user.email
+    )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/2")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
     assert json.get("subscriptions") == [
         {
-            "channelTitle": channels[0].title,
-            "channelThumbnail": channels[0].thumbnail,
+            "channelId": channel.id,
+            "channelTitle": channel.title,
+            "channelThumbnail": channel.thumbnail,
+            "publishedAt": subscription.published_at.replace(
+                tzinfo=settings.test_timezone
+            ).isoformat(),
         }
     ]
     assert json.get("totalPages") == 1
@@ -187,7 +210,7 @@ def test_subscriptions_are_in_descending_order_by_title(
     channels = list(
         map(
             lambda i: create_channel(
-                id=i,
+                id=str(i),
                 title=f"channel_{i}",
                 thumbnail="thumbnail",
                 upload_playlist_id="1",
@@ -195,18 +218,24 @@ def test_subscriptions_are_in_descending_order_by_title(
             range(3),
         )
     )
-    for i, channel in enumerate(channels):
-        create_subscription(id=i, channel_id=channel.id, email=google_user.email)
+    subscriptions = [
+        create_subscription(id=str(i), channel_id=channel.id, email=google_user.email)
+        for i, channel in enumerate(channels)
+    ]
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
     assert json.get("subscriptions") == list(
         map(
-            lambda channel: {
-                "channelTitle": channel.title,
-                "channelThumbnail": channel.thumbnail,
+            lambda i: {
+                "channelId": channels[i].id,
+                "channelTitle": channels[i].title,
+                "channelThumbnail": channels[i].thumbnail,
+                "publishedAt": subscriptions[i]
+                .published_at.replace(tzinfo=settings.test_timezone)
+                .isoformat(),
             },
-            channels,
+            range(len(channels)),
         )
     )
     assert json.get("totalPages") == 1

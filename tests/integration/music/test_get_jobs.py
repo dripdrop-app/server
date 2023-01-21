@@ -24,7 +24,7 @@ def test_get_jobs_with_out_of_range_page(
     user = create_and_login_user(email="user@gmail.com", password="password")
     for i in range(2):
         create_music_job(
-            id=i,
+            id=str(i),
             email=user.email,
             title="title",
             artist="artist",
@@ -53,6 +53,7 @@ def test_get_jobs_with_single_result(
     assert json.get("totalPages") == 1
     assert json.get("jobs") == [
         {
+            "id": job.id,
             "artworkUrl": job.artwork_url,
             "artworkFilename": job.artwork_filename,
             "originalFilename": job.original_filename,
@@ -82,7 +83,7 @@ def test_get_jobs_with_multiple_pages(
     jobs = list(
         map(
             lambda i: create_music_job(
-                id=i,
+                id=str(i),
                 email=user.email,
                 title=f"title_{i}",
                 artist="artist",
@@ -98,6 +99,7 @@ def test_get_jobs_with_multiple_pages(
     assert json.get("jobs") == list(
         map(
             lambda i: {
+                "id": jobs[i].id,
                 "artworkUrl": jobs[i].artwork_url,
                 "artworkFilename": jobs[i].artwork_filename,
                 "originalFilename": jobs[i].original_filename,
@@ -129,7 +131,7 @@ def test_get_jobs_with_deleted_jobs(
     jobs = list(
         map(
             lambda i: create_music_job(
-                id=i,
+                id=str(i),
                 email=user.email,
                 title=f"title_{i}",
                 artist="artist",
@@ -146,6 +148,7 @@ def test_get_jobs_with_deleted_jobs(
     assert json.get("jobs") == list(
         map(
             lambda i: {
+                "id": jobs[i].id,
                 "artworkUrl": jobs[i].artwork_url,
                 "artworkFilename": jobs[i].artwork_filename,
                 "originalFilename": jobs[i].original_filename,
@@ -193,6 +196,7 @@ def test_get_jobs_only_for_logged_in_user(
     assert json.get("totalPages") == 1
     assert json.get("jobs") == [
         {
+            "id": job.id,
             "artworkUrl": job.artwork_url,
             "artworkFilename": job.artwork_filename,
             "originalFilename": job.original_filename,
