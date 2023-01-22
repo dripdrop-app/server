@@ -6,6 +6,8 @@ from dripdrop.apps.youtube.models import (
     GoogleAccount,
     YoutubeChannel,
     YoutubeSubscription,
+    YoutubeVideo,
+    YoutubeVideoCategory,
 )
 from dripdrop.settings import settings
 
@@ -40,14 +42,16 @@ def create_channel(session: Session):
         title: str = ...,
         thumbnail: str = ...,
         upload_playlist_id: str = ...,
-        last_updated: datetime | None = datetime.now(tz=settings.timezone),
+        last_updated: datetime | None = None,
     ):
         youtube_channel = YoutubeChannel(
             id=id,
             title=title,
             thumbnail=thumbnail,
             upload_playlist_id=upload_playlist_id,
-            last_updated=last_updated,
+            last_updated=last_updated
+            if last_updated
+            else datetime.now(tz=settings.timezone),
         )
         session.add(youtube_channel)
         session.commit()
@@ -62,13 +66,56 @@ def create_subscription(session: Session):
         id: str = ...,
         channel_id: str = ...,
         email: str = ...,
-        published_at: datetime | None = datetime.now(tz=settings.timezone),
+        published_at: datetime | None = None,
     ):
         youtube_subscription = YoutubeSubscription(
-            id=id, channel_id=channel_id, email=email, published_at=published_at
+            id=id,
+            channel_id=channel_id,
+            email=email,
+            published_at=published_at
+            if published_at
+            else datetime.now(tz=settings.timezone),
         )
         session.add(youtube_subscription)
         session.commit()
         return youtube_subscription
 
     return _create_subscription
+
+
+@pytest.fixture
+def create_video_category(session: Session):
+    def _create_video_category(id: int = ..., name: str = ...):
+        youtube_video_category = YoutubeVideoCategory(id=id, name=name)
+        session.add(youtube_video_category)
+        session.commit()
+        return youtube_video_category
+
+    return _create_video_category
+
+
+@pytest.fixture
+def create_video(session: Session):
+    def _create_video(
+        id: str = ...,
+        title: str = ...,
+        thumbnail: str = ...,
+        channel_id: str = ...,
+        category_id: int = ...,
+        published_at: datetime | None = None,
+    ):
+        youtube_video = YoutubeVideo(
+            id=id,
+            title=title,
+            thumbnail=thumbnail,
+            channel_id=channel_id,
+            category_id=category_id,
+            published_at=published_at
+            if published_at
+            else datetime.now(settings.timezone),
+        )
+        session.add(youtube_video)
+        session.commit()
+        return youtube_video
+
+    return _create_video

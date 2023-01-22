@@ -32,8 +32,6 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-if settings.database_url.startswith("sqlite"):
-    settings.timezone = None
 
 if settings.env == "testing" or settings.env == "development":
     settings.aws_access_key_id = settings.test_aws_access_key_id
@@ -44,3 +42,6 @@ if settings.env == "testing":
     settings.async_database_url = settings.test_async_database_url
     settings.database_url = settings.test_database_url
     settings.redis_url = settings.test_redis_url
+
+if settings.database_url.startswith("sqlite"):
+    settings.timezone = None

@@ -48,7 +48,7 @@ async def get_youtube_subscriptions(
     subscriptions: list[YoutubeSubscription] = results.mappings().fetchmany(per_page)
     count: int = await session.scalar(select(func.count(query.subquery().columns.id)))
     total_pages = math.ceil(count / per_page)
-    if page > total_pages:
+    if page > total_pages and page != 1:
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
         )

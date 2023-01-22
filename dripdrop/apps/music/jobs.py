@@ -74,7 +74,7 @@ async def get_jobs(
     count_query = select(func.count(query.subquery().columns.id))
     count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
-    if page > total_pages:
+    if page > total_pages and page != 1:
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
         )

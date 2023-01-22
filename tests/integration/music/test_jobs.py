@@ -7,18 +7,20 @@ from dripdrop.settings import settings
 JOBS_URL = "/api/music/jobs"
 
 
-def test_get_jobs_when_not_logged_in(client: TestClient):
+def test_jobs_when_not_logged_in(client: TestClient):
     response = client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_get_jobs_with_no_results(client: TestClient, create_and_login_user):
+def test_jobs_with_no_results(client: TestClient, create_and_login_user):
     create_and_login_user(email="user@gmail.com", password="password")
     response = client.get(f"{JOBS_URL}/1/10")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {"totalPages": 0, "jobs": []}
 
 
-def test_get_jobs_with_out_of_range_page(
+def test_jobs_with_out_of_range_page(
     client: TestClient, create_and_login_user, create_music_job
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
@@ -34,7 +36,7 @@ def test_get_jobs_with_out_of_range_page(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_get_jobs_with_single_result(
+def test_jobs_with_single_result(
     client: TestClient,
     create_and_login_user,
     create_music_job,
@@ -72,7 +74,7 @@ def test_get_jobs_with_single_result(
     ]
 
 
-def test_get_jobs_with_multiple_pages(
+def test_jobs_with_multiple_pages(
     client: TestClient,
     create_and_login_user,
     create_music_job,
@@ -120,7 +122,7 @@ def test_get_jobs_with_multiple_pages(
     )
 
 
-def test_get_jobs_with_deleted_jobs(
+def test_jobs_with_deleted_jobs(
     client: TestClient,
     create_and_login_user,
     create_music_job,
@@ -169,7 +171,7 @@ def test_get_jobs_with_deleted_jobs(
     )
 
 
-def test_get_jobs_only_for_logged_in_user(
+def test_jobs_only_for_logged_in_user(
     client: TestClient, create_and_login_user, create_user, create_music_job
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
@@ -213,7 +215,7 @@ def test_get_jobs_only_for_logged_in_user(
     ]
 
 
-def test_get_jobs_are_in_descending_order(
+def test_jobs_are_in_descending_order(
     client: TestClient,
     create_and_login_user,
     create_music_job,

@@ -68,7 +68,8 @@ async def get_youtube_video_categories(
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessages.VIDEO_CATEGORIES_INVALID
-        }
+        },
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.PAGE_NOT_FOUND},
     },
 )
 async def get_youtube_videos(
@@ -175,8 +176,12 @@ async def get_youtube_videos(
         query = query.order_by(videos_query.columns.published_at.desc())
     results = await session.execute(query.offset((page - 1) * per_page))
     videos = results.mappings().fetchmany(per_page)
-    count = await session.scalar(select(func.count(query.columns.id)))
+    count = await session.scalar(select(func.count(query.subquery().columns.id)))
     total_pages = math.ceil(count / per_page)
+    if page > total_pages and page != 1:
+        raise HTTPException(
+            detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
+        )
     return VideosResponse(videos=videos, total_pages=total_pages)
 
 
