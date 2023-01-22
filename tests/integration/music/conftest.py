@@ -112,16 +112,13 @@ def wait_for_running_job_to_complete(session: Session, function_timeout):
 
 
 @pytest.fixture
-def get_tags_from_job():
+def get_tags_from_file():
     @contextmanager
-    def _get_tags_from_job(job: MusicJob = ...):
-        response = requests.get(job.download_url)
-        assert response.status_code == status.HTTP_200_OK
-
-        with open("test.mp3", "wb") as file:
-            file.write(response.content)
+    def _get_tags_from_file(file: bytes = ...):
+        with open("test.mp3", "wb") as f:
+            f.write(file)
 
         yield AudioTagService(file_path="test.mp3")
         os.remove("test.mp3")
 
-    return _get_tags_from_job
+    return _get_tags_from_file

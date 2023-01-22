@@ -8,6 +8,9 @@ from dripdrop.apps.youtube.models import (
     YoutubeSubscription,
     YoutubeVideo,
     YoutubeVideoCategory,
+    YoutubeVideoQueue,
+    YoutubeVideoLike,
+    YoutubeVideoWatch,
 )
 from dripdrop.settings import settings
 
@@ -119,3 +122,36 @@ def create_video(session: Session):
         return youtube_video
 
     return _create_video
+
+
+@pytest.fixture
+def create_video_queue(session: Session):
+    def _create_video_queue(email: str = ..., video_id: str = ...):
+        youtube_video_queue = YoutubeVideoQueue(email=email, video_id=video_id)
+        session.add(youtube_video_queue)
+        session.commit()
+        return youtube_video_queue
+
+    return _create_video_queue
+
+
+@pytest.fixture
+def create_video_like(session: Session):
+    def _create_video_like(email: str = ..., video_id: str = ...):
+        youtube_video_like = YoutubeVideoLike(email=email, video_id=video_id)
+        session.add(youtube_video_like)
+        session.commit()
+        return youtube_video_like
+
+    return _create_video_like
+
+
+@pytest.fixture
+def create_video_watch(session: Session):
+    def _create_video_watch(email: str = ..., video_id: str = ...):
+        youtube_video_watch = YoutubeVideoWatch(email=email, video_id=video_id)
+        session.add(youtube_video_watch)
+        session.commit()
+        return youtube_video_watch
+
+    return _create_video_watch

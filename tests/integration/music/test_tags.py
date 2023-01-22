@@ -1,4 +1,3 @@
-import re
 import requests
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -21,10 +20,13 @@ def test_tags_with_an_invalid_file(client: TestClient, create_and_login_user):
     response = client.post(TAGS_URL, files={"file": file})
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("title") is None
-    assert json.get("artist") is None
-    assert json.get("album") is None
-    assert json.get("grouping") is None
+    assert json == {
+        "title": None,
+        "artist": None,
+        "album": None,
+        "grouping": None,
+        "artworkUrl": None,
+    }
 
 
 def test_tags_with_a_mp3_without_tags(client: TestClient, create_and_login_user):
@@ -37,13 +39,18 @@ def test_tags_with_a_mp3_without_tags(client: TestClient, create_and_login_user)
     response = client.post(TAGS_URL, files={"file": file})
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("title") is None
-    assert json.get("artist") is None
-    assert json.get("album") is None
-    assert json.get("grouping") is None
+    assert json == {
+        "title": None,
+        "artist": None,
+        "album": None,
+        "grouping": None,
+        "artworkUrl": None,
+    }
 
 
-def test_tags_with_a_valid_mp3_file(client: TestClient, create_and_login_user):
+def test_tags_with_a_valid_mp3_file(
+    client: TestClient, create_and_login_user, get_tags_from_file
+):
     create_and_login_user(email="user@gmail.com", password="password")
     response = requests.get(
         "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/"
@@ -51,11 +58,14 @@ def test_tags_with_a_valid_mp3_file(client: TestClient, create_and_login_user):
     )
     assert response.status_code == status.HTTP_200_OK
     file = response.content
-    response = client.post(TAGS_URL, files={"file": file})
-    assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json.get("title") == "Criminal"
-    assert json.get("artist") == "Sinny & Fako"
-    assert json.get("album") == "Criminal - Single"
-    assert json.get("grouping") == "Tribal Trap"
-    assert re.match(r"data:image/[a-zA-Z]+;base64,", json.get("artworkUrl")) is not None
+    with get_tags_from_file(file=file) as tags:
+        response = client.post(TAGS_URL, files={"file": file})
+        assert response.status_code == status.HTTP_200_OK
+        json = response.json()
+        assert json == {
+            "title": "Criminal",
+            "artist": "Sinny & Fako",
+            "album": "Criminal - Single",
+            "grouping": "Tribal Trap",
+            "artworkUrl": tags.get_artwork_as_base64(),
+        }

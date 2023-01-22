@@ -52,26 +52,30 @@ def test_jobs_with_single_result(
     response = client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("totalPages") == 1
-    assert json.get("jobs") == [
-        {
-            "id": job.id,
-            "artworkUrl": job.artwork_url,
-            "artworkFilename": job.artwork_filename,
-            "originalFilename": job.original_filename,
-            "filenameUrl": job.filename_url,
-            "youtubeUrl": job.youtube_url,
-            "downloadFilename": job.download_filename,
-            "downloadUrl": job.download_url,
-            "title": job.title,
-            "artist": job.artist,
-            "album": job.album,
-            "grouping": job.grouping,
-            "completed": job.completed,
-            "failed": job.failed,
-            "createdAt": job.created_at.replace(tzinfo=settings.timezone).isoformat(),
-        }
-    ]
+    assert json == {
+        "totalPages": 1,
+        "jobs": [
+            {
+                "id": job.id,
+                "artworkUrl": job.artwork_url,
+                "artworkFilename": job.artwork_filename,
+                "originalFilename": job.original_filename,
+                "filenameUrl": job.filename_url,
+                "youtubeUrl": job.youtube_url,
+                "downloadFilename": job.download_filename,
+                "downloadUrl": job.download_url,
+                "title": job.title,
+                "artist": job.artist,
+                "album": job.album,
+                "grouping": job.grouping,
+                "completed": job.completed,
+                "failed": job.failed,
+                "createdAt": job.created_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+            }
+        ],
+    }
 
 
 def test_jobs_with_multiple_pages(
@@ -92,34 +96,37 @@ def test_jobs_with_multiple_pages(
             range(5),
         )
     )
+    jobs.sort(key=lambda job: job.created_at, reverse=True)
     response = client.get(f"{JOBS_URL}/2/2")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("totalPages") == 3
-    assert json.get("jobs") == list(
-        map(
-            lambda i: {
-                "id": jobs[i].id,
-                "artworkUrl": jobs[i].artwork_url,
-                "artworkFilename": jobs[i].artwork_filename,
-                "originalFilename": jobs[i].original_filename,
-                "filenameUrl": jobs[i].filename_url,
-                "youtubeUrl": jobs[i].youtube_url,
-                "downloadFilename": jobs[i].download_filename,
-                "downloadUrl": jobs[i].download_url,
-                "title": jobs[i].title,
-                "artist": jobs[i].artist,
-                "album": jobs[i].album,
-                "grouping": jobs[i].grouping,
-                "completed": jobs[i].completed,
-                "failed": jobs[i].failed,
-                "createdAt": jobs[i]
-                .created_at.replace(tzinfo=settings.timezone)
-                .isoformat(),
-            },
-            range(2, 0, -1),
-        )
-    )
+    assert json == {
+        "totalPages": 3,
+        "jobs": list(
+            map(
+                lambda job: {
+                    "id": job.id,
+                    "artworkUrl": job.artwork_url,
+                    "artworkFilename": job.artwork_filename,
+                    "originalFilename": job.original_filename,
+                    "filenameUrl": job.filename_url,
+                    "youtubeUrl": job.youtube_url,
+                    "downloadFilename": job.download_filename,
+                    "downloadUrl": job.download_url,
+                    "title": job.title,
+                    "artist": job.artist,
+                    "album": job.album,
+                    "grouping": job.grouping,
+                    "completed": job.completed,
+                    "failed": job.failed,
+                    "createdAt": job.created_at.replace(
+                        tzinfo=settings.timezone
+                    ).isoformat(),
+                },
+                jobs[2:4],
+            )
+        ),
+    }
 
 
 def test_jobs_with_deleted_jobs(
@@ -141,34 +148,38 @@ def test_jobs_with_deleted_jobs(
             range(4),
         )
     )
+    jobs = list(filter(lambda job: not job.deleted_at, jobs))
+    jobs.sort(key=lambda job: job.created_at, reverse=True)
     response = client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("totalPages") == 1
-    assert json.get("jobs") == list(
-        map(
-            lambda i: {
-                "id": jobs[i].id,
-                "artworkUrl": jobs[i].artwork_url,
-                "artworkFilename": jobs[i].artwork_filename,
-                "originalFilename": jobs[i].original_filename,
-                "filenameUrl": jobs[i].filename_url,
-                "youtubeUrl": jobs[i].youtube_url,
-                "downloadFilename": jobs[i].download_filename,
-                "downloadUrl": jobs[i].download_url,
-                "title": jobs[i].title,
-                "artist": jobs[i].artist,
-                "album": jobs[i].album,
-                "grouping": jobs[i].grouping,
-                "completed": jobs[i].completed,
-                "failed": jobs[i].failed,
-                "createdAt": jobs[i]
-                .created_at.replace(tzinfo=settings.timezone)
-                .isoformat(),
-            },
-            range(2, -1, -2),
-        )
-    )
+    assert json == {
+        "totalPages": 1,
+        "jobs": list(
+            map(
+                lambda job: {
+                    "id": job.id,
+                    "artworkUrl": job.artwork_url,
+                    "artworkFilename": job.artwork_filename,
+                    "originalFilename": job.original_filename,
+                    "filenameUrl": job.filename_url,
+                    "youtubeUrl": job.youtube_url,
+                    "downloadFilename": job.download_filename,
+                    "downloadUrl": job.download_url,
+                    "title": job.title,
+                    "artist": job.artist,
+                    "album": job.album,
+                    "grouping": job.grouping,
+                    "completed": job.completed,
+                    "failed": job.failed,
+                    "createdAt": job.created_at.replace(
+                        tzinfo=settings.timezone
+                    ).isoformat(),
+                },
+                jobs,
+            )
+        ),
+    }
 
 
 def test_jobs_only_for_logged_in_user(
@@ -193,26 +204,30 @@ def test_jobs_only_for_logged_in_user(
     response = client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("totalPages") == 1
-    assert json.get("jobs") == [
-        {
-            "id": job.id,
-            "artworkUrl": job.artwork_url,
-            "artworkFilename": job.artwork_filename,
-            "originalFilename": job.original_filename,
-            "filenameUrl": job.filename_url,
-            "youtubeUrl": job.youtube_url,
-            "downloadFilename": job.download_filename,
-            "downloadUrl": job.download_url,
-            "title": job.title,
-            "artist": job.artist,
-            "album": job.album,
-            "grouping": job.grouping,
-            "completed": job.completed,
-            "failed": job.failed,
-            "createdAt": job.created_at.replace(tzinfo=settings.timezone).isoformat(),
-        }
-    ]
+    assert json == {
+        "totalPages": 1,
+        "jobs": [
+            {
+                "id": job.id,
+                "artworkUrl": job.artwork_url,
+                "artworkFilename": job.artwork_filename,
+                "originalFilename": job.original_filename,
+                "filenameUrl": job.filename_url,
+                "youtubeUrl": job.youtube_url,
+                "downloadFilename": job.download_filename,
+                "downloadUrl": job.download_url,
+                "title": job.title,
+                "artist": job.artist,
+                "album": job.album,
+                "grouping": job.grouping,
+                "completed": job.completed,
+                "failed": job.failed,
+                "createdAt": job.created_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+            }
+        ],
+    }
 
 
 def test_jobs_are_in_descending_order(
@@ -224,20 +239,43 @@ def test_jobs_are_in_descending_order(
     jobs = list(
         map(
             lambda i: create_music_job(
-                id=i,
+                id=str(i),
                 email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
-                deleted_at=datetime.now(tz=settings.timezone) if i % 2 else None,
             ),
             range(4),
         )
     )
+    jobs.sort(key=lambda job: job.created_at, reverse=True)
     response = client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    assert json.get("totalPages") == 1
-    jobs = json.get("jobs", [])
-    for i in range(1, len(jobs)):
-        assert jobs[i]["createdAt"] < jobs[i - 1]["createdAt"]
+    assert json == {
+        "totalPages": 1,
+        "jobs": list(
+            map(
+                lambda job: {
+                    "id": job.id,
+                    "artworkUrl": job.artwork_url,
+                    "artworkFilename": job.artwork_filename,
+                    "originalFilename": job.original_filename,
+                    "filenameUrl": job.filename_url,
+                    "youtubeUrl": job.youtube_url,
+                    "downloadFilename": job.download_filename,
+                    "downloadUrl": job.download_url,
+                    "title": job.title,
+                    "artist": job.artist,
+                    "album": job.album,
+                    "grouping": job.grouping,
+                    "completed": job.completed,
+                    "failed": job.failed,
+                    "createdAt": job.created_at.replace(
+                        tzinfo=settings.timezone
+                    ).isoformat(),
+                },
+                jobs,
+            )
+        ),
+    }

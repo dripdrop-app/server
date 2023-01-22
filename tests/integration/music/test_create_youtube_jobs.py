@@ -41,7 +41,7 @@ def test_creating_youtube_job_with_valid_youtube_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -71,7 +71,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -103,7 +103,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"

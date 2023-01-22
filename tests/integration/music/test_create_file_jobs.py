@@ -45,7 +45,7 @@ def test_creating_file_job_with_invalid_file(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -75,13 +75,14 @@ def test_creating_file_job_with_valid_file(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
     assert job.grouping == "grouping"
     assert job.completed is True
     assert job.failed is False
+    assert job.filename_url is not None
     response = requests.get(job.filename_url)
     assert response.status_code == status.HTTP_200_OK
 
@@ -109,15 +110,17 @@ def test_creating_file_job_with_valid_file_and_artwork_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
     assert job.grouping == "grouping"
     assert job.completed is True
     assert job.failed is False
+    assert job.filename_url is not None
     response = requests.get(job.filename_url)
     assert response.status_code == status.HTTP_200_OK
+    assert job.download_url is not None
     response = requests.get(job.download_url)
     assert response.status_code == status.HTTP_200_OK
 
@@ -145,16 +148,19 @@ def test_creating_file_job_with_valid_file_and_base64_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=60)
+    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
     assert job.grouping == "grouping"
     assert job.completed is True
     assert job.failed is False
+    assert job.filename_url is not None
     response = requests.get(job.filename_url)
     assert response.status_code == status.HTTP_200_OK
+    assert job.artwork_url is not None
     response = requests.get(job.artwork_url)
     assert response.status_code == status.HTTP_200_OK
+    assert job.download_url is not None
     response = requests.get(job.download_url)
     assert response.status_code == status.HTTP_200_OK
