@@ -1,18 +1,21 @@
 import traceback
 from asgiref.sync import sync_to_async
+from datetime import datetime
 from functools import wraps
 from inspect import iscoroutinefunction, signature
-from dripdrop.database import create_session
-from dripdrop.logging import logger
+
+from .database import database
+from .logging import logger
+from .settings import settings
 
 
 def worker_task(function):
     @wraps(function)
     async def wrapper(*args, **kwargs):
         parameters = signature(function).parameters
-        async with create_session() as db:
-            if "db" in parameters:
-                kwargs["db"] = db
+        async with database.async_create_session() as session:
+            if "session" in parameters:
+                kwargs["session"] = session
             try:
                 if not iscoroutinefunction(function):
                     func = sync_to_async(function)
@@ -23,3 +26,7 @@ def worker_task(function):
                 logger.error(traceback.format_exc())
 
     return wrapper
+
+
+def get_current_time():
+    return datetime.now(tz=settings.timezone)

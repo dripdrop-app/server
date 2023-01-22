@@ -6,8 +6,9 @@ services:
     container_name: server
     restart: always
     volumes:
-      - ./:/src
-      - ./data/server/logs:/src/logs
+      - type: bind
+        source: ./
+        target: /src
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev
@@ -16,7 +17,7 @@ services:
         set -e
         source venv/bin/activate
         alembic upgrade head
-        uvicorn dripdrop.app:app --reload --reload-dir dripdrop --host 0.0.0.0 --port $SERVER_PORT --log-config ./config/logging.yml
+        uvicorn dripdrop.app:app --reload --reload-dir dripdrop --host 0.0.0.0 --port $SERVER_PORT
       "
     depends_on:
       postgres:
@@ -30,8 +31,9 @@ services:
     container_name: worker
     restart: always
     volumes:
-      - ./:/src
-      - ./data/worker/logs:/src/logs
+      - type: bind
+        source: ./
+        target: /src 
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev
@@ -51,17 +53,19 @@ services:
     container_name: postgres
     restart: always
     healthcheck:
-      test: pg_isready -U $POSTGRES_USER
+      test: pg_isready -U dripdrop
       interval: 10s
       start_period: 1s
       timeout: 1m30s
     volumes:
-      - ./data/postgresql:/var/lib/postgresql/data
+      - type: volume
+        source: postgresql
+        target: /var/lib/postgresql/data
     env_file: .env
     environment:
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $DATABASE_USER
+      POSTGRES_PASSWORD: $DATABASE_PASSWORD
+      POSTGRES_DB: $DATABASE
       POSTGRES_HOST_AUTH_METHOD: md5
   redis:
     image: redis
@@ -73,7 +77,11 @@ services:
       start_period: 1s
       timeout: 1m30s
     volumes:
-      - ./data/redis:/data
+      - type: volume
+        source: redis
+        target: /data
     env_file: '.env'
-    environment:
-      REDIS_ARGS: --save 20 1
+
+volumes:
+  postgresql:
+  redis:

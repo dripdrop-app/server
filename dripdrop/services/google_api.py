@@ -1,8 +1,9 @@
 import requests
-from dripdrop.settings import settings
-from dripdrop.logging import logger
 from typing import List
 from urllib import parse
+
+from dripdrop.settings import settings
+from dripdrop.logging import logger
 
 
 class GoogleAPIService:

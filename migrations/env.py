@@ -1,6 +1,6 @@
 from logging.config import fileConfig
-from dripdrop.database import migration_database_url
-from dripdrop.models import metadata
+from dripdrop.models.register import Base
+from dripdrop.settings import settings
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
@@ -13,15 +13,13 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
-config.set_main_option(
-    "sqlalchemy.url", migration_database_url.render_as_string(hide_password=False)
-)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

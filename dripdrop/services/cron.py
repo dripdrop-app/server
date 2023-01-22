@@ -1,14 +1,15 @@
 from asgiref.sync import sync_to_async
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
-from dripdrop.settings import settings
-from dripdrop.logging import logger
-from dripdrop.services.redis import redis
-from dripdrop.services.rq import queue
-from dripdrop.music.tasks import music_tasker
-from dripdrop.youtube.tasks import youtube_tasker
 from rq.registry import ScheduledJobRegistry
 from typing import Callable
+
+from dripdrop.apps.music.tasks import music_tasker
+from dripdrop.apps.youtube.tasks import youtube_tasker
+from dripdrop.logging import logger
+from dripdrop.redis import redis
+from dripdrop.rq import queue
+from dripdrop.settings import settings
 
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 
@@ -19,17 +20,17 @@ class CronService:
             youtube_tasker.update_youtube_video_categories,
             kwargs={"cron": True},
         )
-        active_channels_job = queue.enqueue(
-            youtube_tasker.update_active_channels,
-            depends_on=video_categories_job,
-        )
         update_subscriptions_job = queue.enqueue(
             youtube_tasker.update_subscriptions,
-            depends_on=active_channels_job,
+            depends_on=video_categories_job,
+        )
+        active_channels_job = queue.enqueue(
+            youtube_tasker.update_active_channels,
+            depends_on=update_subscriptions_job,
         )
         queue.enqueue(
             youtube_tasker.channel_cleanup,
-            depends_on=update_subscriptions_job,
+            depends_on=active_channels_job,
         )
         queue.enqueue(music_tasker.cleanup_jobs)
 

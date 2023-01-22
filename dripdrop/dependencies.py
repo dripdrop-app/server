@@ -1,24 +1,23 @@
 import jwt
 import traceback
-from .database import create_session, AsyncSession
-from .settings import settings
-from .logging import logger
-from dripdrop.authentication.models import User, Users
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import HTTPException, status, Request, WebSocket, Depends
-from passlib.context import CryptContext
 from sqlalchemy import select
 from typing import Union
 
+from dripdrop.apps.authentication.models import User
+
+from .database import database, AsyncSession
+from .settings import settings
+from .logging import logger
+
 ALGORITHM = "HS256"
-TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
 COOKIE_NAME = "token"
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-async def create_db_session():
-    async with create_session() as db:
-        yield db
+async def create_db_session() -> AsyncSession:
+    async with database.async_create_session() as session:
+        yield session
 
 
 async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
@@ -27,14 +26,14 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
         expires = payload.get("exp", None)
         if not expires:
             return None
-        if expires < datetime.now(timezone.utc).timestamp():
+        if expires < datetime.now(tz=settings.timezone).timestamp():
             pass
         email = payload.get("email", None)
         if email:
-            query = select(Users).where(Users.email == email)
+            query = select(User).where(User.email == email)
             results = await db.scalars(query)
-            user = results.first()
-            return User.from_orm(user)
+            user: Union[User, None] = results.first()
+            return user
     except jwt.PyJWTError:
         logger.exception(traceback.format_exc())
         return None

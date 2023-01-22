@@ -21,42 +21,47 @@ commands:
           name: Export environment variables
           command: |
             touch .env
-            echo "API_KEY=$API_KEY" >> .env
+            echo "ASYNC_DATABASE_URL=$ASYNC_DATABASE_URL" >> .env
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+            echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
             echo "AWS_REGION_NAME=$AWS_REGION_NAME" >> .env
-            echo "AWS_S3_ARTWORK_BUCKET=$AWS_S3_ARTWORK_BUCKET" >> .env
-            echo "AWS_S3_MUSIC_BUCKET=$AWS_S3_MUSIC_BUCKET" >> .env
+            echo "AWS_S3_ARTWORK_FOLDER=$AWS_S3_ARTWORK_FOLDER" >> .env
+            echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
+            echo "AWS_S3_MUSIC_FOLDER=$AWS_S3_MUSIC_FOLDER" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+            echo "DATABASE=$DATABASE" >> .env
+            echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
+            echo "DATABASE_URL=$DATABASE_URL" >> .env
+            echo "DATABASE_USER=$DATABASE_USER" >> .env
+            echo "ENV=$ENV" >> .env
             echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
             echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
             echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
-            echo "MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL" >> .env
-            echo "POSTGRES_DB=$POSTGRES_DB" >> .env
-            echo "POSTGRES_HOST=$POSTGRES_HOST" >> .env
-            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
-            echo "POSTGRES_USER=$POSTGRES_USER" >> .env
+            echo "REDIS_URL=$REDIS_URL" >> .env
             echo "SECRET_KEY=$SECRET_KEY" >> .env
             echo "SERVER_PORT=$SERVER_PORT" >> .env
-            echo "ENV=$ENV" >> .env
-            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
-            echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
-            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
-            echo "REDIS_URL=$REDIS_URL" >> .env
+            echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
+            echo "TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> .env
+            echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
+            echo "TEST_AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> .env
+            echo "TEST_DATABASE_URL=$TEST_DATABASE_URL" >> .env
+            echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
 
 jobs:
   build and test:
     docker:
       - image: python:3.10
       - image: redis
+      - image: postgres:14
+        environment:
+          POSTGRES_PASSWORD: $DATABASE_PASSWORD
+          POSTGRES_HOST_AUTH_METHOD: trust
     steps:
       - checkout
       - install_packages
       - run:
           name: Run Tests
           command: |
-            echo "AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> $BASH_ENV
-            echo "AWS_ENDPOINT_URL=$TEST_AWS_ENDPOINT_URL" >> $BASH_ENV
-            echo "AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> $BASH_ENV
-            echo "REDIS_URL=$TEST_REDIS_URL" >> $BASH_ENV
-            source $BASH_ENV
             source venv/bin/activate
             pytest
           environment:
@@ -72,19 +77,6 @@ jobs:
           command: |
             apt-get -y update
             apt-get install -y rsync
-      - run:
-          name: Backup container data
-          command: |
-            ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
-              set -e
-              [ -d ~/data ] || mkdir ~/data
-              docker cp server:/src/logs ~/data/server
-              docker cp worker:/src/logs ~/data/worker
-              docker cp redis:/data ~/data/redis
-              docker cp postgres:/var/lib/postgresql/data ~/data/postgresql
-              [ -d ~/data/backup ] || mkdir ~/data/backup
-              docker exec postgres pg_dump -U dripdrop dripdrop > ~/data/backup/db.sql
-            "
       - export_environment_to_file
       - run:
           name: Sync repo to VM

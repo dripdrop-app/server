@@ -1,98 +1,281 @@
-import os
-import requests
-import time
-from ...conftest import APIEndpoints, TEST_EMAIL
-from dripdrop.music.models import MusicJobs, MusicJob
-from dripdrop.services.boto3 import boto3_service, Boto3Service
-from dripdrop.services.audio_tag import AudioTagService
+from datetime import datetime
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy import select
-from sqlalchemy.engine import Connection
+
+from dripdrop.settings import settings
+
+JOBS_URL = "/api/music/jobs"
 
 
-class MusicJobEndpoints:
-    base_url = f"{APIEndpoints.base_path}/music/jobs"
-    jobs = f"{base_url}/1/1"
-    listen = f"{base_url}/listen"
-    create_youtube = f"{base_url}/create/youtube"
-    create_file = f"{base_url}/create/file"
-    delete_job = f"{base_url}/delete"
+def test_jobs_when_not_logged_in(client: TestClient):
+    response = client.get(f"{JOBS_URL}/1/10")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-class TestCreateFileJob:
-    def test_creating_file_job_with_invalid_file(self, client: TestClient):
-        response = requests.get(
-            "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
+def test_jobs_with_no_results(client: TestClient, create_and_login_user):
+    create_and_login_user(email="user@gmail.com", password="password")
+    response = client.get(f"{JOBS_URL}/1/10")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {"totalPages": 0, "jobs": []}
+
+
+def test_jobs_with_out_of_range_page(
+    client: TestClient, create_and_login_user, create_music_job
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    for i in range(2):
+        create_music_job(
+            id=str(i),
+            email=user.email,
+            title="title",
+            artist="artist",
+            album="album",
         )
-        file = response.content
-        response = client.post(
-            MusicJobEndpoints.create_file,
-            data={
-                "title": "test",
-                "artist": "test artist",
-                "album": "test album",
-                "grouping": "test grouping",
-            },
-            files={
-                "file": ("dripdrop.png", file, response.headers.get("content-type")),
-            },
-        )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+    response = client.get(f"{JOBS_URL}/3/1")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_creating_file_job_with_valid_file(
-        self, client: TestClient, db: Connection, run_worker
-    ):
-        response = requests.get(
-            "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/test/07%20tun%20suh.mp3"
-        )
-        file = response.content
-        response = client.post(
-            MusicJobEndpoints.create_file,
-            data={
-                "title": "test",
-                "artist": "test artist",
-                "album": "test album",
-                "grouping": "test grouping",
-            },
-            files={
-                "file": ("tun suh.mp3", file, response.headers.get("content-type")),
-            },
-        )
-        assert response.status_code == status.HTTP_201_CREATED
 
-        job = None
-        ticks = 0
-        while True:
-            results = db.execute(
-                select(MusicJobs).where(MusicJobs.user_email == TEST_EMAIL)
+def test_jobs_with_single_result(
+    client: TestClient,
+    create_and_login_user,
+    create_music_job,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    job = create_music_job(
+        id="1",
+        email=user.email,
+        title="title",
+        artist="artist",
+        album="album",
+    )
+    response = client.get(f"{JOBS_URL}/1/10")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {
+        "totalPages": 1,
+        "jobs": [
+            {
+                "id": job.id,
+                "artworkUrl": job.artwork_url,
+                "artworkFilename": job.artwork_filename,
+                "originalFilename": job.original_filename,
+                "filenameUrl": job.filename_url,
+                "youtubeUrl": job.youtube_url,
+                "downloadFilename": job.download_filename,
+                "downloadUrl": job.download_url,
+                "title": job.title,
+                "artist": job.artist,
+                "album": job.album,
+                "grouping": job.grouping,
+                "completed": job.completed,
+                "failed": job.failed,
+                "createdAt": job.created_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+            }
+        ],
+    }
+
+
+def test_jobs_with_multiple_pages(
+    client: TestClient,
+    create_and_login_user,
+    create_music_job,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    jobs = list(
+        map(
+            lambda i: create_music_job(
+                id=str(i),
+                email=user.email,
+                title=f"title_{i}",
+                artist="artist",
+                album="album",
+            ),
+            range(5),
+        )
+    )
+    jobs.sort(key=lambda job: job.created_at, reverse=True)
+    response = client.get(f"{JOBS_URL}/2/2")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {
+        "totalPages": 3,
+        "jobs": list(
+            map(
+                lambda job: {
+                    "id": job.id,
+                    "artworkUrl": job.artwork_url,
+                    "artworkFilename": job.artwork_filename,
+                    "originalFilename": job.original_filename,
+                    "filenameUrl": job.filename_url,
+                    "youtubeUrl": job.youtube_url,
+                    "downloadFilename": job.download_filename,
+                    "downloadUrl": job.download_url,
+                    "title": job.title,
+                    "artist": job.artist,
+                    "album": job.album,
+                    "grouping": job.grouping,
+                    "completed": job.completed,
+                    "failed": job.failed,
+                    "createdAt": job.created_at.replace(
+                        tzinfo=settings.timezone
+                    ).isoformat(),
+                },
+                jobs[2:4],
             )
-            rows = results.fetchall()
-            assert len(rows) == 1
-            job = MusicJob.from_orm(rows[0])
-            if job.completed or ticks > 60:
-                break
-            time.sleep(1)
-            ticks += 1
+        ),
+    }
 
-        response = requests.get(job.download_url)
-        assert response.status_code == 200
 
-        with open("test.mp3", "wb") as file:
-            file.write(response.content)
-
-        audio_tag_service = AudioTagService("test.mp3")
-        assert audio_tag_service.title == "test"
-        assert audio_tag_service.artist == "test artist"
-        assert audio_tag_service.album == "test album"
-        assert audio_tag_service.grouping == "test grouping"
-
-        os.remove("test.mp3")
-        boto3_service.delete_file(
-            bucket=Boto3Service.S3_MUSIC_BUCKET,
-            filename=f"{job.id}/{job.original_filename}",
+def test_jobs_with_deleted_jobs(
+    client: TestClient,
+    create_and_login_user,
+    create_music_job,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    jobs = list(
+        map(
+            lambda i: create_music_job(
+                id=str(i),
+                email=user.email,
+                title=f"title_{i}",
+                artist="artist",
+                album="album",
+                deleted_at=datetime.now(tz=settings.timezone) if i % 2 else None,
+            ),
+            range(4),
         )
-        boto3_service.delete_file(
-            bucket=Boto3Service.S3_MUSIC_BUCKET,
-            filename=f"{job.id}/{job.download_filename}",
+    )
+    jobs = list(filter(lambda job: not job.deleted_at, jobs))
+    jobs.sort(key=lambda job: job.created_at, reverse=True)
+    response = client.get(f"{JOBS_URL}/1/4")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {
+        "totalPages": 1,
+        "jobs": list(
+            map(
+                lambda job: {
+                    "id": job.id,
+                    "artworkUrl": job.artwork_url,
+                    "artworkFilename": job.artwork_filename,
+                    "originalFilename": job.original_filename,
+                    "filenameUrl": job.filename_url,
+                    "youtubeUrl": job.youtube_url,
+                    "downloadFilename": job.download_filename,
+                    "downloadUrl": job.download_url,
+                    "title": job.title,
+                    "artist": job.artist,
+                    "album": job.album,
+                    "grouping": job.grouping,
+                    "completed": job.completed,
+                    "failed": job.failed,
+                    "createdAt": job.created_at.replace(
+                        tzinfo=settings.timezone
+                    ).isoformat(),
+                },
+                jobs,
+            )
+        ),
+    }
+
+
+def test_jobs_only_for_logged_in_user(
+    client: TestClient, create_and_login_user, create_user, create_music_job
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    other_user = create_user(email="other@gmail.com", password="password")
+    job = create_music_job(
+        id="1",
+        email=user.email,
+        title="title_1",
+        artist="artist",
+        album="album",
+    )
+    create_music_job(
+        id="2",
+        email=other_user.email,
+        title="title_2",
+        artist="artist",
+        album="album",
+    )
+    response = client.get(f"{JOBS_URL}/1/4")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {
+        "totalPages": 1,
+        "jobs": [
+            {
+                "id": job.id,
+                "artworkUrl": job.artwork_url,
+                "artworkFilename": job.artwork_filename,
+                "originalFilename": job.original_filename,
+                "filenameUrl": job.filename_url,
+                "youtubeUrl": job.youtube_url,
+                "downloadFilename": job.download_filename,
+                "downloadUrl": job.download_url,
+                "title": job.title,
+                "artist": job.artist,
+                "album": job.album,
+                "grouping": job.grouping,
+                "completed": job.completed,
+                "failed": job.failed,
+                "createdAt": job.created_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+            }
+        ],
+    }
+
+
+def test_jobs_are_in_descending_order(
+    client: TestClient,
+    create_and_login_user,
+    create_music_job,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    jobs = list(
+        map(
+            lambda i: create_music_job(
+                id=str(i),
+                email=user.email,
+                title=f"title_{i}",
+                artist="artist",
+                album="album",
+            ),
+            range(4),
         )
+    )
+    jobs.sort(key=lambda job: job.created_at, reverse=True)
+    response = client.get(f"{JOBS_URL}/1/4")
+    assert response.status_code == status.HTTP_200_OK
+    json = response.json()
+    assert json == {
+        "totalPages": 1,
+        "jobs": list(
+            map(
+                lambda job: {
+                    "id": job.id,
+                    "artworkUrl": job.artwork_url,
+                    "artworkFilename": job.artwork_filename,
+                    "originalFilename": job.original_filename,
+                    "filenameUrl": job.filename_url,
+                    "youtubeUrl": job.youtube_url,
+                    "downloadFilename": job.download_filename,
+                    "downloadUrl": job.download_url,
+                    "title": job.title,
+                    "artist": job.artist,
+                    "album": job.album,
+                    "grouping": job.grouping,
+                    "completed": job.completed,
+                    "failed": job.failed,
+                    "createdAt": job.created_at.replace(
+                        tzinfo=settings.timezone
+                    ).isoformat(),
+                },
+                jobs,
+            )
+        ),
+    }
