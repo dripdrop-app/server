@@ -6,8 +6,12 @@ services:
     container_name: server
     restart: always
     volumes:
-      - ./data/server/logs:/src/logs
-      - ../build:/src/build
+      - type: volume
+        source: server-logs
+        target: /src/logs
+      - type: bind
+        source: ../build
+        target: /src/build
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile
@@ -30,7 +34,9 @@ services:
     container_name: worker
     restart: always
     volumes:
-      - ./data/worker/logs:/src/logs
+      - type: volume
+        source: worker-logs
+        target: /src/logs
     env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile
@@ -45,19 +51,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - 8000:80
   postgres:
     image: postgres:14
     container_name: postgres
     restart: always
     healthcheck:
-      test: pg_isready
+      test: pg_isready -U dripdrop
       interval: 10s
       start_period: 1s
       timeout: 1m30s
     volumes:
-      - ./data/postgresql:/var/lib/postgresql/data
+      - type: volume
+        source: postgresql
+        target: /var/lib/postgresql/data
     env_file: .env
     environment:
       POSTGRES_USER: $DATABASE_USER
@@ -74,7 +80,30 @@ services:
       start_period: 1s
       timeout: 1m30s
     volumes:
-      - ./data/redis:/data
+      - type: volume
+        source: redis
+        target: /data
     env_file: '.env'
     environment:
       REDIS_ARGS: --save 20 1
+  logs:
+    image: python:3.10
+    container_name: logs
+    restart: always
+    working_dir: /home/logs
+    volumes:
+      - type: volume
+        source: server-logs
+        target: /home/logs/server
+        read_only: true
+      - type: volume
+        source: worker-logs
+        target: /home/logs/worker
+        read_only: true
+    entrypoint: tail -f /dev/null
+
+volumes:
+  server-logs:
+  worker-logs:
+  postgresql:
+  redis:

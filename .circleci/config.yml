@@ -77,19 +77,6 @@ jobs:
           command: |
             apt-get -y update
             apt-get install -y rsync
-      - run:
-          name: Backup container data
-          command: |
-            ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
-              set -e
-              [ -d ~/data ] || mkdir ~/data
-              docker cp server:/src/logs ~/data/server
-              docker cp worker:/src/logs ~/data/worker
-              docker cp redis:/data ~/data/redis
-              docker cp postgres:/var/lib/postgresql/data ~/data/postgresql
-              [ -d ~/data/backup ] || mkdir ~/data/backup
-              docker exec postgres pg_dump -U dripdrop dripdrop > ~/data/backup/db.sql
-            "
       - export_environment_to_file
       - run:
           name: Sync repo to VM
