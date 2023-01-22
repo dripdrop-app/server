@@ -1,5 +1,5 @@
 import jwt
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from sqlalchemy import select
 
 from dripdrop.database import AsyncSession
@@ -20,7 +20,7 @@ def create_jwt(email: str = ...):
     return jwt.encode(
         payload={
             "email": email,
-            "exp": datetime.now(timezone.utc) + timedelta(days=14),
+            "exp": datetime.now(tz=settings.timezone) + timedelta(days=14),
         },
         key=settings.secret_key,
         algorithm=ALGORITHM,

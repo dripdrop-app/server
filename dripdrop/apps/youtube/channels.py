@@ -22,10 +22,10 @@ channels_api = APIRouter(
     },
 )
 async def get_youtube_channel(
-    channel_id: str = Query(...), db: AsyncSession = Depends(create_db_session)
+    channel_id: str = Query(...), session: AsyncSession = Depends(create_db_session)
 ):
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     channel: YoutubeChannel | None = results.first()
     if not channel:
         raise HTTPException(

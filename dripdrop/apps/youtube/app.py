@@ -21,14 +21,13 @@ from .models import GoogleAccount
 from .responses import AccountResponse
 from .subscriptions import subscriptions_api
 from .tasks import youtube_tasker
+from .utils import update_google_access_token
 from .videos import videos_api
 
 app = FastAPI(
     openapi_tags=["YouTube"],
     dependencies=[Depends(get_authenticated_user)],
-    responses={
-        status.HTTP_403_FORBIDDEN: {"description": "Google account not connected"}
-    },
+    responses={status.HTTP_403_FORBIDDEN: {}},
 )
 app.include_router(videos_api)
 app.include_router(subscriptions_api)
@@ -46,16 +45,11 @@ async def google_oauth2(
     state: str = Query(...),
     code: str = Query(...),
     error: str = Query(None),
-    db: AsyncSession = Depends(create_db_session),
+    user: User = Depends(get_authenticated_user),
+    session: AsyncSession = Depends(create_db_session),
 ):
     if error:
         raise HTTPException(400)
-    email = state
-    query = select(User).where(User.email == email)
-    results = await db.scalars(query)
-    user: User | None = results.first()
-    if not user:
-        return RedirectResponse("/")
     get_oauth_tokens = sync_to_async(google_api_service.get_oauth_tokens)
     tokens = None
     try:
@@ -65,30 +59,30 @@ async def google_oauth2(
         get_user_email = sync_to_async(google_api_service.get_user_email)
         google_email = await get_user_email(tokens.get("access_token"))
         query = select(GoogleAccount).where(GoogleAccount.email == google_email)
-        results = await db.scalars(query)
+        results = await session.scalars(query)
         google_account: GoogleAccount | None = results.first()
         if google_account:
             google_account.access_token = tokens["access_token"]
             google_account.refresh_token = tokens["refresh_token"]
             google_account.expires = tokens["expires_in"]
-            await db.commit()
+            await session.commit()
         else:
-            db.add(
+            session.add(
                 GoogleAccount(
                     email=google_email,
-                    user_email=email,
+                    user_email=user.email,
                     access_token=tokens["access_token"],
                     refresh_token=tokens["refresh_token"],
                     expires=tokens["expires_in"],
                 )
             )
-            await db.commit()
+            await session.commit()
         job = queue.enqueue(
             youtube_tasker.update_youtube_video_categories, args=(False,)
         )
         queue.enqueue(
             youtube_tasker.update_user_youtube_subscriptions_job,
-            args=(email,),
+            args=(user.email,),
             depends_on=job,
         )
     except Exception:
@@ -99,14 +93,14 @@ async def google_oauth2(
 @app.get("/account", response_model=AccountResponse)
 async def get_youtube_account(
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
-    if settings.env == "production":
-        await youtube_tasker.update_google_access_token(google_account.email)
-    query = select(GoogleAccount).where(GoogleAccount.email == google_account.email)
-    results = await db.scalars(query)
-    account: GoogleAccount = results.first()
-    return AccountResponse(email=account.email, refresh=not bool(account.access_token))
+    if settings.env != "development":
+        await update_google_access_token(google_account.email, session=session)
+    await session.refresh(google_account)
+    return AccountResponse(
+        email=google_account.email, refresh=not bool(google_account.access_token)
+    )
 
 
 @app.get("/oauth", response_class=PlainTextResponse)

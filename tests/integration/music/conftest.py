@@ -3,8 +3,6 @@ import io
 import os
 import pytest
 import requests
-import subprocess
-import time
 from contextlib import contextmanager
 from datetime import datetime
 from fastapi import status
@@ -13,42 +11,6 @@ from sqlalchemy.orm import Session
 
 from dripdrop.apps.music.models import MusicJob
 from dripdrop.services.audio_tag import AudioTagService
-from dripdrop.services.boto3 import boto3_service
-from dripdrop.settings import settings
-
-
-@pytest.fixture
-def clean_test_s3_folders():
-    def _clean_test_s3_folders():
-        try:
-            for keys in boto3_service.list_objects():
-                for key in keys:
-                    if key.startswith("test"):
-                        continue
-                    boto3_service.delete_file(filename=key)
-        except Exception as e:
-            print(e)
-            pass
-
-    return _clean_test_s3_folders
-
-
-@pytest.fixture
-def run_worker(clean_test_s3_folders):
-    clean_test_s3_folders()
-    process = subprocess.Popen(
-        ["python", "worker.py"],
-        env={
-            **os.environ,
-            "ASYNC_DATABASE_URL": settings.test_async_database_url,
-            "DATABASE_URL": settings.test_database_url,
-        },
-    )
-    yield process
-    process.kill()
-    while process.poll() is None:
-        time.sleep(1)
-    clean_test_s3_folders()
 
 
 @pytest.fixture

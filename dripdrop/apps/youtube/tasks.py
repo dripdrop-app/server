@@ -2,13 +2,14 @@ import asyncio
 import dateutil.parser
 import traceback
 from asgiref.sync import sync_to_async
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from sqlalchemy import select, func, delete
 from typing import AsyncGenerator
 
 from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.services.google_api import google_api_service
+from dripdrop.settings import settings
 from dripdrop.utils import worker_task
 
 from .models import (
@@ -18,36 +19,10 @@ from .models import (
     YoutubeVideo,
     YoutubeVideoCategory,
 )
+from .utils import update_google_access_token
 
 
 class YoutubeTasker:
-    @worker_task
-    async def update_google_access_token(
-        self, google_email: str = ..., session: AsyncSession = ...
-    ):
-        query = select(GoogleAccount).where(GoogleAccount.email == google_email)
-        results = await session.scalars(query)
-        account: GoogleAccount | None = results.first()
-        if account:
-            last_updated: datetime = account.last_updated
-            difference = datetime.now(timezone.utc) - last_updated
-            if difference.seconds >= account.expires:
-                try:
-                    refresh_access_token = sync_to_async(
-                        google_api_service.refresh_access_token
-                    )
-                    new_access_token = await refresh_access_token(
-                        refresh_token=account.refresh_token
-                    )
-                    if new_access_token:
-                        account.access_token = new_access_token["access_token"]
-                        account.expires = new_access_token["expires_in"]
-                        await session.commit()
-                except Exception:
-                    account.access_token = ""
-                    account.expires = 0
-                    await session.commit()
-
     @worker_task
     async def add_update_youtube_subscription(
         self,
@@ -103,7 +78,8 @@ class YoutubeTasker:
                     title=channel_title,
                     thumbnail=channel_thumbnail,
                     upload_playlist_id=channel_upload_playlist_id,
-                    last_updated=datetime.now(timezone.utc) - timedelta(days=32),
+                    last_updated=datetime.now(tz=settings.timezone)
+                    - timedelta(days=32),
                 )
             )
         await session.commit()
@@ -205,7 +181,7 @@ class YoutubeTasker:
         if not account:
             return
         await session.commit()
-        await self.update_google_access_token(google_email=account.email)
+        await update_google_access_token(google_email=account.email, session=session)
         await session.refresh(account)
         if not account.access_token:
             return
@@ -289,7 +265,7 @@ class YoutubeTasker:
             )
             if len(recent_uploaded_playlist_videos) < len(uploaded_playlist_videos):
                 break
-        channel.last_updated = datetime.now(timezone.utc)
+        channel.last_updated = datetime.now(tz=settings.timezone)
         await session.commit()
 
     @worker_task
@@ -319,7 +295,7 @@ class YoutubeTasker:
 
     @worker_task
     async def channel_cleanup(self, session: AsyncSession = ...):
-        limit = datetime.now(timezone.utc) - timedelta(days=7)
+        limit = datetime.now(tz=settings.timezone) - timedelta(days=7)
         query = select(YoutubeChannel).where(YoutubeChannel.last_updated < limit)
         stream: AsyncGenerator[YoutubeChannel] = await session.stream_scalars(query)
         async for channel in stream:

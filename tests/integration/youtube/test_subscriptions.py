@@ -87,7 +87,7 @@ def test_subscriptions_with_single_result(
             "channelTitle": channel.title,
             "channelThumbnail": channel.thumbnail,
             "publishedAt": subscription.published_at.replace(
-                tzinfo=settings.test_timezone
+                tzinfo=settings.timezone
             ).isoformat(),
         }
     ]
@@ -133,7 +133,7 @@ def test_subscriptions_with_multiple_pages(
             "channelTitle": channels[0].title,
             "channelThumbnail": channels[0].thumbnail,
             "publishedAt": subscriptions[0]
-            .published_at.replace(tzinfo=settings.test_timezone)
+            .published_at.replace(tzinfo=settings.timezone)
             .isoformat(),
         }
     ]
@@ -185,7 +185,7 @@ def test_subscriptions_for_logged_in_google_account(
             "channelTitle": channel.title,
             "channelThumbnail": channel.thumbnail,
             "publishedAt": subscription.published_at.replace(
-                tzinfo=settings.test_timezone
+                tzinfo=settings.timezone
             ).isoformat(),
         }
     ]
@@ -232,7 +232,7 @@ def test_subscriptions_are_in_descending_order_by_title(
                 "channelTitle": channels[i].title,
                 "channelThumbnail": channels[i].thumbnail,
                 "publishedAt": subscriptions[i]
-                .published_at.replace(tzinfo=settings.test_timezone)
+                .published_at.replace(tzinfo=settings.timezone)
                 .isoformat(),
             },
             range(len(channels)),

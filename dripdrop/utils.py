@@ -1,11 +1,12 @@
 import traceback
 from asgiref.sync import sync_to_async
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import wraps
 from inspect import iscoroutinefunction, signature
 
-from dripdrop.database import database
-from dripdrop.logging import logger
+from .database import database
+from .logging import logger
+from .settings import settings
 
 
 def worker_task(function):
@@ -28,4 +29,4 @@ def worker_task(function):
 
 
 def get_current_time():
-    return datetime.now(timezone.utc)
+    return datetime.now(tz=settings.timezone)

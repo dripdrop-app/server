@@ -34,7 +34,7 @@ videos_api = APIRouter(
 @videos_api.get("/categories", response_model=YoutubeVideoCategoriesResponse)
 async def get_youtube_video_categories(
     channel_id: str = Query(None),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     channel_query = (
         select(YoutubeChannel)
@@ -52,7 +52,7 @@ async def get_youtube_video_categories(
         YoutubeVideoCategory,
         YoutubeVideoCategory.id == YoutubeVideo.category_id,
     )
-    results = await db.scalars(
+    results = await session.scalars(
         select(YoutubeVideoCategory)
         .select_from(query)
         .order_by(YoutubeVideoCategory.name.asc())
@@ -79,7 +79,7 @@ async def get_youtube_videos(
     liked_only: bool = Query(False),
     queued_only: bool = Query(False),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     try:
         if video_categories:
@@ -173,9 +173,9 @@ async def get_youtube_videos(
         query = query.order_by(video_queues_query.columns.created_at.asc())
     else:
         query = query.order_by(videos_query.columns.published_at.desc())
-    results = await db.execute(query.offset((page - 1) * per_page))
+    results = await session.execute(query.offset((page - 1) * per_page))
     videos = results.mappings().fetchmany(per_page)
-    count = await db.scalar(select(func.count(query.columns.id)))
+    count = await session.scalar(select(func.count(query.columns.id)))
     total_pages = math.ceil(count / per_page)
     return VideosResponse(videos=videos, total_pages=total_pages)
 
@@ -189,17 +189,17 @@ async def get_youtube_videos(
 async def add_youtube_video_watch(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoWatch).where(
         YoutubeVideoWatch.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
     )
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     watch = results.first()
     if not watch:
-        db.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
-        await db.commit()
+        session.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
+        await session.commit()
         return Response(None, status_code=status.HTTP_200_OK)
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
@@ -215,17 +215,17 @@ async def add_youtube_video_watch(
 async def add_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
     )
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     like = results.first()
     if not like:
-        db.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
-        await db.commit()
+        session.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
+        await session.commit()
         return Response(None, status_code=status.HTTP_200_OK)
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
@@ -243,22 +243,22 @@ async def add_youtube_video_like(
 async def delete_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
 
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
     )
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     like = results.first()
     if not like:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.REMOVE_VIDEO_LIKE_ERROR,
         )
-    await db.delete(like)
-    await db.commit()
+    await session.delete(like)
+    await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)
 
 
@@ -273,17 +273,17 @@ async def delete_youtube_video_like(
 async def add_youtube_video_queue(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoQueue).where(
         YoutubeVideoQueue.email == google_account.email,
         YoutubeVideoQueue.video_id == video_id,
     )
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     queue = results.first()
     if not queue:
-        db.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
-        await db.commit()
+        session.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
+        await session.commit()
         return Response(None, status_code=status.HTTP_200_OK)
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -302,21 +302,21 @@ async def add_youtube_video_queue(
 async def delete_youtube_video_queue(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoQueue).where(
         YoutubeVideoQueue.email == google_account.email,
         YoutubeVideoQueue.video_id == video_id,
     )
-    results = await db.scalars(query)
+    results = await session.scalars(query)
     queue = results.first()
     if not queue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.REMOVE_VIDEO_QUEUE_ERROR,
         )
-    await db.delete(queue)
-    await db.commit()
+    await session.delete(queue)
+    await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)
 
 
@@ -330,7 +330,7 @@ async def delete_youtube_video_queue(
 async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     videos_query = select(YoutubeVideo).alias(name=YoutubeVideo.__tablename__)
     video_likes_query = (
@@ -381,7 +381,7 @@ async def get_youtube_video_queue(
         )
         .order_by(video_queues_query.columns.created_at.asc())
     )
-    results = await db.execute(query)
+    results = await session.execute(query)
     videos = results.mappings().fetchmany(2 if index == 1 else 3)
     [prev_video, current_video, next_video] = [None] * 3
     if index != 1 and videos:
@@ -412,7 +412,7 @@ async def get_youtube_video(
     video_id: str = Query(...),
     related_videos_length: int = Query(5, ge=0),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     videos_query = (
         select(YoutubeVideo)
@@ -463,7 +463,7 @@ async def get_youtube_video(
             isouter=True,
         )
     )
-    results = await db.execute(query)
+    results = await session.execute(query)
     video = results.mappings().first()
     if not video:
         raise HTTPException(404)
@@ -510,6 +510,6 @@ async def get_youtube_video(
             )
             .order_by(videos_query.columns.published_at.desc())
         )
-        results = await db.execute(query)
+        results = await session.execute(query)
         related_videos = results.mappings().fetchmany(related_videos_length)
     return VideoResponse(video=video, related_videos=related_videos)

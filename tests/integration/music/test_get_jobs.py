@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import status
 from fastapi.testclient import TestClient
 
@@ -67,9 +67,7 @@ def test_get_jobs_with_single_result(
             "grouping": job.grouping,
             "completed": job.completed,
             "failed": job.failed,
-            "createdAt": job.created_at.replace(
-                tzinfo=settings.test_timezone
-            ).isoformat(),
+            "createdAt": job.created_at.replace(tzinfo=settings.timezone).isoformat(),
         }
     ]
 
@@ -114,7 +112,7 @@ def test_get_jobs_with_multiple_pages(
                 "completed": jobs[i].completed,
                 "failed": jobs[i].failed,
                 "createdAt": jobs[i]
-                .created_at.replace(tzinfo=settings.test_timezone)
+                .created_at.replace(tzinfo=settings.timezone)
                 .isoformat(),
             },
             range(2, 0, -1),
@@ -136,7 +134,7 @@ def test_get_jobs_with_deleted_jobs(
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
-                deleted_at=datetime.now(timezone.utc) if i % 2 else None,
+                deleted_at=datetime.now(tz=settings.timezone) if i % 2 else None,
             ),
             range(4),
         )
@@ -163,7 +161,7 @@ def test_get_jobs_with_deleted_jobs(
                 "completed": jobs[i].completed,
                 "failed": jobs[i].failed,
                 "createdAt": jobs[i]
-                .created_at.replace(tzinfo=settings.test_timezone)
+                .created_at.replace(tzinfo=settings.timezone)
                 .isoformat(),
             },
             range(2, -1, -2),
@@ -210,9 +208,7 @@ def test_get_jobs_only_for_logged_in_user(
             "grouping": job.grouping,
             "completed": job.completed,
             "failed": job.failed,
-            "createdAt": job.created_at.replace(
-                tzinfo=settings.test_timezone
-            ).isoformat(),
+            "createdAt": job.created_at.replace(tzinfo=settings.timezone).isoformat(),
         }
     ]
 
@@ -231,7 +227,7 @@ def test_get_jobs_are_in_descending_order(
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
-                deleted_at=datetime.now(timezone.utc) if i % 2 else None,
+                deleted_at=datetime.now(tz=settings.timezone) if i % 2 else None,
             ),
             range(4),
         )

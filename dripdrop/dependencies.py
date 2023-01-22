@@ -1,6 +1,6 @@
 import jwt
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import HTTPException, status, Request, WebSocket, Depends
 from sqlalchemy import select
 from typing import Union
@@ -26,7 +26,7 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
         expires = payload.get("exp", None)
         if not expires:
             return None
-        if expires < datetime.now(timezone.utc).timestamp():
+        if expires < datetime.now(tz=settings.timezone).timestamp():
             pass
         email = payload.get("email", None)
         if email:

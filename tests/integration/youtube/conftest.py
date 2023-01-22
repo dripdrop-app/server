@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 from sqlalchemy.orm import Session
 
 from dripdrop.apps.youtube.models import (
@@ -7,6 +7,7 @@ from dripdrop.apps.youtube.models import (
     YoutubeChannel,
     YoutubeSubscription,
 )
+from dripdrop.settings import settings
 
 
 @pytest.fixture
@@ -39,7 +40,7 @@ def create_channel(session: Session):
         title: str = ...,
         thumbnail: str = ...,
         upload_playlist_id: str = ...,
-        last_updated: datetime | None = datetime.now(timezone.utc),
+        last_updated: datetime | None = datetime.now(tz=settings.timezone),
     ):
         youtube_channel = YoutubeChannel(
             id=id,
@@ -61,7 +62,7 @@ def create_subscription(session: Session):
         id: str = ...,
         channel_id: str = ...,
         email: str = ...,
-        published_at: datetime | None = datetime.now(timezone.utc),
+        published_at: datetime | None = datetime.now(tz=settings.timezone),
     ):
         youtube_subscription = YoutubeSubscription(
             id=id, channel_id=channel_id, email=email, published_at=published_at

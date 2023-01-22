@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import timezone as tz
 from pydantic import BaseSettings
 
 
@@ -24,13 +24,16 @@ class Settings(BaseSettings):
     test_aws_secret_access_key: str
     test_database_url: str
     test_redis_url: str
-    test_timezone: timezone | None = timezone.utc
+    timezone: tz | None = tz.utc
 
     class Config:
         env_file = ".env"
 
 
 settings = Settings()
+
+if settings.database_url.startswith("sqlite"):
+    settings.timezone = None
 
 if settings.env == "testing" or settings.env == "development":
     settings.aws_access_key_id = settings.test_aws_access_key_id
@@ -41,5 +44,3 @@ if settings.env == "testing":
     settings.async_database_url = settings.test_async_database_url
     settings.database_url = settings.test_database_url
     settings.redis_url = settings.test_redis_url
-    if settings.database_url.startswith("sqlite"):
-        settings.test_timezone = None

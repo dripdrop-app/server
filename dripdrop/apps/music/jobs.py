@@ -3,7 +3,7 @@ import math
 import re
 import traceback
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import (
     APIRouter,
     Depends,
@@ -31,6 +31,7 @@ from dripdrop.logging import logger
 from dripdrop.redis import redis
 from dripdrop.rq import queue
 from dripdrop.services.redis import redis_service, RedisChannels
+from dripdrop.settings import settings
 
 from .models import MusicJob, youtube_regex
 from .responses import (
@@ -206,6 +207,6 @@ async def delete_job(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
     await cleanup_job(job=job)
-    job.deleted_at = datetime.now(timezone.utc)
+    job.deleted_at = datetime.now(tz=settings.timezone)
     await session.commit()
     return Response(None)

@@ -3,7 +3,7 @@ import os
 import requests
 import shutil
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pydub import AudioSegment
 from sqlalchemy import select
 from typing import Union, AsyncIterable
@@ -17,6 +17,7 @@ from dripdrop.services.audio_tag import AudioTagService
 from dripdrop.services.image_downloader import image_downloader_service
 from dripdrop.services.redis import RedisChannels
 from dripdrop.services.youtube_downloader import youtuber_downloader_service
+from dripdrop.settings import settings
 from dripdrop.utils import worker_task
 
 from .models import MusicJob
@@ -140,7 +141,7 @@ class MusicTasker:
 
     @worker_task
     async def cleanup_jobs(self, session: AsyncSession = ...):
-        limit = datetime.now(timezone.utc) - timedelta(days=14)
+        limit = datetime.now(tz=settings.timezone) - timedelta(days=14)
         query = select(MusicJob).where(
             MusicJob.created_at < limit,
             MusicJob.completed.is_(True),
@@ -149,7 +150,7 @@ class MusicTasker:
         stream: AsyncIterable[MusicJob] = await session.stream_scalars(query)
         async for job in stream:
             await cleanup_job(job=job)
-            job.deleted_at = datetime.now(timezone.utc)
+            job.deleted_at = datetime.now(tz=settings.timezone)
             await session.commit()
 
 

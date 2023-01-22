@@ -23,7 +23,7 @@ async def get_youtube_subscriptions(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50),
     google_account: GoogleAccount = Depends(get_google_user),
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_db_session),
 ):
     subscription_query = (
         select(YoutubeSubscription)
@@ -44,9 +44,9 @@ async def get_youtube_subscriptions(
         )
         .order_by(YoutubeChannel.title)
     )
-    results = await db.execute(query.offset((page - 1) * per_page))
+    results = await session.execute(query.offset((page - 1) * per_page))
     subscriptions: list[YoutubeSubscription] = results.mappings().fetchmany(per_page)
-    count: int = await db.scalar(select(func.count(query.subquery().columns.id)))
+    count: int = await session.scalar(select(func.count(query.subquery().columns.id)))
     total_pages = math.ceil(count / per_page)
     if page > total_pages:
         raise HTTPException(
