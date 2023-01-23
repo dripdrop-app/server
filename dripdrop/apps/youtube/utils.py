@@ -29,7 +29,6 @@ async def update_google_access_token(
                     refresh_token=account.refresh_token
                 )
                 if new_access_token:
-                    account.refresh_token = new_access_token["refresh_token"]
                     account.access_token = new_access_token["access_token"]
                     account.expires = new_access_token["expires_in"]
                     await session.commit()
