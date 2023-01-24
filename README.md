@@ -1,4 +1,4 @@
-# [Dripdrop](https://www.dripdrop.icu)
+# [dripdrop](https://www.dripdrop.icu)
 
 - Convert wav files to mp3 and/or update existing tags on audio files
 
