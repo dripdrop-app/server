@@ -19,7 +19,7 @@ def run_worker():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--logging", action="store_true")
-    parser.add_argument("-w", "--workers", default=1, type=int, nargs=1)
+    parser.add_argument("-w", "--workers", default=1, type=int)
     args = parser.parse_args()
     if args.logging:
         with open(
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         ) as file:
             loaded_config = yaml.safe_load(file)
             logging.config.dictConfig(loaded_config)
-    processes = list(map(lambda _: Process(target=run_worker), range(args.workers[0])))
+    processes = list(map(lambda _: Process(target=run_worker), range(args.workers)))
     for process in processes:
         process.start()
     while True:
