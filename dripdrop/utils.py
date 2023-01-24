@@ -31,10 +31,9 @@ def worker_task(function):
         async with database.async_create_session() as session:
             if "session" in parameters:
                 kwargs["session"] = session
-                func = exception_handler(function)
-            return await func(*args, **kwargs)
+            return await function(*args, **kwargs)
 
-    return wrapper
+    return exception_handler(wrapper)
 
 
 def get_current_time():
