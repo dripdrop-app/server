@@ -125,6 +125,7 @@ def test_videos_with_single_result(
                 "publishedAt": video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
+                "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
                 "liked": None,
@@ -185,6 +186,7 @@ def test_videos_with_multiple_videos(
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
                     ).isoformat(),
+                    "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
@@ -247,6 +249,7 @@ def test_videos_with_multiple_pages(
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
                     ).isoformat(),
+                    "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
@@ -309,6 +312,7 @@ def test_videos_in_descending_order_by_published_date(
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
                     ).isoformat(),
+                    "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
@@ -374,6 +378,7 @@ def test_videos_with_specific_video_category(
                 "publishedAt": video_in_category.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
+                "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
                 "liked": None,
@@ -436,6 +441,7 @@ def test_videos_with_queued_only(
                 "publishedAt": queued_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
+                "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
                 "liked": None,
@@ -515,6 +521,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
                     "publishedAt": videos[i]
                     .published_at.replace(tzinfo=settings.timezone)
                     .isoformat(),
+                    "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
@@ -581,6 +588,7 @@ def test_videos_with_liked_only(
                 "publishedAt": liked_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
+                "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
                 "liked": like.created_at.replace(tzinfo=settings.timezone).isoformat(),
@@ -656,6 +664,7 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
                     "publishedAt": videos[i]
                     .published_at.replace(tzinfo=settings.timezone)
                     .isoformat(),
+                    "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": likes[i]

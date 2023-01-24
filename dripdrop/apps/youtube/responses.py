@@ -43,6 +43,7 @@ class YoutubeVideoResponse(ResponseBaseModel):
     thumbnail: str
     category_id: int
     published_at: datetime
+    channel_id: str
     channel_title: str
     channel_thumbnail: str
     liked: Optional[datetime] = Field(None)
