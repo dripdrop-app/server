@@ -41,7 +41,7 @@ services:
       bash -c "
         set -e
         source venv/bin/activate
-        watchfiles 'python worker.py' ./worker.py
+        watchfiles 'python worker.py --workers 2' ./worker.py
       "
     depends_on:
       postgres:

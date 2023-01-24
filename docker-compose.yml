@@ -22,6 +22,11 @@ services:
         alembic upgrade head
         gunicorn dripdrop.app:app -w 2 -k uvicorn.workers.UvicornWorker -b :$SERVER_PORT -c ./config/gunicorn.py
       "
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '10'
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,8 +49,13 @@ services:
       bash -c "
         set -e
         source venv/bin/activate
-        python worker.py --logging
+        python worker.py --logging -w 4
       "
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '10'
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,6 +80,11 @@ services:
       POSTGRES_PASSWORD: $DATABASE_PASSWORD
       POSTGRES_DB: $DATABASE
       POSTGRES_HOST_AUTH_METHOD: md5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '10'
   redis:
     image: redis
     container_name: redis
@@ -86,6 +101,11 @@ services:
     env_file: '.env'
     environment:
       REDIS_ARGS: --save 20 1
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '10'
   logs:
     image: python:3.10
     container_name: logs
@@ -101,6 +121,11 @@ services:
         target: /home/logs/worker
         read_only: true
     entrypoint: tail -f /dev/null
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '10'
 
 volumes:
   server-logs:

@@ -18,6 +18,7 @@ from dripdrop.services.image_downloader import image_downloader_service
 from dripdrop.services.redis import RedisChannels
 from dripdrop.services.youtube_downloader import youtuber_downloader_service
 from dripdrop.settings import settings
+from dripdrop.rq import queue
 from dripdrop.utils import worker_task
 
 from .models import MusicJob
@@ -105,7 +106,6 @@ class MusicTasker:
         job: MusicJob | None = results.first()
         if not job:
             raise Exception(f"Job with id ({job_id}) not found")
-
         job_path = None
         try:
             job_path = self.create_job_folder(job=job)
@@ -140,7 +140,18 @@ class MusicTasker:
                 shutil.rmtree(job_path)
 
     @worker_task
-    async def cleanup_jobs(self, session: AsyncSession = ...):
+    async def delete_job(self, job_id: str = ..., session: AsyncSession = ...):
+        query = select(MusicJob).where(MusicJob.id == job_id)
+        results = await session.scalars(query)
+        job: MusicJob | None = results.first()
+        if not job:
+            raise Exception(f"Job ({job_id}) could not be found")
+        await cleanup_job(job=job)
+        job.deleted_at = datetime.now(tz=settings.timezone)
+        await session.commit()
+
+    @worker_task
+    async def delete_jobs(self, session: AsyncSession = ...):
         limit = datetime.now(tz=settings.timezone) - timedelta(days=14)
         query = select(MusicJob).where(
             MusicJob.created_at < limit,
@@ -149,9 +160,7 @@ class MusicTasker:
         )
         stream: AsyncIterable[MusicJob] = await session.stream_scalars(query)
         async for job in stream:
-            await cleanup_job(job=job)
-            job.deleted_at = datetime.now(tz=settings.timezone)
-            await session.commit()
+            queue.enqueue(self.delete_job, kwargs={"job_id": job.id}, at_front=True)
 
 
 music_tasker = MusicTasker()

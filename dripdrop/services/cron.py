@@ -24,15 +24,19 @@ class CronService:
             youtube_tasker.update_subscriptions,
             depends_on=video_categories_job,
         )
-        active_channels_job = queue.enqueue(
-            youtube_tasker.update_active_channels,
+        subscribed_channels_meta_job = queue.enqueue(
+            youtube_tasker.update_subscribed_channels_meta,
             depends_on=update_subscriptions_job,
         )
-        queue.enqueue(
-            youtube_tasker.channel_cleanup,
-            depends_on=active_channels_job,
+        subscribed_channels_videos_job = queue.enqueue(
+            youtube_tasker.update_subscribed_channels_videos,
+            depends_on=subscribed_channels_meta_job,
         )
-        queue.enqueue(music_tasker.cleanup_jobs)
+        queue.enqueue(
+            youtube_tasker.delete_old_channels,
+            depends_on=subscribed_channels_videos_job,
+        )
+        queue.enqueue(music_tasker.delete_jobs)
 
     async def async_run_cron_jobs(self):
         run_cron_jobs = sync_to_async(self.run_cron_jobs)

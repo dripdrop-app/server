@@ -9,6 +9,21 @@ from .logging import logger
 from .settings import settings
 
 
+def exception_handler(function):
+    @wraps(function)
+    async def wrapper(*args, **kwargs):
+        try:
+            if not iscoroutinefunction(function):
+                func = sync_to_async(function)
+            else:
+                func = function
+            return await func(*args, **kwargs)
+        except Exception:
+            logger.error(traceback.format_exc())
+
+    return wrapper
+
+
 def worker_task(function):
     @wraps(function)
     async def wrapper(*args, **kwargs):
@@ -16,14 +31,8 @@ def worker_task(function):
         async with database.async_create_session() as session:
             if "session" in parameters:
                 kwargs["session"] = session
-            try:
-                if not iscoroutinefunction(function):
-                    func = sync_to_async(function)
-                else:
-                    func = function
-                return await func(*args, **kwargs)
-            except Exception:
-                logger.error(traceback.format_exc())
+                func = exception_handler(function)
+            return await func(*args, **kwargs)
 
     return wrapper
 
