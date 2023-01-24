@@ -1,5 +1,7 @@
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from dripdrop.settings import settings
 from dripdrop.services.cron import cron_service
@@ -29,6 +31,21 @@ app = FastAPI(
     on_shutdown=[cron_service.end_cron_jobs],
     routes=api_router.routes,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    error_messages = []
+    for error in exc.errors():
+        location = error.get("loc")
+        if location:
+            location = location[-1]
+        message = error.get("msg").replace("this value", location)
+        error_messages.append(message)
+    return JSONResponse(
+        content={"detail": ",".join(error_messages)},
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    )
 
 
 origins = []
