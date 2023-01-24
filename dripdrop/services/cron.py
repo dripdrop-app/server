@@ -84,10 +84,15 @@ class CronService:
                     youtube_tasker.update_youtube_video_categories,
                     kwargs={"cron": True},
                 )
-                self.create_cron_job("0 0 * * *", music_tasker.cleanup_jobs)
-                self.create_cron_job("0 1 * * *", youtube_tasker.update_active_channels)
-                self.create_cron_job("0 3 * * *", youtube_tasker.update_subscriptions)
-                self.create_cron_job("0 5 * * sun", youtube_tasker.channel_cleanup)
+                self.create_cron_job("0 0 * * *", music_tasker.delete_jobs)
+                self.create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
+                self.create_cron_job(
+                    "30 0 * * *", youtube_tasker.update_subscribed_channels_meta
+                )
+                self.create_cron_job(
+                    "0 1 * * *", youtube_tasker.update_subscribed_channels_videos
+                )
+                self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
 
     async def end_cron_jobs(self):
         if settings.env == "production":

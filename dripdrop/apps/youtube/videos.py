@@ -138,7 +138,6 @@ async def get_youtube_videos(
     )
     query = select(
         videos_query,
-        channel_query.columns.id.label("channel_id"),
         channel_query.columns.title.label("channel_title"),
         channel_query.columns.thumbnail.label("channel_thumbnail"),
         video_likes_query.columns.created_at.label("liked"),
@@ -359,7 +358,6 @@ async def get_youtube_video_queue(
     query = (
         select(
             videos_query,
-            channel_query.columns.id.label("channel_id"),
             channel_query.columns.title.label("channel_title"),
             channel_query.columns.thumbnail.label("channel_thumbnail"),
             video_likes_query.columns.created_at.label("liked"),
@@ -444,7 +442,6 @@ async def get_youtube_video(
     channel_query = select(YoutubeChannel).alias(name=YoutubeChannel.__tablename__)
     query = select(
         videos_query,
-        channel_query.columns.id.label("channel_id"),
         channel_query.columns.title.label("channel_title"),
         channel_query.columns.thumbnail.label("channel_thumbnail"),
         video_likes_query.columns.created_at.label("liked"),
@@ -489,7 +486,6 @@ async def get_youtube_video(
         query = (
             select(
                 videos_query,
-                channel_query.columns.id.label("channel_id"),
                 channel_query.columns.title.label("channel_title"),
                 channel_query.columns.thumbnail.label("channel_thumbnail"),
                 video_likes_query.columns.created_at.label("liked"),
