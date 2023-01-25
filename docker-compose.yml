@@ -49,7 +49,7 @@ services:
       bash -c "
         set -e
         source venv/bin/activate
-        python worker.py --logging -w 4
+        python worker.py --logging -w 2
       "
     logging:
       driver: 'json-file'
