@@ -2,7 +2,6 @@ from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base
-from dripdrop.utils import get_current_time
 
 youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
 
@@ -32,9 +31,4 @@ class MusicJob(Base):
     grouping = Column(String, nullable=True)
     completed = Column(Boolean, nullable=False)
     failed = Column(Boolean, nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)

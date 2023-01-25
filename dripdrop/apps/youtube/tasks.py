@@ -81,7 +81,7 @@ class YoutubeTasker:
                     title=channel_title,
                     thumbnail=channel_thumbnail,
                     upload_playlist_id=channel_upload_playlist_id,
-                    last_updated=datetime.now(tz=settings.timezone)
+                    last_videos_updated=datetime.now(tz=settings.timezone)
                     - timedelta(days=32),
                 )
             )
@@ -230,14 +230,14 @@ class YoutubeTasker:
                     "videoPublishedAt"
                 ] = video_published_at
                 video_ids.append(uploaded_video["contentDetails"]["videoId"])
-                if video_published_at > channel.last_updated:
+                if video_published_at > channel.last_videos_updated:
                     new_videos.append(uploaded_video)
             videos_info = await get_videos_info(video_ids=video_ids)
             for video_info in videos_info:
                 await self.add_update_youtube_video(video=video_info, session=session)
             if len(new_videos) < len(uploaded_playlist_videos):
                 break
-        channel.last_updated = datetime.now(tz=settings.timezone)
+        channel.last_videos_updated = datetime.now(tz=settings.timezone)
         await session.commit()
 
     @worker_task
@@ -298,7 +298,7 @@ class YoutubeTasker:
     @worker_task
     async def delete_old_channels(self, session: AsyncSession = ...):
         limit = datetime.now(tz=settings.timezone) - timedelta(days=7)
-        query = select(YoutubeChannel).where(YoutubeChannel.last_updated < limit)
+        query = select(YoutubeChannel).where(YoutubeChannel.last_videos_updated < limit)
         stream: AsyncGenerator[YoutubeChannel] = await session.stream_scalars(query)
         async for channel in stream:
             self.enqueue(self.delete_channel, kwargs={"channel_id": channel.id})

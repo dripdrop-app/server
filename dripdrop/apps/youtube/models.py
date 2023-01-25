@@ -8,7 +8,6 @@ from sqlalchemy import (
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base
-from dripdrop.utils import get_current_time
 
 
 class GoogleAccount(Base):
@@ -27,17 +26,6 @@ class GoogleAccount(Base):
     access_token = Column(String, nullable=False)
     refresh_token = Column(String, nullable=False)
     expires = Column(Integer, nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
-    last_updated = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-        onupdate=get_current_time,
-    )
 
 
 class YoutubeChannel(Base):
@@ -46,16 +34,7 @@ class YoutubeChannel(Base):
     title = Column(String, nullable=False)
     thumbnail = Column(String, nullable=True)
     upload_playlist_id = Column(String, nullable=True)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
-    last_updated = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        onupdate=get_current_time,
-    )
+    last_videos_updated = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
 class YoutubeSubscription(Base):
@@ -80,22 +59,12 @@ class YoutubeSubscription(Base):
         nullable=False,
     )
     published_at = Column(TIMESTAMP(timezone=True), nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
 
 
 class YoutubeVideoCategory(Base):
     __tablename__ = "youtube_video_categories"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
 
 
 class YoutubeVideo(Base):
@@ -122,11 +91,6 @@ class YoutubeVideo(Base):
         nullable=False,
     )
     published_at = Column(TIMESTAMP(timezone=True), nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
 
 
 class YoutubeVideoLike(Base):
@@ -150,11 +114,6 @@ class YoutubeVideoLike(Base):
         ),
         primary_key=True,
         nullable=False,
-    )
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
     )
 
 
@@ -180,11 +139,6 @@ class YoutubeVideoQueue(Base):
         primary_key=True,
         nullable=False,
     )
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
-    )
 
 
 class YoutubeVideoWatch(Base):
@@ -208,9 +162,4 @@ class YoutubeVideoWatch(Base):
         ),
         primary_key=True,
         nullable=False,
-    )
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=get_current_time,
     )

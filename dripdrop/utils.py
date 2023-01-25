@@ -1,12 +1,10 @@
 import traceback
 from asgiref.sync import sync_to_async
-from datetime import datetime
 from functools import wraps
 from inspect import iscoroutinefunction, signature
 
 from .database import database
 from .logging import logger
-from .settings import settings
 
 
 def exception_handler(function):
@@ -34,7 +32,3 @@ def worker_task(function):
             return await function(*args, **kwargs)
 
     return exception_handler(wrapper)
-
-
-def get_current_time():
-    return datetime.now(tz=settings.timezone)
