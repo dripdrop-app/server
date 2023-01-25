@@ -46,6 +46,7 @@ def create_channel(session: Session):
         thumbnail: str = ...,
         upload_playlist_id: str = ...,
         last_updated: datetime | None = None,
+        last_videos_updated: datetime | None = None,
     ):
         youtube_channel = YoutubeChannel(
             id=id,
@@ -54,6 +55,9 @@ def create_channel(session: Session):
             upload_playlist_id=upload_playlist_id,
             last_updated=last_updated
             if last_updated
+            else datetime.now(tz=settings.timezone),
+            last_videos_updated=last_videos_updated
+            if last_videos_updated
             else datetime.now(tz=settings.timezone),
         )
         session.add(youtube_channel)
