@@ -44,13 +44,8 @@ services:
         target: /src/logs
     env_file: .env
     build:
-      dockerfile: dockerfiles/Dockerfile
-    entrypoint: |
-      bash -c "
-        set -e
-        source venv/bin/activate
-        python worker.py --logging -w 2
-      "
+      dockerfile: dockerfiles/Dockerfile.worker
+    entrypoint: supervisord -c ./config/worker.supervisord.conf
     logging:
       driver: 'json-file'
       options:

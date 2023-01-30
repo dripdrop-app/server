@@ -1,5 +1,5 @@
+import asyncio
 import traceback
-from asgiref.sync import sync_to_async
 from functools import wraps
 from inspect import iscoroutinefunction, signature
 
@@ -9,13 +9,12 @@ from .logging import logger
 
 def exception_handler(function):
     @wraps(function)
-    async def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         try:
-            if not iscoroutinefunction(function):
-                func = sync_to_async(function)
-            else:
-                func = function
-            return await func(*args, **kwargs)
+            if iscoroutinefunction(function):
+                loop = asyncio.get_event_loop()
+                return loop.run_until_complete(function(*args, **kwargs))
+            return function(*args, **kwargs)
         except Exception:
             logger.error(traceback.format_exc())
 
@@ -23,6 +22,7 @@ def exception_handler(function):
 
 
 def worker_task(function):
+    @exception_handler
     @wraps(function)
     async def wrapper(*args, **kwargs):
         parameters = signature(function).parameters
@@ -31,4 +31,4 @@ def worker_task(function):
                 kwargs["session"] = session
             return await function(*args, **kwargs)
 
-    return exception_handler(wrapper)
+    return wrapper
