@@ -1,6 +1,6 @@
 import asyncio
 import traceback
-from functools import wraps
+from functools import wraps, partial
 from inspect import iscoroutinefunction, signature
 
 from .database import database
@@ -13,7 +13,8 @@ def exception_handler(function):
         try:
             if iscoroutinefunction(function):
                 loop = asyncio.get_event_loop()
-                return loop.run_until_complete(function(*args, **kwargs))
+                func = partial(function, args=args, kwargs=kwargs)
+                return loop.run_until_complete(func)
             return function(*args, **kwargs)
         except Exception:
             logger.error(traceback.format_exc())
