@@ -287,7 +287,7 @@ class YoutubeTasker:
         channel: YoutubeChannel | None = results.first()
         if not channel:
             raise Exception(f"Channel ({channel_id}) not found")
-        query = delete(YoutubeSubscription.channel_id).where(
+        query = delete(YoutubeSubscription).where(
             YoutubeSubscription.channel_id == channel.id
         )
         await session.execute(query)

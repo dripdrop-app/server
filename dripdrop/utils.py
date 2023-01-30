@@ -1,6 +1,6 @@
-import asyncio
 import traceback
-from functools import wraps, partial
+from asgiref.sync import async_to_sync
+from functools import wraps
 from inspect import iscoroutinefunction, signature
 
 from .database import database
@@ -9,27 +9,43 @@ from .logging import logger
 
 def exception_handler(function):
     @wraps(function)
-    def wrapper(*args, **kwargs):
+    def sync_wrapper(*args, **kwargs):
         try:
-            if iscoroutinefunction(function):
-                loop = asyncio.get_event_loop()
-                func = partial(function, args=args, kwargs=kwargs)
-                return loop.run_until_complete(func)
             return function(*args, **kwargs)
         except Exception:
             logger.error(traceback.format_exc())
 
-    return wrapper
+    @wraps(function)
+    async def async_wrapper(*args, **kwargs):
+        try:
+            return await function(*args, **kwargs)
+        except Exception:
+            logger.error(traceback.format_exc())
+
+    return async_wrapper if iscoroutinefunction(function) else sync_wrapper
 
 
 def worker_task(function):
     @exception_handler
     @wraps(function)
-    async def wrapper(*args, **kwargs):
+    def sync_wrapper(*args, **kwargs):
         parameters = signature(function).parameters
-        async with database.async_create_session() as session:
+        with database.create_session() as session:
             if "session" in parameters:
                 kwargs["session"] = session
-            return await function(*args, **kwargs)
+            return function(*args, **kwargs)
 
-    return wrapper
+    @exception_handler
+    @wraps(function)
+    def async_wrapper(*args, **kwargs):
+        async def _internal_wrapper(*args, **kwargs):
+            parameters = signature(function).parameters
+            async with database.async_create_session() as session:
+                if "session" in parameters:
+                    kwargs["session"] = session
+                return await function(*args, **kwargs)
+
+        func = async_to_sync(_internal_wrapper)
+        return func(*args, **kwargs)
+
+    return async_wrapper if iscoroutinefunction(function) else sync_wrapper
