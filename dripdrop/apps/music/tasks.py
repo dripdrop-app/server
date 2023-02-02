@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import requests
@@ -6,10 +7,10 @@ import traceback
 from datetime import datetime, timedelta
 from pydub import AudioSegment
 from sqlalchemy import select
-from typing import Union, AsyncIterable
+from typing import Union
 from yt_dlp.utils import sanitize_filename
 
-from dripdrop.database import AsyncSession
+from dripdrop.database import Session
 from dripdrop.logging import logger
 from dripdrop.redis import redis
 from dripdrop.services.boto3 import boto3_service, Boto3Service
@@ -100,9 +101,9 @@ class MusicTasker:
             )
 
     @worker_task
-    async def run_job(self, job_id: str = ..., session: AsyncSession = ...):
+    def run_job(self, job_id: str = ..., session: Session = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
-        results = await session.scalars(query)
+        results = session.scalars(query)
         job: MusicJob | None = results.first()
         if not job:
             raise Exception(f"Job with id ({job_id}) not found")
@@ -131,8 +132,8 @@ class MusicTasker:
             job.failed = True
             logger.exception(traceback.format_exc())
         finally:
-            await session.commit()
-            await redis.publish(
+            session.commit()
+            redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL,
                 json.dumps(MusicChannelResponse(job_id=job_id).dict()),
             )
@@ -140,26 +141,26 @@ class MusicTasker:
                 shutil.rmtree(job_path)
 
     @worker_task
-    async def delete_job(self, job_id: str = ..., session: AsyncSession = ...):
+    def delete_job(self, job_id: str = ..., session: Session = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
-        results = await session.scalars(query)
+        results = session.scalars(query)
         job: MusicJob | None = results.first()
         if not job:
             raise Exception(f"Job ({job_id}) could not be found")
-        await cleanup_job(job=job)
+        asyncio.run(cleanup_job(job=job))
         job.deleted_at = datetime.now(tz=settings.timezone)
-        await session.commit()
+        session.commit()
 
     @worker_task
-    async def delete_jobs(self, session: AsyncSession = ...):
+    def delete_jobs(self, session: Session = ...):
         limit = datetime.now(tz=settings.timezone) - timedelta(days=14)
         query = select(MusicJob).where(
             MusicJob.created_at < limit,
             MusicJob.completed.is_(True),
             MusicJob.deleted_at.is_(None),
         )
-        stream: AsyncIterable[MusicJob] = await session.stream_scalars(query)
-        async for job in stream:
+        stream = session.scalars(query)
+        for job in stream.yield_per(10):
             queue.enqueue(self.delete_job, kwargs={"job_id": job.id}, at_front=True)
 
 

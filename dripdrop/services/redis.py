@@ -6,7 +6,7 @@ from typing import Coroutine
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from dripdrop.logging import logger
-from dripdrop.redis import redis
+from dripdrop.redis import async_redis
 
 
 class RedisChannels:
@@ -49,7 +49,7 @@ class RedisService:
         channel: str = ...,
         message_handler: Coroutine = ...,
     ):
-        pubsub = redis.pubsub()
+        pubsub = async_redis.pubsub()
         await pubsub.subscribe(channel)
         while True:
             message = await pubsub.get_message(

@@ -28,8 +28,7 @@ def test_creating_file_job_with_invalid_file(
     client: TestClient,
     create_and_login_user,
     test_image_file,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -45,7 +44,7 @@ def test_creating_file_job_with_invalid_file(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -58,8 +57,7 @@ def test_creating_file_job_with_valid_file(
     client: TestClient,
     create_and_login_user,
     test_audio_file,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -75,7 +73,7 @@ def test_creating_file_job_with_valid_file(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -92,8 +90,7 @@ def test_creating_file_job_with_valid_file_and_artwork_url(
     create_and_login_user,
     test_audio_file,
     test_image_url,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -110,7 +107,7 @@ def test_creating_file_job_with_valid_file_and_artwork_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -130,8 +127,7 @@ def test_creating_file_job_with_valid_file_and_base64_artwork(
     create_and_login_user,
     test_audio_file,
     test_base64_image,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -148,7 +144,7 @@ def test_creating_file_job_with_valid_file_and_base64_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"

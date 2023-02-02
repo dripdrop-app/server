@@ -95,20 +95,14 @@ def create_music_job(session: Session):
 
 
 @pytest.fixture
-def wait_for_running_job_to_complete(session: Session, function_timeout):
-    def _wait_for_job_to_complete(email: str = ..., timeout: int = ...):
-        def _check_job():
-            results = session.scalars(
-                select(MusicJob).where(MusicJob.user_email == email)
-            )
-            job: MusicJob | None = results.first()
-            assert job is not None
-            if job.completed or job.failed:
-                return job
+def get_completed_job(session: Session):
+    def _get_completed_job(email: str = ...):
+        results = session.scalars(select(MusicJob).where(MusicJob.user_email == email))
+        job: MusicJob | None = results.first()
+        assert job is not None
+        return job
 
-        return function_timeout(timeout=timeout, function=_check_job)
-
-    return _wait_for_job_to_complete
+    return _get_completed_job
 
 
 @pytest.fixture

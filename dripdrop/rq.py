@@ -1,6 +1,10 @@
-from redis import Redis
 from rq import Queue
 
-from dripdrop.settings import settings
+from dripdrop.redis import redis
+from dripdrop.settings import ENV, settings
 
-queue = Queue(connection=Redis.from_url(settings.redis_url), default_timeout=-1)
+queue = Queue(
+    connection=redis,
+    default_timeout=-1,
+    is_async=settings.env != ENV.TESTING,
+)

@@ -37,8 +37,7 @@ def test_deleting_file_job(
     client: TestClient,
     create_and_login_user,
     test_audio_file,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -54,7 +53,7 @@ def test_deleting_file_job(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     response = client.delete(DELETE_URL, params={"job_id": job.id})
     assert response.status_code == status.HTTP_200_OK
     response = requests.get(job.filename_url)
@@ -66,8 +65,7 @@ def test_deleting_file_job_with_uploaded_artwork(
     create_and_login_user,
     test_audio_file,
     test_base64_image,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -84,7 +82,7 @@ def test_deleting_file_job_with_uploaded_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     response = client.delete(DELETE_URL, params={"job_id": job.id})
     assert response.status_code == status.HTTP_200_OK
     response = requests.get(job.filename_url)
@@ -94,11 +92,7 @@ def test_deleting_file_job_with_uploaded_artwork(
 
 
 def test_deleting_youtube_job(
-    client: TestClient,
-    create_and_login_user,
-    test_youtube_url,
-    wait_for_running_job_to_complete,
-    run_worker,
+    client: TestClient, create_and_login_user, test_youtube_url, get_completed_job
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -112,7 +106,7 @@ def test_deleting_youtube_job(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     response = client.delete(DELETE_URL, params={"job_id": job.id})
     assert response.status_code == status.HTTP_200_OK
 
@@ -122,8 +116,7 @@ def test_deleting_youtube_job_with_artwork(
     create_and_login_user,
     test_youtube_url,
     test_base64_image,
-    wait_for_running_job_to_complete,
-    run_worker,
+    get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -138,7 +131,7 @@ def test_deleting_youtube_job_with_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = wait_for_running_job_to_complete(email=user.email, timeout=120)
+    job = get_completed_job(email=user.email)
     response = client.delete(DELETE_URL, params={"job_id": job.id})
     assert response.status_code == status.HTTP_200_OK
     response = requests.get(job.artwork_url)

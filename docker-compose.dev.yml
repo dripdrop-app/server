@@ -13,12 +13,12 @@ services:
     build:
       dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: |
-      bash -c "
-        set -e
-        source venv/bin/activate
-        alembic upgrade head
-        uvicorn dripdrop.app:app --reload --reload-dir dripdrop --host 0.0.0.0 --port $SERVER_PORT
-      "
+        bash -c "
+          set -e
+          source .venv/bin/activate
+          alembic upgrade head
+          uvicorn dripdrop.app:app --reload --reload-dir dripdrop --host 0.0.0.0 --port $SERVER_PORT
+        "
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
     entrypoint: |
       bash -c "
         set -e
-        source venv/bin/activate
+        source .venv/bin/activate
         watchfiles 'python worker.py' ./worker.py
       "
     depends_on:

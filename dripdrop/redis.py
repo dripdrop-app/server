@@ -1,5 +1,7 @@
 import aioredis
+from redis import Redis
 
 from dripdrop.settings import settings
 
-redis = aioredis.from_url(settings.redis_url)
+async_redis = aioredis.from_url(settings.redis_url)
+redis = Redis.from_url(settings.redis_url)

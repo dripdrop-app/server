@@ -1,5 +1,12 @@
 from datetime import timezone as tz
+from enum import Enum
 from pydantic import BaseSettings
+
+
+class ENV(Enum):
+    DEVELOPMENT = "development"
+    PRODUCTION = "production"
+    TESTING = "testing"
 
 
 class Settings(BaseSettings):
@@ -12,7 +19,7 @@ class Settings(BaseSettings):
     aws_s3_bucket: str
     aws_s3_music_folder: str
     database_url: str
-    env: str
+    env: ENV = ENV.DEVELOPMENT
     google_client_id: str
     google_client_secret: str
     google_api_key: str
@@ -33,12 +40,12 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-if settings.env == "testing" or settings.env == "development":
+if settings.env == ENV.TESTING or settings.env == ENV.DEVELOPMENT:
     settings.aws_access_key_id = settings.test_aws_access_key_id
     settings.aws_secret_access_key = settings.test_aws_secret_access_key
     settings.aws_s3_bucket = settings.test_aws_s3_bucket
 
-if settings.env == "testing":
+if settings.env == ENV.TESTING:
     settings.async_database_url = settings.test_async_database_url
     settings.database_url = settings.test_database_url
     settings.redis_url = settings.test_redis_url
