@@ -1,12 +1,12 @@
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.models.base import Base
+from dripdrop.models.base import Base, ModelBaseMixin
 
 youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
 
 
-class MusicJob(Base):
+class MusicJob(ModelBaseMixin, Base):
     __tablename__ = "music_jobs"
     id = Column(String, primary_key=True)
     user_email = Column(

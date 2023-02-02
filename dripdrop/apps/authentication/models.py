@@ -1,10 +1,10 @@
 from sqlalchemy import Column
 from sqlalchemy.types import String, Boolean
 
-from dripdrop.models.base import Base
+from dripdrop.models.base import Base, ModelBaseMixin
 
 
-class User(Base):
+class User(ModelBaseMixin, Base):
     __tablename__ = "users"
     email = Column(String, primary_key=True)
     password = Column(String, nullable=False)

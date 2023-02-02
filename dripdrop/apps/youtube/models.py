@@ -7,10 +7,10 @@ from sqlalchemy import (
 )
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.models.base import Base
+from dripdrop.models.base import Base, ModelBaseMixin
 
 
-class GoogleAccount(Base):
+class GoogleAccount(ModelBaseMixin, Base):
     __tablename__ = "google_accounts"
     email = Column(String, primary_key=True)
     user_email = Column(
@@ -28,7 +28,7 @@ class GoogleAccount(Base):
     expires = Column(Integer, nullable=False)
 
 
-class YoutubeChannel(Base):
+class YoutubeChannel(ModelBaseMixin, Base):
     __tablename__ = "youtube_channels"
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
@@ -37,7 +37,7 @@ class YoutubeChannel(Base):
     last_videos_updated = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
-class YoutubeSubscription(Base):
+class YoutubeSubscription(ModelBaseMixin, Base):
     __tablename__ = "youtube_subscriptions"
     id = Column(String, primary_key=True)
     channel_id = Column(
@@ -61,13 +61,13 @@ class YoutubeSubscription(Base):
     published_at = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
-class YoutubeVideoCategory(Base):
+class YoutubeVideoCategory(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_categories"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
 
 
-class YoutubeVideo(Base):
+class YoutubeVideo(ModelBaseMixin, Base):
     __tablename__ = "youtube_videos"
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
@@ -93,7 +93,7 @@ class YoutubeVideo(Base):
     published_at = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
-class YoutubeVideoLike(Base):
+class YoutubeVideoLike(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_likes"
     email = Column(
         ForeignKey(
@@ -117,7 +117,7 @@ class YoutubeVideoLike(Base):
     )
 
 
-class YoutubeVideoQueue(Base):
+class YoutubeVideoQueue(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_queues"
     email = Column(
         ForeignKey(
@@ -141,7 +141,7 @@ class YoutubeVideoQueue(Base):
     )
 
 
-class YoutubeVideoWatch(Base):
+class YoutubeVideoWatch(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_watches"
     email = Column(
         ForeignKey(

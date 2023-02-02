@@ -226,7 +226,7 @@ class YoutubeTasker:
 
     @worker_task
     def update_subscribed_channels_videos(self, session: Session = ...):
-        query = select(YoutubeSubscription).distinct(YoutubeSubscription.channel_id)
+        query = select([YoutubeSubscription.channel_id.distinct()])
         stream = session.scalars(query)
         for subscription in stream.yield_per(10):
             self.enqueue(
@@ -239,10 +239,8 @@ class YoutubeTasker:
         CHANNEL_NUM = 50
         page = 0
         while True:
-            query = (
-                select(YoutubeSubscription)
-                .distinct(YoutubeSubscription.channel_id)
-                .offset(page * CHANNEL_NUM)
+            query = select([YoutubeSubscription.channel_id.distinct()]).offset(
+                page * CHANNEL_NUM
             )
             results = session.scalars(query)
             subscriptions: list[YoutubeSubscription] = results.fetchmany(CHANNEL_NUM)

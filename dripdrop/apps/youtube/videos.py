@@ -272,7 +272,8 @@ async def delete_youtube_video_like(
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessages.ADD_VIDEO_QUEUE_ERROR
-        }
+        },
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND},
     },
 )
 async def add_youtube_video_queue(
@@ -280,20 +281,28 @@ async def add_youtube_video_queue(
     google_account: GoogleAccount = Depends(get_google_user),
     session: AsyncSession = Depends(create_db_session),
 ):
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.scalars(query)
+    video = results.first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorMessages.VIDEO_NOT_FOUND,
+        )
     query = select(YoutubeVideoQueue).where(
-        YoutubeVideoQueue.email == google_account.email,
         YoutubeVideoQueue.video_id == video_id,
+        YoutubeVideoQueue.email == google_account.email,
     )
     results = await session.scalars(query)
-    queue = results.first()
-    if not queue:
-        session.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
-        await session.commit()
-        return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=ErrorMessages.ADD_VIDEO_QUEUE_ERROR,
-    )
+    video_queue = results.first()
+    if video_queue:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.ADD_VIDEO_QUEUE_ERROR,
+        )
+    session.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.delete(

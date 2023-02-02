@@ -11,7 +11,7 @@ def get_current_time():
     return datetime.now(tz=settings.timezone)
 
 
-class ModelBase:
+class ModelBaseMixin(object):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -25,4 +25,4 @@ class ModelBase:
     )
 
 
-Base = declarative_base(metadata=metadata, cls=ModelBase)
+Base = declarative_base(metadata=metadata)
