@@ -9,12 +9,15 @@ from dripdrop.apps.youtube.tasks import youtube_tasker
 from dripdrop.logging import logger
 from dripdrop.redis import async_redis
 from dripdrop.rq import queue
-from dripdrop.settings import settings
+from dripdrop.settings import settings, ENV
 
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 
 
 class CronService:
+    def __init__(self):
+        self.CRONS_ADDED = "crons_added"
+
     def run_cron_jobs(self):
         video_categories_job = queue.enqueue(
             youtube_tasker.update_youtube_video_categories,
@@ -72,10 +75,10 @@ class CronService:
         )
 
     async def start_cron_jobs(self):
-        if settings.env == "production":
-            crons_added = await async_redis.get("crons_added")
+        if settings.env == ENV.PRODUCTION:
+            crons_added = await async_redis.get(self.CRONS_ADDED)
             if not crons_added:
-                await async_redis.set("crons_added", 1)
+                await async_redis.set(self.CRONS_ADDED, 1)
                 for job_id in scheduled_registry.get_job_ids():
                     logger.info(f"Removing Job: {job_id}")
                     scheduled_registry.remove(job_id, delete_job=True)
@@ -95,8 +98,8 @@ class CronService:
                 self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
 
     async def end_cron_jobs(self):
-        if settings.env == "production":
-            await async_redis.delete("crons_added")
+        if settings.env == ENV.PRODUCTION:
+            await async_redis.delete(self.CRONS_ADDED)
 
 
 cron_service = CronService()

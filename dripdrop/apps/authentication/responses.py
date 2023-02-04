@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.responses import ResponseBaseModel
-from dripdrop.settings import settings
+from dripdrop.settings import settings, ENV
 
 
 TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
@@ -35,7 +35,7 @@ class AuthenticatedResponse(JSONResponse):
             expires=TWO_WEEKS_EXPIRATION,
             max_age=TWO_WEEKS_EXPIRATION,
             httponly=True,
-            secure=settings.env == "production",
+            secure=settings.env == ENV.PRODUCTION,
         )
 
 
