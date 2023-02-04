@@ -8,5 +8,6 @@ RUN mkdir -p /src
 WORKDIR /src
 COPY ./poetry.lock ./
 COPY ./pyproject.toml ./
+RUN poetry config virtualenvs.in-project true
 RUN poetry install
 COPY . .

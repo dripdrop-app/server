@@ -3,8 +3,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from dripdrop.settings import settings
 from dripdrop.services.cron import cron_service
+from dripdrop.settings import settings, ENV
 
 from .apps.admin.app import app as admin_app
 from .apps.authentication.app import app as auth_app
@@ -49,7 +49,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 origins = []
-if settings.env != "production":
+if settings.env == ENV.DEVELOPMENT:
     origins.append("http://localhost:3000")
 
 app.add_middleware(

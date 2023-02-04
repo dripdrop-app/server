@@ -13,7 +13,7 @@ from dripdrop.dependencies import (
 from dripdrop.rq import queue
 from dripdrop.logging import logger
 from dripdrop.services.google_api import google_api_service
-from dripdrop.settings import settings
+from dripdrop.settings import settings, ENV
 
 from .channels import channels_api
 from .dependencies import get_google_user
@@ -95,7 +95,7 @@ async def get_youtube_account(
     google_account: GoogleAccount = Depends(get_google_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    if settings.env != "development":
+    if settings.env != ENV.DEVELOPMENT:
         await async_update_google_access_token(
             google_email=google_account.email, session=session
         )

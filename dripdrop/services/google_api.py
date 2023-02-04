@@ -2,7 +2,7 @@ import requests
 from typing import List
 from urllib import parse
 
-from dripdrop.settings import settings
+from dripdrop.settings import settings, ENV
 from dripdrop.logging import logger
 
 
@@ -23,7 +23,7 @@ class GoogleAPIService:
         }
 
     def create_oauth_url(self, callback_url: str = ..., user_id: str = ...):
-        if settings.env == "production":
+        if settings.env == ENV.PRODUCTION:
             callback_url = callback_url.replace("http", "https", 1)
         params = {
             "client_id": settings.google_client_id,
@@ -40,7 +40,7 @@ class GoogleAPIService:
         }
 
     def get_oauth_tokens(self, callback_url: str = ..., code: str = ...):
-        if settings.env == "production":
+        if settings.env == ENV.PRODUCTION:
             callback_url = callback_url.replace("http", "https", 1)
         params = {
             "code": code,
