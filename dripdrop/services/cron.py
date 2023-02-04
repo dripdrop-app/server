@@ -56,7 +56,10 @@ class CronService:
         cron = croniter(cron_string, datetime.now(est))
         cron.get_next()
         next_run_time = cron.get_current(ret_type=datetime)
-        logger.info(f"Scheduling {function} to run at {next_run_time}")
+        if function.__name__:
+            logger.info(f"Scheduling {function.__name__} to run at {next_run_time}")
+        else:
+            logger.info(f"Scheduling {function} to run at {next_run_time}")
         job = queue.enqueue_at(
             next_run_time,
             function,
