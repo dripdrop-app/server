@@ -46,8 +46,7 @@ def test_channels_with_existing_channel(
     )
     response = client.get(CHANNELS_URL, params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "id": channel.id,
         "title": channel.title,
         "thumbnail": channel.thumbnail,

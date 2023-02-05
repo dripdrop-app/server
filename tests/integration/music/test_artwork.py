@@ -28,8 +28,7 @@ def test_artwork_with_valid_image_url(
         params={"artwork_url": test_image_url},
     )
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"artworkUrl": test_image_url}
+    assert response.json() == {"artworkUrl": test_image_url}
 
 
 def test_artwork_with_valid_soundcloud_url(client: TestClient, create_and_login_user):

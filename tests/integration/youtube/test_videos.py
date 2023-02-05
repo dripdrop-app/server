@@ -30,8 +30,7 @@ def test_videos_with_no_videos(
     )
     response = client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "videos": []}
+    assert response.json() == {"totalPages": 0, "videos": []}
 
 
 def test_videos_with_no_subscriptions(
@@ -63,8 +62,7 @@ def test_videos_with_no_subscriptions(
     )
     response = client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "videos": []}
+    assert response.json() == {"totalPages": 0, "videos": []}
 
 
 def test_videos_with_out_of_range_page(
@@ -113,8 +111,7 @@ def test_videos_with_single_result(
     )
     response = client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -173,8 +170,7 @@ def test_videos_with_multiple_videos(
     videos.sort(key=lambda video: video.published_at, reverse=True)
     response = client.get(f"{VIDEOS_URL}/1/5")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(
@@ -236,8 +232,7 @@ def test_videos_with_multiple_pages(
     videos.sort(key=lambda video: video.published_at, reverse=True)
     response = client.get(f"{VIDEOS_URL}/2/2")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 3,
         "videos": list(
             map(
@@ -299,8 +294,7 @@ def test_videos_in_descending_order_by_published_date(
     videos.sort(key=lambda video: video.published_at, reverse=True)
     response = client.get(f"{VIDEOS_URL}/1/5")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(
@@ -366,8 +360,7 @@ def test_videos_with_specific_video_category(
         f"{VIDEOS_URL}/1/5", params={"video_categories": str(category.id)}
     )
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -429,8 +422,7 @@ def test_videos_with_queued_only(
     queue = create_video_queue(email=google_user.email, video_id=queued_video.id)
     response = client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -508,8 +500,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     )
     response = client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(
@@ -576,8 +567,7 @@ def test_videos_with_liked_only(
     like = create_video_like(email=google_user.email, video_id=liked_video.id)
     response = client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -651,8 +641,7 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     )
     response = client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(

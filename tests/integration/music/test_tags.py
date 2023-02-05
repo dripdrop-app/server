@@ -19,8 +19,7 @@ def test_tags_with_an_invalid_file(client: TestClient, create_and_login_user):
     assert response.status_code == status.HTTP_200_OK
     response = client.post(TAGS_URL, files={"file": file})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "title": None,
         "artist": None,
         "album": None,
@@ -38,8 +37,7 @@ def test_tags_with_a_mp3_without_tags(client: TestClient, create_and_login_user)
     file = response.content
     response = client.post(TAGS_URL, files={"file": file})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "title": None,
         "artist": None,
         "album": None,
@@ -61,8 +59,7 @@ def test_tags_with_a_valid_mp3_file(
     with get_tags_from_file(file=file) as tags:
         response = client.post(TAGS_URL, files={"file": file})
         assert response.status_code == status.HTTP_200_OK
-        json = response.json()
-        assert json == {
+        assert response.json() == {
             "title": "Criminal",
             "artist": "Sinny & Fako",
             "album": "Criminal - Single",

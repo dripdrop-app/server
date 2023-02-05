@@ -55,8 +55,7 @@ def test_googleoauth2_with_user_with_no_google_account(
     # Response redirects to react app, but this doesn't exist in tests
     response = client.get(ACCOUNT_URL)
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"email": "google@gmail.com", "refresh": False}
+    assert response.json() == {"email": "google@gmail.com", "refresh": False}
 
 
 def test_googleoauth2_with_user_with_google_account(
@@ -89,5 +88,4 @@ def test_googleoauth2_with_user_with_google_account(
     # Response redirects to react app, but this doesn't exist in tests
     response = client.get(ACCOUNT_URL)
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"email": google_account.email, "refresh": False}
+    assert response.json() == {"email": google_account.email, "refresh": False}

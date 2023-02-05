@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dripdrop.apps.youtube.models import (
@@ -137,6 +138,19 @@ def create_video_queue(session: Session):
         return youtube_video_queue
 
     return _create_video_queue
+
+
+@pytest.fixture
+def get_video_queue(session: Session):
+    def _get_video_queue(email: str = ..., video_id: str = ...):
+        query = select(YoutubeVideoQueue).where(
+            YoutubeVideoQueue.email == email, YoutubeVideoQueue.video_id == video_id
+        )
+        results = session.scalars(query)
+        youtube_video_queue: None | YoutubeVideoQueue = results.first()
+        return youtube_video_queue
+
+    return _get_video_queue
 
 
 @pytest.fixture

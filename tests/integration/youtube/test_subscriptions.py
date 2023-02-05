@@ -32,8 +32,7 @@ def test_subscriptions_with_no_results(
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "subscriptions": []}
+    assert response.json() == {"totalPages": 0, "subscriptions": []}
 
 
 def test_subscriptions_out_of_range_page(
@@ -82,8 +81,7 @@ def test_subscriptions_with_single_result(
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "subscriptions": [
             {
@@ -130,8 +128,7 @@ def test_subscriptions_with_multiple_pages(
     ]
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 3,
         "subscriptions": [
             {
@@ -184,8 +181,7 @@ def test_subscriptions_for_logged_in_google_account(
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/2")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "subscriptions": [
             {
@@ -248,8 +244,7 @@ def test_subscriptions_are_in_descending_order_by_title(
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "subscriptions": list(
             map(
