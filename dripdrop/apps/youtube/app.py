@@ -16,7 +16,7 @@ from dripdrop.services.google_api import google_api_service
 from dripdrop.settings import settings, ENV
 
 from .channels import channels_api
-from .dependencies import get_google_user
+from .dependencies import get_google_account
 from .models import GoogleAccount
 from .responses import AccountResponse
 from .subscriptions import subscriptions_api
@@ -60,7 +60,7 @@ async def google_oauth2(
         google_email = await get_user_email(tokens.get("access_token"))
         query = select(GoogleAccount).where(GoogleAccount.email == google_email)
         results = await session.scalars(query)
-        google_account: GoogleAccount | None = results.first()
+        google_account = results.first()
         if google_account:
             google_account.access_token = tokens["access_token"]
             google_account.refresh_token = tokens["refresh_token"]
@@ -92,7 +92,7 @@ async def google_oauth2(
 
 @app.get("/account", response_model=AccountResponse)
 async def get_youtube_account(
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
     if settings.env != ENV.DEVELOPMENT:

@@ -12,7 +12,7 @@ from .models import User
 async def find_user_by_email(email: str = ..., session: AsyncSession = ...):
     query = select(User).where(User.email == email)
     results = await session.scalars(query)
-    user: User | None = results.first()
+    user = results.first()
     return user
 
 

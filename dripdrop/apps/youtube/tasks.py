@@ -41,7 +41,7 @@ class YoutubeTasker:
             YoutubeSubscription.email == google_email,
         )
         results = session.scalars(query)
-        subscription: YoutubeSubscription | None = results.first()
+        subscription = results.first()
         if subscription:
             subscription.published_at = subscription_published_at
         else:
@@ -65,7 +65,7 @@ class YoutubeTasker:
         channel_thumbnail = channel["snippet"]["thumbnails"]["high"]["url"]
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
         results = session.scalars(query)
-        channel: YoutubeChannel | None = results.first()
+        channel = results.first()
         if channel:
             channel.title = channel_title
             channel.thumbnail = channel_thumbnail
@@ -129,7 +129,7 @@ class YoutubeTasker:
             YoutubeVideoCategory.id == category_id
         )
         results = session.scalars(query)
-        category: YoutubeVideoCategory | None = results.first()
+        category = results.first()
         if category:
             category.name = category_title
         else:
@@ -153,7 +153,7 @@ class YoutubeTasker:
     ):
         query = select(GoogleAccount).where(GoogleAccount.user_email == user_email)
         results = session.scalars(query)
-        account: GoogleAccount | None = results.first()
+        account = results.first()
         if not account:
             return
         session.commit()
@@ -200,7 +200,7 @@ class YoutubeTasker:
     def add_new_channel_videos_job(self, channel_id: str = ..., session: Session = ...):
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
         results = session.scalars(query)
-        channel: YoutubeChannel | None = results.first()
+        channel = results.first()
         for uploaded_playlist_videos in google_api_service.get_playlist_videos(
             playlist_id=channel.upload_playlist_id
         ):
@@ -264,7 +264,7 @@ class YoutubeTasker:
     def delete_channel(self, channel_id: str = ..., session: Session = ...):
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
         results = session.scalars(query)
-        channel: YoutubeChannel | None = results.first()
+        channel = results.first()
         if not channel:
             raise Exception(f"Channel ({channel_id}) not found")
         query = delete(YoutubeSubscription).where(

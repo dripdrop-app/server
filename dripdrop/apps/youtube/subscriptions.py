@@ -4,14 +4,14 @@ from sqlalchemy import select, func
 
 from dripdrop.dependencies import AsyncSession, create_db_session
 
-from .dependencies import get_google_user
+from .dependencies import get_google_account
 from .models import YoutubeSubscription, YoutubeChannel, GoogleAccount
 from .responses import SubscriptionsResponse, ErrorMessages
 
 subscriptions_api = APIRouter(
     prefix="/subscriptions",
     tags=["YouTube Subscriptions"],
-    dependencies=[Depends(get_google_user)],
+    dependencies=[Depends(get_google_account)],
 )
 
 
@@ -22,31 +22,34 @@ subscriptions_api = APIRouter(
 async def get_youtube_subscriptions(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
     subscription_query = (
         select(YoutubeSubscription)
         .where(YoutubeSubscription.email == google_account.email)
-        .alias(name=YoutubeSubscription.__tablename__)
+        .subquery()
     )
     query = (
         select(
-            subscription_query,
+            subscription_query.columns.channel_id,
             YoutubeChannel.title.label("channel_title"),
             YoutubeChannel.thumbnail.label("channel_thumbnail"),
+            subscription_query.columns.published_at,
         )
         .select_from(
             subscription_query.join(
                 YoutubeChannel,
-                YoutubeChannel.id == YoutubeSubscription.channel_id,
+                YoutubeChannel.id == subscription_query.columns.channel_id,
             )
         )
         .order_by(YoutubeChannel.title)
     )
     results = await session.execute(query.offset((page - 1) * per_page))
-    subscriptions: list[YoutubeSubscription] = results.mappings().fetchmany(per_page)
-    count: int = await session.scalar(select(func.count(query.subquery().columns.id)))
+    subscriptions = results.mappings().fetchmany(per_page)
+    count = await session.scalar(
+        select(func.count(query.subquery().columns.channel_id))
+    )
     total_pages = math.ceil(count / per_page)
     if page > total_pages and page != 1:
         raise HTTPException(

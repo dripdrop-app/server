@@ -11,13 +11,13 @@ from dripdrop.dependencies import (
 from .models import GoogleAccount
 
 
-async def get_google_user(
+async def get_google_account(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(GoogleAccount).where(GoogleAccount.user_email == user.email)
     results = await session.scalars(query)
-    google_account: GoogleAccount | None = results.first()
+    google_account = results.first()
     if google_account:
         return google_account
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)

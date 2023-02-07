@@ -97,7 +97,7 @@ async def listen_jobs(
             MusicJob.deleted_at.is_(None),
         )
         results = await session.scalars(query)
-        job: MusicJob | None = results.first()
+        job = results.first()
         if job:
             try:
                 await websocket.send_json(
@@ -201,7 +201,7 @@ async def delete_job(
 ):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
-    job: MusicJob | None = results.first()
+    job = results.first()
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
