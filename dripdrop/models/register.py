@@ -14,16 +14,21 @@ from dripdrop.apps.youtube.models import (
 from .base import Base
 
 
-__all__ = [
-    Base,
-    User,
-    MusicJob,
-    GoogleAccount,
-    YoutubeChannel,
-    YoutubeSubscription,
-    YoutubeVideoCategory,
-    YoutubeVideoLike,
-    YoutubeVideoQueue,
-    YoutubeVideo,
-    YoutubeVideoWatch,
-]
+class Register:
+    def __init__(self):
+        self.models = [
+            User,
+            MusicJob,
+            GoogleAccount,
+            YoutubeChannel,
+            YoutubeSubscription,
+            YoutubeVideoCategory,
+            YoutubeVideoLike,
+            YoutubeVideoQueue,
+            YoutubeVideo,
+            YoutubeVideoWatch,
+        ]
+        self.base = Base
+
+
+register = Register()

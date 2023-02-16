@@ -1,10 +1,6 @@
-from sqlalchemy import (
-    Column,
-    String,
-    TIMESTAMP,
-    ForeignKey,
-    Integer,
-)
+from datetime import datetime
+from sqlalchemy import TIMESTAMP, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base, ModelBaseMixin
@@ -12,8 +8,9 @@ from dripdrop.models.base import Base, ModelBaseMixin
 
 class GoogleAccount(ModelBaseMixin, Base):
     __tablename__ = "google_accounts"
-    email = Column(String, primary_key=True)
-    user_email = Column(
+
+    email: Mapped[str] = mapped_column(primary_key=True)
+    user_email: Mapped[str] = mapped_column(
         ForeignKey(
             User.email,
             onupdate="CASCADE",
@@ -23,24 +20,28 @@ class GoogleAccount(ModelBaseMixin, Base):
         nullable=False,
         unique=True,
     )
-    access_token = Column(String, nullable=False)
-    refresh_token = Column(String, nullable=False)
-    expires = Column(Integer, nullable=False)
+    access_token: Mapped[str] = mapped_column(nullable=False)
+    refresh_token: Mapped[str] = mapped_column(nullable=False)
+    expires: Mapped[int] = mapped_column(nullable=False)
 
 
 class YoutubeChannel(ModelBaseMixin, Base):
     __tablename__ = "youtube_channels"
-    id = Column(String, primary_key=True)
-    title = Column(String, nullable=False)
-    thumbnail = Column(String, nullable=True)
-    upload_playlist_id = Column(String, nullable=True)
-    last_videos_updated = Column(TIMESTAMP(timezone=True), nullable=False)
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(nullable=False)
+    thumbnail: Mapped[str] = mapped_column(nullable=True)
+    upload_playlist_id: Mapped[str] = mapped_column(nullable=True)
+    last_videos_updated: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False
+    )
 
 
 class YoutubeSubscription(ModelBaseMixin, Base):
     __tablename__ = "youtube_subscriptions"
-    id = Column(String, primary_key=True)
-    channel_id = Column(
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    channel_id: Mapped[str] = mapped_column(
         ForeignKey(
             YoutubeChannel.id,
             onupdate="CASCADE",
@@ -49,7 +50,7 @@ class YoutubeSubscription(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    email = Column(
+    email: Mapped[str] = mapped_column(
         ForeignKey(
             GoogleAccount.email,
             onupdate="CASCADE",
@@ -58,21 +59,25 @@ class YoutubeSubscription(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    published_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    published_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False
+    )
 
 
 class YoutubeVideoCategory(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_categories"
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(nullable=False)
 
 
 class YoutubeVideo(ModelBaseMixin, Base):
     __tablename__ = "youtube_videos"
-    id = Column(String, primary_key=True)
-    title = Column(String, nullable=False)
-    thumbnail = Column(String, nullable=False)
-    channel_id = Column(
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(nullable=False)
+    thumbnail: Mapped[str] = mapped_column(nullable=False)
+    channel_id: Mapped[str] = mapped_column(
         ForeignKey(
             YoutubeChannel.id,
             onupdate="CASCADE",
@@ -81,7 +86,7 @@ class YoutubeVideo(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    category_id = Column(
+    category_id: Mapped[int] = mapped_column(
         ForeignKey(
             YoutubeVideoCategory.id,
             onupdate="CASCADE",
@@ -90,12 +95,15 @@ class YoutubeVideo(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    published_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    published_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False
+    )
 
 
 class YoutubeVideoLike(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_likes"
-    email = Column(
+
+    email: Mapped[str] = mapped_column(
         ForeignKey(
             GoogleAccount.email,
             onupdate="CASCADE",
@@ -105,7 +113,7 @@ class YoutubeVideoLike(ModelBaseMixin, Base):
         primary_key=True,
         nullable=False,
     )
-    video_id = Column(
+    video_id: Mapped[str] = mapped_column(
         ForeignKey(
             YoutubeVideo.id,
             onupdate="CASCADE",
@@ -119,7 +127,8 @@ class YoutubeVideoLike(ModelBaseMixin, Base):
 
 class YoutubeVideoQueue(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_queues"
-    email = Column(
+
+    email: Mapped[str] = mapped_column(
         ForeignKey(
             GoogleAccount.email,
             onupdate="CASCADE",
@@ -129,7 +138,7 @@ class YoutubeVideoQueue(ModelBaseMixin, Base):
         primary_key=True,
         nullable=False,
     )
-    video_id = Column(
+    video_id: Mapped[str] = mapped_column(
         ForeignKey(
             YoutubeVideo.id,
             onupdate="CASCADE",
@@ -143,7 +152,8 @@ class YoutubeVideoQueue(ModelBaseMixin, Base):
 
 class YoutubeVideoWatch(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_watches"
-    email = Column(
+
+    email: Mapped[str] = mapped_column(
         ForeignKey(
             GoogleAccount.email,
             onupdate="CASCADE",
@@ -153,7 +163,7 @@ class YoutubeVideoWatch(ModelBaseMixin, Base):
         primary_key=True,
         nullable=False,
     )
-    video_id = Column(
+    video_id: Mapped[str] = mapped_column(
         ForeignKey(
             YoutubeVideo.id,
             onupdate="CASCADE",

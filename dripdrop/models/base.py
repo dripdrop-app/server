@@ -1,6 +1,6 @@
 from datetime import datetime
-from sqlalchemy import Column, MetaData, TIMESTAMP
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import MetaData, TIMESTAMP
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 
 from dripdrop.settings import settings
 
@@ -12,12 +12,12 @@ def get_current_time():
 
 
 class ModelBaseMixin(object):
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         default=get_current_time,
     )
-    last_updated = Column(
+    last_updated: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         default=get_current_time,

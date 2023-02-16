@@ -9,7 +9,6 @@ services:
       - type: bind
         source: ./
         target: /src
-    env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: |
@@ -34,7 +33,6 @@ services:
       - type: bind
         source: ./
         target: /src 
-    env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: |
@@ -61,12 +59,23 @@ services:
       - type: volume
         source: postgresql
         target: /var/lib/postgresql/data
-    env_file: .env
     environment:
       POSTGRES_USER: $DATABASE_USER
       POSTGRES_PASSWORD: $DATABASE_PASSWORD
       POSTGRES_DB: $DATABASE
       POSTGRES_HOST_AUTH_METHOD: md5
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dripdrop@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: dripdrop
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:80"
   redis:
     image: redis
     container_name: redis
@@ -80,7 +89,6 @@ services:
       - type: volume
         source: redis
         target: /data
-    env_file: '.env'
 
 volumes:
   postgresql:

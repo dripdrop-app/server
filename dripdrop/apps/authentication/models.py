@@ -1,11 +1,11 @@
-from sqlalchemy import Column
-from sqlalchemy.types import String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.models.base import Base, ModelBaseMixin
 
 
 class User(ModelBaseMixin, Base):
     __tablename__ = "users"
-    email = Column(String, primary_key=True)
-    password = Column(String, nullable=False)
-    admin = Column(Boolean, nullable=False)
+
+    email: Mapped[str] = mapped_column(primary_key=True)
+    password: Mapped[str] = mapped_column(nullable=False)
+    admin: Mapped[bool] = mapped_column(nullable=False)

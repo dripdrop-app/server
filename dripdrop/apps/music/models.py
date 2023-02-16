@@ -1,4 +1,6 @@
-from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
+from datetime import datetime
+from sqlalchemy import TIMESTAMP, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base, ModelBaseMixin
@@ -8,8 +10,9 @@ youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
 
 class MusicJob(ModelBaseMixin, Base):
     __tablename__ = "music_jobs"
-    id = Column(String, primary_key=True)
-    user_email = Column(
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    user_email: Mapped[str] = mapped_column(
         ForeignKey(
             User.email,
             onupdate="CASCADE",
@@ -18,17 +21,19 @@ class MusicJob(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    artwork_url = Column(String, nullable=True)
-    artwork_filename = Column(String, nullable=True)
-    original_filename = Column(String, nullable=True)
-    filename_url = Column(String, nullable=True)
-    youtube_url = Column(String, nullable=True)
-    download_filename = Column(String, nullable=True)
-    download_url = Column(String, nullable=True)
-    title = Column(String, nullable=False)
-    artist = Column(String, nullable=False)
-    album = Column(String, nullable=False)
-    grouping = Column(String, nullable=True)
-    completed = Column(Boolean, nullable=False)
-    failed = Column(Boolean, nullable=False)
-    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    artwork_url: Mapped[str] = mapped_column(nullable=True)
+    artwork_filename: Mapped[str] = mapped_column(nullable=True)
+    original_filename: Mapped[str] = mapped_column(nullable=True)
+    filename_url: Mapped[str] = mapped_column(nullable=True)
+    youtube_url: Mapped[str] = mapped_column(nullable=True)
+    download_filename: Mapped[str] = mapped_column(nullable=True)
+    download_url: Mapped[str] = mapped_column(nullable=True)
+    title: Mapped[str] = mapped_column(nullable=False)
+    artist: Mapped[str] = mapped_column(nullable=False)
+    album: Mapped[str] = mapped_column(nullable=False)
+    grouping: Mapped[str] = mapped_column(nullable=True)
+    completed: Mapped[bool] = mapped_column(nullable=False)
+    failed: Mapped[bool] = mapped_column(nullable=False)
+    deleted_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )

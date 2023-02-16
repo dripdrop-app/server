@@ -12,7 +12,6 @@ services:
       - type: bind
         source: ../build
         target: /src/build
-    env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile
     entrypoint: |
@@ -42,7 +41,6 @@ services:
       - type: volume
         source: worker-logs
         target: /src/logs
-    env_file: .env
     build:
       dockerfile: dockerfiles/Dockerfile.worker
     entrypoint: supervisord -c ./config/worker.supervisord.conf
@@ -69,7 +67,6 @@ services:
       - type: volume
         source: postgresql
         target: /var/lib/postgresql/data
-    env_file: .env
     environment:
       POSTGRES_USER: $DATABASE_USER
       POSTGRES_PASSWORD: $DATABASE_PASSWORD
@@ -93,7 +90,6 @@ services:
       - type: volume
         source: redis
         target: /data
-    env_file: '.env'
     environment:
       REDIS_ARGS: --save 20 1
     logging:
