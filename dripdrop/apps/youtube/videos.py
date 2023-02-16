@@ -227,10 +227,11 @@ async def add_youtube_video_queue(
     google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
-    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-    results = await session.scalars(query)
-    video = results.first()
-    if not video:
+    results = await execute_videos_query(
+        session=session, google_account=google_account, video_ids=[video_id]
+    )
+    videos = results.get("videos", [])
+    if len(videos) == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.VIDEO_NOT_FOUND,
@@ -297,10 +298,12 @@ async def get_youtube_video_queue(
         google_account=google_account,
         queued_only=True,
         queue_offest=max(index - 2, 0),
-        limit=2 if index == 1 else 3,
+        limit=100,
     )
+
     videos = results.get("videos", [])
     [prev_video, current_video, next_video] = [None] * 3
+
     if index != 1 and videos:
         prev_video = videos.pop(0)
     if videos:

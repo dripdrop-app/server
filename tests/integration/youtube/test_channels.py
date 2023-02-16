@@ -56,7 +56,7 @@ def test_channels_with_subscribed_channel(
     create_subscription,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
@@ -66,7 +66,7 @@ def test_channels_with_subscribed_channel(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     response = client.get(CHANNELS_URL, params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
