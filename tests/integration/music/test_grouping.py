@@ -34,5 +34,4 @@ def test_grouping_with_valid_youtube_url(client: TestClient, create_and_login_us
         params={"youtube_url": "https://www.youtube.com/watch?v=FCrJNvJ-NIU"},
     )
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"grouping": "Food Dip"}
+    assert response.json() == {"grouping": "Food Dip"}

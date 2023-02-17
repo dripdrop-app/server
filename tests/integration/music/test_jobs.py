@@ -16,8 +16,7 @@ def test_jobs_with_no_results(client: TestClient, create_and_login_user):
     create_and_login_user(email="user@gmail.com", password="password")
     response = client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "jobs": []}
+    assert response.json() == {"totalPages": 0, "jobs": []}
 
 
 def test_jobs_with_out_of_range_page(
@@ -51,8 +50,7 @@ def test_jobs_with_single_result(
     )
     response = client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "jobs": [
             {
@@ -99,8 +97,7 @@ def test_jobs_with_multiple_pages(
     jobs.sort(key=lambda job: job.created_at, reverse=True)
     response = client.get(f"{JOBS_URL}/2/2")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 3,
         "jobs": list(
             map(
@@ -152,8 +149,7 @@ def test_jobs_with_deleted_jobs(
     jobs.sort(key=lambda job: job.created_at, reverse=True)
     response = client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "jobs": list(
             map(
@@ -203,8 +199,7 @@ def test_jobs_only_for_logged_in_user(
     )
     response = client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "jobs": [
             {
@@ -251,8 +246,7 @@ def test_jobs_are_in_descending_order(
     jobs.sort(key=lambda job: job.created_at, reverse=True)
     response = client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "jobs": list(
             map(

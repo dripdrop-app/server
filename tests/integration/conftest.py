@@ -1,15 +1,11 @@
-# import os
 import pytest
-
-# import subprocess
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import database
+from dripdrop.database import database, Session
 from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.models.base import Base
 from dripdrop.services.boto3 import boto3_service

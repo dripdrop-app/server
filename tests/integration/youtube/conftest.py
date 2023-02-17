@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dripdrop.apps.youtube.models import (
@@ -140,6 +141,19 @@ def create_video_queue(session: Session):
 
 
 @pytest.fixture
+def get_video_queue(session: Session):
+    def _get_video_queue(email: str = ..., video_id: str = ...):
+        query = select(YoutubeVideoQueue).where(
+            YoutubeVideoQueue.email == email, YoutubeVideoQueue.video_id == video_id
+        )
+        results = session.scalars(query)
+        youtube_video_queue = results.first()
+        return youtube_video_queue
+
+    return _get_video_queue
+
+
+@pytest.fixture
 def create_video_like(session: Session):
     def _create_video_like(email: str = ..., video_id: str = ...):
         youtube_video_like = YoutubeVideoLike(email=email, video_id=video_id)
@@ -151,6 +165,19 @@ def create_video_like(session: Session):
 
 
 @pytest.fixture
+def get_video_like(session: Session):
+    def _get_video_like(email: str = ..., video_id: str = ...):
+        query = select(YoutubeVideoLike).where(
+            YoutubeVideoLike.email == email, YoutubeVideoLike.video_id == video_id
+        )
+        results = session.scalars(query)
+        youtube_video_queue = results.first()
+        return youtube_video_queue
+
+    return _get_video_like
+
+
+@pytest.fixture
 def create_video_watch(session: Session):
     def _create_video_watch(email: str = ..., video_id: str = ...):
         youtube_video_watch = YoutubeVideoWatch(email=email, video_id=video_id)
@@ -159,3 +186,16 @@ def create_video_watch(session: Session):
         return youtube_video_watch
 
     return _create_video_watch
+
+
+@pytest.fixture
+def get_video_watch(session: Session):
+    def _get_video_watch(email: str = ..., video_id: str = ...):
+        query = select(YoutubeVideoWatch).where(
+            YoutubeVideoWatch.email == email, YoutubeVideoWatch.video_id == video_id
+        )
+        results = session.scalars(query)
+        youtube_video_queue = results.first()
+        return youtube_video_queue
+
+    return _get_video_watch

@@ -104,7 +104,7 @@ class MusicTasker:
     def run_job(self, job_id: str = ..., session: Session = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
         results = session.scalars(query)
-        job: MusicJob | None = results.first()
+        job = results.first()
         if not job:
             raise Exception(f"Job with id ({job_id}) not found")
         job_path = None
@@ -144,7 +144,7 @@ class MusicTasker:
     def delete_job(self, job_id: str = ..., session: Session = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
         results = session.scalars(query)
-        job: MusicJob | None = results.first()
+        job = results.first()
         if not job:
             raise Exception(f"Job ({job_id}) could not be found")
         asyncio.run(cleanup_job(job=job))

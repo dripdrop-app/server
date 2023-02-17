@@ -30,8 +30,7 @@ def test_videos_with_no_videos(
     )
     response = client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "videos": []}
+    assert response.json() == {"totalPages": 0, "videos": []}
 
 
 def test_videos_with_no_subscriptions(
@@ -63,8 +62,68 @@ def test_videos_with_no_subscriptions(
     )
     response = client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "videos": []}
+    assert response.json() == {"totalPages": 0, "videos": []}
+
+
+def test_videos_with_channel_id(
+    client: TestClient,
+    create_and_login_user,
+    create_google_account,
+    create_channel,
+    create_video_category,
+    create_video,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="access",
+        refresh_token="refresh",
+        expires=1000,
+    )
+    channel = create_channel(
+        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    other_channel = create_channel(
+        id="2", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    category = create_video_category(id=1, name="category")
+    video = create_video(
+        id="1",
+        title="title",
+        thumbnail="thumbnail",
+        channel_id=channel.id,
+        category_id=category.id,
+    )
+    create_video(
+        id="2",
+        title="title",
+        thumbnail="thumbnail",
+        channel_id=other_channel.id,
+        category_id=category.id,
+    )
+    response = client.get(f"{VIDEOS_URL}/1/10", params={"channel_id": "1"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "totalPages": 1,
+        "videos": [
+            {
+                "id": video.id,
+                "title": video.title,
+                "thumbnail": video.thumbnail,
+                "categoryId": category.id,
+                "publishedAt": video.published_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+                "channelId": channel.id,
+                "channelTitle": channel.title,
+                "channelThumbnail": channel.thumbnail,
+                "liked": None,
+                "queued": None,
+                "watched": None,
+            }
+        ],
+    }
 
 
 def test_videos_with_out_of_range_page(
@@ -92,7 +151,7 @@ def test_videos_with_single_result(
     create_video,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -102,7 +161,7 @@ def test_videos_with_single_result(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     video = create_video(
         id="1",
@@ -113,8 +172,7 @@ def test_videos_with_single_result(
     )
     response = client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -146,7 +204,7 @@ def test_videos_with_multiple_videos(
     create_video,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -156,7 +214,7 @@ def test_videos_with_multiple_videos(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(
@@ -173,8 +231,7 @@ def test_videos_with_multiple_videos(
     videos.sort(key=lambda video: video.published_at, reverse=True)
     response = client.get(f"{VIDEOS_URL}/1/5")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(
@@ -209,7 +266,7 @@ def test_videos_with_multiple_pages(
     create_video,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -219,7 +276,7 @@ def test_videos_with_multiple_pages(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(
@@ -236,8 +293,7 @@ def test_videos_with_multiple_pages(
     videos.sort(key=lambda video: video.published_at, reverse=True)
     response = client.get(f"{VIDEOS_URL}/2/2")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 3,
         "videos": list(
             map(
@@ -272,7 +328,7 @@ def test_videos_in_descending_order_by_published_date(
     create_video,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -282,7 +338,7 @@ def test_videos_in_descending_order_by_published_date(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(
@@ -299,8 +355,7 @@ def test_videos_in_descending_order_by_published_date(
     videos.sort(key=lambda video: video.published_at, reverse=True)
     response = client.get(f"{VIDEOS_URL}/1/5")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(
@@ -335,7 +390,7 @@ def test_videos_with_specific_video_category(
     create_video,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -345,7 +400,7 @@ def test_videos_with_specific_video_category(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     other_category = create_video_category(id=2, name="other category")
     video_in_category = create_video(
@@ -366,8 +421,7 @@ def test_videos_with_specific_video_category(
         f"{VIDEOS_URL}/1/5", params={"video_categories": str(category.id)}
     )
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -400,7 +454,7 @@ def test_videos_with_queued_only(
     create_video_queue,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -410,7 +464,7 @@ def test_videos_with_queued_only(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     queued_video = create_video(
         id="1",
@@ -426,11 +480,10 @@ def test_videos_with_queued_only(
         channel_id=channel.id,
         category_id=category.id,
     )
-    queue = create_video_queue(email=google_user.email, video_id=queued_video.id)
+    queue = create_video_queue(email=google_account.email, video_id=queued_video.id)
     response = client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -465,7 +518,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     create_video_queue,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -475,7 +528,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(
@@ -492,7 +545,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     queues = list(
         map(
             lambda video: create_video_queue(
-                email=google_user.email, video_id=video.id
+                email=google_account.email, video_id=video.id
             ),
             videos,
         )
@@ -508,8 +561,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     )
     response = client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(
@@ -547,7 +599,7 @@ def test_videos_with_liked_only(
     create_video_like,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -557,7 +609,7 @@ def test_videos_with_liked_only(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     liked_video = create_video(
         id="1",
@@ -573,11 +625,10 @@ def test_videos_with_liked_only(
         channel_id=channel.id,
         category_id=category.id,
     )
-    like = create_video_like(email=google_user.email, video_id=liked_video.id)
+    like = create_video_like(email=google_account.email, video_id=liked_video.id)
     response = client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": [
             {
@@ -610,7 +661,7 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     create_video_like,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
@@ -620,7 +671,7 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(
@@ -636,7 +687,9 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     )
     likes = list(
         map(
-            lambda video: create_video_like(email=google_user.email, video_id=video.id),
+            lambda video: create_video_like(
+                email=google_account.email, video_id=video.id
+            ),
             videos,
         )
     )
@@ -651,8 +704,7 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     )
     response = client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "videos": list(
             map(

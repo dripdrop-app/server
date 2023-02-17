@@ -38,8 +38,7 @@ def test_get_account_with_expired_token(
     )
     response = client.get(ACCOUNT_URL)
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"email": google_account.email, "refresh": True}
+    assert response.json() == {"email": google_account.email, "refresh": True}
 
 
 def test_get_account(
@@ -66,5 +65,4 @@ def test_get_account(
     )
     response = client.get(ACCOUNT_URL)
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"email": google_account.email, "refresh": False}
+    assert response.json() == {"email": google_account.email, "refresh": False}

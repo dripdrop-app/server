@@ -32,8 +32,7 @@ def test_subscriptions_with_no_results(
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {"totalPages": 0, "subscriptions": []}
+    assert response.json() == {"totalPages": 0, "subscriptions": []}
 
 
 def test_subscriptions_out_of_range_page(
@@ -44,7 +43,7 @@ def test_subscriptions_out_of_range_page(
     create_subscription,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
@@ -54,7 +53,7 @@ def test_subscriptions_out_of_range_page(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_user.email)
+    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     response = client.get(f"{SUBSCRIPTIONS_URL}/2/1")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -67,7 +66,7 @@ def test_subscriptions_with_single_result(
     create_subscription,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
@@ -78,12 +77,11 @@ def test_subscriptions_with_single_result(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
     subscription = create_subscription(
-        id="1", channel_id=channel.id, email=google_user.email
+        id="1", channel_id=channel.id, email=google_account.email
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "subscriptions": [
             {
@@ -106,7 +104,7 @@ def test_subscriptions_with_multiple_pages(
     create_subscription,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
@@ -125,13 +123,14 @@ def test_subscriptions_with_multiple_pages(
         )
     )
     subscriptions = [
-        create_subscription(id=str(i), channel_id=channel.id, email=google_user.email)
+        create_subscription(
+            id=str(i), channel_id=channel.id, email=google_account.email
+        )
         for i, channel in enumerate(channels)
     ]
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 3,
         "subscriptions": [
             {
@@ -155,7 +154,7 @@ def test_subscriptions_for_logged_in_google_account(
     create_subscription,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
@@ -163,7 +162,7 @@ def test_subscriptions_for_logged_in_google_account(
         expires=1000,
     )
     other_user = create_user(email="otheruser@gmail.com", password="password")
-    other_google_user = create_google_account(
+    other_google_account = create_google_account(
         email="othergoogle@gmail.com",
         user_email=other_user.email,
         access_token="",
@@ -177,15 +176,14 @@ def test_subscriptions_for_logged_in_google_account(
         id="2", title="channel_2", thumbnail="thumbnail", upload_playlist_id="1"
     )
     create_subscription(
-        id="1", channel_id=other_channel.id, email=other_google_user.email
+        id="1", channel_id=other_channel.id, email=other_google_account.email
     )
     subscription = create_subscription(
-        id="2", channel_id=channel.id, email=google_user.email
+        id="2", channel_id=channel.id, email=google_account.email
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/2")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "subscriptions": [
             {
@@ -208,7 +206,7 @@ def test_subscriptions_are_in_descending_order_by_title(
     create_subscription,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
-    google_user = create_google_account(
+    google_account = create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
@@ -229,7 +227,7 @@ def test_subscriptions_are_in_descending_order_by_title(
     subscriptions = list(
         map(
             lambda i: create_subscription(
-                id=str(i), channel_id=channels[i].id, email=google_user.email
+                id=str(i), channel_id=channels[i].id, email=google_account.email
             ),
             range(len(channels)),
         )
@@ -248,8 +246,7 @@ def test_subscriptions_are_in_descending_order_by_title(
     )
     response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
     assert response.status_code == status.HTTP_200_OK
-    json = response.json()
-    assert json == {
+    assert response.json() == {
         "totalPages": 1,
         "subscriptions": list(
             map(

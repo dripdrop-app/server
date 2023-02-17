@@ -24,7 +24,7 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         expires = payload.get("exp", None)
-        if not expires:
+        if expires is None:
             return None
         if expires < datetime.now(tz=settings.timezone).timestamp():
             pass

@@ -4,19 +4,23 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
 
-from dripdrop.settings import settings
+from dripdrop.settings import settings, ENV
 
 
 class Database:
     def __init__(self):
         self.async_engine = create_async_engine(
-            settings.async_database_url, poolclass=NullPool, echo=False
+            settings.async_database_url,
+            poolclass=NullPool,
+            echo=settings.env == ENV.DEVELOPMENT,
         )
         self.async_session_maker = sessionmaker(
             bind=self.async_engine, expire_on_commit=False, class_=AsyncSession
         )
         self.engine = create_engine(
-            settings.database_url, poolclass=NullPool, echo=False
+            settings.database_url,
+            poolclass=NullPool,
+            echo=settings.env == ENV.DEVELOPMENT,
         )
         self.session_maker = sessionmaker(bind=self.engine, expire_on_commit=False)
 

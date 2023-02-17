@@ -98,7 +98,7 @@ def create_music_job(session: Session):
 def get_completed_job(session: Session):
     def _get_completed_job(email: str = ...):
         results = session.scalars(select(MusicJob).where(MusicJob.user_email == email))
-        job: MusicJob | None = results.first()
+        job = results.first()
         assert job is not None
         return job
 

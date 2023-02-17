@@ -1,12 +1,11 @@
-import math
 import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from dripdrop.dependencies import create_db_session, AsyncSession
 from dripdrop.logging import logger
 
-from .dependencies import get_google_user, GoogleAccount
+from .dependencies import get_google_account, GoogleAccount
 from .models import (
     YoutubeVideoCategory,
     YoutubeChannel,
@@ -23,11 +22,12 @@ from .responses import (
     VideoQueueResponse,
     VideoResponse,
 )
+from .utils import execute_videos_query
 
 videos_api = APIRouter(
     prefix="/videos",
     tags=["YouTube Videos"],
-    dependencies=[Depends(get_google_user)],
+    dependencies=[Depends(get_google_account)],
 )
 
 
@@ -35,7 +35,17 @@ videos_api = APIRouter(
 async def get_youtube_video_categories(
     channel_id: str = Query(None),
     session: AsyncSession = Depends(create_db_session),
+    google_account=Depends(get_google_account),
 ):
+    subscription_query = (
+        select(YoutubeSubscription)
+        .where(
+            YoutubeSubscription.email == google_account.email
+            if not channel_id
+            else YoutubeSubscription.id.is_not(None)
+        )
+        .subquery()
+    )
     channel_query = (
         select(YoutubeChannel)
         .where(
@@ -43,23 +53,68 @@ async def get_youtube_video_categories(
             if channel_id
             else YoutubeChannel.id.is_not(None)
         )
-        .alias(name=YoutubeChannel.__tablename__)
+        .subquery()
     )
-    query = channel_query.join(
-        YoutubeVideo,
-        YoutubeVideo.channel_id == channel_query.columns.id,
-    ).join(
-        YoutubeVideoCategory,
-        YoutubeVideoCategory.id == YoutubeVideo.category_id,
+    videos_query = select(YoutubeVideo).subquery()
+    video_categories_query = select(YoutubeVideoCategory).subquery()
+    query = (
+        subscription_query.join(
+            channel_query,
+            subscription_query.columns.channel_id == channel_query.columns.id,
+        )
+        .join(
+            videos_query,
+            videos_query.columns.channel_id == channel_query.columns.id,
+        )
+        .join(
+            video_categories_query,
+            video_categories_query.columns.id == videos_query.columns.category_id,
+        )
     )
-    results = await session.scalars(
-        select(YoutubeVideoCategory)
+    results = await session.execute(
+        select(video_categories_query.columns.id, video_categories_query.columns.name)
         .select_from(query)
-        .order_by(YoutubeVideoCategory.name.asc())
-        .distinct(YoutubeVideoCategory.name)
+        .order_by(video_categories_query.columns.name.asc())
+        .distinct()
     )
-    categories: list[YoutubeVideoCategory] = results.all()
+    categories = results.mappings().all()
     return YoutubeVideoCategoriesResponse(categories=categories)
+
+
+@videos_api.get(
+    "",
+    dependencies=[Depends(get_google_account)],
+    response_model=VideoResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Could not find Youtube video"}
+    },
+)
+async def get_youtube_video(
+    video_id: str = Query(...),
+    related_videos_length: int = Query(5, ge=0),
+    google_account: GoogleAccount = Depends(get_google_account),
+    session: AsyncSession = Depends(create_db_session),
+):
+    (videos, *_) = await execute_videos_query(
+        session=session,
+        google_account=google_account,
+        video_ids=[video_id],
+        subscribed_only=False,
+    )
+    video = videos[0] if videos else None
+    if not video:
+        raise HTTPException(404)
+    related_videos = []
+    if related_videos_length > 0:
+        (related_videos, *_) = await execute_videos_query(
+            session=session,
+            google_account=google_account,
+            video_categories=[video.category_id],
+            limit=related_videos_length,
+            exclude_video_ids=[video.id],
+            subscribed_only=False,
+        )
+    return VideoResponse(video=video, related_videos=related_videos)
 
 
 @videos_api.get(
@@ -76,10 +131,10 @@ async def get_youtube_videos(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
     video_categories: str = Query(""),
-    channel_id: str = Query(None),
+    channel_id: str | None = Query(None),
     liked_only: bool = Query(False),
     queued_only: bool = Query(False),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
     try:
@@ -93,91 +148,17 @@ async def get_youtube_videos(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.VIDEO_CATEGORIES_INVALID,
         )
-
-    videos_query = (
-        select(YoutubeVideo)
-        .where(
-            YoutubeVideo.category_id.in_(video_categories)
-            if len(video_categories) != 0
-            else YoutubeVideo.category_id.is_not(None)
-        )
-        .alias(name=YoutubeVideo.__tablename__)
+    videos, total_pages = await execute_videos_query(
+        session=session,
+        google_account=google_account,
+        channel_id=channel_id,
+        video_categories=video_categories,
+        liked_only=liked_only,
+        queued_only=queued_only,
+        offset=(page - 1) * per_page,
+        limit=per_page,
+        subscribed_only=channel_id is None,
     )
-    video_likes_query = (
-        select(YoutubeVideoLike)
-        .where(YoutubeVideoLike.email == google_account.email)
-        .alias(name=YoutubeVideoLike.__tablename__)
-    )
-    video_queues_query = (
-        select(YoutubeVideoQueue)
-        .where(YoutubeVideoQueue.email == google_account.email)
-        .alias(name=YoutubeVideoQueue.__tablename__)
-    )
-    video_watches_query = (
-        select(YoutubeVideoWatch)
-        .where(YoutubeVideoWatch.email == google_account.email)
-        .alias(name=YoutubeVideoWatch.__tablename__)
-    )
-    channel_query = (
-        select(YoutubeChannel)
-        .where(
-            YoutubeChannel.id == channel_id
-            if channel_id
-            else YoutubeChannel.id.is_not(None)
-        )
-        .alias(name=YoutubeChannel.__tablename__)
-    )
-    subscription_query = (
-        select(YoutubeSubscription)
-        .where(
-            YoutubeSubscription.email == google_account.email
-            if not channel_id
-            else YoutubeSubscription.id.is_not(None)
-        )
-        .alias(name=YoutubeSubscription.__tablename__)
-    )
-    query = select(
-        videos_query,
-        channel_query.columns.title.label("channel_title"),
-        channel_query.columns.thumbnail.label("channel_thumbnail"),
-        video_likes_query.columns.created_at.label("liked"),
-        video_watches_query.columns.created_at.label("watched"),
-        video_queues_query.columns.created_at.label("queued"),
-    ).select_from(
-        subscription_query.join(
-            channel_query,
-            channel_query.columns.id == YoutubeSubscription.channel_id,
-        )
-        .join(
-            videos_query,
-            videos_query.columns.channel_id == channel_query.columns.id,
-        )
-        .join(
-            video_likes_query,
-            video_likes_query.columns.video_id == videos_query.columns.id,
-            isouter=not liked_only,
-        )
-        .join(
-            video_queues_query,
-            video_queues_query.columns.video_id == videos_query.columns.id,
-            isouter=not queued_only,
-        )
-        .join(
-            video_watches_query,
-            video_watches_query.columns.video_id == videos_query.columns.id,
-            isouter=True,
-        )
-    )
-    if liked_only:
-        query = query.order_by(video_likes_query.columns.created_at.desc())
-    elif queued_only:
-        query = query.order_by(video_queues_query.columns.created_at.asc())
-    else:
-        query = query.order_by(videos_query.columns.published_at.desc())
-    results = await session.execute(query.offset((page - 1) * per_page))
-    videos = results.mappings().fetchmany(per_page)
-    count = await session.scalar(select(func.count(query.subquery().columns.id)))
-    total_pages = math.ceil(count / per_page)
     if page > total_pages and page != 1:
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
@@ -187,54 +168,68 @@ async def get_youtube_videos(
 
 @videos_api.put(
     "/watch",
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND}
-    },
+    responses={status.HTTP_400_BAD_REQUEST: {}},
 )
 async def add_youtube_video_watch(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.execute(query)
+    video = results.first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.VIDEO_NOT_FOUND,
+        )
     query = select(YoutubeVideoWatch).where(
         YoutubeVideoWatch.email == google_account.email,
-        YoutubeVideoLike.video_id == video_id,
+        YoutubeVideoWatch.video_id == video_id,
     )
     results = await session.scalars(query)
     watch = results.first()
-    if not watch:
-        session.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
-        await session.commit()
-        return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
-    )
+    if watch:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.ADD_VIDEO_WATCH_ERROR,
+        )
+    session.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.put(
     "/like",
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND}
-    },
+    responses={status.HTTP_400_BAD_REQUEST: {}},
 )
 async def add_youtube_video_like(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.execute(query)
+    video = results.first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.VIDEO_NOT_FOUND,
+        )
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
     )
     results = await session.scalars(query)
     like = results.first()
-    if not like:
-        session.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
-        await session.commit()
-        return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
-    )
+    if like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.ADD_VIDEO_LIKE_ERROR,
+        )
+    session.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.delete(
@@ -247,10 +242,9 @@ async def add_youtube_video_like(
 )
 async def delete_youtube_video_like(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
-
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
@@ -270,30 +264,36 @@ async def delete_youtube_video_like(
 @videos_api.put(
     "/queue",
     responses={
-        status.HTTP_400_BAD_REQUEST: {
-            "description": ErrorMessages.ADD_VIDEO_QUEUE_ERROR
-        }
+        status.HTTP_400_BAD_REQUEST: {},
     },
 )
 async def add_youtube_video_queue(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.scalars(query)
+    video = results.first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.VIDEO_NOT_FOUND,
+        )
     query = select(YoutubeVideoQueue).where(
-        YoutubeVideoQueue.email == google_account.email,
         YoutubeVideoQueue.video_id == video_id,
+        YoutubeVideoQueue.email == google_account.email,
     )
     results = await session.scalars(query)
-    queue = results.first()
-    if not queue:
-        session.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
-        await session.commit()
-        return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=ErrorMessages.ADD_VIDEO_QUEUE_ERROR,
-    )
+    video_queue = results.first()
+    if video_queue:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.ADD_VIDEO_QUEUE_ERROR,
+        )
+    session.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.delete(
@@ -306,7 +306,7 @@ async def add_youtube_video_queue(
 )
 async def delete_youtube_video_queue(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoQueue).where(
@@ -334,61 +334,20 @@ async def delete_youtube_video_queue(
 )
 async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
-    google_account: GoogleAccount = Depends(get_google_user),
+    google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
-    videos_query = select(YoutubeVideo).alias(name=YoutubeVideo.__tablename__)
-    video_likes_query = (
-        select(YoutubeVideoLike)
-        .where(YoutubeVideoLike.email == google_account.email)
-        .alias(name=YoutubeVideoLike.__tablename__)
+    (videos, *_) = await execute_videos_query(
+        session=session,
+        google_account=google_account,
+        queued_only=True,
+        offset=max(index - 2, 0),
+        limit=2 if index == 1 else 3,
+        subscribed_only=False,
     )
-    video_queues_query = (
-        select(YoutubeVideoQueue)
-        .where(YoutubeVideoQueue.email == google_account.email)
-        .offset(max(index - 2, 0))
-        .alias(name=YoutubeVideoQueue.__tablename__)
-    )
-    video_watches_query = (
-        select(YoutubeVideoWatch)
-        .where(YoutubeVideoWatch.email == google_account.email)
-        .alias(name=YoutubeVideoWatch.__tablename__)
-    )
-    channel_query = select(YoutubeChannel).alias(name=YoutubeChannel.__tablename__)
-    query = (
-        select(
-            videos_query,
-            channel_query.columns.title.label("channel_title"),
-            channel_query.columns.thumbnail.label("channel_thumbnail"),
-            video_likes_query.columns.created_at.label("liked"),
-            video_watches_query.columns.created_at.label("watched"),
-            video_queues_query.columns.created_at.label("queued"),
-        )
-        .select_from(
-            video_queues_query.join(
-                videos_query,
-                video_queues_query.columns.video_id == videos_query.columns.id,
-            )
-            .join(
-                channel_query,
-                channel_query.columns.id == videos_query.columns.channel_id,
-            )
-            .join(
-                video_likes_query,
-                video_likes_query.columns.video_id == videos_query.columns.id,
-                isouter=True,
-            )
-            .join(
-                video_watches_query,
-                video_watches_query.columns.video_id == videos_query.columns.id,
-                isouter=True,
-            )
-        )
-        .order_by(video_queues_query.columns.created_at.asc())
-    )
-    results = await session.execute(query)
-    videos = results.mappings().fetchmany(2 if index == 1 else 3)
+
     [prev_video, current_video, next_video] = [None] * 3
+
     if index != 1 and videos:
         prev_video = videos.pop(0)
     if videos:
@@ -403,118 +362,3 @@ async def get_youtube_video_queue(
     return VideoQueueResponse(
         current_video=current_video, prev=bool(prev_video), next=bool(next_video)
     )
-
-
-@videos_api.get(
-    "",
-    dependencies=[Depends(get_google_user)],
-    response_model=VideoResponse,
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": "Could not find Youtube video"}
-    },
-)
-async def get_youtube_video(
-    video_id: str = Query(...),
-    related_videos_length: int = Query(5, ge=0),
-    google_account: GoogleAccount = Depends(get_google_user),
-    session: AsyncSession = Depends(create_db_session),
-):
-    videos_query = (
-        select(YoutubeVideo)
-        .where(YoutubeVideo.id == video_id)
-        .alias(name=YoutubeVideo.__tablename__)
-    )
-    video_likes_query = (
-        select(YoutubeVideoLike)
-        .where(YoutubeVideoLike.email == google_account.email)
-        .alias(name=YoutubeVideoLike.__tablename__)
-    )
-    video_queues_query = (
-        select(YoutubeVideoQueue)
-        .where(YoutubeVideoQueue.email == google_account.email)
-        .alias(name=YoutubeVideoQueue.__tablename__)
-    )
-    video_watches_query = (
-        select(YoutubeVideoWatch)
-        .where(YoutubeVideoWatch.email == google_account.email)
-        .alias(name=YoutubeVideoWatch.__tablename__)
-    )
-    channel_query = select(YoutubeChannel).alias(name=YoutubeChannel.__tablename__)
-    query = select(
-        videos_query,
-        channel_query.columns.title.label("channel_title"),
-        channel_query.columns.thumbnail.label("channel_thumbnail"),
-        video_likes_query.columns.created_at.label("liked"),
-        video_watches_query.columns.created_at.label("watched"),
-        video_queues_query.columns.created_at.label("queued"),
-    ).select_from(
-        videos_query.join(
-            channel_query,
-            channel_query.columns.id == videos_query.columns.channel_id,
-        )
-        .join(
-            video_queues_query,
-            video_queues_query.columns.video_id == videos_query.columns.id,
-            isouter=True,
-        )
-        .join(
-            video_likes_query,
-            video_likes_query.columns.video_id == videos_query.columns.id,
-            isouter=True,
-        )
-        .join(
-            video_watches_query,
-            video_watches_query.columns.video_id == videos_query.columns.id,
-            isouter=True,
-        )
-    )
-    results = await session.execute(query)
-    video = results.mappings().first()
-    if not video:
-        raise HTTPException(404)
-    related_videos = []
-    if related_videos_length > 0:
-        videos_query = (
-            select(YoutubeVideo)
-            .where(
-                YoutubeVideo.id != video.id,
-                (YoutubeVideo.category_id == video.category_id)
-                | (YoutubeVideo.channel_id == video.channel_id),
-            )
-            .alias(name=YoutubeVideo.__tablename__)
-        )
-        query = (
-            select(
-                videos_query,
-                channel_query.columns.title.label("channel_title"),
-                channel_query.columns.thumbnail.label("channel_thumbnail"),
-                video_likes_query.columns.created_at.label("liked"),
-                video_watches_query.columns.created_at.label("watched"),
-                video_queues_query.columns.created_at.label("queued"),
-            )
-            .select_from(
-                videos_query.join(
-                    channel_query,
-                    channel_query.columns.id == videos_query.columns.channel_id,
-                )
-                .join(
-                    video_queues_query,
-                    video_queues_query.columns.video_id == videos_query.columns.id,
-                    isouter=True,
-                )
-                .join(
-                    video_likes_query,
-                    video_likes_query.columns.video_id == videos_query.columns.id,
-                    isouter=True,
-                )
-                .join(
-                    video_watches_query,
-                    video_watches_query.columns.video_id == videos_query.columns.id,
-                    isouter=True,
-                )
-            )
-            .order_by(videos_query.columns.published_at.desc())
-        )
-        results = await session.execute(query)
-        related_videos = results.mappings().fetchmany(related_videos_length)
-    return VideoResponse(video=video, related_videos=related_videos)

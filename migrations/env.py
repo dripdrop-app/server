@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-from dripdrop.models.register import Base
+from dripdrop.models.register import register
 from dripdrop.settings import settings
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -19,7 +19,7 @@ config.set_main_option("sqlalchemy.url", settings.database_url)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = Base.metadata
+target_metadata = register.base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
