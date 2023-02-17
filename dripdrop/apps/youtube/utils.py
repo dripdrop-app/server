@@ -80,8 +80,8 @@ async def execute_videos_query(
     video_categories: list[int] | None = None,
     liked_only=False,
     queued_only=False,
-    video_offset: int | None = None,
-    queue_offest: int | None = None,
+    subscribed_only=True,
+    offset: int | None = None,
     limit: int | None = None,
 ):
     subscription_query = (
@@ -121,7 +121,6 @@ async def execute_videos_query(
     video_queues_query = (
         select(YoutubeVideoQueue)
         .where(YoutubeVideoQueue.email == google_account.email)
-        .offset(queue_offest)
         .subquery()
     )
     video_watches_query = (
@@ -129,6 +128,14 @@ async def execute_videos_query(
         .where(YoutubeVideoWatch.email == google_account.email)
         .subquery()
     )
+    subquery = None
+    if subscribed_only:
+        subquery = subscription_query.join(
+            channel_query,
+            channel_query.columns.id == subscription_query.columns.channel_id,
+        )
+    else:
+        subquery = channel_query
     query = select(
         videos_query.columns.id,
         videos_query.columns.title,
@@ -142,11 +149,7 @@ async def execute_videos_query(
         video_watches_query.columns.created_at.label("watched"),
         video_queues_query.columns.created_at.label("queued"),
     ).select_from(
-        subscription_query.join(
-            channel_query,
-            channel_query.columns.id == subscription_query.columns.channel_id,
-        )
-        .join(
+        subquery.join(
             videos_query,
             videos_query.columns.channel_id == channel_query.columns.id,
         )
@@ -172,12 +175,12 @@ async def execute_videos_query(
         query = query.order_by(video_queues_query.columns.created_at.asc())
     else:
         query = query.order_by(videos_query.columns.published_at.desc())
-    results = await session.execute(query.offset(video_offset))
+    results = await session.execute(query.offset(offset))
     videos = results.mappings()
     if limit:
         videos = videos.fetchmany(limit)
     else:
         videos = videos.all()
     count = await session.scalar(select(func.count(query.subquery().columns.id)))
-    total_pages = math.ceil(count / limit) if limit else 1
-    return {"videos": videos, "total_pages": total_pages}
+    total_pages = math.ceil(count / limit) if count and limit else 1
+    return (videos, total_pages)

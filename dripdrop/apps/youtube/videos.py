@@ -75,10 +75,46 @@ async def get_youtube_video_categories(
         select(video_categories_query.columns.id, video_categories_query.columns.name)
         .select_from(query)
         .order_by(video_categories_query.columns.name.asc())
-        .distinct(video_categories_query.columns.name)
+        .distinct()
     )
     categories = results.mappings().all()
     return YoutubeVideoCategoriesResponse(categories=categories)
+
+
+@videos_api.get(
+    "",
+    dependencies=[Depends(get_google_account)],
+    response_model=VideoResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Could not find Youtube video"}
+    },
+)
+async def get_youtube_video(
+    video_id: str = Query(...),
+    related_videos_length: int = Query(5, ge=0),
+    google_account: GoogleAccount = Depends(get_google_account),
+    session: AsyncSession = Depends(create_db_session),
+):
+    (videos, *_) = await execute_videos_query(
+        session=session,
+        google_account=google_account,
+        video_ids=[video_id],
+        subscribed_only=False,
+    )
+    video = videos[0] if videos else None
+    if not video:
+        raise HTTPException(404)
+    related_videos = []
+    if related_videos_length > 0:
+        (related_videos, *_) = await execute_videos_query(
+            session=session,
+            google_account=google_account,
+            video_categories=[video.category_id],
+            limit=related_videos_length,
+            exclude_video_ids=[video.id],
+            subscribed_only=False,
+        )
+    return VideoResponse(video=video, related_videos=related_videos)
 
 
 @videos_api.get(
@@ -112,18 +148,16 @@ async def get_youtube_videos(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.VIDEO_CATEGORIES_INVALID,
         )
-    results = await execute_videos_query(
+    videos, total_pages = await execute_videos_query(
         session=session,
         google_account=google_account,
         channel_id=channel_id,
         video_categories=video_categories,
         liked_only=liked_only,
         queued_only=queued_only,
-        video_offset=(page - 1) * per_page,
+        offset=(page - 1) * per_page,
         limit=per_page,
     )
-    videos = results.get("videos", [])
-    total_pages = results.get("total_pages", 0)
     if page > total_pages and page != 1:
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
@@ -133,54 +167,68 @@ async def get_youtube_videos(
 
 @videos_api.put(
     "/watch",
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND}
-    },
+    responses={status.HTTP_400_BAD_REQUEST: {}},
 )
 async def add_youtube_video_watch(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.execute(query)
+    video = results.first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.VIDEO_NOT_FOUND,
+        )
     query = select(YoutubeVideoWatch).where(
         YoutubeVideoWatch.email == google_account.email,
-        YoutubeVideoLike.video_id == video_id,
+        YoutubeVideoWatch.video_id == video_id,
     )
     results = await session.scalars(query)
     watch = results.first()
-    if not watch:
-        session.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
-        await session.commit()
-        return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
-    )
+    if watch:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.ADD_VIDEO_WATCH_ERROR,
+        )
+    session.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.put(
     "/like",
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND}
-    },
+    responses={status.HTTP_400_BAD_REQUEST: {}},
 )
 async def add_youtube_video_like(
     video_id: str = Query(...),
     google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.execute(query)
+    video = results.first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.VIDEO_NOT_FOUND,
+        )
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
     )
     results = await session.scalars(query)
     like = results.first()
-    if not like:
-        session.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
-        await session.commit()
-        return Response(None, status_code=status.HTTP_200_OK)
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.VIDEO_NOT_FOUND
-    )
+    if like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.ADD_VIDEO_LIKE_ERROR,
+        )
+    session.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)
 
 
 @videos_api.delete(
@@ -196,7 +244,6 @@ async def delete_youtube_video_like(
     google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
-
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == google_account.email,
         YoutubeVideoLike.video_id == video_id,
@@ -216,10 +263,7 @@ async def delete_youtube_video_like(
 @videos_api.put(
     "/queue",
     responses={
-        status.HTTP_400_BAD_REQUEST: {
-            "description": ErrorMessages.ADD_VIDEO_QUEUE_ERROR
-        },
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.VIDEO_NOT_FOUND},
+        status.HTTP_400_BAD_REQUEST: {},
     },
 )
 async def add_youtube_video_queue(
@@ -227,13 +271,12 @@ async def add_youtube_video_queue(
     google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
-    results = await execute_videos_query(
-        session=session, google_account=google_account, video_ids=[video_id]
-    )
-    videos = results.get("videos", [])
-    if len(videos) == 0:
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.scalars(query)
+    video = results.first()
+    if not video:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.VIDEO_NOT_FOUND,
         )
     query = select(YoutubeVideoQueue).where(
@@ -293,15 +336,15 @@ async def get_youtube_video_queue(
     google_account: GoogleAccount = Depends(get_google_account),
     session: AsyncSession = Depends(create_db_session),
 ):
-    results = await execute_videos_query(
+    (videos, *_) = await execute_videos_query(
         session=session,
         google_account=google_account,
         queued_only=True,
-        queue_offest=max(index - 2, 0),
-        limit=100,
+        offset=max(index - 2, 0),
+        limit=2 if index == 1 else 3,
+        subscribed_only=False,
     )
 
-    videos = results.get("videos", [])
     [prev_video, current_video, next_video] = [None] * 3
 
     if index != 1 and videos:
@@ -318,37 +361,3 @@ async def get_youtube_video_queue(
     return VideoQueueResponse(
         current_video=current_video, prev=bool(prev_video), next=bool(next_video)
     )
-
-
-@videos_api.get(
-    "",
-    dependencies=[Depends(get_google_account)],
-    response_model=VideoResponse,
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": "Could not find Youtube video"}
-    },
-)
-async def get_youtube_video(
-    video_id: str = Query(...),
-    related_videos_length: int = Query(5, ge=0),
-    google_account: GoogleAccount = Depends(get_google_account),
-    session: AsyncSession = Depends(create_db_session),
-):
-    results = await execute_videos_query(
-        session=session, google_account=google_account, video_ids=[video_id]
-    )
-    videos = results.get("videos", [])
-    video = videos[0] if videos else None
-    if not video:
-        raise HTTPException(404)
-    related_videos = []
-    if related_videos_length > 0:
-        results = await execute_videos_query(
-            session=session,
-            google_account=google_account,
-            video_categories=[video.category_id],
-            limit=related_videos_length,
-            exclude_video_ids=[video.id],
-        )
-        related_videos = results.get("videos", [])
-    return VideoResponse(video=video, related_videos=related_videos)

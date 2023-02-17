@@ -31,43 +31,10 @@ def test_add_video_queue_with_non_existent_video(
         expires=1000,
     )
     response = client.put(QUEUE, params={"video_id": "1"})
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_add_video_queue_from_unsubscribed_channel(
-    client: TestClient,
-    create_and_login_user,
-    create_google_account,
-    create_channel,
-    create_video_category,
-    create_video,
-    get_video_queue,
-):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
-        email="google@gmail.com",
-        user_email=user.email,
-        access_token="access",
-        refresh_token="refresh",
-        expires=1000,
-    )
-    channel = create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
-    category = create_video_category(id=1, name="category")
-    video = create_video(
-        id="1",
-        title="title",
-        thumbnail="thumbnail",
-        channel_id=channel.id,
-        category_id=category.id,
-    )
-    response = client.put(QUEUE, params={"video_id": video.id})
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert get_video_queue(email=google_account.email, video_id=video.id) is None
-
-
-def test_add_video_queue_from_subscribed_channel(
+def test_add_video_queue(
     client: TestClient,
     create_and_login_user,
     create_google_account,
@@ -220,7 +187,6 @@ def test_get_video_queue_with_single_video(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_queue,
@@ -236,7 +202,6 @@ def test_get_video_queue_with_single_video(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     video = create_video(
         id="1",
@@ -276,7 +241,6 @@ def test_get_video_queue_with_next_video(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_queue,
@@ -292,7 +256,6 @@ def test_get_video_queue_with_next_video(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     video = create_video(
         id="1",
@@ -340,7 +303,6 @@ def test_get_video_queue_with_prev_video(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_queue,
@@ -356,7 +318,6 @@ def test_get_video_queue_with_prev_video(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     prev_video = create_video(
         id="1",
@@ -404,7 +365,6 @@ def test_get_video_queue_with_prev_and_next_videos(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_queue,
@@ -420,7 +380,6 @@ def test_get_video_queue_with_prev_and_next_videos(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     prev_video = create_video(
         id="1",

@@ -72,6 +72,8 @@ class ErrorMessages:
     PAGE_NOT_FOUND = "Page not found"
     VIDEO_CATEGORIES_INVALID = "Video Categories must be an integer"
     VIDEO_NOT_FOUND = "Video not found"
+    ADD_VIDEO_WATCH_ERROR = "Could not add video watch"
+    ADD_VIDEO_LIKE_ERROR = "Could not add video like"
     REMOVE_VIDEO_LIKE_ERROR = "Could not remove video like"
     ADD_VIDEO_QUEUE_ERROR = "Could not add video to queue"
     REMOVE_VIDEO_QUEUE_ERROR = "Could not delete video queue"

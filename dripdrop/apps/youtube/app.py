@@ -34,12 +34,7 @@ app.include_router(subscriptions_api)
 app.include_router(channels_api)
 
 
-@app.get(
-    "/googleoauth2",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {"description": "Error getting oauth tokens"}
-    },
-)
+@app.get("/googleoauth2")
 async def google_oauth2(
     request: Request,
     state: str = Query(...),
