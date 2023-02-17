@@ -182,5 +182,7 @@ async def execute_videos_query(
     else:
         videos = videos.all()
     count = await session.scalar(select(func.count(query.subquery().columns.id)))
-    total_pages = math.ceil(count / limit) if count and limit else 1
+    total_pages = 1
+    if count is not None and limit is not None:
+        total_pages = math.ceil(count / limit)
     return (videos, total_pages)

@@ -65,6 +65,67 @@ def test_videos_with_no_subscriptions(
     assert response.json() == {"totalPages": 0, "videos": []}
 
 
+def test_videos_with_channel_id(
+    client: TestClient,
+    create_and_login_user,
+    create_google_account,
+    create_channel,
+    create_video_category,
+    create_video,
+):
+    user = create_and_login_user(email="user@gmail.com", password="password")
+    create_google_account(
+        email="google@gmail.com",
+        user_email=user.email,
+        access_token="access",
+        refresh_token="refresh",
+        expires=1000,
+    )
+    channel = create_channel(
+        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    other_channel = create_channel(
+        id="2", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
+    )
+    category = create_video_category(id=1, name="category")
+    video = create_video(
+        id="1",
+        title="title",
+        thumbnail="thumbnail",
+        channel_id=channel.id,
+        category_id=category.id,
+    )
+    create_video(
+        id="2",
+        title="title",
+        thumbnail="thumbnail",
+        channel_id=other_channel.id,
+        category_id=category.id,
+    )
+    response = client.get(f"{VIDEOS_URL}/1/10", params={"channel_id": "1"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "totalPages": 1,
+        "videos": [
+            {
+                "id": video.id,
+                "title": video.title,
+                "thumbnail": video.thumbnail,
+                "categoryId": category.id,
+                "publishedAt": video.published_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+                "channelId": channel.id,
+                "channelTitle": channel.title,
+                "channelThumbnail": channel.thumbnail,
+                "liked": None,
+                "queued": None,
+                "watched": None,
+            }
+        ],
+    }
+
+
 def test_videos_with_out_of_range_page(
     client: TestClient, create_and_login_user, create_google_account
 ):

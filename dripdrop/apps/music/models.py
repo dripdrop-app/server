@@ -21,19 +21,19 @@ class MusicJob(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    artwork_url: Mapped[str] = mapped_column(nullable=True)
-    artwork_filename: Mapped[str] = mapped_column(nullable=True)
-    original_filename: Mapped[str] = mapped_column(nullable=True)
-    filename_url: Mapped[str] = mapped_column(nullable=True)
-    youtube_url: Mapped[str] = mapped_column(nullable=True)
-    download_filename: Mapped[str] = mapped_column(nullable=True)
-    download_url: Mapped[str] = mapped_column(nullable=True)
+    artwork_url: Mapped[str | None] = mapped_column(nullable=True)
+    artwork_filename: Mapped[str | None] = mapped_column(nullable=True)
+    original_filename: Mapped[str | None] = mapped_column(nullable=True)
+    filename_url: Mapped[str | None] = mapped_column(nullable=True)
+    youtube_url: Mapped[str | None] = mapped_column(nullable=True)
+    download_filename: Mapped[str | None] = mapped_column(nullable=True)
+    download_url: Mapped[str | None] = mapped_column(nullable=True)
     title: Mapped[str] = mapped_column(nullable=False)
     artist: Mapped[str] = mapped_column(nullable=False)
     album: Mapped[str] = mapped_column(nullable=False)
-    grouping: Mapped[str] = mapped_column(nullable=True)
+    grouping: Mapped[str | None] = mapped_column(nullable=True)
     completed: Mapped[bool] = mapped_column(nullable=False)
     failed: Mapped[bool] = mapped_column(nullable=False)
-    deleted_at: Mapped[datetime] = mapped_column(
+    deleted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )

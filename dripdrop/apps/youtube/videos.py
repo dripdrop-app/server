@@ -131,7 +131,7 @@ async def get_youtube_videos(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
     video_categories: str = Query(""),
-    channel_id: str = Query(None),
+    channel_id: str | None = Query(None),
     liked_only: bool = Query(False),
     queued_only: bool = Query(False),
     google_account: GoogleAccount = Depends(get_google_account),
@@ -157,6 +157,7 @@ async def get_youtube_videos(
         queued_only=queued_only,
         offset=(page - 1) * per_page,
         limit=per_page,
+        subscribed_only=channel_id is None,
     )
     if page > total_pages and page != 1:
         raise HTTPException(

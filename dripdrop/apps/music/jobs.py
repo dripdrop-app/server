@@ -19,7 +19,6 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, func
-from typing import Optional
 
 from dripdrop.dependencies import (
     get_authenticated_user,
@@ -120,13 +119,13 @@ async def listen_jobs(
     responses={status.HTTP_500_INTERNAL_SERVER_ERROR: {}},
 )
 async def create_job(
-    file: Optional[UploadFile] = File(None),
-    youtube_url: Optional[str] = Form(None, regex=youtube_regex),
-    artwork_url: Optional[str] = Form(None),
+    file: UploadFile | None = File(None),
+    youtube_url: str | None = Form(None, regex=youtube_regex),
+    artwork_url: str | None = Form(None),
     title: str = Form(...),
     artist: str = Form(...),
     album: str = Form(...),
-    grouping: Optional[str] = Form(None),
+    grouping: str | None = Form(None),
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):

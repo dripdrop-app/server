@@ -13,13 +13,13 @@ class AccountResponse(ResponseBaseModel):
 class YoutubeChannelResponse(ResponseBaseModel):
     id: str
     title: str
-    thumbnail: str
+    thumbnail: str | None
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel):
     channel_id: str
     channel_title: str
-    channel_thumbnail: str
+    channel_thumbnail: str | None
     published_at: datetime
 
 

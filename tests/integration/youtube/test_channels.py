@@ -30,25 +30,7 @@ def test_channels_with_non_existent_channel(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_channels_with_unsubscribed_channel(
-    client: TestClient, create_and_login_user, create_google_account, create_channel
-):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    create_google_account(
-        email="google@gmail.com",
-        user_email=user.email,
-        access_token="",
-        refresh_token="",
-        expires=1000,
-    )
-    create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
-    response = client.get(CHANNELS_URL, params={"channel_id": "1"})
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_channels_with_subscribed_channel(
+def test_channels(
     client: TestClient,
     create_and_login_user,
     create_google_account,
