@@ -72,11 +72,9 @@ async def google_oauth2(
                 )
             )
             await session.commit()
-        job = queue.enqueue(
-            youtube_tasker.update_youtube_video_categories, args=(False,)
-        )
+        job = queue.enqueue(youtube_tasker.update_video_categories, args=(False,))
         queue.enqueue(
-            youtube_tasker.update_user_youtube_subscriptions_job,
+            youtube_tasker.update_user_subscriptions,
             args=(user.email,),
             depends_on=job,
         )
