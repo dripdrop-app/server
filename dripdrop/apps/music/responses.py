@@ -11,7 +11,7 @@ class MusicJobResponse(ResponseBaseModel):
     artwork_filename: Optional[str] = Field(None)
     original_filename: Optional[str] = Field(None)
     filename_url: Optional[str] = Field(None)
-    youtube_url: Optional[str] = Field(None)
+    video_url: Optional[str] = Field(None)
     download_filename: Optional[str] = Field(None)
     download_url: Optional[str] = Field(None)
     title: str
@@ -63,8 +63,8 @@ class ErrorMessages:
     GROUPING_ERROR = "Unable to get grouping"
     ARTWORK_ERROR = "Unable to get artwork"
     PAGE_NOT_FOUND = "Page not found"
-    CREATE_JOB_BOTH_DEFINED = "'file' and 'youtube_url' cannot both be defined"
-    CREATE_JOB_NOT_DEFINED = "'file' or 'youtube_url' must be defined"
+    CREATE_JOB_BOTH_DEFINED = "'file' and 'video_url' cannot both be defined"
+    CREATE_JOB_NOT_DEFINED = "'file' or 'video_url' must be defined"
     FILE_INCORRECT_FORMAT = "File is incorrect format"
     FAILED_AUDIO_FILE_UPLOAD = "Failed to upload audio file"
     FAILED_IMAGE_UPLOAD = "Failed to upload artwork"
