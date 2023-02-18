@@ -21,7 +21,7 @@ handlers:
     filters: ["info"]
     class: "logging.handlers.RotatingFileHandler"
     filename: "./logs/log.log"
-    maxBytes: 10000
+    maxBytes: 100000000
     backupCount: 10
   error_console:
     level: "WARNING"
@@ -53,4 +53,4 @@ loggers:
     handlers: ["console", "file"]
   rq.worker:
     level: "INFO"
-    handlers: ["console", "error_console", "file", "error_file"]
+    handlers: ["console", "error_console"]
