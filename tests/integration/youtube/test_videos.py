@@ -448,7 +448,6 @@ def test_videos_with_queued_only(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_queue,
@@ -464,7 +463,6 @@ def test_videos_with_queued_only(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     queued_video = create_video(
         id="1",
@@ -512,7 +510,6 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_queue,
@@ -528,7 +525,6 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(
@@ -593,7 +589,6 @@ def test_videos_with_liked_only(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_like,
@@ -609,7 +604,6 @@ def test_videos_with_liked_only(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     liked_video = create_video(
         id="1",
@@ -655,7 +649,6 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     create_and_login_user,
     create_google_account,
     create_channel,
-    create_subscription,
     create_video_category,
     create_video,
     create_video_like,
@@ -671,7 +664,6 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     channel = create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = create_video_category(id=1, name="category")
     videos = list(
         map(

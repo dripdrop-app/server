@@ -31,7 +31,7 @@ class MusicTasker:
     def __init__(self) -> None:
         self.JOB_DIR = "music_jobs"
 
-    def create_job_folder(self, job: MusicJob = ...):
+    def _create_job_folder(self, job: MusicJob = ...):
         job_path = os.path.join(self.JOB_DIR, job.id)
         try:
             os.mkdir(self.JOB_DIR)
@@ -40,7 +40,7 @@ class MusicTasker:
         os.mkdir(job_path)
         return job_path
 
-    def retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
+    def _retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
         filename = None
         if job.filename_url:
             res = requests.get(job.filename_url)
@@ -71,7 +71,7 @@ class MusicTasker:
             )
         return filename
 
-    def retrieve_artwork(self, job: MusicJob = ...):
+    def _retrieve_artwork(self, job: MusicJob = ...):
         if job.artwork_url:
             try:
                 imageData = image_downloader_service.download_image(
@@ -83,7 +83,7 @@ class MusicTasker:
                 logger.exception(traceback.format_exc())
         return None
 
-    def update_audio_tags(
+    def _update_audio_tags(
         self,
         job: MusicJob = ...,
         filename: str = ...,
@@ -109,10 +109,10 @@ class MusicTasker:
             raise Exception(f"Job with id ({job_id}) not found")
         job_path = None
         try:
-            job_path = self.create_job_folder(job=job)
-            filename = self.retrieve_audio_file(job_path=job_path, job=job)
-            artwork_info = self.retrieve_artwork(job=job)
-            self.update_audio_tags(
+            job_path = self._create_job_folder(job=job)
+            filename = self._retrieve_audio_file(job_path=job_path, job=job)
+            artwork_info = self._retrieve_artwork(job=job)
+            self._update_audio_tags(
                 job=job,
                 filename=filename,
                 artwork_info=artwork_info,
@@ -141,7 +141,7 @@ class MusicTasker:
                 shutil.rmtree(job_path)
 
     @worker_task
-    def delete_job(self, job_id: str = ..., session: Session = ...):
+    def _delete_job(self, job_id: str = ..., session: Session = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
         results = session.scalars(query)
         job = results.first()
@@ -152,7 +152,7 @@ class MusicTasker:
         session.commit()
 
     @worker_task
-    def delete_jobs(self, session: Session = ...):
+    def delete_old_jobs(self, session: Session = ...):
         limit = datetime.now(tz=settings.timezone) - timedelta(days=14)
         query = select(MusicJob).where(
             MusicJob.created_at < limit,
@@ -161,7 +161,7 @@ class MusicTasker:
         )
         stream = session.scalars(query)
         for job in stream.yield_per(10):
-            queue.enqueue(self.delete_job, kwargs={"job_id": job.id}, at_front=True)
+            queue.enqueue(self._delete_job, kwargs={"job_id": job.id}, at_front=True)
 
 
 music_tasker = MusicTasker()

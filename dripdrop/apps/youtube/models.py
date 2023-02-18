@@ -4,7 +4,7 @@ from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import database
+from dripdrop.database import database, Session
 from dripdrop.models.base import Base, ModelBaseMixin
 
 
@@ -178,16 +178,19 @@ class YoutubeVideoWatch(ModelBaseMixin, Base):
 
 
 @contextmanager
-def create_temp_subscriptions_table(email: str = ...):
+def create_temp_subscriptions_table(email: str = ..., session: Session = ...):
     class TempSubscription(Base):
         __tablename__ = f"temp_table_user_{email}_subscriptions"
 
         id: Mapped[str] = mapped_column(primary_key=True, nullable=False)
 
     try:
+        session.commit()
         TempSubscription.__table__.create(bind=database.engine)
         yield TempSubscription
     except Exception as e:
+        session.rollback()
         raise e
     finally:
+        session.commit()
         TempSubscription.__table__.drop(bind=database.engine)

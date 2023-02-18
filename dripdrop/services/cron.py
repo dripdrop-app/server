@@ -1,4 +1,3 @@
-from asgiref.sync import sync_to_async
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from rq.registry import ScheduledJobRegistry
@@ -20,7 +19,7 @@ class CronService:
 
     def run_cron_jobs(self):
         video_categories_job = queue.enqueue(
-            youtube_tasker.update_youtube_video_categories,
+            youtube_tasker.update_video_categories,
             kwargs={"cron": True},
         )
         update_subscriptions_job = queue.enqueue(
@@ -28,22 +27,18 @@ class CronService:
             depends_on=video_categories_job,
         )
         subscribed_channels_meta_job = queue.enqueue(
-            youtube_tasker.update_subscribed_channels_meta,
+            youtube_tasker.update_channels_meta,
             depends_on=update_subscriptions_job,
         )
         subscribed_channels_videos_job = queue.enqueue(
-            youtube_tasker.update_subscribed_channels_videos,
+            youtube_tasker.update_channels_videos,
             depends_on=subscribed_channels_meta_job,
         )
         queue.enqueue(
             youtube_tasker.delete_old_channels,
             depends_on=subscribed_channels_videos_job,
         )
-        queue.enqueue(music_tasker.delete_jobs)
-
-    async def async_run_cron_jobs(self):
-        run_cron_jobs = sync_to_async(self.run_cron_jobs)
-        return await run_cron_jobs()
+        queue.enqueue(music_tasker.delete_old_jobs)
 
     def create_cron_job(
         self,
@@ -56,10 +51,7 @@ class CronService:
         cron = croniter(cron_string, datetime.now(est))
         cron.get_next()
         next_run_time = cron.get_current(ret_type=datetime)
-        if function.__name__:
-            logger.info(f"Scheduling {function.__name__} to run at {next_run_time}")
-        else:
-            logger.info(f"Scheduling {function} to run at {next_run_time}")
+        logger.info(f"Scheduling {function.__name__} to run at {next_run_time}")
         job = queue.enqueue_at(
             next_run_time,
             function,
@@ -87,17 +79,13 @@ class CronService:
                     scheduled_registry.remove(job_id, delete_job=True)
                 self.create_cron_job(
                     "0 0 * * *",
-                    youtube_tasker.update_youtube_video_categories,
+                    youtube_tasker.update_video_categories,
                     kwargs={"cron": True},
                 )
-                self.create_cron_job("0 0 * * *", music_tasker.delete_jobs)
+                self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
                 self.create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
-                self.create_cron_job(
-                    "30 0 * * *", youtube_tasker.update_subscribed_channels_meta
-                )
-                self.create_cron_job(
-                    "0 1 * * *", youtube_tasker.update_subscribed_channels_videos
-                )
+                self.create_cron_job("30 0 * * *", youtube_tasker.update_channels_meta)
+                self.create_cron_job("0 1 * * *", youtube_tasker.update_channels_videos)
                 self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
 
     async def end_cron_jobs(self):

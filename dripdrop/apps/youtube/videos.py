@@ -157,7 +157,7 @@ async def get_youtube_videos(
         queued_only=queued_only,
         offset=(page - 1) * per_page,
         limit=per_page,
-        subscribed_only=channel_id is None,
+        subscribed_only=channel_id is None and not liked_only and not queued_only,
     )
     if page > total_pages and page != 1:
         raise HTTPException(
