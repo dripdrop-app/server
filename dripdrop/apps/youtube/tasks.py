@@ -115,7 +115,7 @@ class YoutubeTasker:
         channels_info = google_api_service.get_channels_info(channel_ids=channel_ids)
         for channel_info in channels_info:
             try:
-                self.add_update_channel(channel=channel_info, session=session)
+                self._add_update_channel(channel=channel_info, session=session)
             except Exception:
                 logger.exception(traceback.format_exc())
 
@@ -256,7 +256,9 @@ class YoutubeTasker:
             videos_info = google_api_service.get_videos_info(video_ids=video_ids)
             for video_info in videos_info:
                 try:
-                    new_video = self.add_update_video(video=video_info, session=session)
+                    new_video = self._add_update_video(
+                        video=video_info, session=session
+                    )
                     if new_video:
                         new_videos.append(video_info["id"])
                 except Exception:
