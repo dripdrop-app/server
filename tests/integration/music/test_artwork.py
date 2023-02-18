@@ -16,7 +16,7 @@ def test_artwork_when_not_logged_in(client: TestClient):
 def test_artwork_with_invalid_url(client: TestClient, create_and_login_user):
     create_and_login_user(email="user@gmail.com", password="password")
     response = client.get(ARTWORK_URL, params={"artwork_url": "https://invalidurl"})
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_artwork_with_valid_image_url(

@@ -1,13 +1,13 @@
 import traceback
 from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, status
+from pydantic import HttpUrl
 
+from dripdrop.services.audio import audio_service
 from dripdrop.dependencies import get_authenticated_user
 from dripdrop.logging import logger
 from dripdrop.services.image_downloader import image_downloader_service
-from dripdrop.services.youtube_downloader import youtuber_downloader_service
 
 from .jobs import jobs_api
-from .models import youtube_regex
 from .responses import (
     GroupingResponse,
     ArtworkUrlResponse,
@@ -32,11 +32,10 @@ app.include_router(router=jobs_api)
         status.HTTP_400_BAD_REQUEST: {"description": ErrorMessages.GROUPING_ERROR}
     },
 )
-async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
+async def get_grouping(video_url: HttpUrl = Query(...)):
     try:
-        uploader = await youtuber_downloader_service.async_extract_info(
-            link=youtube_url
-        )
+        info = await audio_service.async_extract_info(link=video_url)
+        uploader = info.get("uploader")
         return GroupingResponse(grouping=uploader)
     except Exception:
         logger.exception(traceback.format_exc())
@@ -52,7 +51,7 @@ async def get_grouping(youtube_url: str = Query(..., regex=youtube_regex)):
         status.HTTP_400_BAD_REQUEST: {"description": ErrorMessages.ARTWORK_ERROR}
     },
 )
-async def get_artwork(artwork_url: str = Query(...)):
+async def get_artwork(artwork_url: HttpUrl = Query(...)):
     try:
         artwork_url = await image_downloader_service.async_resolve_artwork(
             artwork=artwork_url

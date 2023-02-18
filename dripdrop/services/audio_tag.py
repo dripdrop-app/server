@@ -2,7 +2,6 @@ import base64
 import io
 import mutagen.id3
 import re
-from typing import Optional
 
 
 class AudioTagService:
@@ -15,7 +14,7 @@ class AudioTagService:
     def __init__(self, file_path: str = ...):
         self.tags = mutagen.id3.ID3(file_path)
 
-    def _get_tag(self, tag_name: str = ...) -> Optional[str]:
+    def _get_tag(self, tag_name: str = ...) -> str | None:
         tag = self.tags.get(tag_name)
         if tag:
             return tag.text[0]
@@ -73,7 +72,7 @@ class AudioTagService:
         self.tags.add(mutagen.id3.APIC(mime=mime_type, data=data))
         self.tags.save()
 
-    def get_artwork_as_base64(self) -> Optional[str]:
+    def get_artwork_as_base64(self):
         tag = self.artwork
         if tag:
             buffer = io.BytesIO(tag.data)

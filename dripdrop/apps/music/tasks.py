@@ -5,7 +5,6 @@ import requests
 import shutil
 import traceback
 from datetime import datetime, timedelta
-from pydub import AudioSegment
 from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
@@ -17,7 +16,7 @@ from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.audio_tag import AudioTagService
 from dripdrop.services.image_downloader import image_downloader_service
 from dripdrop.services.redis import RedisChannels
-from dripdrop.services.youtube_downloader import youtuber_downloader_service
+from dripdrop.services.audio import audio_service
 from dripdrop.settings import settings
 from dripdrop.rq import queue
 from dripdrop.utils import worker_task
@@ -51,24 +50,12 @@ class MusicTasker:
                 f.write(res.content)
 
             new_audio_file_path = f"{os.path.splitext(audio_file_path)[0]}.mp3"
-            AudioSegment.from_file(audio_file_path).export(
-                new_audio_file_path,
-                format="mp3",
-                bitrate="320k",
+            audio_service.convert_to_mp3(
+                file_path=audio_file_path, new_file_path=new_audio_file_path
             )
             return new_audio_file_path
-        elif job.youtube_url:
-
-            def updateProgress(d):
-                nonlocal filename
-                if d["status"] == "finished":
-                    filename = f'{os.path.splitext(d["filename"])[0]}.mp3'
-
-            youtuber_downloader_service.yt_download(
-                link=job.youtube_url,
-                progress_hooks=[updateProgress],
-                folder=job_path,
-            )
+        elif job.video_url:
+            filename = audio_service.download(link=job.video_url, folder=job_path)
         return filename
 
     def _retrieve_artwork(self, job: MusicJob = ...):

@@ -92,7 +92,7 @@ def test_deleting_file_job_with_uploaded_artwork(
 
 
 def test_deleting_youtube_job(
-    client: TestClient, create_and_login_user, test_youtube_url, get_completed_job
+    client: TestClient, create_and_login_user, test_video_url, get_completed_job
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
     response = client.post(
@@ -102,7 +102,7 @@ def test_deleting_youtube_job(
             "artist": "artist",
             "album": "album",
             "grouping": "grouping",
-            "youtube_url": test_youtube_url,
+            "video_url": test_video_url,
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -114,7 +114,7 @@ def test_deleting_youtube_job(
 def test_deleting_youtube_job_with_artwork(
     client: TestClient,
     create_and_login_user,
-    test_youtube_url,
+    test_video_url,
     test_base64_image,
     get_completed_job,
 ):
@@ -126,7 +126,7 @@ def test_deleting_youtube_job_with_artwork(
             "artist": "artist",
             "album": "album",
             "grouping": "grouping",
-            "youtube_url": test_youtube_url,
+            "video_url": test_video_url,
             "artwork_url": test_base64_image,
         },
     )

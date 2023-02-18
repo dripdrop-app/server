@@ -6,7 +6,7 @@ import traceback
 import uuid
 from asgiref.sync import sync_to_async
 from fastapi import UploadFile
-from typing import Optional
+from pydantic import HttpUrl
 
 from dripdrop.logging import logger
 from dripdrop.services.audio_tag import AudioTagService
@@ -16,7 +16,7 @@ from .models import MusicJob
 from .responses import TagsResponse
 
 
-async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...):
+async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
     artwork_filename = None
     if artwork_url:
         is_base64 = re.search("^data:image/", artwork_url)
@@ -34,6 +34,11 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: Optional[str] = ...
                 content_type=f"image/{extension}",
             )
             artwork_url = Boto3Service.resolve_url(filename=artwork_filename)
+        else:
+            try:
+                HttpUrl.validate(artwork_url)
+            except Exception:
+                artwork_url = None
     return artwork_url, artwork_filename
 
 

@@ -24,7 +24,7 @@ def test_audio_file_url():
 
 
 @pytest.fixture
-def test_youtube_url():
+def test_video_url():
     return "https://www.youtube.com/watch?v=wX49jNyqq04"
 
 
@@ -58,7 +58,7 @@ def create_music_job(session: Session):
         artwork_filename: str | None = None,
         original_filename: str | None = None,
         filename_url: str | None = None,
-        youtube_url: str | None = None,
+        video_url: str | None = None,
         download_filename: str | None = None,
         download_url: str | None = None,
         title: str = ...,
@@ -76,7 +76,7 @@ def create_music_job(session: Session):
             artwork_filename=artwork_filename,
             original_filename=original_filename,
             filename_url=filename_url,
-            youtube_url=youtube_url,
+            video_url=video_url,
             download_filename=download_filename,
             download_url=download_url,
             title=title,

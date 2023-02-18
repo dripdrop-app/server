@@ -34,10 +34,7 @@ class GoogleAPIService:
             "include_granted_scopes": "true",
             "state": user_id,
         }
-        return {
-            "params": params,
-            "url": f"https://accounts.google.com/o/oauth2/v2/auth?{parse.urlencode(params)}",
-        }
+        return f"https://accounts.google.com/o/oauth2/v2/auth?{parse.urlencode(params)}"
 
     def get_oauth_tokens(self, callback_url: str = ..., code: str = ...):
         if settings.env == ENV.PRODUCTION:

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 CREATE_URL = "/api/music/jobs/create"
 
 
-def test_creating_youtube_job_with_invalid_youtube_url(
+def test_creating_video_job_with_invalid_video_url(
     client: TestClient, create_and_login_user
 ):
     create_and_login_user(email="user@gmail.com", password="password")
@@ -16,16 +16,16 @@ def test_creating_youtube_job_with_invalid_youtube_url(
             "artist": "artist",
             "album": "album",
             "grouping": "grouping",
-            "youtube_url": "https://www.youtube.com/invalidurl",
+            "video_url": "not_valid",
         },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_creating_youtube_job_with_valid_youtube_url(
+def test_creating_video_job_with_valid_video_url(
     client: TestClient,
     create_and_login_user,
-    test_youtube_url,
+    test_video_url,
     get_completed_job,
 ):
     user = create_and_login_user(email="user@gmail.com", password="password")
@@ -36,7 +36,7 @@ def test_creating_youtube_job_with_valid_youtube_url(
             "artist": "artist",
             "album": "album",
             "grouping": "grouping",
-            "youtube_url": test_youtube_url,
+            "video_url": test_video_url,
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -49,10 +49,10 @@ def test_creating_youtube_job_with_valid_youtube_url(
     assert job.failed is False
 
 
-def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
+def test_creating_video_job_with_valid_video_url_and_artwork_url(
     client: TestClient,
     create_and_login_user,
-    test_youtube_url,
+    test_video_url,
     test_image_url,
     get_completed_job,
 ):
@@ -64,7 +64,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
             "artist": "artist",
             "album": "album",
             "grouping": "grouping",
-            "youtube_url": test_youtube_url,
+            "video_url": test_video_url,
             "artwork_url": test_image_url,
         },
     )
@@ -80,10 +80,10 @@ def test_creating_youtube_job_with_valid_youtube_url_and_artwork_url(
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
+def test_creating_video_job_with_valid_video_url_and_base64_artwork(
     client: TestClient,
     create_and_login_user,
-    test_youtube_url,
+    test_video_url,
     test_base64_image,
     get_completed_job,
 ):
@@ -95,7 +95,7 @@ def test_creating_youtube_job_with_valid_youtube_url_and_base64_artwork(
             "artist": "artist",
             "album": "album",
             "grouping": "grouping",
-            "youtube_url": test_youtube_url,
+            "video_url": test_video_url,
             "artwork_url": test_base64_image,
         },
     )

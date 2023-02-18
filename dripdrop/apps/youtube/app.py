@@ -102,7 +102,7 @@ async def get_youtube_account(
 async def create_oauth_link(
     request: Request, user: User = Depends(get_authenticated_user)
 ):
-    oauth = google_api_service.create_oauth_url(
+    oauth_url = google_api_service.create_oauth_url(
         f"{request.base_url}api/youtube/googleoauth2", user.email
     )
-    return PlainTextResponse(oauth["url"])
+    return PlainTextResponse(content=oauth_url)

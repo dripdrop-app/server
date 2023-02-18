@@ -18,7 +18,9 @@ from fastapi import (
     File,
 )
 from fastapi.encoders import jsonable_encoder
+from pydantic import HttpUrl
 from sqlalchemy import select, func
+from typing import Optional
 
 from dripdrop.dependencies import (
     get_authenticated_user,
@@ -32,7 +34,7 @@ from dripdrop.rq import queue
 from dripdrop.services.redis import redis_service, RedisChannels
 from dripdrop.settings import settings
 
-from .models import MusicJob, youtube_regex
+from .models import MusicJob
 from .responses import (
     MusicChannelResponse,
     JobsResponse,
@@ -119,22 +121,22 @@ async def listen_jobs(
     responses={status.HTTP_500_INTERNAL_SERVER_ERROR: {}},
 )
 async def create_job(
-    file: UploadFile | None = File(None),
-    youtube_url: str | None = Form(None, regex=youtube_regex),
-    artwork_url: str | None = Form(None),
+    file: Optional[UploadFile] = File(None),
+    video_url: Optional[HttpUrl] = Form(None),
+    artwork_url: Optional[str] = Form(None),
     title: str = Form(...),
     artist: str = Form(...),
     album: str = Form(...),
-    grouping: str | None = Form(None),
+    grouping: Optional[str] = Form(None),
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    if file and youtube_url:
+    if file and video_url:
         raise HTTPException(
             detail=ErrorMessages.CREATE_JOB_BOTH_DEFINED,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
-    elif file is None and youtube_url is None:
+    elif file is None and video_url is None:
         raise HTTPException(
             detail=ErrorMessages.CREATE_JOB_NOT_DEFINED,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -172,7 +174,7 @@ async def create_job(
             artwork_filename=artwork_filename,
             original_filename=filename,
             filename_url=filename_url,
-            youtube_url=youtube_url,
+            video_url=video_url,
             title=title,
             artist=artist,
             album=album,

@@ -5,8 +5,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base, ModelBaseMixin
 
-youtube_regex = r"^https:\/\/(www\.)?youtube\.com\/watch\?v=.+"
-
 
 class MusicJob(ModelBaseMixin, Base):
     __tablename__ = "music_jobs"
@@ -25,7 +23,7 @@ class MusicJob(ModelBaseMixin, Base):
     artwork_filename: Mapped[str | None] = mapped_column(nullable=True)
     original_filename: Mapped[str | None] = mapped_column(nullable=True)
     filename_url: Mapped[str | None] = mapped_column(nullable=True)
-    youtube_url: Mapped[str | None] = mapped_column(nullable=True)
+    video_url: Mapped[str | None] = mapped_column(nullable=True)
     download_filename: Mapped[str | None] = mapped_column(nullable=True)
     download_url: Mapped[str | None] = mapped_column(nullable=True)
     title: Mapped[str] = mapped_column(nullable=False)
