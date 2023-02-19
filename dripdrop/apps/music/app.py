@@ -14,7 +14,7 @@ from .responses import (
     TagsResponse,
     ErrorMessages,
 )
-from .utils import async_read_tags
+from .utils import read_tags
 
 
 app = FastAPI(
@@ -53,7 +53,7 @@ async def get_grouping(video_url: HttpUrl = Query(...)):
 )
 async def get_artwork(artwork_url: HttpUrl = Query(...)):
     try:
-        artwork_url = await image_downloader_service.async_resolve_artwork(
+        artwork_url = await image_downloader_service.resolve_artwork(
             artwork=artwork_url
         )
         return ArtworkUrlResponse(artwork_url=artwork_url)
@@ -66,5 +66,5 @@ async def get_artwork(artwork_url: HttpUrl = Query(...)):
 
 @app.post("/tags", response_model=TagsResponse)
 async def get_tags(file: UploadFile = File(...)):
-    tags = await async_read_tags(file=await file.read(), filename=file.filename)
+    tags = await read_tags(file=await file.read(), filename=file.filename)
     return tags

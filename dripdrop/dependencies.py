@@ -8,15 +8,15 @@ from typing import Union
 from dripdrop.apps.authentication.models import User
 
 from .database import database, AsyncSession
-from .settings import settings
 from .logging import logger
+from .settings import settings
 
 ALGORITHM = "HS256"
 COOKIE_NAME = "token"
 
 
-async def create_db_session() -> AsyncSession:
-    async with database.async_create_session() as session:
+async def create_db_session():
+    async with database.create_session() as session:
         yield session
 
 

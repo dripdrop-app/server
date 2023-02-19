@@ -1,7 +1,7 @@
-import requests
 from typing import List
 from urllib import parse
 
+from dripdrop.http_client import http_client
 from dripdrop.settings import settings, ENV
 from dripdrop.logging import logger
 
@@ -36,7 +36,7 @@ class GoogleAPIService:
         }
         return f"https://accounts.google.com/o/oauth2/v2/auth?{parse.urlencode(params)}"
 
-    def get_oauth_tokens(self, callback_url: str = ..., code: str = ...):
+    async def get_oauth_tokens(self, callback_url: str = ..., code: str = ...):
         if settings.env == ENV.PRODUCTION:
             callback_url = callback_url.replace("http", "https", 1)
         params = {
@@ -46,65 +46,65 @@ class GoogleAPIService:
             "redirect_uri": callback_url,
             "grant_type": "authorization_code",
         }
-        response = requests.post(
+        response = await http_client.post(
             "https://oauth2.googleapis.com/token",
             data=params,
             headers=self.base_headers,
         )
-        if response.ok:
+        if response.is_success:
             return response.json()
         logger.warning(response.text)
         raise Exception("Failed to retrieve oauth tokens")
 
-    def refresh_access_token(self, refresh_token: str = ...):
+    async def refresh_access_token(self, refresh_token: str = ...):
         params = {
             "client_id": settings.google_client_id,
             "client_secret": settings.google_client_secret,
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
         }
-        response = requests.post(
+        response = await http_client.post(
             "https://oauth2.googleapis.com/token",
             params=params,
             headers=self.base_headers,
         )
-        if response.ok:
+        if response.is_success:
             return response.json()
         logger.warning(response.text)
         raise Exception("Failed to refresh access token")
 
-    def get_user_email(self, access_token: str = ...):
+    async def get_user_email(self, access_token: str = ...):
         params = {"fields": "email"}
         headers = {"Authorization": f"Bearer {access_token}", **self.base_headers}
-        response = requests.get(
+        response = await http_client.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
             headers=headers,
             params=params,
         )
-        if response.ok:
+        if response.is_success:
             json = response.json()
             return json.get("email")
         logger.warning(response.text)
         raise Exception("Failed to retrieve email")
 
-    def get_video_categories(self):
+    async def get_video_categories(self):
         params = {
             "key": settings.google_api_key,
             "part": "snippet",
             "regionCode": "US",
         }
-        response = requests.get(
+        response = await http_client.get(
             f"{GoogleAPIService.YOUTUBE_API_URL}/videoCategories",
             params=params,
             headers=self.base_headers,
         )
-        if response.ok:
+        if response.is_success:
             json = response.json()
             return json.get("items", [])
         logger.warning(response.text)
         raise Exception("Failed to get video categories")
 
-    def get_user_subscriptions(self, access_token: str = ...):
+    async def get_user_subscriptions(self, access_token: str = ...):
         params = {
             "part": "snippet",
             "mine": True,
@@ -113,12 +113,12 @@ class GoogleAPIService:
         }
         headers = {"Authorization": f"Bearer {access_token}", **self.base_headers}
         while params.get("pageToken") is not None:
-            response = requests.get(
+            response = await http_client.get(
                 f"{GoogleAPIService.YOUTUBE_API_URL}/subscriptions",
                 params=params,
                 headers=headers,
             )
-            if response.ok:
+            if response.is_success:
                 json = response.json()
                 yield json.get("items")
                 params["pageToken"] = json.get("nextPageToken", None)
@@ -126,25 +126,25 @@ class GoogleAPIService:
                 logger.warning(response.text)
                 raise Exception("Failed to get user subscriptions")
 
-    def get_channels_info(self, channel_ids: List[str] = ...):
+    async def get_channels_info(self, channel_ids: List[str] = ...):
         params = {
             "key": settings.google_api_key,
             "part": "snippet,contentDetails",
             "id": ",".join(channel_ids),
             "maxResults": 50,
         }
-        response = requests.get(
+        response = await http_client.get(
             f"{GoogleAPIService.YOUTUBE_API_URL}/channels",
             params=params,
             headers=self.base_headers,
         )
-        if response.ok:
+        if response.is_success:
             json = response.json()
             return json.get("items", [])
         logger.warning(response.text)
         raise Exception("Failed to get channel info")
 
-    def get_playlist_videos(self, playlist_id: str = ...):
+    async def get_playlist_videos(self, playlist_id: str = ...):
         params = {
             "key": settings.google_api_key,
             "part": "contentDetails",
@@ -153,12 +153,12 @@ class GoogleAPIService:
             "pageToken": "",
         }
         while params.get("pageToken") is not None:
-            response = requests.get(
+            response = await http_client.get(
                 f"{GoogleAPIService.YOUTUBE_API_URL}/playlistItems",
                 params=params,
                 headers=self.base_headers,
             )
-            if response.ok:
+            if response.is_success:
                 json = response.json()
                 yield json.get("items", [])
                 params["pageToken"] = json.get("nextPageToken", None)
@@ -166,17 +166,17 @@ class GoogleAPIService:
                 logger.warning(response.text)
                 raise Exception("Failed to get playlist videos")
 
-    def get_videos_info(self, video_ids: str = ...):
+    async def get_videos_info(self, video_ids: str = ...):
         params = {
             "key": settings.google_api_key,
             "part": "snippet",
             "id": ",".join(video_ids),
             "maxResults": 50,
         }
-        response = requests.get(
+        response = await http_client.get(
             f"{GoogleAPIService.YOUTUBE_API_URL}/videos", params=params
         )
-        if response.ok:
+        if response.is_success:
             json = response.json()
             return json.get("items", [])
         logger.warning(response.text)

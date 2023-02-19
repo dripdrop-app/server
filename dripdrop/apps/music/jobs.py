@@ -29,7 +29,7 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.logging import logger
-from dripdrop.redis import async_redis
+from dripdrop.redis import redis
 from dripdrop.rq import enqueue
 from dripdrop.services.redis import redis_service, RedisChannels
 from dripdrop.settings import settings
@@ -185,7 +185,7 @@ async def create_job(
     )
     await session.commit()
     await enqueue(function=music_tasker.run_job, kwargs={"job_id": job_id})
-    await async_redis.publish(
+    await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
         json.dumps(MusicChannelResponse(job_id=job_id).dict()),
     )

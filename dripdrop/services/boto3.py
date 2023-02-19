@@ -27,61 +27,42 @@ class Boto3Service:
             aws_secret_access_key=settings.aws_secret_access_key,
         )
 
-    def upload_file(
+    async def upload_file(
         self,
         filename: str = ...,
         body: bytes = ...,
         content_type: str = ...,
         acl="public-read",
-    ):
-        self._client.put_object(
-            Bucket=Boto3Service.S3_BUCKET,
-            Key=filename,
-            Body=body,
-            ACL=acl,
-            ContentType=content_type,
-        )
+    ) -> None:
+        def _upload_file():
+            self._client.put_object(
+                Bucket=Boto3Service.S3_BUCKET,
+                Key=filename,
+                Body=body,
+                ACL=acl,
+                ContentType=content_type,
+            )
 
-    async def async_upload_file(
-        self,
-        filename: str = ...,
-        body: bytes = ...,
-        content_type: str = ...,
-        acl="public-read",
-    ):
-        upload_file = sync_to_async(self.upload_file)
-        return await upload_file(
-            filename=filename,
-            body=body,
-            content_type=content_type,
-            acl=acl,
-        )
+        return await sync_to_async(_upload_file)()
 
-    def delete_file(self, filename: str = ...):
-        self._client.delete_object(Bucket=Boto3Service.S3_BUCKET, Key=filename)
+    async def delete_file(self, filename: str = ...) -> str:
+        def _delete_file():
+            self._client.delete_object(Bucket=Boto3Service.S3_BUCKET, Key=filename)
 
-    async def async_delete_file(self, filename: str = ...):
-        delete_file = sync_to_async(self.delete_file)
-        return await delete_file(filename=filename)
+        return await sync_to_async(_delete_file)()
 
-    def list_objects(self):
+    async def list_objects(self):
         continuation_token = ""
         while True:
             params = {"Bucket": Boto3Service.S3_BUCKET}
             if continuation_token:
                 params["ContinuationToken"] = continuation_token
-            print(self._client.__dict__)
-            response = self._client.list_objects_v2(**params)
+            response = await sync_to_async(self._client.list_objects_v2)(**params)
             objects = map(lambda object: object["Key"], response["Contents"])
             yield objects
             if not response.get("IsTruncated"):
                 break
             continuation_token = response.get("NextContinuationToken", "")
-
-    async def async_list_objects(self):
-        list_objects = sync_to_async(self.list_objects)
-        async for objects in list_objects():
-            yield objects
 
 
 boto3_service = Boto3Service()

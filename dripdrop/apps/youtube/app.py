@@ -21,7 +21,7 @@ from .models import GoogleAccount
 from .responses import AccountResponse
 from .subscriptions import subscriptions_api
 from .tasks import youtube_tasker
-from .utils import async_update_google_access_token
+from .utils import update_google_access_token
 from .videos import videos_api
 
 app = FastAPI(
@@ -91,7 +91,7 @@ async def get_youtube_account(
     session: AsyncSession = Depends(create_db_session),
 ):
     if settings.env != ENV.DEVELOPMENT:
-        await async_update_google_access_token(
+        await update_google_access_token(
             google_email=google_account.email, session=session
         )
     await session.refresh(google_account)

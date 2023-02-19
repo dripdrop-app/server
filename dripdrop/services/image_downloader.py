@@ -1,27 +1,27 @@
 import os
-import requests
-from asgiref.sync import sync_to_async
 from urllib import parse
+
+from dripdrop.http_client import http_client
 
 
 class ImageDownloaderService:
     def __init__(self):
         self.image_extensions = [".jpg", ".ico", "png", ".jpeg"]
 
-    def download_image(self, artwork: str = ...):
-        data = requests.get(artwork)
-        content_type = data.headers.get("Content-Type", None)
+    async def download_image(self, artwork: str = ...):
+        response = await http_client.get(artwork)
+        content_type = response.headers.get("Content-Type", None)
         if content_type:
             if content_type.split("/")[0] == "image":
-                return data.content
+                return response.content
 
     def is_valid_url(self, url: str = ...) -> bool:
         u = parse.urlparse(url)
         # Check if scheme(http or https) and netloc(domain) are not empty
         return u[0] != "" and u[1] != ""
 
-    def _get_images(self, url: str = ...) -> list:
-        response = requests.get(
+    async def _get_images(self, url: str = ...) -> list:
+        response = await http_client.get(
             url,
             headers={
                 "User-Agent": (
@@ -43,17 +43,13 @@ class ImageDownloaderService:
                             links.add(element.replace("\\", ""))
         return links
 
-    def resolve_artwork(self, artwork: str = ...):
+    async def resolve_artwork(self, artwork: str = ...):
         if artwork.endswith(tuple(self.image_extensions)):
             return artwork
-        img_links = self._get_images(artwork)
+        img_links = await self._get_images(artwork)
         for img_link in img_links:
             if "artworks" in img_link and "500x500" in img_link:
                 return img_link
-
-    async def async_resolve_artwork(self, artwork: str = ...):
-        resolve_artwork = sync_to_async(self.resolve_artwork)
-        return await resolve_artwork(artwork=artwork)
 
 
 image_downloader_service = ImageDownloaderService()

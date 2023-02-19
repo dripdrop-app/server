@@ -10,6 +10,7 @@ from .apps.admin.app import app as admin_app
 from .apps.authentication.app import app as auth_app
 from .apps.music.app import app as music_app
 from .apps.youtube.app import app as youtube_app
+from .http_client import http_client
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(
@@ -28,7 +29,7 @@ api_router.include_router(
 app = FastAPI(
     title="DripDrop",
     on_startup=[cron_service.start_cron_jobs],
-    on_shutdown=[cron_service.end_cron_jobs],
+    on_shutdown=[cron_service.end_cron_jobs, http_client.aclose],
     routes=api_router.routes,
 )
 

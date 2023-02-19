@@ -10,13 +10,13 @@ from yt_dlp.utils import sanitize_filename
 
 from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
-from dripdrop.redis import async_redis
 from dripdrop.services.boto3 import boto3_service, Boto3Service
 from dripdrop.services.audio_tag import AudioTagService
 from dripdrop.services.image_downloader import image_downloader_service
 from dripdrop.services.redis import RedisChannels
 from dripdrop.services.audio import audio_service
 from dripdrop.settings import settings
+from dripdrop.redis import redis
 from dripdrop.rq import enqueue
 from dripdrop.utils import worker_task
 
@@ -57,10 +57,10 @@ class MusicTasker:
             filename = audio_service.download(link=job.video_url, folder=job_path)
         return filename
 
-    def _retrieve_artwork(self, job: MusicJob = ...):
+    async def _retrieve_artwork(self, job: MusicJob = ...):
         if job.artwork_url:
             try:
-                imageData = image_downloader_service.download_image(
+                imageData = await image_downloader_service.download_image(
                     artwork=job.artwork_url
                 )
                 extension = os.path.splitext(job.artwork_url)[0]
@@ -97,7 +97,7 @@ class MusicTasker:
         try:
             job_path = self._create_job_folder(job=job)
             filename = self._retrieve_audio_file(job_path=job_path, job=job)
-            artwork_info = self._retrieve_artwork(job=job)
+            artwork_info = await self._retrieve_artwork(job=job)
             self._update_audio_tags(
                 job=job,
                 filename=filename,
@@ -106,7 +106,7 @@ class MusicTasker:
             new_filename = sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
             new_filename = f"{Boto3Service.S3_MUSIC_FOLDER}/{job.id}/{new_filename}"
             with open(filename, "rb") as file:
-                boto3_service.upload_file(
+                await boto3_service.upload_file(
                     filename=new_filename,
                     body=file.read(),
                     content_type="audio/mpeg",
@@ -119,7 +119,7 @@ class MusicTasker:
             logger.exception(traceback.format_exc())
         finally:
             await session.commit()
-            await async_redis.publish(
+            await redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL,
                 json.dumps(MusicChannelResponse(job_id=job_id).dict()),
             )

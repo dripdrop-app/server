@@ -6,7 +6,7 @@ from typing import Callable
 from dripdrop.apps.music.tasks import music_tasker
 from dripdrop.apps.youtube.tasks import youtube_tasker
 from dripdrop.logging import logger
-from dripdrop.redis import async_redis
+from dripdrop.redis import redis
 from dripdrop.rq import queue, enqueue
 from dripdrop.settings import settings, ENV
 
@@ -71,9 +71,9 @@ class CronService:
 
     async def start_cron_jobs(self):
         if settings.env == ENV.PRODUCTION:
-            crons_added = await async_redis.get(self.CRONS_ADDED)
+            crons_added = await redis.get(self.CRONS_ADDED)
             if not crons_added:
-                await async_redis.set(self.CRONS_ADDED, 1)
+                await redis.set(self.CRONS_ADDED, 1)
                 for job_id in scheduled_registry.get_job_ids():
                     logger.info(f"Removing Job: {job_id}")
                     scheduled_registry.remove(job_id, delete_job=True)
@@ -90,7 +90,7 @@ class CronService:
 
     async def end_cron_jobs(self):
         if settings.env == ENV.PRODUCTION:
-            await async_redis.delete(self.CRONS_ADDED)
+            await redis.delete(self.CRONS_ADDED)
 
 
 cron_service = CronService()

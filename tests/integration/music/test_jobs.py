@@ -1,54 +1,54 @@
 from datetime import datetime
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from dripdrop.settings import settings
 
 JOBS_URL = "/api/music/jobs"
 
 
-def test_jobs_when_not_logged_in(client: TestClient):
-    response = client.get(f"{JOBS_URL}/1/10")
+async def test_jobs_when_not_logged_in(client: AsyncClient):
+    response = await client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_jobs_with_no_results(client: TestClient, create_and_login_user):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.get(f"{JOBS_URL}/1/10")
+async def test_jobs_with_no_results(client: AsyncClient, create_and_login_user):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"totalPages": 0, "jobs": []}
 
 
-def test_jobs_with_out_of_range_page(
-    client: TestClient, create_and_login_user, create_music_job
+async def test_jobs_with_out_of_range_page(
+    client: AsyncClient, create_and_login_user, create_music_job
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
+    user = await create_and_login_user(email="user@gmail.com", password="password")
     for i in range(2):
-        create_music_job(
+        await create_music_job(
             id=str(i),
             email=user.email,
             title="title",
             artist="artist",
             album="album",
         )
-    response = client.get(f"{JOBS_URL}/3/1")
+    response = await client.get(f"{JOBS_URL}/3/1")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_jobs_with_single_result(
-    client: TestClient,
+async def test_jobs_with_single_result(
+    client: AsyncClient,
     create_and_login_user,
     create_music_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    job = create_music_job(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    job = await create_music_job(
         id="1",
         email=user.email,
         title="title",
         artist="artist",
         album="album",
     )
-    response = client.get(f"{JOBS_URL}/1/10")
+    response = await client.get(f"{JOBS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -76,26 +76,25 @@ def test_jobs_with_single_result(
     }
 
 
-def test_jobs_with_multiple_pages(
-    client: TestClient,
+async def test_jobs_with_multiple_pages(
+    client: AsyncClient,
     create_and_login_user,
     create_music_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    jobs = list(
-        map(
-            lambda i: create_music_job(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    jobs = []
+    for i in range(5):
+        jobs.append(
+            await create_music_job(
                 id=str(i),
                 email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
-            ),
-            range(5),
+            )
         )
-    )
     jobs.sort(key=lambda job: job.created_at, reverse=True)
-    response = client.get(f"{JOBS_URL}/2/2")
+    response = await client.get(f"{JOBS_URL}/2/2")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 3,
@@ -126,28 +125,27 @@ def test_jobs_with_multiple_pages(
     }
 
 
-def test_jobs_with_deleted_jobs(
-    client: TestClient,
+async def test_jobs_with_deleted_jobs(
+    client: AsyncClient,
     create_and_login_user,
     create_music_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    jobs = list(
-        map(
-            lambda i: create_music_job(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    jobs = []
+    for i in range(4):
+        jobs.append(
+            await create_music_job(
                 id=str(i),
                 email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
                 deleted_at=datetime.now(tz=settings.timezone) if i % 2 else None,
-            ),
-            range(4),
+            )
         )
-    )
     jobs = list(filter(lambda job: not job.deleted_at, jobs))
     jobs.sort(key=lambda job: job.created_at, reverse=True)
-    response = client.get(f"{JOBS_URL}/1/4")
+    response = await client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -178,26 +176,26 @@ def test_jobs_with_deleted_jobs(
     }
 
 
-def test_jobs_only_for_logged_in_user(
-    client: TestClient, create_and_login_user, create_user, create_music_job
+async def test_jobs_only_for_logged_in_user(
+    client: AsyncClient, create_and_login_user, create_user, create_music_job
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    other_user = create_user(email="other@gmail.com", password="password")
-    job = create_music_job(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    other_user = await create_user(email="other@gmail.com", password="password")
+    job = await create_music_job(
         id="1",
         email=user.email,
         title="title_1",
         artist="artist",
         album="album",
     )
-    create_music_job(
+    await create_music_job(
         id="2",
         email=other_user.email,
         title="title_2",
         artist="artist",
         album="album",
     )
-    response = client.get(f"{JOBS_URL}/1/4")
+    response = await client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -225,26 +223,25 @@ def test_jobs_only_for_logged_in_user(
     }
 
 
-def test_jobs_are_in_descending_order(
-    client: TestClient,
+async def test_jobs_are_in_descending_order(
+    client: AsyncClient,
     create_and_login_user,
     create_music_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    jobs = list(
-        map(
-            lambda i: create_music_job(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    jobs = []
+    for i in range(4):
+        jobs.append(
+            await create_music_job(
                 id=str(i),
                 email=user.email,
                 title=f"title_{i}",
                 artist="artist",
                 album="album",
-            ),
-            range(4),
+            )
         )
-    )
     jobs.sort(key=lambda job: job.created_at, reverse=True)
-    response = client.get(f"{JOBS_URL}/1/4")
+    response = await client.get(f"{JOBS_URL}/1/4")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,

@@ -28,7 +28,7 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
             artwork_filename = (
                 f"{Boto3Service.S3_ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
             )
-            await boto3_service.async_upload_file(
+            await boto3_service.upload_file(
                 filename=artwork_filename,
                 body=data_bytes,
                 content_type=f"image/{extension}",
@@ -48,7 +48,7 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
     if file:
         filename = f"{Boto3Service.S3_MUSIC_FOLDER}/{job_id}/old/{file.filename}"
         filename_url = Boto3Service.resolve_url(filename=filename)
-        await boto3_service.async_upload_file(
+        await boto3_service.upload_file(
             filename=filename,
             body=await file.read(),
             content_type=file.content_type,
@@ -58,21 +58,21 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
 
 async def cleanup_job(job: MusicJob):
     if job.artwork_filename:
-        await boto3_service.async_delete_file(
+        await boto3_service.delete_file(
             filename=job.artwork_filename,
         )
     if job.download_filename:
-        await boto3_service.async_delete_file(
+        await boto3_service.delete_file(
             filename=job.download_filename,
         )
     if job.original_filename:
-        await boto3_service.async_delete_file(
+        await boto3_service.delete_file(
             filename=job.original_filename,
         )
 
 
-async def async_read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:
-    def create_tags_directory():
+async def read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:
+    def _create_tags_directory():
         TAGS_FOLDER = "tags"
         folder_id = str(uuid.uuid4())
         tag_path = os.path.join(TAGS_FOLDER, folder_id)
@@ -83,14 +83,14 @@ async def async_read_tags(file: bytes = ..., filename: str = ...) -> TagsRespons
         os.mkdir(tag_path)
         return tag_path
 
-    def clean_up(tag_path: str = ...):
+    def _clean_up(tag_path: str = ...):
         try:
             shutil.rmtree(tag_path)
         except Exception:
             pass
 
-    def read_tags(file: bytes = ..., filename: str = ...):
-        tag_path = create_tags_directory()
+    def _read_tags(file: bytes = ..., filename: str = ...):
+        tag_path = _create_tags_directory()
         try:
             file_path = os.path.join(tag_path, filename)
             with open(file_path, "wb") as f:
@@ -102,7 +102,7 @@ async def async_read_tags(file: bytes = ..., filename: str = ...) -> TagsRespons
             album = audio_tags.album
             grouping = audio_tags.grouping
             artwork_url = audio_tags.get_artwork_as_base64()
-            clean_up(tag_path=tag_path)
+            _clean_up(tag_path=tag_path)
             return TagsResponse(
                 title=title,
                 artist=artist,
@@ -111,9 +111,8 @@ async def async_read_tags(file: bytes = ..., filename: str = ...) -> TagsRespons
                 artwork_url=artwork_url,
             )
         except Exception:
-            clean_up(tag_path=tag_path)
+            _clean_up(tag_path=tag_path)
             logger.exception(traceback.format_exc())
             return TagsResponse()
 
-    _read_tags = sync_to_async(read_tags)
-    return await _read_tags(file=file, filename=filename)
+    return await sync_to_async(_read_tags)(file=file, filename=filename)

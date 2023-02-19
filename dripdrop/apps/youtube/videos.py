@@ -35,7 +35,7 @@ videos_api = APIRouter(
 async def get_youtube_video_categories(
     channel_id: str = Query(None),
     session: AsyncSession = Depends(create_db_session),
-    google_account=Depends(get_google_account),
+    google_account: GoogleAccount = Depends(get_google_account),
 ):
     subscription_query = (
         select(YoutubeSubscription)

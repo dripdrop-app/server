@@ -22,7 +22,7 @@ def worker_task(function):
     @exception_handler
     async def wrapper(*args, **kwargs):
         parameters = signature(function).parameters
-        async with database.async_create_session() as session:
+        async with database.create_session() as session:
             if "session" in parameters:
                 kwargs["session"] = session
             return await function(*args, **kwargs)

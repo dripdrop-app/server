@@ -183,13 +183,13 @@ class YoutubeTasker:
         if not account:
             return
         await session.commit()
-        update_google_access_token(google_email=account.email, session=session)
+        await update_google_access_token(google_email=account.email, session=session)
         await session.refresh(account)
         if not account.access_token:
             return
 
-        with create_temp_subscriptions_table(
-            email=account.email, session=session
+        async with create_temp_subscriptions_table(
+            email=account.email
         ) as TempSubscription:
             for subscriptions in google_api_service.get_user_subscriptions(
                 access_token=account.access_token

@@ -1,11 +1,14 @@
+from redis import Redis
 from rq import Queue
 from rq.job import Job
 from typing import Coroutine
 
-from dripdrop.redis import redis
 from dripdrop.settings import ENV, settings
 
-queue = Queue(connection=redis, default_timeout=-1, is_async=False)
+
+queue = Queue(
+    connection=Redis.from_url(settings.redis_url), default_timeout=-1, is_async=False
+)
 
 
 # Mock rq's behavior when running with is_async=True to handle async code
