@@ -116,7 +116,9 @@ class YoutubeTasker:
     async def _update_channels(
         self, channel_ids: list[int] = ..., session: AsyncSession = ...
     ):
-        channels_info = google_api_service.get_channels_info(channel_ids=channel_ids)
+        channels_info = await google_api_service.get_channels_info(
+            channel_ids=channel_ids
+        )
         for channel_info in channels_info:
             try:
                 await self._add_update_channel(channel=channel_info, session=session)
@@ -149,7 +151,7 @@ class YoutubeTasker:
             count = await session.scalar(query)
             if count > 0:
                 return
-        video_categories = google_api_service.get_video_categories()
+        video_categories = await google_api_service.get_video_categories()
         for category in video_categories:
             try:
                 await self._add_update_video_category(
@@ -191,7 +193,7 @@ class YoutubeTasker:
         async with create_temp_subscriptions_table(
             email=account.email
         ) as TempSubscription:
-            for subscriptions in google_api_service.get_user_subscriptions(
+            async for subscriptions in google_api_service.get_user_subscriptions(
                 access_token=account.access_token
             ):
                 subscription_channel_ids = [
@@ -211,7 +213,7 @@ class YoutubeTasker:
                     )
                 )
                 if len(new_channel_ids) > 0:
-                    channels_info = google_api_service.get_channels_info(
+                    channels_info = await google_api_service.get_channels_info(
                         channel_ids=new_channel_ids
                     )
                     for channel_info in channels_info:
@@ -263,12 +265,12 @@ class YoutubeTasker:
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
         results = await session.scalars(query)
         channel = results.first()
-        for uploaded_playlist_videos in google_api_service.get_playlist_videos(
+        async for uploaded_playlist_videos in google_api_service.get_playlist_videos(
             playlist_id=channel.upload_playlist_id
         ):
             new_videos = []
             video_ids = []
-            videos_info = google_api_service.get_videos_info(video_ids=video_ids)
+            videos_info = await google_api_service.get_videos_info(video_ids=video_ids)
             for video_info in videos_info:
                 try:
                     new_video = await self._add_update_video(

@@ -1,5 +1,4 @@
 import math
-from asgiref.sync import sync_to_async
 from datetime import datetime
 from sqlalchemy import select, func
 
@@ -31,10 +30,7 @@ async def update_google_access_token(
         )
         if difference.seconds >= account.expires:
             try:
-                refresh_access_token = sync_to_async(
-                    google_api_service.refresh_access_token
-                )
-                new_access_token = await refresh_access_token(
+                new_access_token = await google_api_service.refresh_access_token(
                     refresh_token=account.refresh_token
                 )
                 if new_access_token:

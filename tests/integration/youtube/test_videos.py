@@ -1,108 +1,110 @@
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from dripdrop.settings import settings
 
 VIDEOS_URL = "/api/youtube/videos"
 
 
-def test_videos_when_not_logged_in(client: TestClient):
-    response = client.get(f"{VIDEOS_URL}/1/10")
+async def test_videos_when_not_logged_in(client: AsyncClient):
+    response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_videos_with_no_google_account(client: TestClient, create_and_login_user):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.get(f"{VIDEOS_URL}/1/10")
+async def test_videos_with_no_google_account(
+    client: AsyncClient, create_and_login_user
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_videos_with_no_videos(
-    client: TestClient, create_and_login_user, create_google_account
+async def test_videos_with_no_videos(
+    client: AsyncClient, create_and_login_user, create_google_account
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    response = client.get(f"{VIDEOS_URL}/1/10")
+    response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"totalPages": 0, "videos": []}
 
 
-def test_videos_with_no_subscriptions(
-    client: TestClient,
+async def test_videos_with_no_subscriptions(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    category = create_video_category(id=1, name="category")
-    create_video(
+    category = await create_video_category(id=1, name="category")
+    await create_video(
         id="1",
         title="title",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    response = client.get(f"{VIDEOS_URL}/1/10")
+    response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"totalPages": 0, "videos": []}
 
 
-def test_videos_with_channel_id(
-    client: TestClient,
+async def test_videos_with_channel_id(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    other_channel = create_channel(
+    other_channel = await create_channel(
         id="2", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    category = create_video_category(id=1, name="category")
-    video = create_video(
+    category = await create_video_category(id=1, name="category")
+    video = await create_video(
         id="1",
         title="title",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    create_video(
+    await create_video(
         id="2",
         title="title",
         thumbnail="thumbnail",
         channel_id=other_channel.id,
         category_id=category.id,
     )
-    response = client.get(f"{VIDEOS_URL}/1/10", params={"channel_id": "1"})
+    response = await client.get(f"{VIDEOS_URL}/1/10", params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -126,23 +128,23 @@ def test_videos_with_channel_id(
     }
 
 
-def test_videos_with_out_of_range_page(
-    client: TestClient, create_and_login_user, create_google_account
+async def test_videos_with_out_of_range_page(
+    client: AsyncClient, create_and_login_user, create_google_account
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    response = client.get(f"{VIDEOS_URL}/2/10")
+    response = await client.get(f"{VIDEOS_URL}/2/10")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_videos_with_single_result(
-    client: TestClient,
+async def test_videos_with_single_result(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -150,27 +152,27 @@ def test_videos_with_single_result(
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
-    category = create_video_category(id=1, name="category")
-    video = create_video(
+    await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
+    category = await create_video_category(id=1, name="category")
+    video = await create_video(
         id="1",
         title="title",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    response = client.get(f"{VIDEOS_URL}/1/10")
+    response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -194,8 +196,8 @@ def test_videos_with_single_result(
     }
 
 
-def test_videos_with_multiple_videos(
-    client: TestClient,
+async def test_videos_with_multiple_videos(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -203,33 +205,32 @@ def test_videos_with_multiple_videos(
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
-    category = create_video_category(id=1, name="category")
-    videos = list(
-        map(
-            lambda i: create_video(
+    await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
+    category = await create_video_category(id=1, name="category")
+    videos = []
+    for i in range(5):
+        videos.append(
+            await create_video(
                 id=str(i),
                 title=f"title_{i}",
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
-            ),
-            range(5),
+            )
         )
-    )
     videos.sort(key=lambda video: video.published_at, reverse=True)
-    response = client.get(f"{VIDEOS_URL}/1/5")
+    response = await client.get(f"{VIDEOS_URL}/1/5")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -256,8 +257,8 @@ def test_videos_with_multiple_videos(
     }
 
 
-def test_videos_with_multiple_pages(
-    client: TestClient,
+async def test_videos_with_multiple_pages(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -265,33 +266,32 @@ def test_videos_with_multiple_pages(
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
-    category = create_video_category(id=1, name="category")
-    videos = list(
-        map(
-            lambda i: create_video(
+    await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
+    category = await create_video_category(id=1, name="category")
+    videos = []
+    for i in range(5):
+        videos.append(
+            await create_video(
                 id=str(i),
                 title=f"title_{i}",
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
-            ),
-            range(5),
+            )
         )
-    )
     videos.sort(key=lambda video: video.published_at, reverse=True)
-    response = client.get(f"{VIDEOS_URL}/2/2")
+    response = await client.get(f"{VIDEOS_URL}/2/2")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 3,
@@ -318,8 +318,8 @@ def test_videos_with_multiple_pages(
     }
 
 
-def test_videos_in_descending_order_by_published_date(
-    client: TestClient,
+async def test_videos_in_descending_order_by_published_date(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -327,33 +327,32 @@ def test_videos_in_descending_order_by_published_date(
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
-    category = create_video_category(id=1, name="category")
-    videos = list(
-        map(
-            lambda i: create_video(
+    await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
+    category = await create_video_category(id=1, name="category")
+    videos = []
+    for i in range(5):
+        videos.append(
+            await create_video(
                 id=str(i),
                 title=f"title_{i}",
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
-            ),
-            range(5),
+            )
         )
-    )
     videos.sort(key=lambda video: video.published_at, reverse=True)
-    response = client.get(f"{VIDEOS_URL}/1/5")
+    response = await client.get(f"{VIDEOS_URL}/1/5")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -380,8 +379,8 @@ def test_videos_in_descending_order_by_published_date(
     }
 
 
-def test_videos_with_specific_video_category(
-    client: TestClient,
+async def test_videos_with_specific_video_category(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -389,35 +388,35 @@ def test_videos_with_specific_video_category(
     create_video_category,
     create_video,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
-    category = create_video_category(id=1, name="category")
-    other_category = create_video_category(id=2, name="other category")
-    video_in_category = create_video(
+    await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
+    category = await create_video_category(id=1, name="category")
+    other_category = await create_video_category(id=2, name="other category")
+    video_in_category = await create_video(
         id="1",
         title="title_1",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    create_video(
+    await create_video(
         id="2",
         title="title_2",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=other_category.id,
     )
-    response = client.get(
+    response = await client.get(
         f"{VIDEOS_URL}/1/5", params={"video_categories": str(category.id)}
     )
     assert response.status_code == status.HTTP_200_OK
@@ -443,8 +442,8 @@ def test_videos_with_specific_video_category(
     }
 
 
-def test_videos_with_queued_only(
-    client: TestClient,
+async def test_videos_with_queued_only(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -452,34 +451,36 @@ def test_videos_with_queued_only(
     create_video,
     create_video_queue,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    category = create_video_category(id=1, name="category")
-    queued_video = create_video(
+    category = await create_video_category(id=1, name="category")
+    queued_video = await create_video(
         id="1",
         title="title_1",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    create_video(
+    await create_video(
         id="2",
         title="title_2",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    queue = create_video_queue(email=google_account.email, video_id=queued_video.id)
-    response = client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
+    queue = await create_video_queue(
+        email=google_account.email, video_id=queued_video.id
+    )
+    response = await client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -505,8 +506,8 @@ def test_videos_with_queued_only(
     }
 
 
-def test_videos_with_queued_only_in_ascending_order_by_created_date(
-    client: TestClient,
+async def test_videos_with_queued_only_in_ascending_order_by_created_date(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -514,38 +515,34 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     create_video,
     create_video_queue,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    category = create_video_category(id=1, name="category")
-    videos = list(
-        map(
-            lambda i: create_video(
+    category = await create_video_category(id=1, name="category")
+    videos = []
+    for i in range(5):
+        videos.append(
+            await create_video(
                 id=str(i),
                 title=f"title_{i}",
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
-            ),
-            range(5),
+            )
         )
-    )
-    queues = list(
-        map(
-            lambda video: create_video_queue(
-                email=google_account.email, video_id=video.id
-            ),
-            videos,
+    queues = []
+    for video in videos:
+        queues.append(
+            await create_video_queue(email=google_account.email, video_id=video.id)
         )
-    )
     queues.sort(key=lambda queue: queue.created_at)
     videos = list(
         map(
@@ -555,7 +552,7 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
             queues,
         )
     )
-    response = client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
+    response = await client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -584,8 +581,8 @@ def test_videos_with_queued_only_in_ascending_order_by_created_date(
     }
 
 
-def test_videos_with_liked_only(
-    client: TestClient,
+async def test_videos_with_liked_only(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -593,34 +590,34 @@ def test_videos_with_liked_only(
     create_video,
     create_video_like,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    category = create_video_category(id=1, name="category")
-    liked_video = create_video(
+    category = await create_video_category(id=1, name="category")
+    liked_video = await create_video(
         id="1",
         title="title_1",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    create_video(
+    await create_video(
         id="2",
         title="title_2",
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
     )
-    like = create_video_like(email=google_account.email, video_id=liked_video.id)
-    response = client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
+    like = await create_video_like(email=google_account.email, video_id=liked_video.id)
+    response = await client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -644,8 +641,8 @@ def test_videos_with_liked_only(
     }
 
 
-def test_videos_with_liked_only_in_descending_order_by_created_date(
-    client: TestClient,
+async def test_videos_with_liked_only_in_descending_order_by_created_date(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
@@ -653,38 +650,34 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
     create_video,
     create_video_like,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="access",
         refresh_token="refresh",
         expires=1000,
     )
-    channel = create_channel(
+    channel = await create_channel(
         id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
     )
-    category = create_video_category(id=1, name="category")
-    videos = list(
-        map(
-            lambda i: create_video(
+    category = await create_video_category(id=1, name="category")
+    videos = []
+    for i in range(5):
+        videos.append(
+            await create_video(
                 id=str(i),
                 title=f"title_{i}",
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
-            ),
-            range(5),
+            )
         )
-    )
-    likes = list(
-        map(
-            lambda video: create_video_like(
-                email=google_account.email, video_id=video.id
-            ),
-            videos,
+    likes = []
+    for video in videos:
+        likes.append(
+            await create_video_like(email=google_account.email, video_id=video.id)
         )
-    )
     likes.sort(key=lambda like: like.created_at, reverse=True)
     videos = list(
         map(
@@ -694,7 +687,7 @@ def test_videos_with_liked_only_in_descending_order_by_created_date(
             likes,
         )
     )
-    response = client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
+    response = await client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,

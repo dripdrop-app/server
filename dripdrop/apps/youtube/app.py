@@ -1,5 +1,4 @@
 import traceback
-from asgiref.sync import sync_to_async
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from sqlalchemy import select
@@ -45,14 +44,14 @@ async def google_oauth2(
 ):
     if error:
         raise HTTPException(400)
-    get_oauth_tokens = sync_to_async(google_api_service.get_oauth_tokens)
     tokens = None
     try:
-        tokens = await get_oauth_tokens(
+        tokens = await google_api_service.get_oauth_tokens(
             f"{request.base_url}api/youtube/googleoauth2", code
         )
-        get_user_email = sync_to_async(google_api_service.get_user_email)
-        google_email = await get_user_email(tokens.get("access_token"))
+        google_email = await google_api_service.get_user_email(
+            tokens.get("access_token")
+        )
         query = select(GoogleAccount).where(GoogleAccount.email == google_email)
         results = await session.scalars(query)
         google_account = results.first()
