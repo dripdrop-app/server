@@ -3,11 +3,11 @@ import traceback
 from datetime import datetime, timedelta
 from sqlalchemy import select, func
 
-from dripdrop.database import Session
+from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.services.google_api import google_api_service
 from dripdrop.settings import settings
-from dripdrop.rq import queue
+from dripdrop.rq import enqueue
 from dripdrop.utils import worker_task
 
 from .models import (
@@ -22,11 +22,11 @@ from .utils import update_google_access_token
 
 
 class YoutubeTasker:
-    def _add_update_subscription(
+    async def _add_update_subscription(
         self,
         google_email: str = ...,
         subscription: dict = ...,
-        session: Session = ...,
+        session: AsyncSession = ...,
     ):
         subscription_id = subscription["id"]
         subscription_channel_id = subscription["snippet"]["resourceId"]["channelId"]
@@ -37,7 +37,7 @@ class YoutubeTasker:
             YoutubeSubscription.id == subscription_id,
             YoutubeSubscription.email == google_email,
         )
-        results = session.scalars(query)
+        results = await session.scalars(query)
         subscription = results.first()
         if subscription:
             subscription.published_at = subscription_published_at
@@ -50,10 +50,12 @@ class YoutubeTasker:
                     published_at=subscription_published_at,
                 )
             )
-        session.commit()
+        await session.commit()
         return bool(subscription)
 
-    def _add_update_channel(self, channel: dict = ..., session: Session = ...):
+    async def _add_update_channel(
+        self, channel: dict = ..., session: AsyncSession = ...
+    ):
         channel_id = channel["id"]
         channel_title = channel["snippet"]["title"]
         channel_upload_playlist_id = channel["contentDetails"]["relatedPlaylists"][
@@ -61,7 +63,7 @@ class YoutubeTasker:
         ]
         channel_thumbnail = channel["snippet"]["thumbnails"]["high"]["url"]
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         channel = results.first()
         if channel:
             channel.title = channel_title
@@ -78,10 +80,10 @@ class YoutubeTasker:
                     - timedelta(days=32),
                 )
             )
-        session.commit()
+        await session.commit()
         return bool(channel)
 
-    def _add_update_video(self, video: dict = ..., session: Session = ...):
+    async def _add_update_video(self, video: dict = ..., session: AsyncSession = ...):
         video_id = video["id"]
         video_title = video["snippet"]["title"]
         video_thumbnail = video["snippet"]["thumbnails"]["high"]["url"]
@@ -89,7 +91,7 @@ class YoutubeTasker:
         video_published_at = dateutil.parser.parse(video["snippet"]["publishedAt"])
         video_category_id = int(video["snippet"]["categoryId"])
         query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         video = results.first()
         if video:
             video.title = video_title
@@ -107,72 +109,82 @@ class YoutubeTasker:
                     category_id=video_category_id,
                 )
             )
-        session.commit()
+        await session.commit()
         return bool(video)
 
     @worker_task
-    def _update_channels(self, channel_ids: list[int] = ..., session: Session = ...):
+    async def _update_channels(
+        self, channel_ids: list[int] = ..., session: AsyncSession = ...
+    ):
         channels_info = google_api_service.get_channels_info(channel_ids=channel_ids)
         for channel_info in channels_info:
             try:
-                self._add_update_channel(channel=channel_info, session=session)
+                await self._add_update_channel(channel=channel_info, session=session)
             except Exception:
                 logger.exception(traceback.format_exc())
 
-    def _add_update_video_category(self, category: dict = ..., session: Session = ...):
+    async def _add_update_video_category(
+        self, category: dict = ..., session: AsyncSession = ...
+    ):
         category_id = int(category["id"])
         category_title = category["snippet"]["title"]
         query = select(YoutubeVideoCategory).where(
             YoutubeVideoCategory.id == category_id
         )
-        results = session.scalars(query)
+        results = await session.scalars(query)
         category = results.first()
         if category:
             category.name = category_title
         else:
             session.add(YoutubeVideoCategory(id=category_id, name=category_title))
-        session.commit()
+        await session.commit()
         return bool(category)
 
     @worker_task
-    def update_video_categories(self, cron: bool = ..., session: Session = ...):
+    async def update_video_categories(
+        self, cron: bool = ..., session: AsyncSession = ...
+    ):
         if not cron:
             query = select(func.count(YoutubeVideoCategory.id))
-            count = session.scalar(query)
+            count = await session.scalar(query)
             if count > 0:
                 return
         video_categories = google_api_service.get_video_categories()
         for category in video_categories:
             try:
-                self._add_update_video_category(category=category, session=session)
+                await self._add_update_video_category(
+                    category=category, session=session
+                )
             except Exception:
                 logger.exception(traceback.format_exc())
 
     @worker_task
-    def _delete_subscription(
-        self, subscription_id: str = ..., email: str = ..., session: Session = ...
+    async def _delete_subscription(
+        self, subscription_id: str = ..., email: str = ..., session: AsyncSession = ...
     ):
         query = select(YoutubeSubscription).where(
             YoutubeSubscription.id == subscription_id,
             YoutubeSubscription.email == email,
         )
-        results = session.scalars(query)
+        results = await session.scalars(query)
         subscription = results.first()
         if not subscription:
             raise Exception(f"Subscription ({subscription_id}) not found")
-        session.delete(subscription)
-        session.commit()
+        await session.delete(subscription)
+        await session.commit()
 
     @worker_task
-    def update_user_subscriptions(self, user_email: str = ..., session: Session = ...):
+    async def update_user_subscriptions(
+        self, user_email: str = ..., session: AsyncSession = ...
+    ):
         query = select(GoogleAccount).where(GoogleAccount.user_email == user_email)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         account = results.first()
         if not account:
             return
-        session.commit()
+        await session.commit()
         update_google_access_token(google_email=account.email, session=session)
-        session.refresh(account)
+        await session.refresh(account)
         if not account.access_token:
             return
 
@@ -189,7 +201,7 @@ class YoutubeTasker:
                 query = select(YoutubeChannel).where(
                     YoutubeChannel.id.in_(subscription_channel_ids)
                 )
-                results = session.scalars(query)
+                results = await session.scalars(query)
                 channels = results.all()
                 channel_ids = [channel.id for channel in channels]
                 new_channel_ids = list(
@@ -203,16 +215,18 @@ class YoutubeTasker:
                         channel_ids=new_channel_ids
                     )
                     for channel_info in channels_info:
-                        self._add_update_channel(channel=channel_info, session=session)
+                        await self._add_update_channel(
+                            channel=channel_info, session=session
+                        )
                 for subscription in subscriptions:
                     try:
-                        self._add_update_subscription(
+                        await self._add_update_subscription(
                             google_email=account.email,
                             subscription=subscription,
                             session=session,
                         )
                         session.add(TempSubscription(id=subscription["id"]))
-                        session.commit()
+                        await session.commit()
                     except Exception:
                         logger.exception(traceback.format_exc())
             subscription_query = (
@@ -226,14 +240,15 @@ class YoutubeTasker:
                 subscription_query.columns.id == temp_subscription_query.columns.id,
                 isouter=True,
             )
-            stream = session.execute(
+            stream = await session.stream(
                 select(subscription_query.columns.id.label("subscription_id"))
                 .select_from(query)
                 .where(temp_subscription_query.columns.id.is_(None))
-            ).mappings()
-            for row in stream.yield_per(10):
-                queue.enqueue(
-                    self._delete_subscription,
+            )
+            async for row in stream:
+                row = row._mapping
+                await enqueue(
+                    function=self._delete_subscription,
                     kwargs={
                         "subscription_id": row.subscription_id,
                         "email": account.email,
@@ -242,11 +257,11 @@ class YoutubeTasker:
                 )
 
     @worker_task
-    def _add_new_channel_videos_job(
-        self, channel_id: str = ..., session: Session = ...
+    async def _add_new_channel_videos_job(
+        self, channel_id: str = ..., session: AsyncSession = ...
     ):
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         channel = results.first()
         for uploaded_playlist_videos in google_api_service.get_playlist_videos(
             playlist_id=channel.upload_playlist_id
@@ -256,7 +271,7 @@ class YoutubeTasker:
             videos_info = google_api_service.get_videos_info(video_ids=video_ids)
             for video_info in videos_info:
                 try:
-                    new_video = self._add_update_video(
+                    new_video = await self._add_update_video(
                         video=video_info, session=session
                     )
                     if new_video:
@@ -266,60 +281,60 @@ class YoutubeTasker:
             if len(new_videos) < len(uploaded_playlist_videos):
                 break
         channel.last_videos_updated = datetime.now(tz=settings.timezone)
-        session.commit()
+        await session.commit()
 
     @worker_task
-    def update_channels_videos(self, session: Session = ...):
+    async def update_channels_videos(self, session: AsyncSession = ...):
         query = select(YoutubeChannel)
-        stream = session.scalars(query)
-        for channel in stream.yield_per(10):
-            queue.enqueue(
-                self._add_new_channel_videos_job,
+        stream = await session.stream_scalars(query)
+        async for channel in stream:
+            await enqueue(
+                function=self._add_new_channel_videos_job,
                 kwargs={"channel_id": channel.id},
                 at_front=True,
             )
 
     @worker_task
-    def update_channels_meta(self, session: Session = ...):
+    async def update_channels_meta(self, session: AsyncSession = ...):
         CHANNEL_NUM = 50
         page = 0
         while True:
             query = select(YoutubeChannel).offset(page * CHANNEL_NUM)
-            results = session.scalars(query)
+            results = await session.scalars(query)
             channels = results.fetchmany(CHANNEL_NUM)
             if len(channels) == 0:
                 break
             channel_ids = [channel.id for channel in channels]
-            queue.enqueue(
-                self._update_channels,
+            await enqueue(
+                function=self._update_channels,
                 kwargs={"channel_ids": channel_ids},
                 at_front=True,
             )
             page += 1
 
     @worker_task
-    def update_subscriptions(self, session: Session = ...):
+    async def update_subscriptions(self, session: AsyncSession = ...):
         query = select(GoogleAccount)
-        stream = session.scalars(query)
-        for account in stream.yield_per(10):
-            queue.enqueue(
-                self.update_user_subscriptions,
+        stream = await session.stream_scalars(query)
+        async for account in stream:
+            await enqueue(
+                function=self.update_user_subscriptions,
                 kwargs={"user_email": account.user_email},
                 at_front=True,
             )
 
     @worker_task
-    def _delete_channel(self, channel_id: str = ..., session: Session = ...):
+    async def _delete_channel(self, channel_id: str = ..., session: AsyncSession = ...):
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         channel = results.first()
         if not channel:
             raise Exception(f"Channel ({channel_id}) not found")
-        session.delete(channel)
-        session.commit()
+        await session.delete(channel)
+        await session.commit()
 
     @worker_task
-    def delete_old_channels(self, session: Session = ...):
+    async def delete_old_channels(self, session: AsyncSession = ...):
         query = (
             select(YoutubeChannel)
             .join(
@@ -329,10 +344,12 @@ class YoutubeTasker:
             )
             .where(YoutubeSubscription.id.is_(None))
         )
-        stream = session.scalars(query)
-        for channel in stream.yield_per(10):
-            queue.enqueue(
-                self._delete_channel, kwargs={"channel_id": channel.id}, at_front=True
+        stream = await session.stream_scalars(query)
+        async for channel in stream:
+            await enqueue(
+                function=self._delete_channel,
+                kwargs={"channel_id": channel.id},
+                at_front=True,
             )
 
 

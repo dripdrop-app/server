@@ -10,7 +10,7 @@ from dripdrop.dependencies import (
     create_db_session,
     AsyncSession,
 )
-from dripdrop.rq import queue
+from dripdrop.rq import enqueue
 from dripdrop.logging import logger
 from dripdrop.services.google_api import google_api_service
 from dripdrop.settings import settings, ENV
@@ -72,9 +72,11 @@ async def google_oauth2(
                 )
             )
             await session.commit()
-        job = queue.enqueue(youtube_tasker.update_video_categories, args=(False,))
-        queue.enqueue(
-            youtube_tasker.update_user_subscriptions,
+        job = await enqueue(
+            function=youtube_tasker.update_video_categories, args=(False,)
+        )
+        await enqueue(
+            function=youtube_tasker.update_user_subscriptions,
             args=(user.email,),
             depends_on=job,
         )

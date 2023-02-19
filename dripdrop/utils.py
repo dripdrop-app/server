@@ -8,9 +8,9 @@ from .logging import logger
 
 def exception_handler(function):
     @wraps(function)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         try:
-            return function(*args, **kwargs)
+            return await function(*args, **kwargs)
         except Exception:
             logger.error(traceback.format_exc())
 
@@ -18,13 +18,13 @@ def exception_handler(function):
 
 
 def worker_task(function):
-    @exception_handler
     @wraps(function)
-    def wrapper(*args, **kwargs):
+    @exception_handler
+    async def wrapper(*args, **kwargs):
         parameters = signature(function).parameters
-        with database.create_session() as session:
+        async with database.async_create_session() as session:
             if "session" in parameters:
                 kwargs["session"] = session
-            return function(*args, **kwargs)
+            return await function(*args, **kwargs)
 
     return wrapper

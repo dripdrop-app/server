@@ -1,6 +1,6 @@
 import pytest
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
@@ -50,12 +50,10 @@ def clean_test_s3_folders():
 # Need to create a single event loop that all instances will use
 
 
-@pytest.fixture(scope="session")
-def client(clean_test_s3_folders):
-    clean_test_s3_folders()
-    with TestClient(app) as client:
+@pytest.fixture
+async def client():
+    async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
-    clean_test_s3_folders()
 
 
 @pytest.fixture
@@ -72,10 +70,12 @@ def create_user(session: Session):
 
 
 @pytest.fixture
-def create_and_login_user(client: TestClient, create_user):
-    def _create_and_login_user(email: str = ..., password: str = ..., admin=False):
+def create_and_login_user(client: AsyncClient, create_user):
+    async def _create_and_login_user(
+        email: str = ..., password: str = ..., admin=False
+    ):
         user = create_user(email=email, password=password, admin=admin)
-        response = client.post(
+        response = await client.post(
             "/api/auth/login", json={"email": email, "password": password}
         )
         assert response.status_code == status.HTTP_200_OK
