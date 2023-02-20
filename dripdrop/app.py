@@ -32,6 +32,8 @@ app = FastAPI(
     on_startup=[cron.start_cron_jobs],
     on_shutdown=[cron.end_cron_jobs, http_client.aclose, redis.close],
     routes=api_router.routes,
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
 )
 
 
