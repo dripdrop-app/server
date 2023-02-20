@@ -51,9 +51,7 @@ async def test_videos_with_no_subscriptions(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     await create_video(
         id="1",
@@ -83,12 +81,8 @@ async def test_videos_with_channel_id(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
-    other_channel = await create_channel(
-        id="2", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
+    other_channel = await create_channel(id="2", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     video = await create_video(
         id="1",
@@ -160,9 +154,7 @@ async def test_videos_with_single_result(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     video = await create_video(
@@ -213,9 +205,7 @@ async def test_videos_with_multiple_videos(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     videos = []
@@ -274,9 +264,7 @@ async def test_videos_with_multiple_pages(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     videos = []
@@ -335,9 +323,7 @@ async def test_videos_in_descending_order_by_published_date(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     videos = []
@@ -396,9 +382,7 @@ async def test_videos_with_specific_video_category(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     other_category = await create_video_category(id=2, name="other category")
@@ -459,9 +443,7 @@ async def test_videos_with_queued_only(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     queued_video = await create_video(
         id="1",
@@ -523,9 +505,7 @@ async def test_videos_with_queued_only_in_ascending_order_by_created_date(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     videos = []
     for i in range(5):
@@ -598,9 +578,7 @@ async def test_videos_with_liked_only(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     liked_video = await create_video(
         id="1",
@@ -658,9 +636,7 @@ async def test_videos_with_liked_only_in_descending_order_by_created_date(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     videos = []
     for i in range(5):

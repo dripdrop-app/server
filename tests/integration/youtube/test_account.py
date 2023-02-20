@@ -2,7 +2,7 @@ from fastapi import status
 from httpx import AsyncClient
 from pytest import MonkeyPatch
 
-from dripdrop.services.google_api import google_api_service
+from dripdrop.services.google_api import google_api
 
 ACCOUNT_URL = "/api/youtube/account"
 
@@ -29,7 +29,7 @@ async def test_get_account_with_expired_token(
     async def mock_refresh_token(refresh_token: str = ...):
         raise Exception("No refresh")
 
-    monkeypatch.setattr(google_api_service, "refresh_access_token", mock_refresh_token)
+    monkeypatch.setattr(google_api, "refresh_access_token", mock_refresh_token)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     google_account = await create_google_account(
         email="google@gmail.com",
@@ -56,7 +56,7 @@ async def test_get_account(
             "expires_in": 3600,
         }
 
-    monkeypatch.setattr(google_api_service, "refresh_access_token", mock_refresh_token)
+    monkeypatch.setattr(google_api, "refresh_access_token", mock_refresh_token)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     google_account = await create_google_account(
         email="google@gmail.com",

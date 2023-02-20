@@ -33,7 +33,6 @@ class YoutubeChannel(ModelBaseMixin, Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(nullable=False)
     thumbnail: Mapped[str | None] = mapped_column(nullable=True)
-    upload_playlist_id: Mapped[str | None] = mapped_column(nullable=True)
     last_videos_updated: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
@@ -189,8 +188,6 @@ async def create_temp_subscriptions_table(email: str = ...):
             await conn.run_sync(TempSubscription.__table__.create)
             yield TempSubscription
         except Exception as e:
-            await conn.rollback()
             raise e
         finally:
-            await conn.commit()
             await conn.run_sync(TempSubscription.__table__.drop)

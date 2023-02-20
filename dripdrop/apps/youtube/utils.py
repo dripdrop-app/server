@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import select, func
 
 from dripdrop.database import AsyncSession
-from dripdrop.services.google_api import google_api_service
+from dripdrop.services.google_api import google_api
 from dripdrop.settings import settings
 
 from .models import (
@@ -30,7 +30,7 @@ async def update_google_access_token(
         )
         if difference.seconds >= account.expires:
             try:
-                new_access_token = await google_api_service.refresh_access_token(
+                new_access_token = await google_api.refresh_access_token(
                     refresh_token=account.refresh_token
                 )
                 if new_access_token:

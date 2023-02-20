@@ -50,9 +50,7 @@ async def test_subscriptions_out_of_range_page(
         refresh_token="",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     response = await client.get(f"{SUBSCRIPTIONS_URL}/2/1")
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -73,9 +71,7 @@ async def test_subscriptions_with_single_result(
         refresh_token="",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     subscription = await create_subscription(
         id="1", channel_id=channel.id, email=google_account.email
     )
@@ -118,7 +114,6 @@ async def test_subscriptions_with_multiple_pages(
                 id=str(i),
                 title=f"channel_{i}",
                 thumbnail="thumbnail",
-                upload_playlist_id="1",
             )
         )
     subscriptions = []
@@ -170,10 +165,14 @@ async def test_subscriptions_for_logged_in_google_account(
         expires=1000,
     )
     channel = await create_channel(
-        id="1", title="channel_1", thumbnail="thumbnail", upload_playlist_id="1"
+        id="1",
+        title="channel_1",
+        thumbnail="thumbnail",
     )
     other_channel = await create_channel(
-        id="2", title="channel_2", thumbnail="thumbnail", upload_playlist_id="1"
+        id="2",
+        title="channel_2",
+        thumbnail="thumbnail",
     )
     await create_subscription(
         id="1", channel_id=other_channel.id, email=other_google_account.email
@@ -220,7 +219,6 @@ async def test_subscriptions_are_in_descending_order_by_title(
                 id=str(i),
                 title=f"channel_{i}",
                 thumbnail="thumbnail",
-                upload_playlist_id="1",
             )
         )
     subscriptions = []

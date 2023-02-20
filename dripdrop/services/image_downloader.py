@@ -4,7 +4,7 @@ from urllib import parse
 from dripdrop.http_client import http_client
 
 
-class ImageDownloaderService:
+class ImageDownloader:
     def __init__(self):
         self.image_extensions = [".jpg", ".ico", "png", ".jpeg"]
 
@@ -52,4 +52,4 @@ class ImageDownloaderService:
                 return img_link
 
 
-image_downloader_service = ImageDownloaderService()
+image_downloader = ImageDownloader()

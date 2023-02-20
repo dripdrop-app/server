@@ -2,7 +2,7 @@ from fastapi import status
 from httpx import AsyncClient
 from pytest import MonkeyPatch
 
-from dripdrop.services.google_api import google_api_service
+from dripdrop.services.google_api import google_api
 from dripdrop import rq
 
 ACCOUNT_URL = "/api/youtube/account"
@@ -43,8 +43,8 @@ async def test_googleoauth2_with_user_with_no_google_account(
     async def mock_enqueue(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(google_api_service, "get_oauth_tokens", mock_get_oauth_tokens)
-    monkeypatch.setattr(google_api_service, "get_user_email", mock_get_user_email)
+    monkeypatch.setattr(google_api, "get_oauth_tokens", mock_get_oauth_tokens)
+    monkeypatch.setattr(google_api, "get_user_email", mock_get_user_email)
     monkeypatch.setattr(rq, "enqueue", mock_enqueue)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.get(
@@ -80,8 +80,8 @@ async def test_googleoauth2_with_user_with_google_account(
     async def mock_enqueue(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(google_api_service, "get_oauth_tokens", mock_get_oauth_tokens)
-    monkeypatch.setattr(google_api_service, "get_user_email", mock_get_user_email)
+    monkeypatch.setattr(google_api, "get_oauth_tokens", mock_get_oauth_tokens)
+    monkeypatch.setattr(google_api, "get_user_email", mock_get_user_email)
     monkeypatch.setattr(rq, "enqueue", mock_enqueue)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     google_account = await create_google_account(

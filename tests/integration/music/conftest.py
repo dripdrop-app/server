@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dripdrop.apps.music.models import MusicJob
-from dripdrop.services.audio_tag import AudioTagService
+from dripdrop.services.audio_tag import AudioTags
 
 
 @pytest.fixture(scope="session")
@@ -114,7 +114,7 @@ def get_tags_from_file():
         with open("test.mp3", "wb") as f:
             f.write(file)
 
-        yield AudioTagService(file_path="test.mp3")
+        yield AudioTags(file_path="test.mp3")
         os.remove("test.mp3")
 
     return _get_tags_from_file

@@ -14,7 +14,7 @@ class RedisChannels:
     YOUTUBE_SUBSCRIPTION_JOB_CHANNEL = "YOUTUBE_SUBSCRIPTION_JOB_CHANNEL"
 
 
-class RedisService:
+class WebsocketHandler:
     async def create_websocket_redis_channel_listener(
         self,
         websocket: WebSocket = ...,
@@ -24,13 +24,14 @@ class RedisService:
         task: Task = None
         try:
             task = asyncio.create_task(
-                self.subscribe(
+                self._subscribe(
                     channel=channel,
                     message_handler=handler,
                 )
             )
             while True:
-                await websocket.send_json({})
+                if task.done():
+                    break
                 await asyncio.sleep(1)
         except WebSocketDisconnect:
             await websocket.close()
@@ -44,7 +45,7 @@ class RedisService:
             if task:
                 task.cancel()
 
-    async def subscribe(
+    async def _subscribe(
         self,
         channel: str = ...,
         message_handler: Coroutine = ...,
@@ -60,4 +61,4 @@ class RedisService:
                 await message_handler(message)
 
 
-redis_service = RedisService()
+websocket_handler = WebsocketHandler()

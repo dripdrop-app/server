@@ -5,7 +5,8 @@ from sqlalchemy import select, func
 
 from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
-from dripdrop.services.google_api import google_api_service
+from dripdrop.services.google_api import google_api
+from dripdrop.services.ytdlp import ytdlp
 from dripdrop.settings import settings
 from dripdrop.rq import enqueue
 from dripdrop.utils import worker_task
@@ -22,126 +23,6 @@ from .utils import update_google_access_token
 
 
 class YoutubeTasker:
-    async def _add_update_subscription(
-        self,
-        google_email: str = ...,
-        subscription: dict = ...,
-        session: AsyncSession = ...,
-    ):
-        subscription_id = subscription["id"]
-        subscription_channel_id = subscription["snippet"]["resourceId"]["channelId"]
-        subscription_published_at = dateutil.parser.parse(
-            subscription["snippet"]["publishedAt"]
-        )
-        query = select(YoutubeSubscription).where(
-            YoutubeSubscription.id == subscription_id,
-            YoutubeSubscription.email == google_email,
-        )
-        results = await session.scalars(query)
-        subscription = results.first()
-        if subscription:
-            subscription.published_at = subscription_published_at
-        else:
-            session.add(
-                YoutubeSubscription(
-                    id=subscription_id,
-                    channel_id=subscription_channel_id,
-                    email=google_email,
-                    published_at=subscription_published_at,
-                )
-            )
-        await session.commit()
-        return bool(subscription)
-
-    async def _add_update_channel(
-        self, channel: dict = ..., session: AsyncSession = ...
-    ):
-        channel_id = channel["id"]
-        channel_title = channel["snippet"]["title"]
-        channel_upload_playlist_id = channel["contentDetails"]["relatedPlaylists"][
-            "uploads"
-        ]
-        channel_thumbnail = channel["snippet"]["thumbnails"]["high"]["url"]
-        query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-        results = await session.scalars(query)
-        channel = results.first()
-        if channel:
-            channel.title = channel_title
-            channel.thumbnail = channel_thumbnail
-            channel.upload_playlist_id = channel_upload_playlist_id
-        else:
-            session.add(
-                YoutubeChannel(
-                    id=channel_id,
-                    title=channel_title,
-                    thumbnail=channel_thumbnail,
-                    upload_playlist_id=channel_upload_playlist_id,
-                    last_videos_updated=datetime.now(tz=settings.timezone)
-                    - timedelta(days=32),
-                )
-            )
-        await session.commit()
-        return bool(channel)
-
-    async def _add_update_video(self, video: dict = ..., session: AsyncSession = ...):
-        video_id = video["id"]
-        video_title = video["snippet"]["title"]
-        video_thumbnail = video["snippet"]["thumbnails"]["high"]["url"]
-        video_channel_id = video["snippet"]["channelId"]
-        video_published_at = dateutil.parser.parse(video["snippet"]["publishedAt"])
-        video_category_id = int(video["snippet"]["categoryId"])
-        query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-        results = await session.scalars(query)
-        video = results.first()
-        if video:
-            video.title = video_title
-            video.thumbnail = video_thumbnail
-            video.published_at = video_published_at
-            video.category_id = video_category_id
-        else:
-            session.add(
-                YoutubeVideo(
-                    id=video_id,
-                    title=video_title,
-                    thumbnail=video_thumbnail,
-                    channel_id=video_channel_id,
-                    published_at=video_published_at,
-                    category_id=video_category_id,
-                )
-            )
-        await session.commit()
-        return bool(video)
-
-    @worker_task
-    async def _update_channels(
-        self, channel_ids: list[int] = ..., session: AsyncSession = ...
-    ):
-        channels_info = await google_api_service.get_channels_info(
-            channel_ids=channel_ids
-        )
-        for channel_info in channels_info:
-            try:
-                await self._add_update_channel(channel=channel_info, session=session)
-            except Exception:
-                logger.exception(traceback.format_exc())
-
-    async def _add_update_video_category(
-        self, category: dict = ..., session: AsyncSession = ...
-    ):
-        category_id = int(category["id"])
-        category_title = category["snippet"]["title"]
-        query = select(YoutubeVideoCategory).where(
-            YoutubeVideoCategory.id == category_id
-        )
-        results = await session.scalars(query)
-        category = results.first()
-        if category:
-            category.name = category_title
-        else:
-            session.add(YoutubeVideoCategory(id=category_id, name=category_title))
-        await session.commit()
-        return bool(category)
-
     @worker_task
     async def update_video_categories(
         self, cron: bool = ..., session: AsyncSession = ...
@@ -151,12 +32,21 @@ class YoutubeTasker:
             count = await session.scalar(query)
             if count > 0:
                 return
-        video_categories = await google_api_service.get_video_categories()
+        video_categories = await google_api.get_video_categories()
         for category in video_categories:
             try:
-                await self._add_update_video_category(
-                    category=category, session=session
+                id = int(category["id"])
+                name = category["snippet"]["title"]
+                query = select(YoutubeVideoCategory).where(
+                    YoutubeVideoCategory.id == id
                 )
+                results = await session.scalars(query)
+                category = results.first()
+                if category:
+                    category.name = name
+                else:
+                    session.add(YoutubeVideoCategory(id=id, name=name))
+                await session.commit()
             except Exception:
                 logger.exception(traceback.format_exc())
 
@@ -193,40 +83,60 @@ class YoutubeTasker:
         async with create_temp_subscriptions_table(
             email=account.email
         ) as TempSubscription:
-            async for subscriptions in google_api_service.get_user_subscriptions(
+            async for subscriptions in google_api.get_user_subscriptions(
                 access_token=account.access_token
             ):
-                subscription_channel_ids = [
-                    subscription["snippet"]["resourceId"]["channelId"]
-                    for subscription in subscriptions
-                ]
-                query = select(YoutubeChannel).where(
-                    YoutubeChannel.id.in_(subscription_channel_ids)
-                )
-                results = await session.scalars(query)
-                channels = results.all()
-                channel_ids = [channel.id for channel in channels]
-                new_channel_ids = list(
-                    filter(
-                        lambda channel_id: channel_id not in channel_ids,
-                        subscription_channel_ids,
-                    )
-                )
-                if len(new_channel_ids) > 0:
-                    channels_info = await google_api_service.get_channels_info(
-                        channel_ids=new_channel_ids
-                    )
-                    for channel_info in channels_info:
-                        await self._add_update_channel(
-                            channel=channel_info, session=session
-                        )
                 for subscription in subscriptions:
+                    subscription_id = subscription["id"]
+                    subscription_snippet = subscription["snippet"]
+                    channel_id = subscription_snippet["resourceId"]["channelId"]
+                    channel_title = subscription_snippet["Title"]
+                    channel_thumbnail = subscription_snippet["thumbnails"]["high"][
+                        "url"
+                    ]
+                    published_at = dateutil.parser.parse(
+                        subscription_snippet["publishedAt"]
+                    )
                     try:
-                        await self._add_update_subscription(
-                            google_email=account.email,
-                            subscription=subscription,
-                            session=session,
+                        query = select(YoutubeChannel).where(
+                            YoutubeChannel.id == channel_id
                         )
+                        results = await session.scalars(query)
+                        channel = results.first()
+                        if channel:
+                            channel.title = channel_title
+                            channel.thumbnail = channel_thumbnail
+                        else:
+                            session.add(
+                                YoutubeChannel(
+                                    id=channel_id,
+                                    title=channel_title,
+                                    thumbnail=channel_thumbnail,
+                                    last_videos_update=datetime.now(
+                                        tz=settings.timezone
+                                    )
+                                    - timedelta(days=30),
+                                )
+                            )
+                            await session.commit()
+                            await enqueue(
+                                self.add_new_channel_videos_job,
+                                kwargs={"channel_id": channel_id},
+                                at_front=True,
+                            )
+                        query = select(YoutubeSubscription).where(
+                            YoutubeSubscription.id == subscription_id
+                        )
+                        results = await session.scalars(query)
+                        if not results.first():
+                            session.add(
+                                YoutubeSubscription(
+                                    id=subscription_id,
+                                    email=account.email,
+                                    channel_id=channel_id,
+                                    published_at=published_at,
+                                )
+                            )
                         session.add(TempSubscription(id=subscription["id"]))
                         await session.commit()
                     except Exception:
@@ -259,60 +169,86 @@ class YoutubeTasker:
                 )
 
     @worker_task
-    async def _add_new_channel_videos_job(
-        self, channel_id: str = ..., session: AsyncSession = ...
+    async def add_new_channel_videos_job(
+        self,
+        channel_id: str = ...,
+        date_after: str | None = None,
+        session: AsyncSession = ...,
     ):
         query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
         results = await session.scalars(query)
         channel = results.first()
-        async for uploaded_playlist_videos in google_api_service.get_playlist_videos(
-            playlist_id=channel.upload_playlist_id
-        ):
-            new_videos = []
-            video_ids = []
-            videos_info = await google_api_service.get_videos_info(video_ids=video_ids)
-            for video_info in videos_info:
-                try:
-                    new_video = await self._add_update_video(
-                        video=video_info, session=session
+        if not channel:
+            raise Exception("Channel not found")
+        date_after = (
+            date_after
+            if date_after
+            else "{year}{month}{day}".format(
+                year=channel.last_videos_updated.year,
+                month=str(channel.last_videos_updated.month).rjust(2, "0"),
+                day=str(channel.last_videos_updated.day).rjust(2, "0"),
+            )
+        )
+        videos_info = await ytdlp.extract_videos_info(
+            url=f"https://youtube.com/channel/{channel_id}/videos",
+            date_after=date_after,
+        )
+        for video_info in videos_info:
+            video_id = video_info["id"]
+            video_title = video_info["title"]
+            video_thumbnail = video_info["thumbnail"]
+            video_category_name = video_info["categories"][0]
+
+            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+            results = await session.scalars(query)
+            video = results.first()
+            if video:
+                video.title = video_title
+                video.thumbnail = video_thumbnail
+            else:
+                query = select(YoutubeVideoCategory).where(
+                    YoutubeVideoCategory.name == video_category_name
+                )
+                results = await session.scalars(query)
+                video_category = results.first()
+                if not video_category:
+                    raise Exception(f"video category not found {video_category_name}")
+
+                current_time = datetime.now(tz=settings.timezone)
+                video_upload_date = datetime.strptime(
+                    video_info["upload_date"], "%Y%m%d"
+                ).replace(
+                    hour=current_time.hour,
+                    minute=current_time.minute,
+                    second=current_time.second,
+                    tzinfo=settings.timezone,
+                )
+                session.add(
+                    YoutubeVideo(
+                        id=video_id,
+                        title=video_title,
+                        thumbnail=video_thumbnail,
+                        channel_id=channel_id,
+                        category_id=video_category.id,
+                        published_at=video_upload_date,
                     )
-                    if new_video:
-                        new_videos.append(video_info["id"])
-                except Exception:
-                    logger.exception(traceback.format_exc())
-            if len(new_videos) < len(uploaded_playlist_videos):
-                break
+                )
+            await session.commit()
         channel.last_videos_updated = datetime.now(tz=settings.timezone)
         await session.commit()
 
     @worker_task
-    async def update_channels_videos(self, session: AsyncSession = ...):
+    async def update_channel_videos(
+        self, date_after: str | None = None, session: AsyncSession = ...
+    ):
         query = select(YoutubeChannel)
         stream = await session.stream_scalars(query)
         async for channel in stream:
             await enqueue(
-                function=self._add_new_channel_videos_job,
-                kwargs={"channel_id": channel.id},
+                function=self.add_new_channel_videos_job,
+                kwargs={"channel_id": channel.id, "date_after": date_after},
                 at_front=True,
             )
-
-    @worker_task
-    async def update_channels_meta(self, session: AsyncSession = ...):
-        CHANNEL_NUM = 50
-        page = 0
-        while True:
-            query = select(YoutubeChannel).offset(page * CHANNEL_NUM)
-            results = await session.scalars(query)
-            channels = results.fetchmany(CHANNEL_NUM)
-            if len(channels) == 0:
-                break
-            channel_ids = [channel.id for channel in channels]
-            await enqueue(
-                function=self._update_channels,
-                kwargs={"channel_ids": channel_ids},
-                at_front=True,
-            )
-            page += 1
 
     @worker_task
     async def update_subscriptions(self, session: AsyncSession = ...):

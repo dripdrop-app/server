@@ -1,4 +1,3 @@
-from typing import List
 from urllib import parse
 
 from dripdrop.http_client import http_client
@@ -6,10 +5,10 @@ from dripdrop.settings import settings, ENV
 from dripdrop.logging import logger
 
 
-class GoogleAPIService:
+class GoogleAPI:
     YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3"
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.scopes = [
             "https://www.googleapis.com/auth/userinfo.email",
             "openid",
@@ -94,7 +93,7 @@ class GoogleAPIService:
             "regionCode": "US",
         }
         response = await http_client.get(
-            f"{GoogleAPIService.YOUTUBE_API_URL}/videoCategories",
+            f"{GoogleAPI.YOUTUBE_API_URL}/videoCategories",
             params=params,
             headers=self.base_headers,
         )
@@ -114,7 +113,7 @@ class GoogleAPIService:
         headers = {"Authorization": f"Bearer {access_token}", **self.base_headers}
         while params.get("pageToken") is not None:
             response = await http_client.get(
-                f"{GoogleAPIService.YOUTUBE_API_URL}/subscriptions",
+                f"{GoogleAPI.YOUTUBE_API_URL}/subscriptions",
                 params=params,
                 headers=headers,
             )
@@ -126,61 +125,5 @@ class GoogleAPIService:
                 logger.warning(response.text)
                 raise Exception("Failed to get user subscriptions")
 
-    async def get_channels_info(self, channel_ids: List[str] = ...):
-        params = {
-            "key": settings.google_api_key,
-            "part": "snippet,contentDetails",
-            "id": ",".join(channel_ids),
-            "maxResults": 50,
-        }
-        response = await http_client.get(
-            f"{GoogleAPIService.YOUTUBE_API_URL}/channels",
-            params=params,
-            headers=self.base_headers,
-        )
-        if response.is_success:
-            json = response.json()
-            return json.get("items", [])
-        logger.warning(response.text)
-        raise Exception("Failed to get channel info")
 
-    async def get_playlist_videos(self, playlist_id: str = ...):
-        params = {
-            "key": settings.google_api_key,
-            "part": "contentDetails",
-            "playlistId": playlist_id,
-            "maxResults": 50,
-            "pageToken": "",
-        }
-        while params.get("pageToken") is not None:
-            response = await http_client.get(
-                f"{GoogleAPIService.YOUTUBE_API_URL}/playlistItems",
-                params=params,
-                headers=self.base_headers,
-            )
-            if response.is_success:
-                json = response.json()
-                yield json.get("items", [])
-                params["pageToken"] = json.get("nextPageToken", None)
-            else:
-                logger.warning(response.text)
-                raise Exception("Failed to get playlist videos")
-
-    async def get_videos_info(self, video_ids: str = ...):
-        params = {
-            "key": settings.google_api_key,
-            "part": "snippet",
-            "id": ",".join(video_ids),
-            "maxResults": 50,
-        }
-        response = await http_client.get(
-            f"{GoogleAPIService.YOUTUBE_API_URL}/videos", params=params
-        )
-        if response.is_success:
-            json = response.json()
-            return json.get("items", [])
-        logger.warning(response.text)
-        raise Exception("Failed to get info for videos")
-
-
-google_api_service = GoogleAPIService()
+google_api = GoogleAPI()

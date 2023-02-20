@@ -11,7 +11,7 @@ from dripdrop.dependencies import (
 )
 from dripdrop.rq import enqueue
 from dripdrop.logging import logger
-from dripdrop.services.google_api import google_api_service
+from dripdrop.services.google_api import google_api
 from dripdrop.settings import settings, ENV
 
 from .channels import channels_api
@@ -46,12 +46,10 @@ async def google_oauth2(
         raise HTTPException(400)
     tokens = None
     try:
-        tokens = await google_api_service.get_oauth_tokens(
+        tokens = await google_api.get_oauth_tokens(
             f"{request.base_url}api/youtube/googleoauth2", code
         )
-        google_email = await google_api_service.get_user_email(
-            tokens.get("access_token")
-        )
+        google_email = await google_api.get_user_email(tokens.get("access_token"))
         query = select(GoogleAccount).where(GoogleAccount.email == google_email)
         results = await session.scalars(query)
         google_account = results.first()
@@ -103,7 +101,7 @@ async def get_youtube_account(
 async def create_oauth_link(
     request: Request, user: User = Depends(get_authenticated_user)
 ):
-    oauth_url = google_api_service.create_oauth_url(
+    oauth_url = google_api.create_oauth_url(
         f"{request.base_url}api/youtube/googleoauth2", user.email
     )
     return PlainTextResponse(content=oauth_url)

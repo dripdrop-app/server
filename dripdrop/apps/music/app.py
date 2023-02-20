@@ -2,10 +2,10 @@ import traceback
 from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, status
 from pydantic import HttpUrl
 
-from dripdrop.services.audio import audio_service
+from dripdrop.services.ytdlp import ytdlp
 from dripdrop.dependencies import get_authenticated_user
 from dripdrop.logging import logger
-from dripdrop.services.image_downloader import image_downloader_service
+from dripdrop.services.image_downloader import image_downloader
 
 from .jobs import jobs_api
 from .responses import (
@@ -34,8 +34,11 @@ app.include_router(router=jobs_api)
 )
 async def get_grouping(video_url: HttpUrl = Query(...)):
     try:
-        info = await audio_service.async_extract_info(link=video_url)
-        uploader = info.get("uploader")
+        videos_info = await ytdlp.extract_videos_info(url=video_url)
+        if not videos_info:
+            raise Exception()
+        video_info = videos_info[0]
+        uploader = video_info.get("uploader")
         return GroupingResponse(grouping=uploader)
     except Exception:
         logger.exception(traceback.format_exc())
@@ -53,9 +56,7 @@ async def get_grouping(video_url: HttpUrl = Query(...)):
 )
 async def get_artwork(artwork_url: HttpUrl = Query(...)):
     try:
-        artwork_url = await image_downloader_service.resolve_artwork(
-            artwork=artwork_url
-        )
+        artwork_url = await image_downloader.resolve_artwork(artwork=artwork_url)
         return ArtworkUrlResponse(artwork_url=artwork_url)
     except Exception:
         logger.exception(traceback.format_exc())

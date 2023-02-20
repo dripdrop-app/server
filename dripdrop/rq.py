@@ -6,9 +6,7 @@ from typing import Coroutine
 from dripdrop.settings import ENV, settings
 
 
-queue = Queue(
-    connection=Redis.from_url(settings.redis_url), default_timeout=-1, is_async=False
-)
+queue = Queue(connection=Redis.from_url(settings.redis_url), default_timeout=60)
 
 
 # Mock rq's behavior when running with is_async=True to handle async code
@@ -23,5 +21,5 @@ async def enqueue(
         await function(*args, **kwargs)
         return None
     return queue.enqueue(
-        f=function, args=args, kwargs=kwargs, depends_on=depends_on, at_front=at_front
+        function, args=args, kwargs=kwargs, depends_on=depends_on, at_front=at_front
     )

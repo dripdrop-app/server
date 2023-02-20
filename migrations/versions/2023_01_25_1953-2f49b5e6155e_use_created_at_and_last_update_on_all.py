@@ -1,4 +1,4 @@
-"""use created at_and last up_ated on all models, add last_videos_updated to youtube channels
+"""use created at and last updated on all models, add last_videos_updated to youtube channels
 
 Revision ID: 2f49b5e6155e
 Revises: 7aa0e953eff8

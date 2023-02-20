@@ -47,9 +47,7 @@ async def test_channels(
         refresh_token="",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     response = await client.get(CHANNELS_URL, params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK

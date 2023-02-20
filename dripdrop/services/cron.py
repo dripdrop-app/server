@@ -13,7 +13,7 @@ from dripdrop.settings import settings, ENV
 scheduled_registry = ScheduledJobRegistry(queue=queue)
 
 
-class CronService:
+class Cron:
     def __init__(self):
         self.CRONS_ADDED = "crons_added"
 
@@ -26,13 +26,9 @@ class CronService:
             function=youtube_tasker.update_subscriptions,
             depends_on=video_categories_job,
         )
-        subscribed_channels_meta_job = await enqueue(
-            function=youtube_tasker.update_channels_meta,
-            depends_on=update_subscriptions_job,
-        )
         subscribed_channels_videos_job = await enqueue(
-            function=youtube_tasker.update_channels_videos,
-            depends_on=subscribed_channels_meta_job,
+            function=youtube_tasker.update_channel_videos,
+            depends_on=update_subscriptions_job,
         )
         await enqueue(
             function=youtube_tasker.delete_old_channels,
@@ -82,10 +78,9 @@ class CronService:
                     youtube_tasker.update_video_categories,
                     kwargs={"cron": True},
                 )
+                self.create_cron_job("0 * * * *", youtube_tasker.update_channel_videos)
                 self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
                 self.create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
-                self.create_cron_job("30 0 * * *", youtube_tasker.update_channels_meta)
-                self.create_cron_job("0 1 * * *", youtube_tasker.update_channels_videos)
                 self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
 
     async def end_cron_jobs(self):
@@ -93,4 +88,4 @@ class CronService:
             await redis.delete(self.CRONS_ADDED)
 
 
-cron_service = CronService()
+cron = Cron()

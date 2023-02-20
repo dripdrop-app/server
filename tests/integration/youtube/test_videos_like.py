@@ -50,9 +50,7 @@ async def test_add_video_like(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     video = await create_video(
@@ -86,9 +84,7 @@ async def test_add_video_like_with_the_same_video(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
     category = await create_video_category(id=1, name="category")
     video = await create_video(
@@ -150,9 +146,7 @@ async def test_delete_video_like(
         refresh_token="refresh",
         expires=1000,
     )
-    channel = await create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     video = await create_video(
         id="1",

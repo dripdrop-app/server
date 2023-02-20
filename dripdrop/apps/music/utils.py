@@ -1,16 +1,16 @@
+import asyncio
 import base64
 import os
 import re
 import shutil
 import traceback
 import uuid
-from asgiref.sync import sync_to_async
 from fastapi import UploadFile
 from pydantic import HttpUrl
 
 from dripdrop.logging import logger
-from dripdrop.services.audio_tag import AudioTagService
-from dripdrop.services.boto3 import Boto3Service, boto3_service
+from dripdrop.services.audio_tag import AudioTags
+from dripdrop.services.s3 import S3, s3
 
 from .models import MusicJob
 from .responses import TagsResponse
@@ -25,15 +25,13 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
             dataString = ",".join(artwork_url.split(",")[1:])
             data = dataString.encode()
             data_bytes = base64.b64decode(data)
-            artwork_filename = (
-                f"{Boto3Service.S3_ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
-            )
-            await boto3_service.upload_file(
+            artwork_filename = f"{S3.ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
+            await s3.upload_file(
                 filename=artwork_filename,
                 body=data_bytes,
                 content_type=f"image/{extension}",
             )
-            artwork_url = Boto3Service.resolve_url(filename=artwork_filename)
+            artwork_url = s3.resolve_url(filename=artwork_filename)
         else:
             try:
                 HttpUrl.validate(artwork_url)
@@ -46,9 +44,9 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
     filename_url = None
     filename = None
     if file:
-        filename = f"{Boto3Service.S3_MUSIC_FOLDER}/{job_id}/old/{file.filename}"
-        filename_url = Boto3Service.resolve_url(filename=filename)
-        await boto3_service.upload_file(
+        filename = f"{S3.MUSIC_FOLDER}/{job_id}/old/{file.filename}"
+        filename_url = S3.resolve_url(filename=filename)
+        await s3.upload_file(
             filename=filename,
             body=await file.read(),
             content_type=file.content_type,
@@ -58,20 +56,20 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
 
 async def cleanup_job(job: MusicJob):
     if job.artwork_filename:
-        await boto3_service.delete_file(
+        await s3.delete_file(
             filename=job.artwork_filename,
         )
     if job.download_filename:
-        await boto3_service.delete_file(
+        await s3.delete_file(
             filename=job.download_filename,
         )
     if job.original_filename:
-        await boto3_service.delete_file(
+        await s3.delete_file(
             filename=job.original_filename,
         )
 
 
-async def read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:
+async def read_tags(file: bytes = ..., filename: str = ...):
     def _create_tags_directory():
         TAGS_FOLDER = "tags"
         folder_id = str(uuid.uuid4())
@@ -96,7 +94,7 @@ async def read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:
             with open(file_path, "wb") as f:
                 f.write(file)
 
-            audio_tags = AudioTagService(file_path=file_path)
+            audio_tags = AudioTags(file_path=file_path)
             title = audio_tags.title
             artist = audio_tags.artist
             album = audio_tags.album
@@ -115,4 +113,4 @@ async def read_tags(file: bytes = ..., filename: str = ...) -> TagsResponse:
             logger.exception(traceback.format_exc())
             return TagsResponse()
 
-    return await sync_to_async(_read_tags)(file=file, filename=filename)
+    return await asyncio.to_thread(_read_tags, file=file, filename=filename)
