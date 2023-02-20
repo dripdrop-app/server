@@ -90,7 +90,7 @@ class YoutubeTasker:
                     subscription_id = subscription["id"]
                     subscription_snippet = subscription["snippet"]
                     channel_id = subscription_snippet["resourceId"]["channelId"]
-                    channel_title = subscription_snippet["Title"]
+                    channel_title = subscription_snippet["title"]
                     channel_thumbnail = subscription_snippet["thumbnails"]["high"][
                         "url"
                     ]
