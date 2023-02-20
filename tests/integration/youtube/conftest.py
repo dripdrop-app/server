@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from dripdrop.apps.youtube.models import (
     GoogleAccount,
@@ -17,8 +17,8 @@ from dripdrop.settings import settings
 
 
 @pytest.fixture
-def create_google_account(session: Session):
-    def _create_google_account(
+def create_google_account(session: AsyncSession):
+    async def _create_google_account(
         email: str = ...,
         user_email: str = ...,
         access_token: str = ...,
@@ -33,44 +33,42 @@ def create_google_account(session: Session):
             expires=expires,
         )
         session.add(google_account)
-        session.commit()
+        await session.commit()
         return google_account
 
     return _create_google_account
 
 
 @pytest.fixture
-def create_channel(session: Session):
-    def _create_channel(
+def create_channel(session: AsyncSession):
+    async def _create_channel(
         id: str = ...,
         title: str = ...,
         thumbnail: str = ...,
-        upload_playlist_id: str = ...,
-        last_updated: datetime | None = None,
         last_videos_updated: datetime | None = None,
+        last_updated: datetime | None = None,
     ):
         youtube_channel = YoutubeChannel(
             id=id,
             title=title,
             thumbnail=thumbnail,
-            upload_playlist_id=upload_playlist_id,
-            last_updated=last_updated
-            if last_updated
-            else datetime.now(tz=settings.timezone),
             last_videos_updated=last_videos_updated
             if last_videos_updated
             else datetime.now(tz=settings.timezone),
+            last_updated=last_updated
+            if last_updated
+            else datetime.now(tz=settings.timezone),
         )
         session.add(youtube_channel)
-        session.commit()
+        await session.commit()
         return youtube_channel
 
     return _create_channel
 
 
 @pytest.fixture
-def create_subscription(session: Session):
-    def _create_subscription(
+def create_subscription(session: AsyncSession):
+    async def _create_subscription(
         id: str = ...,
         channel_id: str = ...,
         email: str = ...,
@@ -85,26 +83,26 @@ def create_subscription(session: Session):
             else datetime.now(tz=settings.timezone),
         )
         session.add(youtube_subscription)
-        session.commit()
+        await session.commit()
         return youtube_subscription
 
     return _create_subscription
 
 
 @pytest.fixture
-def create_video_category(session: Session):
-    def _create_video_category(id: int = ..., name: str = ...):
+def create_video_category(session: AsyncSession):
+    async def _create_video_category(id: int = ..., name: str = ...):
         youtube_video_category = YoutubeVideoCategory(id=id, name=name)
         session.add(youtube_video_category)
-        session.commit()
+        await session.commit()
         return youtube_video_category
 
     return _create_video_category
 
 
 @pytest.fixture
-def create_video(session: Session):
-    def _create_video(
+def create_video(session: AsyncSession):
+    async def _create_video(
         id: str = ...,
         title: str = ...,
         thumbnail: str = ...,
@@ -123,30 +121,30 @@ def create_video(session: Session):
             else datetime.now(settings.timezone),
         )
         session.add(youtube_video)
-        session.commit()
+        await session.commit()
         return youtube_video
 
     return _create_video
 
 
 @pytest.fixture
-def create_video_queue(session: Session):
-    def _create_video_queue(email: str = ..., video_id: str = ...):
+def create_video_queue(session: AsyncSession):
+    async def _create_video_queue(email: str = ..., video_id: str = ...):
         youtube_video_queue = YoutubeVideoQueue(email=email, video_id=video_id)
         session.add(youtube_video_queue)
-        session.commit()
+        await session.commit()
         return youtube_video_queue
 
     return _create_video_queue
 
 
 @pytest.fixture
-def get_video_queue(session: Session):
-    def _get_video_queue(email: str = ..., video_id: str = ...):
+def get_video_queue(session: AsyncSession):
+    async def _get_video_queue(email: str = ..., video_id: str = ...):
         query = select(YoutubeVideoQueue).where(
             YoutubeVideoQueue.email == email, YoutubeVideoQueue.video_id == video_id
         )
-        results = session.scalars(query)
+        results = await session.scalars(query)
         youtube_video_queue = results.first()
         return youtube_video_queue
 
@@ -154,23 +152,23 @@ def get_video_queue(session: Session):
 
 
 @pytest.fixture
-def create_video_like(session: Session):
-    def _create_video_like(email: str = ..., video_id: str = ...):
+def create_video_like(session: AsyncSession):
+    async def _create_video_like(email: str = ..., video_id: str = ...):
         youtube_video_like = YoutubeVideoLike(email=email, video_id=video_id)
         session.add(youtube_video_like)
-        session.commit()
+        await session.commit()
         return youtube_video_like
 
     return _create_video_like
 
 
 @pytest.fixture
-def get_video_like(session: Session):
-    def _get_video_like(email: str = ..., video_id: str = ...):
+def get_video_like(session: AsyncSession):
+    async def _get_video_like(email: str = ..., video_id: str = ...):
         query = select(YoutubeVideoLike).where(
             YoutubeVideoLike.email == email, YoutubeVideoLike.video_id == video_id
         )
-        results = session.scalars(query)
+        results = await session.scalars(query)
         youtube_video_queue = results.first()
         return youtube_video_queue
 
@@ -178,23 +176,23 @@ def get_video_like(session: Session):
 
 
 @pytest.fixture
-def create_video_watch(session: Session):
-    def _create_video_watch(email: str = ..., video_id: str = ...):
+def create_video_watch(session: AsyncSession):
+    async def _create_video_watch(email: str = ..., video_id: str = ...):
         youtube_video_watch = YoutubeVideoWatch(email=email, video_id=video_id)
         session.add(youtube_video_watch)
-        session.commit()
+        await session.commit()
         return youtube_video_watch
 
     return _create_video_watch
 
 
 @pytest.fixture
-def get_video_watch(session: Session):
-    def _get_video_watch(email: str = ..., video_id: str = ...):
+def get_video_watch(session: AsyncSession):
+    async def _get_video_watch(email: str = ..., video_id: str = ...):
         query = select(YoutubeVideoWatch).where(
             YoutubeVideoWatch.email == email, YoutubeVideoWatch.video_id == video_id
         )
-        results = session.scalars(query)
+        results = await session.scalars(query)
         youtube_video_queue = results.first()
         return youtube_video_queue
 

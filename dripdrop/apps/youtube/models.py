@@ -1,10 +1,10 @@
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import database, Session
+from dripdrop.database import database
 from dripdrop.models.base import Base, ModelBaseMixin
 
 
@@ -33,7 +33,6 @@ class YoutubeChannel(ModelBaseMixin, Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(nullable=False)
     thumbnail: Mapped[str | None] = mapped_column(nullable=True)
-    upload_playlist_id: Mapped[str | None] = mapped_column(nullable=True)
     last_videos_updated: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
@@ -177,20 +176,18 @@ class YoutubeVideoWatch(ModelBaseMixin, Base):
     )
 
 
-@contextmanager
-def create_temp_subscriptions_table(email: str = ..., session: Session = ...):
+@asynccontextmanager
+async def create_temp_subscriptions_table(email: str = ...):
     class TempSubscription(Base):
         __tablename__ = f"temp_table_user_{email}_subscriptions"
 
         id: Mapped[str] = mapped_column(primary_key=True, nullable=False)
 
-    try:
-        session.commit()
-        TempSubscription.__table__.create(bind=database.engine)
-        yield TempSubscription
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.commit()
-        TempSubscription.__table__.drop(bind=database.engine)
+    async with database._engine.begin() as conn:
+        try:
+            await conn.run_sync(TempSubscription.__table__.create)
+            yield TempSubscription
+        except Exception as e:
+            raise e
+        finally:
+            await conn.run_sync(TempSubscription.__table__.drop)

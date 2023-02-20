@@ -1,24 +1,24 @@
-import asyncio
 import json
 import os
-import requests
 import shutil
 import traceback
 from datetime import datetime, timedelta
+from pydub import AudioSegment
 from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 
-from dripdrop.database import Session
+from dripdrop.database import AsyncSession
+from dripdrop.http_client import http_client
 from dripdrop.logging import logger
-from dripdrop.redis import redis
-from dripdrop.services.boto3 import boto3_service, Boto3Service
-from dripdrop.services.audio_tag import AudioTagService
-from dripdrop.services.image_downloader import image_downloader_service
-from dripdrop.services.redis import RedisChannels
-from dripdrop.services.audio import audio_service
+from dripdrop.services.s3 import s3, S3
+from dripdrop.services.audio_tag import AudioTags
+from dripdrop.services.image_downloader import image_downloader
+from dripdrop.services.websocket_handler import RedisChannels
+from dripdrop.services.ytdlp import ytdlp
 from dripdrop.settings import settings
-from dripdrop.rq import queue
+from dripdrop.redis import redis
+from dripdrop.rq import enqueue
 from dripdrop.utils import worker_task
 
 from .models import MusicJob
@@ -39,29 +39,31 @@ class MusicTasker:
         os.mkdir(job_path)
         return job_path
 
-    def _retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
+    async def _retrieve_audio_file(self, job_path: str = ..., job: MusicJob = ...):
         filename = None
         if job.filename_url:
-            res = requests.get(job.filename_url)
+            res = await http_client.get(job.filename_url)
             audio_file_path = os.path.join(
                 job_path, f"temp{os.path.splitext(job.original_filename)[1]}"
             )
             with open(audio_file_path, "wb") as f:
                 f.write(res.content)
 
-            new_audio_file_path = f"{os.path.splitext(audio_file_path)[0]}.mp3"
-            audio_service.convert_to_mp3(
-                file_path=audio_file_path, new_file_path=new_audio_file_path
+            filename = f"{os.path.splitext(audio_file_path)[0]}.mp3"
+            AudioSegment.from_file(file=audio_file_path).export(
+                filename, format="mp3", bitrate="320k"
             )
-            return new_audio_file_path
         elif job.video_url:
-            filename = audio_service.download(link=job.video_url, folder=job_path)
+            filename = os.path.join(job_path, "temp.mp3")
+            await ytdlp.download_audio_from_video(
+                url=job.video_url, download_path=f"{os.path.splitext(filename)[0]}"
+            )
         return filename
 
-    def _retrieve_artwork(self, job: MusicJob = ...):
+    async def _retrieve_artwork(self, job: MusicJob = ...):
         if job.artwork_url:
             try:
-                imageData = image_downloader_service.download_image(
+                imageData = await image_downloader.download_image(
                     artwork=job.artwork_url
                 )
                 extension = os.path.splitext(job.artwork_url)[0]
@@ -76,7 +78,7 @@ class MusicTasker:
         filename: str = ...,
         artwork_info: Union[dict, None] = None,
     ):
-        audio_tag_service = AudioTagService(file_path=filename)
+        audio_tag_service = AudioTags(file_path=filename)
         audio_tag_service.title = job.title
         audio_tag_service.artist = job.artist
         audio_tag_service.album = job.album
@@ -88,39 +90,39 @@ class MusicTasker:
             )
 
     @worker_task
-    def run_job(self, job_id: str = ..., session: Session = ...):
+    async def run_job(self, job_id: str = ..., session: AsyncSession = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         job = results.first()
         if not job:
             raise Exception(f"Job with id ({job_id}) not found")
         job_path = None
         try:
             job_path = self._create_job_folder(job=job)
-            filename = self._retrieve_audio_file(job_path=job_path, job=job)
-            artwork_info = self._retrieve_artwork(job=job)
+            filename = await self._retrieve_audio_file(job_path=job_path, job=job)
+            artwork_info = await self._retrieve_artwork(job=job)
             self._update_audio_tags(
                 job=job,
                 filename=filename,
                 artwork_info=artwork_info,
             )
             new_filename = sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
-            new_filename = f"{Boto3Service.S3_MUSIC_FOLDER}/{job.id}/{new_filename}"
+            new_filename = f"{S3.MUSIC_FOLDER}/{job.id}/{new_filename}"
             with open(filename, "rb") as file:
-                boto3_service.upload_file(
+                await s3.upload_file(
                     filename=new_filename,
                     body=file.read(),
                     content_type="audio/mpeg",
                 )
             job.completed = True
             job.download_filename = new_filename
-            job.download_url = Boto3Service.resolve_url(filename=new_filename)
+            job.download_url = S3.resolve_url(filename=new_filename)
         except Exception:
             job.failed = True
             logger.exception(traceback.format_exc())
         finally:
-            session.commit()
-            redis.publish(
+            await session.commit()
+            await redis.publish(
                 RedisChannels.MUSIC_JOB_CHANNEL,
                 json.dumps(MusicChannelResponse(job_id=job_id).dict()),
             )
@@ -128,27 +130,29 @@ class MusicTasker:
                 shutil.rmtree(job_path)
 
     @worker_task
-    def _delete_job(self, job_id: str = ..., session: Session = ...):
+    async def _delete_job(self, job_id: str = ..., session: AsyncSession = ...):
         query = select(MusicJob).where(MusicJob.id == job_id)
-        results = session.scalars(query)
+        results = await session.scalars(query)
         job = results.first()
         if not job:
             raise Exception(f"Job ({job_id}) could not be found")
-        asyncio.run(cleanup_job(job=job))
+        await cleanup_job(job=job)
         job.deleted_at = datetime.now(tz=settings.timezone)
-        session.commit()
+        await session.commit()
 
     @worker_task
-    def delete_old_jobs(self, session: Session = ...):
+    async def delete_old_jobs(self, session: AsyncSession = ...):
         limit = datetime.now(tz=settings.timezone) - timedelta(days=14)
         query = select(MusicJob).where(
             MusicJob.created_at < limit,
             MusicJob.completed.is_(True),
             MusicJob.deleted_at.is_(None),
         )
-        stream = session.scalars(query)
-        for job in stream.yield_per(10):
-            queue.enqueue(self._delete_job, kwargs={"job_id": job.id}, at_front=True)
+        stream = await session.stream_scalars(query)
+        async for job in stream:
+            await enqueue(
+                function=self._delete_job, kwargs={"job_id": job.id}, at_front=True
+            )
 
 
 music_tasker = MusicTasker()

@@ -1,22 +1,22 @@
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from dripdrop.dependencies import COOKIE_NAME
 
 CREATE_URL = "/api/auth/create"
 
 
-def test_create_duplicate_user(client: TestClient, create_user):
-    user = create_user(email="user@gmail.com", password="password")
-    response = client.post(
+async def test_create_duplicate_user(client: AsyncClient, create_user):
+    user = await create_user(email="user@gmail.com", password="password")
+    response = await client.post(
         CREATE_URL, json={"email": user.email, "password": "password"}
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_create_user(client: TestClient):
+async def test_create_user(client: AsyncClient):
     TEST_EMAIL = "user@gmail.com"
-    response = client.post(
+    response = await client.post(
         CREATE_URL, json={"email": TEST_EMAIL, "password": "password"}
     )
     assert response.status_code == status.HTTP_200_OK

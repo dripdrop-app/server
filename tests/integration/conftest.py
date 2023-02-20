@@ -1,44 +1,70 @@
+import asyncio
 import pytest
+import shutil
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import database, Session
+from dripdrop.database import database, AsyncSession
 from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.models.base import Base
-from dripdrop.services.boto3 import boto3_service
+from dripdrop.services.s3 import s3
 from dripdrop.settings import settings, ENV
 
 
 @pytest.fixture(autouse=True)
-def check_environment():
+async def check_environment():
     assert settings.env == ENV.TESTING
 
 
 @pytest.fixture(autouse=True)
-def setup_database():
-    Base.metadata.drop_all(bind=database.engine)
-    Base.metadata.create_all(bind=database.engine)
+async def setup_database():
+    async with database._engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 
-@pytest.fixture
-def session():
-    with database.create_session() as session:
-        yield session
+@pytest.fixture(scope="session")
+def delete_directories():
+    def _delete_directories():
+        try:
+            shutil.rmtree("music_jobs")
+        except Exception:
+            pass
+        try:
+            shutil.rmtree("tags")
+        except Exception:
+            pass
+
+    return _delete_directories
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session")
+async def http_client():
+    async with AsyncClient() as client:
+        yield client
 
 
 @pytest.fixture(scope="session")
 def clean_test_s3_folders():
-    def _clean_test_s3_folders():
+    async def _clean_test_s3_folders():
         try:
-            for keys in boto3_service.list_objects():
+            async for keys in s3.list_objects():
                 for key in keys:
                     if key.startswith("test"):
                         continue
-                    boto3_service.delete_file(filename=key)
+                    await s3.delete_file(filename=key)
         except Exception as e:
             print(e)
             pass
@@ -46,36 +72,42 @@ def clean_test_s3_folders():
     return _clean_test_s3_folders
 
 
-# Fix found here https://github.com/pytest-dev/pytest-asyncio/issues/207
-# Need to create a single event loop that all instances will use
-
-
 @pytest.fixture(scope="session")
-def client(clean_test_s3_folders):
-    clean_test_s3_folders()
-    with TestClient(app) as client:
+async def client(clean_test_s3_folders, delete_directories):
+    await clean_test_s3_folders()
+    delete_directories()
+    async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
-    clean_test_s3_folders()
+    await clean_test_s3_folders()
+    delete_directories()
+
+
+@pytest.fixture()
+async def session():
+    async with database.create_session() as session:
+        yield session
 
 
 @pytest.fixture
-def create_user(session: Session):
-    def _create_user(email: str = ..., password: str = ..., admin=False):
+def create_user(session: AsyncSession):
+    async def _create_user(email: str = ..., password: str = ..., admin=False):
         assert type(email) is str
         assert type(password) is str
         user = User(email=email, password=password_context.hash(password), admin=admin)
         session.add(user)
-        session.commit()
+        await session.commit()
         return user
 
     return _create_user
 
 
 @pytest.fixture
-def create_and_login_user(client: TestClient, create_user):
-    def _create_and_login_user(email: str = ..., password: str = ..., admin=False):
-        user = create_user(email=email, password=password, admin=admin)
-        response = client.post(
+def create_and_login_user(client: AsyncClient, create_user):
+    async def _create_and_login_user(
+        email: str = ..., password: str = ..., admin=False
+    ):
+        user = await create_user(email=email, password=password, admin=admin)
+        response = await client.post(
             "/api/auth/login", json={"email": email, "password": password}
         )
         assert response.status_code == status.HTTP_200_OK

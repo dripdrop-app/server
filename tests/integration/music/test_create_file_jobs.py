@@ -1,15 +1,14 @@
-import requests
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 CREATE_URL = "/api/music/jobs/create"
 
 
-def test_creating_file_job_with_invalid_content_type(
-    client: TestClient, create_and_login_user, test_audio_file
+async def test_creating_file_job_with_invalid_content_type(
+    client: AsyncClient, create_and_login_user, test_audio_file
 ):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.post(
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(
         CREATE_URL,
         data={
             "title": "title",
@@ -24,14 +23,14 @@ def test_creating_file_job_with_invalid_content_type(
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_creating_file_job_with_invalid_file(
-    client: TestClient,
+async def test_creating_file_job_with_invalid_file(
+    client: AsyncClient,
     create_and_login_user,
     test_image_file,
     get_completed_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    response = client.post(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(
         CREATE_URL,
         data={
             "title": "title",
@@ -44,7 +43,7 @@ def test_creating_file_job_with_invalid_file(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = get_completed_job(email=user.email)
+    job = await get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -53,14 +52,15 @@ def test_creating_file_job_with_invalid_file(
     assert job.failed is True
 
 
-def test_creating_file_job_with_valid_file(
-    client: TestClient,
+async def test_creating_file_job_with_valid_file(
+    client: AsyncClient,
+    http_client: AsyncClient,
     create_and_login_user,
     test_audio_file,
     get_completed_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    response = client.post(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(
         CREATE_URL,
         data={
             "title": "title",
@@ -73,7 +73,7 @@ def test_creating_file_job_with_valid_file(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = get_completed_job(email=user.email)
+    job = await get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -81,19 +81,20 @@ def test_creating_file_job_with_valid_file(
     assert job.completed is True
     assert job.failed is False
     assert job.filename_url is not None
-    response = requests.get(job.filename_url)
+    response = await http_client.get(job.filename_url)
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_creating_file_job_with_valid_file_and_artwork_url(
-    client: TestClient,
+async def test_creating_file_job_with_valid_file_and_artwork_url(
+    client: AsyncClient,
+    http_client: AsyncClient,
     create_and_login_user,
     test_audio_file,
     test_image_url,
     get_completed_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    response = client.post(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(
         CREATE_URL,
         data={
             "title": "title",
@@ -107,7 +108,7 @@ def test_creating_file_job_with_valid_file_and_artwork_url(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = get_completed_job(email=user.email)
+    job = await get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -115,22 +116,23 @@ def test_creating_file_job_with_valid_file_and_artwork_url(
     assert job.completed is True
     assert job.failed is False
     assert job.filename_url is not None
-    response = requests.get(job.filename_url)
+    response = await http_client.get(job.filename_url)
     assert response.status_code == status.HTTP_200_OK
     assert job.download_url is not None
-    response = requests.get(job.download_url)
+    response = await http_client.get(job.download_url)
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_creating_file_job_with_valid_file_and_base64_artwork(
-    client: TestClient,
+async def test_creating_file_job_with_valid_file_and_base64_artwork(
+    client: AsyncClient,
+    http_client: AsyncClient,
     create_and_login_user,
     test_audio_file,
     test_base64_image,
     get_completed_job,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    response = client.post(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(
         CREATE_URL,
         data={
             "title": "title",
@@ -144,7 +146,7 @@ def test_creating_file_job_with_valid_file_and_base64_artwork(
         },
     )
     assert response.status_code == status.HTTP_201_CREATED
-    job = get_completed_job(email=user.email)
+    job = await get_completed_job(email=user.email)
     assert job.title == "title"
     assert job.artist == "artist"
     assert job.album == "album"
@@ -152,11 +154,11 @@ def test_creating_file_job_with_valid_file_and_base64_artwork(
     assert job.completed is True
     assert job.failed is False
     assert job.filename_url is not None
-    response = requests.get(job.filename_url)
+    response = await http_client.get(job.filename_url)
     assert response.status_code == status.HTTP_200_OK
     assert job.artwork_url is not None
-    response = requests.get(job.artwork_url)
+    response = await http_client.get(job.artwork_url)
     assert response.status_code == status.HTTP_200_OK
     assert job.download_url is not None
-    response = requests.get(job.download_url)
+    response = await http_client.get(job.download_url)
     assert response.status_code == status.HTTP_200_OK

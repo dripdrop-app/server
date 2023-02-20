@@ -1,23 +1,24 @@
-import requests
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 TAGS_URL = "/api/music/tags"
 
 
-def test_tags_when_not_logged_in(client: TestClient):
-    response = client.post(TAGS_URL, files={"file": b"test"})
+async def test_tags_when_not_logged_in(client: AsyncClient):
+    response = await client.post(TAGS_URL, files={"file": b"test"})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_tags_with_an_invalid_file(client: TestClient, create_and_login_user):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = requests.get(
+async def test_tags_with_an_invalid_file(
+    client: AsyncClient, http_client: AsyncClient, create_and_login_user
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await http_client.get(
         "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
     )
     file = response.content
     assert response.status_code == status.HTTP_200_OK
-    response = client.post(TAGS_URL, files={"file": file})
+    response = await client.post(TAGS_URL, files={"file": file})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "title": None,
@@ -28,14 +29,16 @@ def test_tags_with_an_invalid_file(client: TestClient, create_and_login_user):
     }
 
 
-def test_tags_with_a_mp3_without_tags(client: TestClient, create_and_login_user):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = requests.get(
+async def test_tags_with_a_mp3_without_tags(
+    client: AsyncClient, http_client: AsyncClient, create_and_login_user
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await http_client.get(
         "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/test/sample4.mp3"
     )
     assert response.status_code == status.HTTP_200_OK
     file = response.content
-    response = client.post(TAGS_URL, files={"file": file})
+    response = await client.post(TAGS_URL, files={"file": file})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "title": None,
@@ -46,18 +49,21 @@ def test_tags_with_a_mp3_without_tags(client: TestClient, create_and_login_user)
     }
 
 
-def test_tags_with_a_valid_mp3_file(
-    client: TestClient, create_and_login_user, get_tags_from_file
+async def test_tags_with_a_valid_mp3_file(
+    client: AsyncClient,
+    http_client: AsyncClient,
+    create_and_login_user,
+    get_tags_from_file,
 ):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = requests.get(
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await http_client.get(
         "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/"
         + "test/Criminal%20Sinny%20&%20Fako.mp3"
     )
     assert response.status_code == status.HTTP_200_OK
     file = response.content
     with get_tags_from_file(file=file) as tags:
-        response = client.post(TAGS_URL, files={"file": file})
+        response = await client.post(TAGS_URL, files={"file": file})
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
             "title": "Criminal",

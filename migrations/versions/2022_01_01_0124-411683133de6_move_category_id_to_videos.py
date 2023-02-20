@@ -21,8 +21,7 @@ def upgrade():
     op.add_column(
         "youtube_videos", sa.Column("category_id", sa.Integer(), nullable=True)
     )
-    connection = op.get_bind()
-    connection.execute(
+    op.execute(
         "UPDATE youtube_videos SET category_id = (SELECT category_id from youtube_video_category \
             WHERE video_id = youtube_videos.id) WHERE TRUE;"
     )
@@ -61,8 +60,7 @@ def downgrade():
             ondelete="CASCADE",
         ),
     )
-    connection = op.get_bind()
-    connection.execute(
+    op.execute(
         "INSERT INTO youtube_video_category (video_id, category_id) \
             SELECT id as video_id, category_id FROM youtube_videos"
     )

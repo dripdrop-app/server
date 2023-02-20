@@ -1,29 +1,31 @@
 import re
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 ARTWORK_URL = "/api/music/artwork"
 
 
-def test_artwork_when_not_logged_in(client: TestClient):
-    response = client.get(
+async def test_artwork_when_not_logged_in(client: AsyncClient):
+    response = await client.get(
         ARTWORK_URL,
         params={"artwork_url": "https://testimage.jpeg"},
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_artwork_with_invalid_url(client: TestClient, create_and_login_user):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.get(ARTWORK_URL, params={"artwork_url": "https://invalidurl"})
+async def test_artwork_with_invalid_url(client: AsyncClient, create_and_login_user):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.get(
+        ARTWORK_URL, params={"artwork_url": "https://invalidurl"}
+    )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_artwork_with_valid_image_url(
-    client: TestClient, create_and_login_user, test_image_url
+async def test_artwork_with_valid_image_url(
+    client: AsyncClient, create_and_login_user, test_image_url
 ):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.get(
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.get(
         ARTWORK_URL,
         params={"artwork_url": test_image_url},
     )
@@ -31,9 +33,11 @@ def test_artwork_with_valid_image_url(
     assert response.json() == {"artworkUrl": test_image_url}
 
 
-def test_artwork_with_valid_soundcloud_url(client: TestClient, create_and_login_user):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.get(
+async def test_artwork_with_valid_soundcloud_url(
+    client: AsyncClient, create_and_login_user
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.get(
         ARTWORK_URL,
         params={
             "artwork_url": "https://soundcloud.com/badbunny15/bad-bunny-buscabulla-andrea"

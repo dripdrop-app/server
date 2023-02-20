@@ -29,9 +29,9 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.logging import logger
-from dripdrop.redis import async_redis
-from dripdrop.rq import queue
-from dripdrop.services.redis import redis_service, RedisChannels
+from dripdrop.redis import redis
+from dripdrop.rq import enqueue
+from dripdrop.services.websocket_handler import websocket_handler, RedisChannels
 from dripdrop.settings import settings
 
 from .models import MusicJob
@@ -108,7 +108,7 @@ async def listen_jobs(
                 logger.exception(traceback.format_exc())
 
     await websocket.accept()
-    await redis_service.create_websocket_redis_channel_listener(
+    await websocket_handler.create_websocket_redis_channel_listener(
         websocket=websocket,
         channel=RedisChannels.MUSIC_JOB_CHANNEL,
         handler=handler,
@@ -184,8 +184,8 @@ async def create_job(
         )
     )
     await session.commit()
-    queue.enqueue(music_tasker.run_job, kwargs={"job_id": job_id})
-    await async_redis.publish(
+    await enqueue(function=music_tasker.run_job, kwargs={"job_id": job_id})
+    await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
         json.dumps(MusicChannelResponse(job_id=job_id).dict()),
     )

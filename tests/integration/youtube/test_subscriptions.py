@@ -1,85 +1,81 @@
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from dripdrop.settings import settings
 
 SUBSCRIPTIONS_URL = "/api/youtube/subscriptions"
 
 
-def test_subscriptions_when_not_logged_in(client: TestClient):
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
+async def test_subscriptions_when_not_logged_in(client: AsyncClient):
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/10")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_subscriptions_with_no_google_account(
-    client: TestClient, create_and_login_user
+async def test_subscriptions_with_no_google_account(
+    client: AsyncClient, create_and_login_user
 ):
-    create_and_login_user(email="user@gmail.com", password="password")
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/10")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_subscriptions_with_no_results(
-    client: TestClient, create_and_login_user, create_google_account
+async def test_subscriptions_with_no_results(
+    client: AsyncClient, create_and_login_user, create_google_account
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/10")
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"totalPages": 0, "subscriptions": []}
 
 
-def test_subscriptions_out_of_range_page(
-    client: TestClient,
+async def test_subscriptions_out_of_range_page(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
     create_subscription,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    channel = create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
-    create_subscription(id="1", channel_id=channel.id, email=google_account.email)
-    response = client.get(f"{SUBSCRIPTIONS_URL}/2/1")
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
+    await create_subscription(id="1", channel_id=channel.id, email=google_account.email)
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/2/1")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_subscriptions_with_single_result(
-    client: TestClient,
+async def test_subscriptions_with_single_result(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
     create_subscription,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    channel = create_channel(
-        id="1", title="channel", thumbnail="thumbnail", upload_playlist_id="1"
-    )
-    subscription = create_subscription(
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
+    subscription = await create_subscription(
         id="1", channel_id=channel.id, email=google_account.email
     )
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -96,39 +92,38 @@ def test_subscriptions_with_single_result(
     }
 
 
-def test_subscriptions_with_multiple_pages(
-    client: TestClient,
+async def test_subscriptions_with_multiple_pages(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
     create_subscription,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    channels = list(
-        map(
-            lambda i: create_channel(
+    channels = []
+    for i in range(3):
+        channels.append(
+            await create_channel(
                 id=str(i),
                 title=f"channel_{i}",
                 thumbnail="thumbnail",
-                upload_playlist_id="1",
-            ),
-            range(3),
+            )
         )
-    )
-    subscriptions = [
-        create_subscription(
-            id=str(i), channel_id=channel.id, email=google_account.email
+    subscriptions = []
+    for i, channel in enumerate(channels):
+        subscriptions.append(
+            await create_subscription(
+                id=str(i), channel_id=channel.id, email=google_account.email
+            )
         )
-        for i, channel in enumerate(channels)
-    ]
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/1")
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 3,
@@ -145,43 +140,47 @@ def test_subscriptions_with_multiple_pages(
     }
 
 
-def test_subscriptions_for_logged_in_google_account(
-    client: TestClient,
+async def test_subscriptions_for_logged_in_google_account(
+    client: AsyncClient,
     create_and_login_user,
     create_user,
     create_google_account,
     create_channel,
     create_subscription,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    other_user = create_user(email="otheruser@gmail.com", password="password")
-    other_google_account = create_google_account(
+    other_user = await create_user(email="otheruser@gmail.com", password="password")
+    other_google_account = await create_google_account(
         email="othergoogle@gmail.com",
         user_email=other_user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    channel = create_channel(
-        id="1", title="channel_1", thumbnail="thumbnail", upload_playlist_id="1"
+    channel = await create_channel(
+        id="1",
+        title="channel_1",
+        thumbnail="thumbnail",
     )
-    other_channel = create_channel(
-        id="2", title="channel_2", thumbnail="thumbnail", upload_playlist_id="1"
+    other_channel = await create_channel(
+        id="2",
+        title="channel_2",
+        thumbnail="thumbnail",
     )
-    create_subscription(
+    await create_subscription(
         id="1", channel_id=other_channel.id, email=other_google_account.email
     )
-    subscription = create_subscription(
+    subscription = await create_subscription(
         id="2", channel_id=channel.id, email=google_account.email
     )
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/2")
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/2")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
@@ -198,40 +197,37 @@ def test_subscriptions_for_logged_in_google_account(
     }
 
 
-def test_subscriptions_are_in_descending_order_by_title(
-    client: TestClient,
+async def test_subscriptions_are_in_descending_order_by_title(
+    client: AsyncClient,
     create_and_login_user,
     create_google_account,
     create_channel,
     create_subscription,
 ):
-    user = create_and_login_user(email="user@gmail.com", password="password")
-    google_account = create_google_account(
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    google_account = await create_google_account(
         email="google@gmail.com",
         user_email=user.email,
         access_token="",
         refresh_token="",
         expires=1000,
     )
-    channels = list(
-        map(
-            lambda i: create_channel(
+    channels = []
+    for i in range(3):
+        channels.append(
+            await create_channel(
                 id=str(i),
                 title=f"channel_{i}",
                 thumbnail="thumbnail",
-                upload_playlist_id="1",
-            ),
-            range(3),
+            )
         )
-    )
-    subscriptions = list(
-        map(
-            lambda i: create_subscription(
-                id=str(i), channel_id=channels[i].id, email=google_account.email
-            ),
-            range(len(channels)),
+    subscriptions = []
+    for i, channel in enumerate(channels):
+        subscriptions.append(
+            await create_subscription(
+                id=str(i), channel_id=channel.id, email=google_account.email
+            )
         )
-    )
     channels.sort(key=lambda channel: channel.title)
     subscriptions = list(
         map(
@@ -244,7 +240,7 @@ def test_subscriptions_are_in_descending_order_by_title(
             channels,
         )
     )
-    response = client.get(f"{SUBSCRIPTIONS_URL}/1/3")
+    response = await client.get(f"{SUBSCRIPTIONS_URL}/1/3")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,

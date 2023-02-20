@@ -2,47 +2,47 @@ import base64
 import io
 import os
 import pytest
-import requests
 from contextlib import contextmanager
 from datetime import datetime
 from fastapi import status
+from httpx import AsyncClient
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from dripdrop.apps.music.models import MusicJob
-from dripdrop.services.audio_tag import AudioTagService
+from dripdrop.services.audio_tag import AudioTags
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_image_url():
     return "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_audio_file_url():
     return "https://dripdrop-space-test.nyc3.digitaloceanspaces.com/test/07%20tun%20suh.mp3"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_video_url():
     return "https://www.youtube.com/watch?v=wX49jNyqq04"
 
 
-@pytest.fixture
-def test_image_file(test_image_url):
-    response = requests.get(test_image_url)
+@pytest.fixture(scope="session")
+async def test_image_file(http_client: AsyncClient, test_image_url):
+    response = await http_client.get(test_image_url)
     assert response.status_code == status.HTTP_200_OK
     return response.content
 
 
-@pytest.fixture
-def test_audio_file(test_audio_file_url):
-    response = requests.get(test_audio_file_url)
+@pytest.fixture(scope="session")
+async def test_audio_file(http_client: AsyncClient, test_audio_file_url):
+    response = await http_client.get(test_audio_file_url)
     assert response.status_code == status.HTTP_200_OK
     return response.content
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_base64_image(test_image_file):
     buffer = io.BytesIO(test_image_file)
     base64_string = base64.b64encode(buffer.getvalue()).decode()
@@ -50,8 +50,8 @@ def test_base64_image(test_image_file):
 
 
 @pytest.fixture
-def create_music_job(session: Session):
-    def _create_music_job(
+def create_music_job(session: AsyncSession):
+    async def _create_music_job(
         id: str = ...,
         email: str = ...,
         artwork_url: str | None = None,
@@ -88,16 +88,18 @@ def create_music_job(session: Session):
             deleted_at=deleted_at,
         )
         session.add(job)
-        session.commit()
+        await session.commit()
         return job
 
     return _create_music_job
 
 
 @pytest.fixture
-def get_completed_job(session: Session):
-    def _get_completed_job(email: str = ...):
-        results = session.scalars(select(MusicJob).where(MusicJob.user_email == email))
+def get_completed_job(session: AsyncSession):
+    async def _get_completed_job(email: str = ...):
+        results = await session.scalars(
+            select(MusicJob).where(MusicJob.user_email == email)
+        )
         job = results.first()
         assert job is not None
         return job
@@ -112,7 +114,7 @@ def get_tags_from_file():
         with open("test.mp3", "wb") as f:
             f.write(file)
 
-        yield AudioTagService(file_path="test.mp3")
+        yield AudioTags(file_path="test.mp3")
         os.remove("test.mp3")
 
     return _get_tags_from_file
