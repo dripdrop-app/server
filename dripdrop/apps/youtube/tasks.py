@@ -194,17 +194,27 @@ class YoutubeTasker:
             date_after=date_after,
         )
         for video_info in videos_info:
+            current_time = datetime.now(tz=settings.timezone)
             video_id = video_info["id"]
             video_title = video_info["title"]
             video_thumbnail = video_info["thumbnail"]
             video_category_name = video_info["categories"][0]
-
+            video_upload_date = datetime.strptime(
+                video_info["upload_date"], "%Y%m%d"
+            ).replace(
+                hour=current_time.hour,
+                minute=current_time.minute,
+                second=current_time.second,
+                tzinfo=settings.timezone,
+            )
             query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
             results = await session.scalars(query)
             video = results.first()
             if video:
                 video.title = video_title
                 video.thumbnail = video_thumbnail
+                if video.title != video_title or video.thumbnail != video_thumbnail:
+                    video.published_at = video_upload_date
             else:
                 query = select(YoutubeVideoCategory).where(
                     YoutubeVideoCategory.name == video_category_name
@@ -213,16 +223,6 @@ class YoutubeTasker:
                 video_category = results.first()
                 if not video_category:
                     raise Exception(f"video category not found {video_category_name}")
-
-                current_time = datetime.now(tz=settings.timezone)
-                video_upload_date = datetime.strptime(
-                    video_info["upload_date"], "%Y%m%d"
-                ).replace(
-                    hour=current_time.hour,
-                    minute=current_time.minute,
-                    second=current_time.second,
-                    tzinfo=settings.timezone,
-                )
                 session.add(
                     YoutubeVideo(
                         id=video_id,
