@@ -1,7 +1,7 @@
 FROM python:3.10
 RUN apt-get -y update && \
     apt-get -y upgrade && \
-    apt-get install -y ffmpeg
+    apt-get -y install ffmpeg
 RUN pip install -U pip
 RUN pip install poetry
 RUN mkdir -p /src
@@ -11,3 +11,4 @@ COPY ./pyproject.toml ./
 RUN poetry config virtualenvs.in-project true
 RUN poetry install
 COPY . .
+RUN chmod +x ./scripts/*

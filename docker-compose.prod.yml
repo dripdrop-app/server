@@ -1,33 +1,19 @@
 version: '2.4'
-name: dripdrop-dev
+name: dripdrop
 services:
   server:
     extends: 
       file: docker-compose.base.yml
       service: server
     environment:
-      ENV: development
-    volumes:
-      - type: bind
-        source: ./
-        target: /src
-      - type: volume
-        source: server_venv
-        target: /src/.venv 
+      ENV: production
 
   worker:
     extends: 
       file: docker-compose.base.yml
       service: worker
     environment:
-      ENV: development
-    volumes:
-      - type: bind
-        source: ./
-        target: /src
-      - type: volume
-        source: worker_venv
-        target: /src/.venv 
+      ENV: production
 
   postgres:
     extends: 
@@ -44,8 +30,25 @@ services:
       file: docker-compose.base.yml
       service: redis
 
+  influxdb:
+    extends: 
+      file: docker-compose.base.yml
+      service: influxdb
+
+  telegraf:
+    extends: 
+      file: docker-compose.base.yml
+      service: telegraf
+
+  chronograf:
+    extends: 
+      file: docker-compose.base.yml
+      service: chronograf
+
 volumes:
   worker_venv: {}
   server_venv: {}
   postgresql: {}
   redis: {}
+  influxdb: {}
+  chronograf: {}

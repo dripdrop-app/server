@@ -13,10 +13,16 @@ from .dependencies import get_admin_user
 app = FastAPI(
     openapi_tags=["Admin"],
     dependencies=[Depends(get_admin_user)],
+    responses={status.HTTP_403_FORBIDDEN: {}},
 )
 
 
-@app.get("/cron/run", responses={status.HTTP_403_FORBIDDEN: {}})
+@app.get("/session")
+async def check_admin_session():
+    return Response(None, status_code=status.HTTP_200_OK)
+
+
+@app.get("/cron/run")
 async def run_cron_jobs():
     await cron.run_cron_jobs()
     return Response(None, status_code=status.HTTP_200_OK)

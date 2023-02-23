@@ -33,13 +33,20 @@ commands:
             echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
             echo "DATABASE_URL=$DATABASE_URL" >> .env
             echo "DATABASE_USER=$DATABASE_USER" >> .env
-            echo "ENV=$ENV" >> .env
             echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
             echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
             echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+            echo "INFLUXDB_BUCKET=$INFLUXDB_BUCKET" >> .env
+            echo "INFLUXDB_ORG=$INFLUXDB_ORG" >> .env
+            echo "INFLUXDB_PASSWORD=$INFLUXDB_PASSWORD" >> .env
+            echo "INFLUXDB_TOKEN=$INFLUXDB_TOKEN" >> .env
+            echo "INFLUXDB_URL=$INFLUXDB_URL" >> .env
+            echo "INFLUXDB_USERNAME=$INFLUXDB_USERNAME" >> .env
             echo "REDIS_URL=$REDIS_URL" >> .env
             echo "SECRET_KEY=$SECRET_KEY" >> .env
             echo "SERVER_PORT=$SERVER_PORT" >> .env
+            echo "TELEGRAF_SYSLOG_ADDRESS=$TELEGRAF_SYSLOG_ADDRESS" >> .env
+            echo "TELEGRAF_SYSLOG_PORT=$TELEGRAF_SYSLOG_PORT" >> .env
             echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
             echo "TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> .env
             echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
@@ -87,8 +94,8 @@ jobs:
             ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "
               set -e
               cd ~/dripdrop
-              docker compose -f docker-compose.yml build --progress plain server worker
-              docker compose -f docker-compose.yml up --no-deps -d server worker
+              docker compose -f docker-compose.prod.yml build --progress plain
+              docker compose -f docker-compose.prod.yml up --remove-orphans --wait
             "
 
 workflows:
