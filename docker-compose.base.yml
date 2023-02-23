@@ -22,8 +22,10 @@ services:
     build:
       dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: ./scripts/worker.sh
+    environment:
+      REDIS_URL: $REDIS_URL
     healthcheck:
-      test: "source src/.venv/bin/activate && rq info -u $REDIS_URL"
+      test: "source /src/.venv/bin/activate && rq info -u $REDIS_URL"
       interval: 10s
       start_period: 1s
       timeout: 1m30s
