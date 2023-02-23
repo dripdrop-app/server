@@ -21,8 +21,6 @@ services:
     entrypoint: ./scripts/worker.sh
     environment:
       REDIS_URL: $REDIS_URL
-    healthcheck:
-      test: "source /src/.venv/bin/activate && rq info"
 
   postgres:
     image: postgres:14
@@ -53,7 +51,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: "curl -f http://localhost"
+      test: "wget -O - http://localhost"
 
   redis:
     image: redis
