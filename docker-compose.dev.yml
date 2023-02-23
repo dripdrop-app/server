@@ -1,3 +1,14 @@
+x-depends-postgres: &depends_on_postgres
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+x-depends-database: &depends_on_database
+  <<: *depends_on_postgres
+  depends_on:
+    redis:
+      condition: service_healthy
+
 version: '2.4'
 name: dripdrop-dev
 services:
@@ -5,6 +16,8 @@ services:
     extends: 
       file: docker-compose.base.yml
       service: server
+    build:
+      dockerfile: dockerfiles/Dockerfile.dev
     environment:
       ENV: development
     volumes:
@@ -14,11 +27,14 @@ services:
       - type: volume
         source: server_venv
         target: /src/.venv 
+    <<: *depends_on_database
 
   worker:
     extends: 
       file: docker-compose.base.yml
       service: worker
+    build:
+      dockerfile: dockerfiles/Dockerfile.dev
     environment:
       ENV: development
     volumes:
@@ -28,6 +44,7 @@ services:
       - type: volume
         source: worker_venv
         target: /src/.venv 
+    <<: *depends_on_database
 
   postgres:
     extends: 
@@ -38,6 +55,7 @@ services:
     extends: 
       file: docker-compose.base.yml
       service: pgadmin
+    <<: *depends_on_postgres
 
   redis:
     extends: 

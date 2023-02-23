@@ -1,3 +1,33 @@
+x-logging: &logging
+  logging:
+    driver: syslog
+    options:
+      syslog-address: $TELEGRAF_SYSLOG_ADDRESS:$TELEGRAF_SYSLOG_PORT
+      syslog-format: rfc5424micro
+      tag: '{{.Name}}'
+
+x-depends-influxdb: &depends_on_influxdb
+  depends_on:
+    influxdb:
+      condition: service_healthy
+
+x-depends-telegraf: &depends_on_telegraf
+  depends_on:
+    telegraf: 
+      condition: service_started
+
+x-depends-database: &depends_on_database
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+x-depends-all: &depends_on_all
+  <<: 
+    - *depends_on_telegraf
+    - *depends_on_database
+
 version: '2.4'
 name: dripdrop
 services:
@@ -5,30 +35,49 @@ services:
     extends: 
       file: docker-compose.base.yml
       service: server
+    build:
+      dockerfile: dockerfiles/Dockerfile
     environment:
       ENV: production
+    <<: 
+      - *logging
+      - *depends_on_all
 
   worker:
     extends: 
       file: docker-compose.base.yml
       service: worker
+    build:
+      dockerfile: dockerfiles/Dockerfile
     environment:
       ENV: production
+    <<: 
+      - *logging
+      - *depends_on_all
 
   postgres:
     extends: 
       file: docker-compose.base.yml
       service: postgres
+    <<: 
+      - *logging
+      - *depends_on_telegraf
 
   pgadmin:
     extends: 
       file: docker-compose.base.yml
       service: pgadmin
+    <<: 
+      - *logging
+      - *depends_on_telegraf
 
   redis:
     extends: 
       file: docker-compose.base.yml
       service: redis
+    <<: 
+      - *logging
+      - *depends_on_telegraf
 
   influxdb:
     extends: 
@@ -39,12 +88,17 @@ services:
     extends: 
       file: docker-compose.base.yml
       service: telegraf
+    <<:
+      - *depends_on_influxdb
 
   chronograf:
     extends: 
       file: docker-compose.base.yml
       service: chronograf
-
+    <<: 
+      - *depends_on_telegraf
+      - *depends_on_influxdb
+      
 volumes:
   worker_venv: {}
   server_venv: {}

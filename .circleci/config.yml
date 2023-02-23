@@ -95,7 +95,7 @@ jobs:
               set -e
               cd ~/dripdrop
               docker compose -f docker-compose.prod.yml build --progress plain
-              docker compose -f docker-compose.prod.yml up --remove-orphans --wait
+              docker compose -f docker-compose.prod.yml up --remove-orphans --wait --scale worker=2
             "
 
 workflows:

@@ -7,5 +7,5 @@ if [ $ENV == "development" ]
 then
     watchfiles 'python worker.py' ./worker.py
 else
-    supervisord -c ./config/worker.supervisord.conf
+    python worker.py
 fi

@@ -1,33 +1,3 @@
-x-logging: &logging
-  logging:
-    driver: syslog
-    options:
-      syslog-address: $TELEGRAF_SYSLOG_ADDRESS:$TELEGRAF_SYSLOG_PORT
-      syslog-format: rfc5424micro
-      tag: '{{.Name}}'
-
-x-depends-influxdb: &depends_on_influxdb
-  depends_on:
-    influxdb:
-      condition: service_healthy
-
-x-depends-telegraf: &depends_on_telegraf
-  depends_on:
-    telegraf: 
-      condition: service_started
-
-x-depends-database: &depends_on_database
-  depends_on:
-    postgres:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
-
-x-depends-all: &depends_on_all
-  <<: 
-    - *depends_on_telegraf
-    - *depends_on_database
-
 version: '2.4'
 name: dripdrop-base
 services:
@@ -35,16 +5,11 @@ services:
     platform: linux/amd64
     container_name: server
     restart: always
-    build:
-      dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: ./scripts/server.sh
     environment:
       SERVER_PORT: $SERVER_PORT
     ports:
       - $SERVER_PORT:$SERVER_PORT
-    <<: 
-      - *logging
-      - *depends_on_all
 
   worker:
     platform: linux/amd64
@@ -53,9 +18,6 @@ services:
     build:
       dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: ./scripts/worker.sh
-    <<: 
-      - *logging
-      - *depends_on_all
 
   postgres:
     image: postgres:14
@@ -72,9 +34,6 @@ services:
         target: /var/lib/postgresql/data
     ports:
       - 5432:5432
-    <<: 
-      - *logging
-      - *depends_on_telegraf
     healthcheck:
       test: pg_isready -U $DATABASE
       interval: 10s
@@ -90,9 +49,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: $DATABASE_PASSWORD
     ports:
       - 8000:8000
-    <<: 
-      - *logging
-      - *depends_on_telegraf
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,9 +63,6 @@ services:
         target: /data
     ports:
       - 6379:6379
-    <<: 
-      - *logging
-      - *depends_on_telegraf
     healthcheck:
       test: redis-cli ping
       interval: 10s
@@ -167,8 +120,6 @@ services:
         read_only: true
     ports:
       - "6514:6514/udp"
-    <<:
-      - *depends_on_influxdb
 
   chronograf:
     image: chronograf
@@ -186,6 +137,3 @@ services:
         target: /var/lib/chronograf
     ports:
       - 8888:8888
-    <<: 
-      - *depends_on_telegraf
-      - *depends_on_influxdb
