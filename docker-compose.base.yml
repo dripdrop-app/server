@@ -82,6 +82,8 @@ services:
       - type: volume
         source: influxdb
         target: /var/lib/influxdb
+    ports:
+      - 8086:8086
     healthcheck:
       test: "curl -f http://localhost:8086/ping"
 
