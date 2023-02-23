@@ -25,7 +25,7 @@ services:
     environment:
       REDIS_URL: $REDIS_URL
     healthcheck:
-      test: "source /src/.venv/bin/activate && rq info -u $REDIS_URL"
+      test: "source /src/.venv/bin/activate && rq info"
       interval: 10s
       start_period: 1s
       timeout: 1m30s
@@ -57,12 +57,12 @@ services:
       PGADMIN_DEFAULT_EMAIL: $DATABASE_USER@$DATABASE.com
       PGADMIN_DEFAULT_PASSWORD: $DATABASE_PASSWORD
     ports:
-      - 8000:8000
+      - 8000:80
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: "curl -f http://localhost:8000"
+      test: "curl -f http://localhost"
       interval: 10s
       start_period: 1s
       timeout: 1m30s
