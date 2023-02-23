@@ -10,14 +10,23 @@ services:
       SERVER_PORT: $SERVER_PORT
     ports:
       - $SERVER_PORT:$SERVER_PORT
+    healthcheck:
+      test: "curl -f http://localhost:$SERVER_PORT/api/docs"
+      interval: 10s
+      start_period: 1s
+      timeout: 1m30s
 
   worker:
     platform: linux/amd64
-    container_name: worker
     restart: always
     build:
       dockerfile: dockerfiles/Dockerfile.dev
     entrypoint: ./scripts/worker.sh
+    healthcheck:
+      test: "source src/.venv/bin/activate && rq info -u $REDIS_URL"
+      interval: 10s
+      start_period: 1s
+      timeout: 1m30s
 
   postgres:
     image: postgres:14
@@ -52,6 +61,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: "curl -f http://localhost:8000"
+      interval: 10s
+      start_period: 1s
+      timeout: 1m30s
 
   redis:
     image: redis
