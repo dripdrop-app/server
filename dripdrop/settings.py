@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     aws_s3_bucket: str
     aws_s3_music_folder: str
     database_url: str
+    domain: str | None = None
     env: ENV = ENV.DEVELOPMENT
     google_client_id: str
     google_client_secret: str

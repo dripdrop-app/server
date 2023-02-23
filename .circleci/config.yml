@@ -33,6 +33,7 @@ commands:
             echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
             echo "DATABASE_URL=$DATABASE_URL" >> .env
             echo "DATABASE_USER=$DATABASE_USER" >> .env
+            echo "DOMAIN=$DOMAIN" >> .env
             echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
             echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
             echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
