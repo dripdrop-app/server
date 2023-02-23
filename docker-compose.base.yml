@@ -12,9 +12,6 @@ services:
       - $SERVER_PORT:$SERVER_PORT
     healthcheck:
       test: "curl -f http://localhost:$SERVER_PORT/api/docs"
-      interval: 10s
-      start_period: 1s
-      timeout: 5m
 
   worker:
     platform: linux/amd64
@@ -26,9 +23,6 @@ services:
       REDIS_URL: $REDIS_URL
     healthcheck:
       test: "source /src/.venv/bin/activate && rq info"
-      interval: 10s
-      start_period: 1s
-      timeout: 5m
 
   postgres:
     image: postgres:14
@@ -45,9 +39,6 @@ services:
         target: /var/lib/postgresql/data
     healthcheck:
       test: pg_isready -U $DATABASE
-      interval: 10s
-      start_period: 1s
-      timeout: 5m
 
   pgadmin:
     image: dpage/pgadmin4
@@ -63,9 +54,6 @@ services:
         condition: service_healthy
     healthcheck:
       test: "curl -f http://localhost"
-      interval: 10s
-      start_period: 1s
-      timeout: 5m
 
   redis:
     image: redis
@@ -98,9 +86,6 @@ services:
         target: /var/lib/influxdb
     healthcheck:
       test: "curl -f http://localhost:8086/ping"
-      interval: 10s
-      start_period: 1s
-      timeout: 5m
 
   telegraf:
     image: telegraf
