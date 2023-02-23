@@ -90,7 +90,7 @@ jobs:
           command: rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop --exclude=data
       - run:
           name: Deploy Over SSH
-          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && chmod +x scripts/deploy.sh && ./deploy.sh"
+          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && chmod +x scripts/deploy.sh && ./scripts/deploy.sh"
 
 workflows:
   version: 2
