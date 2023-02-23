@@ -14,7 +14,7 @@ services:
       test: "curl -f http://localhost:$SERVER_PORT/api/docs"
       interval: 10s
       start_period: 1s
-      timeout: 1m30s
+      timeout: 5m
 
   worker:
     platform: linux/amd64
@@ -28,7 +28,7 @@ services:
       test: "source /src/.venv/bin/activate && rq info"
       interval: 10s
       start_period: 1s
-      timeout: 1m30s
+      timeout: 5m
 
   postgres:
     image: postgres:14
@@ -47,7 +47,7 @@ services:
       test: pg_isready -U $DATABASE
       interval: 10s
       start_period: 1s
-      timeout: 1m30s
+      timeout: 5m
 
   pgadmin:
     image: dpage/pgadmin4
@@ -65,7 +65,7 @@ services:
       test: "curl -f http://localhost"
       interval: 10s
       start_period: 1s
-      timeout: 1m30s
+      timeout: 5m
 
   redis:
     image: redis
@@ -79,7 +79,7 @@ services:
       test: redis-cli ping
       interval: 10s
       start_period: 1s
-      timeout: 1m30s
+      timeout: 5m
 
   influxdb:
     image: influxdb
@@ -100,7 +100,7 @@ services:
       test: "curl -f http://localhost:8086/ping"
       interval: 10s
       start_period: 1s
-      timeout: 1m30s
+      timeout: 5m
 
   telegraf:
     image: telegraf
