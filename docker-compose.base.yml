@@ -41,8 +41,6 @@ services:
       - type: volume
         source: postgresql
         target: /var/lib/postgresql/data
-    ports:
-      - 5432:5432
     healthcheck:
       test: pg_isready -U $DATABASE
       interval: 10s
@@ -75,8 +73,6 @@ services:
       - type: volume
         source: redis
         target: /data
-    ports:
-      - 6379:6379
     healthcheck:
       test: redis-cli ping
       interval: 10s
