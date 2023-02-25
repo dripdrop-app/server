@@ -1249,16 +1249,42 @@
                 }
             ],
             "title": "Logs",
-            "transformations": [
+            "type": "logs"
+        },
+        {
+            "datasource": {
+                "type": "influxdb",
+                "uid": "P951FEA4DE68E13C5"
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 60
+            },
+            "id": 44,
+            "options": {
+                "dedupStrategy": "none",
+                "enableLogDetails": true,
+                "prettifyLogMessage": false,
+                "showCommonLabels": false,
+                "showLabels": true,
+                "showTime": true,
+                "sortOrder": "Descending",
+                "wrapLogMessage": false
+            },
+            "pluginVersion": "9.3.6",
+            "targets": [
                 {
-                    "disabled": true,
-                    "id": "joinByField",
-                    "options": {
-                        "byField": "Time",
-                        "mode": "outer"
-                    }
+                    "datasource": {
+                        "type": "influxdb",
+                        "uid": "P951FEA4DE68E13C5"
+                    },
+                    "query": "from(bucket: \"telegraf\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"syslog\")\n  |> filter(fn: (r) => r[\"severity\"] == \"err\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")\n",
+                    "refId": "A"
                 }
             ],
+            "title": "Error Logs",
             "type": "logs"
         }
     ],

@@ -98,19 +98,6 @@ services:
     <<: 
       - *depends_on_telegraf
       - *depends_on_influxdb
-
-  # chronograf:
-  #   extends: 
-  #     file: docker-compose.base.yml
-  #     service: chronograf
-  #   environment:
-  #     GH_CLIENT_ID: $GH_CLIENT_ID
-  #     GH_CLIENT_SECRET: $GH_CLIENT_SECRET
-  #     GH_ORGS: $GH_ORGS
-  #     TOKEN_SECRET: $TOKEN_SECRET
-    # <<: 
-    #   - *depends_on_telegraf
-    #   - *depends_on_influxdb
       
 volumes:
   worker_venv: {}
@@ -118,4 +105,3 @@ volumes:
   postgresql: {}
   redis: {}
   influxdb: {}
-  # chronograf: {}
