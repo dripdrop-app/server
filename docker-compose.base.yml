@@ -78,6 +78,7 @@ services:
       DOCKER_INFLUXDB_INIT_ORG: $INFLUXDB_ORG
       DOCKER_INFLUXDB_INIT_BUCKET: $INFLUXDB_BUCKET
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: $INFLUXDB_TOKEN
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
     volumes:
       - type: volume
         source: influxdb
@@ -116,21 +117,25 @@ services:
         target: /hostfs/proc
         read_only: true
     ports:
-      - "6514:6514/udp"
+      - 6514:6514/udp
 
-  chronograf:
-    image: chronograf
-    container_name: chronograf
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
     restart: always
     environment:
-      INFLUXDB_USERNAME: $INFLUXDB_USERNAME
-      INFLUXDB_PASSWORD: $INFLUXDB_PASSWORD
+      GF_SECURITY_ADMIN_USER: $INFLUXDB_USERNAME
+      GF_SECURITY_ADMIN_PASSWORD: $INFLUXDB_PASSWORD
       INFLUXDB_ORG: $INFLUXDB_ORG
+      INFLUXDB_BUCKET: $INFLUXDB_BUCKET
       INFLUXDB_TOKEN: $INFLUXDB_TOKEN
       INFLUXDB_URL: $INFLUXDB_URL
     volumes:
-      - type: volume
-        source: chronograf
-        target: /var/lib/chronograf
+      - type: bind
+        source: ./config/provisioning
+        target: /etc/grafana/provisioning
+      - type: bind
+        source: ./config/dashboards
+        target: /var/lib/grafana/dashboards
     ports:
-      - 8888:8888
+      - 8888:3000
