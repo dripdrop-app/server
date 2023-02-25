@@ -1,7 +1,7 @@
 import dateutil.parser
 import traceback
 from datetime import datetime, timedelta
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 
 from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
@@ -15,9 +15,9 @@ from .models import (
     GoogleAccount,
     YoutubeChannel,
     YoutubeSubscription,
+    YoutubeNewSubscription,
     YoutubeVideo,
     YoutubeVideoCategory,
-    create_temp_subscriptions_table,
 )
 from .utils import update_google_access_token
 
@@ -80,93 +80,103 @@ class YoutubeTasker:
         if not account.access_token:
             return
 
-        async with create_temp_subscriptions_table(
-            email=account.email
-        ) as TempSubscription:
-            async for subscriptions in google_api.get_user_subscriptions(
-                access_token=account.access_token
-            ):
-                for subscription in subscriptions:
-                    subscription_id = subscription["id"]
-                    subscription_snippet = subscription["snippet"]
-                    channel_id = subscription_snippet["resourceId"]["channelId"]
-                    channel_title = subscription_snippet["title"]
-                    channel_thumbnail = subscription_snippet["thumbnails"]["high"][
-                        "url"
-                    ]
-                    published_at = dateutil.parser.parse(
-                        subscription_snippet["publishedAt"]
-                    )
-                    try:
-                        query = select(YoutubeChannel).where(
-                            YoutubeChannel.id == channel_id
-                        )
-                        results = await session.scalars(query)
-                        channel = results.first()
-                        if channel:
-                            channel.title = channel_title
-                            channel.thumbnail = channel_thumbnail
-                        else:
-                            session.add(
-                                YoutubeChannel(
-                                    id=channel_id,
-                                    title=channel_title,
-                                    thumbnail=channel_thumbnail,
-                                    last_videos_update=datetime.now(
-                                        tz=settings.timezone
-                                    )
-                                    - timedelta(days=30),
-                                )
-                            )
-                            await session.commit()
-                            await enqueue(
-                                self.add_new_channel_videos_job,
-                                kwargs={"channel_id": channel_id},
-                                at_front=True,
-                            )
-                        query = select(YoutubeSubscription).where(
-                            YoutubeSubscription.id == subscription_id
-                        )
-                        results = await session.scalars(query)
-                        if not results.first():
-                            session.add(
-                                YoutubeSubscription(
-                                    id=subscription_id,
-                                    email=account.email,
-                                    channel_id=channel_id,
-                                    published_at=published_at,
-                                )
-                            )
-                        session.add(TempSubscription(id=subscription["id"]))
-                        await session.commit()
-                    except Exception:
-                        logger.exception(traceback.format_exc())
-            subscription_query = (
-                select(YoutubeSubscription)
-                .where(YoutubeSubscription.email == account.email)
-                .subquery()
-            )
-            temp_subscription_query = select(TempSubscription).subquery()
-            query = subscription_query.join(
-                temp_subscription_query,
-                subscription_query.columns.id == temp_subscription_query.columns.id,
-                isouter=True,
-            )
-            stream = await session.stream(
-                select(subscription_query.columns.id.label("subscription_id"))
-                .select_from(query)
-                .where(temp_subscription_query.columns.id.is_(None))
-            )
-            async for row in stream:
-                row = row._mapping
-                await enqueue(
-                    function=self._delete_subscription,
-                    kwargs={
-                        "subscription_id": row.subscription_id,
-                        "email": account.email,
-                    },
-                    at_front=True,
+        async for subscriptions in google_api.get_user_subscriptions(
+            access_token=account.access_token
+        ):
+            for subscription in subscriptions:
+                subscription_id = subscription["id"]
+                subscription_snippet = subscription["snippet"]
+                channel_id = subscription_snippet["resourceId"]["channelId"]
+                channel_title = subscription_snippet["title"]
+                channel_thumbnail = subscription_snippet["thumbnails"]["high"]["url"]
+                published_at = dateutil.parser.parse(
+                    subscription_snippet["publishedAt"]
                 )
+                try:
+                    query = select(YoutubeChannel).where(
+                        YoutubeChannel.id == channel_id
+                    )
+                    results = await session.scalars(query)
+                    channel = results.first()
+                    if channel:
+                        channel.title = channel_title
+                        channel.thumbnail = channel_thumbnail
+                    else:
+                        session.add(
+                            YoutubeChannel(
+                                id=channel_id,
+                                title=channel_title,
+                                thumbnail=channel_thumbnail,
+                                last_videos_updated=datetime.now(tz=settings.timezone)
+                                - timedelta(days=30),
+                            )
+                        )
+                        await session.commit()
+                        await enqueue(
+                            self.add_new_channel_videos_job,
+                            kwargs={"channel_id": channel_id},
+                            at_front=True,
+                        )
+                    query = select(YoutubeSubscription).where(
+                        YoutubeSubscription.id == subscription_id
+                    )
+                    results = await session.scalars(query)
+                    if not results.first():
+                        session.add(
+                            YoutubeSubscription(
+                                id=subscription_id,
+                                email=account.email,
+                                channel_id=channel_id,
+                                published_at=published_at,
+                            )
+                        )
+                    query = select(YoutubeNewSubscription).where(
+                        YoutubeNewSubscription.id == subscription_id
+                    )
+                    results = await session.scalars(query)
+                    if not results.first():
+                        session.add(
+                            YoutubeNewSubscription(
+                                id=subscription_id, email=account.email
+                            )
+                        )
+                    await session.commit()
+                except Exception:
+                    logger.exception(traceback.format_exc())
+        subscription_query = (
+            select(YoutubeSubscription)
+            .where(YoutubeSubscription.email == account.email)
+            .subquery()
+        )
+        new_subscription_query = (
+            select(YoutubeNewSubscription)
+            .where(YoutubeNewSubscription.email == account.email)
+            .subquery()
+        )
+        query = subscription_query.join(
+            new_subscription_query,
+            subscription_query.columns.id == new_subscription_query.columns.id,
+            isouter=True,
+        )
+        stream = await session.stream(
+            select(subscription_query.columns.id.label("subscription_id"))
+            .select_from(query)
+            .where(new_subscription_query.columns.id.is_(None))
+        )
+        async for row in stream:
+            row = row._mapping
+            await enqueue(
+                function=self._delete_subscription,
+                kwargs={
+                    "subscription_id": row.subscription_id,
+                    "email": account.email,
+                },
+                at_front=True,
+            )
+        query = delete(YoutubeNewSubscription).where(
+            YoutubeNewSubscription.email == account.email
+        )
+        await session.execute(query)
 
     @worker_task
     async def add_new_channel_videos_job(
