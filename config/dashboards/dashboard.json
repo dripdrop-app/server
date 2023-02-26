@@ -115,7 +115,7 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system\")\n  |> filter(fn: (r) => r[\"_field\"] == \"n_cpus\")\n  |> rename(columns: {_value: \"CPUs\"}) \n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system\")\n  |> filter(fn: (r) => r[\"_field\"] == \"n_cpus\")\n  |> last()\n  |> rename(columns: {_value: \"CPUs\"}) \n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n",
                     "refId": "A"
                 },
                 {
@@ -124,7 +124,7 @@
                         "uid": "P951FEA4DE68E13C5"
                     },
                     "hide": false,
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"mem\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total\")\n  |> rename(columns: {\"_value\": \"Memory\"})\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"mem\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total\")\n  |> last()\n  |> rename(columns: {\"_value\": \"Memory\"})\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n",
                     "refId": "B"
                 },
                 {
@@ -133,7 +133,7 @@
                         "uid": "P951FEA4DE68E13C5"
                     },
                     "hide": false,
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"disk\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total\")\n  |> rename(columns: {_value: \"Disk Space\"}) \n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"disk\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total\")\n  |> last()\n  |> rename(columns: {_value: \"Disk Space\"}) \n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
                     "refId": "C"
                 }
             ],
@@ -230,7 +230,7 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"syslog\" or r[\"_measurement\"] == \"cpu\")\n  |> filter(fn: (r) => r[\"_field\"] == \"usage_user\" or r[\"_field\"] == \"usage_idle\")\n  |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"syslog\" or r[\"_measurement\"] == \"cpu\")\n  |> filter(fn: (r) => r[\"_field\"] == \"usage_user\" or r[\"_field\"] == \"usage_idle\")\n  |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n",
                     "refId": "A"
                 }
             ],
@@ -329,7 +329,7 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"mem\")\n  |> filter(fn: (r) => r[\"_field\"] == \"used_percent\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"mem\")\n  |> filter(fn: (r) => r[\"_field\"] == \"used_percent\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
                     "refId": "A"
                 }
             ],
@@ -426,7 +426,7 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"disk\")\n  |> filter(fn: (r) => r[\"_field\"] == \"used_percent\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"disk\")\n  |> filter(fn: (r) => r[\"_field\"] == \"used_percent\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
                     "refId": "A"
                 }
             ],
@@ -517,7 +517,7 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system\")\n  |> filter(fn: (r) => r[\"_field\"] == \"load1\" or r[\"_field\"] == \"load15\" or r[\"_field\"] == \"load5\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system\")\n  |> filter(fn: (r) => r[\"_field\"] == \"load1\" or r[\"_field\"] == \"load15\" or r[\"_field\"] == \"load5\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
                     "refId": "A"
                 }
             ],
@@ -665,7 +665,7 @@
                         "uid": "P951FEA4DE68E13C5"
                     },
                     "hide": false,
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker\")\n  |> filter(fn: (r) => r[\"_field\"] == \"n_containers\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker\")\n  |> filter(fn: (r) => r[\"_field\"] == \"n_containers\")\n  |> last()\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
                     "refId": "D"
                 },
                 {
@@ -1248,6 +1248,7 @@
                     "refId": "A"
                 }
             ],
+            "timeFrom": "1h",
             "title": "Logs",
             "type": "logs"
         },
@@ -1284,6 +1285,7 @@
                     "refId": "A"
                 }
             ],
+            "timeFrom": "6h",
             "title": "Error Logs",
             "type": "logs"
         }
@@ -1296,13 +1298,13 @@
         "list": []
     },
     "time": {
-        "from": "now-15m",
+        "from": "now-3h",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "",
     "title": "Dashboard",
-    "uid": "XkL847bVz",
-    "version": 2,
+    "uid": "XkL847bV",
+    "version": 4,
     "weekStart": ""
 }
