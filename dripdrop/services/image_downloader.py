@@ -9,7 +9,7 @@ class ImageDownloader:
     def __init__(self):
         self.image_extensions = [".jpg", ".ico", "png", ".jpeg"]
 
-    def _is_image_link(self, response: Response = ...):
+    def is_image_link(self, response: Response = ...):
         content_type = response.headers.get("Content-Type", None)
         if content_type and content_type.split("/")[0] == "image":
             return True
@@ -17,7 +17,7 @@ class ImageDownloader:
 
     async def download_image(self, artwork: str = ...):
         response = await http_client.get(artwork)
-        if not self._is_image_link(response=response):
+        if not self.is_image_link(response=response):
             raise Exception("Link does not produce an image")
         return response.content
 
@@ -50,12 +50,13 @@ class ImageDownloader:
                 )
             },
         )
-        if self._is_image_link(response=response):
-            return artwork
-        img_links = self._get_images(response=response)
-        for img_link in img_links:
-            if "artworks" in img_link and "500x500" in img_link:
-                return img_link
+        if response.is_success:
+            if self.is_image_link(response=response):
+                return artwork
+            img_links = self._get_images(response=response)
+            for img_link in img_links:
+                if "artworks" in img_link and "500x500" in img_link:
+                    return img_link
         raise Exception("Cannot resolve artwork")
 
 

@@ -6,10 +6,11 @@ import shutil
 import traceback
 import uuid
 from fastapi import UploadFile
-from pydantic import HttpUrl
 
+from dripdrop.http_client import http_client
 from dripdrop.logging import logger
 from dripdrop.services.audio_tag import AudioTags
+from dripdrop.services.image_downloader import image_downloader
 from dripdrop.services.s3 import S3, s3
 
 from .models import MusicJob
@@ -19,8 +20,7 @@ from .responses import TagsResponse
 async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
     artwork_filename = None
     if artwork_url:
-        is_base64 = re.search("^data:image/", artwork_url)
-        if is_base64:
+        if re.search("^data:image/", artwork_url):
             extension = artwork_url.split(";")[0].split("/")[1]
             dataString = ",".join(artwork_url.split(",")[1:])
             data = dataString.encode()
@@ -33,10 +33,11 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
             )
             artwork_url = s3.resolve_url(filename=artwork_filename)
         else:
-            try:
-                HttpUrl.validate(artwork_url)
-            except Exception:
-                artwork_url = None
+            response = await http_client.get(artwork_url)
+            if not response.is_success or not image_downloader.is_image_link(
+                response=response
+            ):
+                return None, None
     return artwork_url, artwork_filename
 
 
