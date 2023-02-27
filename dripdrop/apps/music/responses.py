@@ -37,8 +37,8 @@ class GroupingResponse(ResponseBaseModel):
     grouping: str
 
 
-class ArtworkUrlResponse(ResponseBaseModel):
-    artwork_url: str
+class ResolvedArtworkUrlResponse(ResponseBaseModel):
+    resolved_artwork_url: str
 
 
 class TagsResponse(ResponseBaseModel):

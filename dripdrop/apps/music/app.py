@@ -10,7 +10,7 @@ from dripdrop.services.image_downloader import image_downloader
 from .jobs import jobs_api
 from .responses import (
     GroupingResponse,
-    ArtworkUrlResponse,
+    ResolvedArtworkUrlResponse,
     TagsResponse,
     ErrorMessages,
 )
@@ -49,7 +49,7 @@ async def get_grouping(video_url: HttpUrl = Query(...)):
 
 @app.get(
     "/artwork",
-    response_model=ArtworkUrlResponse,
+    response_model=ResolvedArtworkUrlResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": ErrorMessages.ARTWORK_ERROR}
     },
@@ -59,7 +59,7 @@ async def get_artwork(artwork_url: HttpUrl = Query(...)):
         resolved_artwork_url = await image_downloader.resolve_artwork(
             artwork=artwork_url
         )
-        return ArtworkUrlResponse(artwork_url=resolved_artwork_url)
+        return ResolvedArtworkUrlResponse(resolved_artwork_url=resolved_artwork_url)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(

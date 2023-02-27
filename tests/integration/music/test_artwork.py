@@ -30,7 +30,7 @@ async def test_artwork_with_valid_image_url(
         params={"artwork_url": test_image_url},
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"artworkUrl": test_image_url}
+    assert response.json() == {"resolvedArtworkUrl": test_image_url}
 
 
 async def test_artwork_with_valid_soundcloud_url(
@@ -45,11 +45,11 @@ async def test_artwork_with_valid_soundcloud_url(
     )
     assert response.status_code == status.HTTP_200_OK
     json = response.json()
-    artwork_url = json.get("artworkUrl")
+    resolved_artwork_url = json.get("resolvedArtworkUrl")
     assert (
         re.match(
             r"https:\/\/i1\.sndcdn\.com\/artworks-[a-zA-Z0-9]+-0-t500x500\.jpg",
-            artwork_url,
+            resolved_artwork_url,
         )
         is not None
     )

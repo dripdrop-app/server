@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 import shutil
 from fastapi import status
@@ -40,14 +39,6 @@ def delete_directories():
             pass
 
     return _delete_directories
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="session")
