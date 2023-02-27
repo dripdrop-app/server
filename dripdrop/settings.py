@@ -50,5 +50,5 @@ if settings.env == ENV.TESTING:
     settings.async_database_url = settings.test_async_database_url
     settings.redis_url = settings.test_redis_url
 
-if settings.async_database_url.find("sqlite") != 1:
+if settings.async_database_url.find("sqlite") != -1:
     settings.timezone = None
