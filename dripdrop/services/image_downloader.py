@@ -11,9 +11,8 @@ class ImageDownloader:
 
     def _is_image_link(self, response: Response = ...):
         content_type = response.headers.get("Content-Type", None)
-        if content_type:
-            if content_type.split("/")[0] == "image":
-                return True
+        if content_type and content_type.split("/")[0] == "image":
+            return True
         return None
 
     async def download_image(self, artwork: str = ...):
@@ -53,11 +52,11 @@ class ImageDownloader:
         )
         if self._is_image_link(response=response):
             return artwork
-        img_links = await self._get_images(artwork)
+        img_links = self._get_images(response=response)
         for img_link in img_links:
             if "artworks" in img_link and "500x500" in img_link:
                 return img_link
-        raise None
+        raise Exception("Cannot resolve artwork")
 
 
 image_downloader = ImageDownloader()

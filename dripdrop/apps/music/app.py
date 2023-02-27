@@ -56,8 +56,10 @@ async def get_grouping(video_url: HttpUrl = Query(...)):
 )
 async def get_artwork(artwork_url: HttpUrl = Query(...)):
     try:
-        artwork_url = await image_downloader.resolve_artwork(artwork=artwork_url)
-        return ArtworkUrlResponse(artwork_url=artwork_url)
+        resolved_artwork_url = await image_downloader.resolve_artwork(
+            artwork=artwork_url
+        )
+        return ArtworkUrlResponse(artwork_url=resolved_artwork_url)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
