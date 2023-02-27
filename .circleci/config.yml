@@ -34,9 +34,6 @@ commands:
             echo "DATABASE_URL=$DATABASE_URL" >> .env
             echo "DATABASE_USER=$DATABASE_USER" >> .env
             echo "DOMAIN=$DOMAIN" >> .env
-            echo "GH_CLIENT_ID=$GH_CLIENT_ID" >> .env
-            echo "GH_CLIENT_SECRET=$GH_CLIENT_SECRET" >> .env
-            echo "GH_ORGS=$GH_ORGS" >> .env
             echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
             echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
             echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
@@ -55,9 +52,7 @@ commands:
             echo "TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> .env
             echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
             echo "TEST_AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> .env
-            echo "TEST_DATABASE_URL=$TEST_DATABASE_URL" >> .env
             echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
-            echo "TOKEN_SECRET=$TOKEN_SECRET" >> .env
 
 jobs:
   build and test:
