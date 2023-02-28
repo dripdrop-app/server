@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from dripdrop.services.cron import cron
+from dripdrop.services.websocket_handler import websocket_handler
 from dripdrop.settings import settings, ENV
 
 from .apps.admin.app import app as admin_app
@@ -30,7 +31,12 @@ api_router.include_router(
 app = FastAPI(
     title="DripDrop",
     on_startup=[cron.start_cron_jobs],
-    on_shutdown=[cron.end_cron_jobs, http_client.aclose, redis.close],
+    on_shutdown=[
+        cron.end_cron_jobs,
+        http_client.aclose,
+        redis.close,
+        websocket_handler.close,
+    ],
     routes=api_router.routes,
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",

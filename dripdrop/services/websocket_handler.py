@@ -15,6 +15,12 @@ class RedisChannels:
 
 
 class WebsocketHandler:
+    def __init__(self):
+        self.close_sockets = False
+
+    def close(self):
+        self.close_sockets = True
+
     async def create_websocket_redis_channel_listener(
         self,
         websocket: WebSocket = ...,
@@ -29,9 +35,7 @@ class WebsocketHandler:
                     message_handler=handler,
                 )
             )
-            while True:
-                if task.done():
-                    break
+            while self.close_sockets:
                 await asyncio.sleep(1)
         except WebSocketDisconnect:
             await websocket.close()
