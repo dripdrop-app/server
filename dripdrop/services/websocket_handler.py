@@ -35,8 +35,10 @@ class WebsocketHandler:
                     message_handler=handler,
                 )
             )
-            while not self.close_sockets:
-                await asyncio.sleep(1)
+            while True:
+                if self.close_sockets:
+                    break
+                await asyncio.sleep(10)
         except WebSocketDisconnect:
             await websocket.close()
         except ConnectionClosedError:
