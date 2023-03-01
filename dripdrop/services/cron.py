@@ -53,7 +53,8 @@ class Cron:
             args=args,
             kwargs=kwargs,
         )
-        return queue.enqueue(
+        self.jobs.append(job)
+        queue.enqueue(
             self.create_cron_job,
             kwargs={
                 "cron_string": cron_string,
@@ -77,24 +78,10 @@ class Cron:
                     youtube_tasker.update_video_categories,
                     kwargs={"cron": True},
                 )
-                self.jobs.append(
-                    self.create_cron_job(
-                        "0 * * * *", youtube_tasker.update_channel_videos
-                    )
-                )
-                self.jobs.append(
-                    self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
-                )
-                self.jobs.append(
-                    self.create_cron_job(
-                        "0 0 * * *", youtube_tasker.update_subscriptions
-                    )
-                )
-                self.jobs.append(
-                    self.create_cron_job(
-                        "0 5 * * sun", youtube_tasker.delete_old_channels
-                    )
-                )
+                self.create_cron_job("0 * * * *", youtube_tasker.update_channel_videos)
+                self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
+                self.create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
+                self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
 
     async def end_cron_jobs(self):
         if settings.env == ENV.PRODUCTION:
