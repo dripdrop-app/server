@@ -2,12 +2,17 @@ import asyncio
 import traceback
 from asyncio import Task
 from fastapi import WebSocket, WebSocketDisconnect
-from typing import Coroutine
+from fastapi.encoders import jsonable_encoder
+from typing import Coroutine, Literal
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from dripdrop.logging import logger
 from dripdrop.redis import redis
-from dripdrop.settings import settings, ENV
+from dripdrop.responses import ResponseBaseModel
+
+
+class PingResponse(ResponseBaseModel):
+    status: Literal["PING"]
 
 
 class RedisChannels:
@@ -37,17 +42,7 @@ class WebsocketHandler:
                 )
             )
             while True:
-                if settings.env == ENV.DEVELOPMENT:
-                    await websocket.send_json({})
-                else:
-                    task_finished = task.done()
-                    if self.close_sockets or task_finished:
-                        if task_finished:
-                            exception = task.exception()
-                            if exception:
-                                raise exception
-                            await websocket.close()
-                            break
+                await websocket.send_json(PingResponse(status='PING').dict())
                 await asyncio.sleep(1)
         except WebSocketDisconnect:
             await websocket.close()
