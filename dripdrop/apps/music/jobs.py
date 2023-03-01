@@ -146,7 +146,7 @@ async def create_job(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
     if file:
-        if not re.match("audio/(wav|mpeg)", file.content_type):
+        if not re.match("audio/", file.content_type):
             raise HTTPException(
                 detail=ErrorMessages.FILE_INCORRECT_FORMAT,
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
