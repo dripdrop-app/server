@@ -1,16 +1,16 @@
 import asyncio
 from redis import Redis
 from rq import Queue
-from rq.job import Job
+from rq.command import send_stop_job_command
+from rq.job import Job, JobStatus
 from typing import Coroutine
 
 from dripdrop.settings import ENV, settings
+from dripdrop.logging import logger
 
-connection = Redis.from_url(settings.redis_url)
-
-queue = Queue(connection=connection, default_timeout=settings.timeout)
-
-scheduled_registry = queue.scheduled_job_registry
+queue = Queue(
+    connection=Redis.from_url(settings.redis_url), default_timeout=settings.timeout
+)
 
 
 async def enqueue(
@@ -32,3 +32,14 @@ async def enqueue(
         depends_on=depends_on,
         at_front=at_front,
     )
+
+
+def stop_job(job_id: str = ...):
+    job = Job.fetch(job_id, connection=queue.connection)
+    status = job.get_status()
+    if status == JobStatus.SCHEDULED:
+        job.cancel()
+    elif status == JobStatus.STARTED:
+        send_stop_job_command(queue.connection, job_id)
+    logger.info(f"Stopped job {job.get_call_string()}")
+    job.delete(delete_dependents=True)

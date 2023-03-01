@@ -19,8 +19,6 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from pydantic import HttpUrl
-from rq import cancel_job
-from rq.exceptions import NoSuchJobError
 from sqlalchemy import select, func
 from typing import Optional
 
@@ -32,7 +30,7 @@ from dripdrop.dependencies import (
 )
 from dripdrop.logging import logger
 from dripdrop.redis import redis
-from dripdrop.rq import enqueue, connection
+from dripdrop.rq import enqueue, stop_job
 from dripdrop.services.websocket_handler import websocket_handler, RedisChannels
 from dripdrop.settings import settings
 
@@ -215,10 +213,7 @@ async def delete_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
-    try:
-        cancel_job(job_id, connection=connection)
-    except NoSuchJobError:
-        pass
+    stop_job(job_id=job_id)
     await cleanup_job(job=job)
     job.deleted_at = datetime.now(tz=settings.timezone)
     await session.commit()

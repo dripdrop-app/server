@@ -1,20 +1,19 @@
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
-from rq.job import Job
 from typing import Callable
 
 from dripdrop.apps.music.tasks import music_tasker
 from dripdrop.apps.youtube.tasks import youtube_tasker
 from dripdrop.logging import logger
 from dripdrop.redis import redis
-from dripdrop.rq import queue, enqueue, scheduled_registry
+from dripdrop.rq import queue, enqueue, stop_job
 from dripdrop.settings import settings, ENV
 
 
 class Cron:
     def __init__(self):
         self.CRONS_ADDED = "crons_added"
-        self.jobs: list[Job] = []
+        self.job_ids: list[str] = []
 
     async def run_cron_jobs(self):
         video_categories_job = await enqueue(
@@ -53,7 +52,7 @@ class Cron:
             args=args,
             kwargs=kwargs,
         )
-        self.jobs.append(job)
+        self.job_ids.append(job.get_id())
         queue.enqueue(
             self.create_cron_job,
             kwargs={
@@ -70,9 +69,6 @@ class Cron:
             crons_added = await redis.get(self.CRONS_ADDED)
             if not crons_added:
                 await redis.set(self.CRONS_ADDED, 1)
-                for job_id in scheduled_registry.get_job_ids():
-                    logger.info(f"Removing Job: {job_id}")
-                    scheduled_registry.remove(job_id, delete_job=True)
                 self.create_cron_job(
                     "0 0 * * *",
                     youtube_tasker.update_video_categories,
@@ -86,8 +82,8 @@ class Cron:
     async def end_cron_jobs(self):
         if settings.env == ENV.PRODUCTION:
             await redis.delete(self.CRONS_ADDED)
-            for job in self.jobs:
-                job.cancel()
+            for job_id in self.job_ids:
+                stop_job(job_id=job_id)
 
 
 cron = Cron()
