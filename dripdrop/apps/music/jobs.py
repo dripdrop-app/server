@@ -19,6 +19,8 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from pydantic import HttpUrl
+from rq import cancel_job
+from rq.exceptions import NoSuchJobError
 from sqlalchemy import select, func
 from typing import Optional
 
@@ -30,7 +32,7 @@ from dripdrop.dependencies import (
 )
 from dripdrop.logging import logger
 from dripdrop.redis import redis
-from dripdrop.rq import enqueue
+from dripdrop.rq import enqueue, connection
 from dripdrop.services.websocket_handler import websocket_handler, RedisChannels
 from dripdrop.settings import settings
 
@@ -188,7 +190,9 @@ async def create_job(
         )
     )
     await session.commit()
-    await enqueue(function=music_tasker.run_job, kwargs={"job_id": job_id})
+    await enqueue(
+        function=music_tasker.run_job, kwargs={"job_id": job_id}, job_id=job_id
+    )
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
         json.dumps(MusicChannelResponse(job_id=job_id, status="STARTED").dict()),
@@ -211,6 +215,10 @@ async def delete_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
+    try:
+        cancel_job(job_id, connection=connection)
+    except NoSuchJobError:
+        pass
     await cleanup_job(job=job)
     job.deleted_at = datetime.now(tz=settings.timezone)
     await session.commit()

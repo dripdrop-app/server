@@ -7,6 +7,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from dripdrop.logging import logger
 from dripdrop.redis import redis
+from dripdrop.settings import settings, ENV
 
 
 class RedisChannels:
@@ -36,9 +37,12 @@ class WebsocketHandler:
                 )
             )
             while True:
-                if self.close_sockets:
-                    break
-                await asyncio.sleep(10)
+                if settings.env == ENV.DEVELOPMENT:
+                    await websocket.send_json({})
+                else:
+                    if self.close_sockets:
+                        break
+                await asyncio.sleep(1)
         except WebSocketDisconnect:
             await websocket.close()
         except ConnectionClosedError:

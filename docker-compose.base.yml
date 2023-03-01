@@ -117,6 +117,8 @@ services:
         read_only: true
     ports:
       - 6514:6514/udp
+    healthcheck:
+      test: "curl -f http://localhost:8080"
 
   grafana:
     image: grafana/grafana-oss
@@ -138,3 +140,5 @@ services:
         target: /var/lib/grafana/dashboards
     ports:
       - 8888:3000
+    healthcheck:
+      test: "wget -O - http://localhost:3000/api/health"

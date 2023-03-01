@@ -1,21 +1,20 @@
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
-from rq.registry import ScheduledJobRegistry
+from rq.job import Job
 from typing import Callable
 
 from dripdrop.apps.music.tasks import music_tasker
 from dripdrop.apps.youtube.tasks import youtube_tasker
 from dripdrop.logging import logger
 from dripdrop.redis import redis
-from dripdrop.rq import queue, enqueue
+from dripdrop.rq import queue, enqueue, scheduled_registry
 from dripdrop.settings import settings, ENV
-
-scheduled_registry = ScheduledJobRegistry(queue=queue)
 
 
 class Cron:
     def __init__(self):
         self.CRONS_ADDED = "crons_added"
+        self.jobs: list[Job] = []
 
     async def run_cron_jobs(self):
         video_categories_job = await enqueue(
@@ -54,7 +53,7 @@ class Cron:
             args=args,
             kwargs=kwargs,
         )
-        queue.enqueue(
+        return queue.enqueue(
             self.create_cron_job,
             kwargs={
                 "cron_string": cron_string,
@@ -78,14 +77,30 @@ class Cron:
                     youtube_tasker.update_video_categories,
                     kwargs={"cron": True},
                 )
-                self.create_cron_job("0 * * * *", youtube_tasker.update_channel_videos)
-                self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
-                self.create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
-                self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
+                self.jobs.append(
+                    self.create_cron_job(
+                        "0 * * * *", youtube_tasker.update_channel_videos
+                    )
+                )
+                self.jobs.append(
+                    self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
+                )
+                self.jobs.append(
+                    self.create_cron_job(
+                        "0 0 * * *", youtube_tasker.update_subscriptions
+                    )
+                )
+                self.jobs.append(
+                    self.create_cron_job(
+                        "0 5 * * sun", youtube_tasker.delete_old_channels
+                    )
+                )
 
     async def end_cron_jobs(self):
         if settings.env == ENV.PRODUCTION:
             await redis.delete(self.CRONS_ADDED)
+            for job in self.jobs:
+                job.cancel()
 
 
 cron = Cron()
