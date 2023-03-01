@@ -40,8 +40,14 @@ class WebsocketHandler:
                 if settings.env == ENV.DEVELOPMENT:
                     await websocket.send_json({})
                 else:
-                    if self.close_sockets:
-                        break
+                    task_finished = task.done()
+                    if self.close_sockets or task_finished:
+                        if task_finished:
+                            exception = task.exception()
+                            if exception:
+                                raise exception
+                            await websocket.close()
+                            break
                 await asyncio.sleep(1)
         except WebSocketDisconnect:
             await websocket.close()
