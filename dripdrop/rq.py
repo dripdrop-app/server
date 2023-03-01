@@ -2,6 +2,7 @@ import asyncio
 from redis import Redis
 from rq import Queue
 from rq.command import send_stop_job_command
+from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 from typing import Coroutine
 
@@ -35,11 +36,14 @@ async def enqueue(
 
 
 def stop_job(job_id: str = ...):
-    job = Job.fetch(job_id, connection=queue.connection)
-    status = job.get_status()
-    if status == JobStatus.SCHEDULED:
-        job.cancel()
-    elif status == JobStatus.STARTED:
-        send_stop_job_command(queue.connection, job_id)
-    logger.info(f"Stopped job {job.get_call_string()}")
-    job.delete(delete_dependents=True)
+    try:
+        job = Job.fetch(job_id, connection=queue.connection)
+        status = job.get_status()
+        if status == JobStatus.SCHEDULED:
+            job.cancel()
+        elif status == JobStatus.STARTED:
+            send_stop_job_command(queue.connection, job_id)
+        logger.info(f"Stopped job {job.get_call_string()}")
+        job.delete(delete_dependents=True)
+    except NoSuchJobError:
+        pass
