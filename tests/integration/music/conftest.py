@@ -25,7 +25,7 @@ def test_audio_file_url():
 
 @pytest.fixture(scope="session")
 def test_video_url():
-    return "https://www.youtube.com/watch?v=wX49jNyqq04"
+    return "https://vimeo.com/56282283"
 
 
 @pytest.fixture(scope="session")
