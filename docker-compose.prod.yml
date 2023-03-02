@@ -40,7 +40,7 @@ services:
         source: server_venv
         target: /src/.venv
     healthcheck:
-      test: "curl -f http://localhost:$SERVER_PORT/api/docs"
+      test: "curl -f http://localhost:5000/api/docs"
       interval: 30s 
     <<: 
       - *logging
