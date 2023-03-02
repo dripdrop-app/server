@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $ENV == "development" ]; then
+if [ "$ENV" == "development" ]; then
     docker build --tag dripdrop-dev -f ./dockerfiles/Dockerfile.dev .
     docker stack rm dripdrop-dev
     while : ; do
@@ -11,7 +11,7 @@ if [ $ENV == "development" ]; then
         sleep 1s
     done 
     export $(cat .env | xargs) && docker stack deploy --compose-file docker-compose.dev.yml --prune dripdrop-dev
-elif [ $ENV == "production" ]; then
+elif [ "$ENV" == "production" ]; then
     docker build --tag dripdrop -f ./dockerfile/Dockerfile
     export $(cat .env | xargs) && docker stack deploy --compose-file docker-compose.dev.yml --prune dripdrop
 fi
