@@ -4,7 +4,7 @@ set -e
 source .venv/bin/activate
 alembic upgrade head
 
-if [ $ENV == "development" ] 
+if [ "$ENV" == "development" ] 
 then
     uvicorn dripdrop.app:app --reload --reload-dir dripdrop --host 0.0.0.0 --port 5000 --log-config ./config/logging.yml
 else
