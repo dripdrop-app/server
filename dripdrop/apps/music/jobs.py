@@ -100,16 +100,13 @@ async def listen_jobs(
         results = await session.scalars(query)
         job = results.first()
         if job:
-            try:
-                await websocket.send_json(
-                    jsonable_encoder(
-                        JobUpdateResponse(job=job, status=message.status).dict(
-                            by_alias=True
-                        )
+            await websocket.send_json(
+                jsonable_encoder(
+                    JobUpdateResponse(job=job, status=message.status).dict(
+                        by_alias=True
                     )
                 )
-            except Exception:
-                logger.exception(traceback.format_exc())
+            )
 
     await websocket.accept()
     await websocket_handler.create_websocket_redis_channel_listener(

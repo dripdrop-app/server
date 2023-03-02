@@ -2,7 +2,6 @@ import asyncio
 import traceback
 from asyncio import Task
 from fastapi import WebSocket, WebSocketDisconnect
-from fastapi.encoders import jsonable_encoder
 from typing import Coroutine, Literal
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
@@ -42,8 +41,13 @@ class WebsocketHandler:
                 )
             )
             while True:
-                await websocket.send_json(PingResponse(status='PING').dict())
-                await asyncio.sleep(1)
+                await websocket.send_json(PingResponse(status="PING").dict())
+                if task.done():
+                    expection = task.exception()
+                    if expection:
+                        raise expection
+                    await websocket.close()
+                await asyncio.sleep(5)
         except WebSocketDisconnect:
             await websocket.close()
         except ConnectionClosedError:
@@ -53,8 +57,9 @@ class WebsocketHandler:
         except Exception:
             logger.exception(traceback.format_exc())
         finally:
-            if task:
+            if task and not task.done():
                 task.cancel()
+                await task
 
     async def _subscribe(
         self,
