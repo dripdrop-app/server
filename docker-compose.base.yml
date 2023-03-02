@@ -5,7 +5,7 @@ services:
     platform: linux/amd64
     container_name: server
     restart: always
-    entrypoint: ./scripts/server.sh
+    entrypoint: ["./scripts/server.sh"]
     environment:
       SERVER_PORT: $SERVER_PORT
     ports:
@@ -19,7 +19,7 @@ services:
     restart: always
     build:
       dockerfile: dockerfiles/Dockerfile.dev
-    entrypoint: ./scripts/worker.sh
+    entrypoint: ["./scripts/worker.sh"]
     environment:
       REDIS_URL: $REDIS_URL
 
