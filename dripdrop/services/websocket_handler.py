@@ -59,7 +59,10 @@ class WebsocketHandler:
         finally:
             if task and not task.done():
                 task.cancel()
-                await task
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
     async def _subscribe(
         self,
