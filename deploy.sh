@@ -12,6 +12,6 @@ if [ "$ENV" == "development" ]; then
     done 
     export $(cat .env | xargs) && docker stack deploy --compose-file docker-compose.dev.yml --prune dripdrop-dev
 elif [ "$ENV" == "production" ]; then
-    docker build --tag dripdrop -f ./dockerfile/Dockerfile
+    docker build --tag dripdrop -f ./dockerfile/Dockerfile .
     export $(cat .env | xargs) && docker stack deploy --compose-file docker-compose.prod.yml --prune dripdrop
 fi
