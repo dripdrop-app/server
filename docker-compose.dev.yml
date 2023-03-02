@@ -1,42 +1,59 @@
-x-depends-postgres: &depends_on_postgres
-  depends_on:
-    postgres:
-      condition: service_healthy
+x-logging: &logging
+  logging:
+    driver: 'json-file'
+    options:
+      max-size: '10m'
+      max-file: '5'
 
-x-depends-database: &depends_on_database
-  <<: *depends_on_postgres
-  depends_on:
-    redis:
-      condition: service_healthy
+x-deploy: &deploy
+  deploy:
+    replicas: 1
+    restart_policy:
+      condition: on-failure
+      delay: 5s
+      max_attempts: 3
+    rollback_config:
+      parallelism: 0
+      delay: 0s
+      failure_action: pause
+      monitor: 5s
+      order: start-first
+    update_config:
+      parallelism: 0
+      delay: 0s
+      failure_action: rollback
+      monitor: 5s
+      order: start-first
 
-version: '2.4'
-name: dripdrop-dev
+version: '3.8'
 services:
   server:
-    extends: 
-      file: docker-compose.base.yml
-      service: server
-    build:
-      dockerfile: dockerfiles/Dockerfile.dev
+    image: dripdrop-dev
+    entrypoint: ["./scripts/server.sh"]
     environment:
       ENV: development
+    ports:
+      - 5000:5000
     volumes:
       - type: bind
         source: ./
         target: /src
       - type: volume
         source: server_venv
-        target: /src/.venv 
-    <<: *depends_on_database
+        target: /src/.venv
+    healthcheck:
+      test: "curl -f http://localhost:$SERVER_PORT/api/docs"
+      interval: 30s 
+    <<: 
+      - *logging
+      - *deploy
 
   worker:
-    extends: 
-      file: docker-compose.base.yml
-      service: worker
-    build:
-      dockerfile: dockerfiles/Dockerfile.dev
+    image: dripdrop-dev
+    entrypoint: ["./scripts/worker.sh"]
     environment:
       ENV: development
+      REDIS_URL: $REDIS_URL
     volumes:
       - type: bind
         source: ./
@@ -44,23 +61,54 @@ services:
       - type: volume
         source: worker_venv
         target: /src/.venv 
-    <<: *depends_on_database
+    <<: 
+      - *logging
+      - *deploy
 
   postgres:
-    extends: 
-      file: docker-compose.base.yml
-      service: postgres
+    image: postgres:14
+    environment:
+      POSTGRES_USER: $DATABASE_USER
+      POSTGRES_PASSWORD: $DATABASE_PASSWORD
+      POSTGRES_DB: $DATABASE
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - type: volume
+        source: postgresql
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U $DATABASE
+      interval: 10s
+    <<: 
+      - *logging
+      - *deploy
 
   pgadmin:
-    extends: 
-      file: docker-compose.base.yml
-      service: pgadmin
-    <<: *depends_on_postgres
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: $DATABASE_USER@$DATABASE.com
+      PGADMIN_DEFAULT_PASSWORD: $DATABASE_PASSWORD
+    ports:
+      - 5050:80
+    healthcheck:
+      test: "wget -O - http://localhost"
+      interval: 30s
+    <<: 
+      - *logging
+      - *deploy
 
   redis:
-    extends: 
-      file: docker-compose.base.yml
-      service: redis
+    image: redis
+    volumes:
+      - type: volume
+        source: redis
+        target: /data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+    <<: 
+      - *logging
+      - *deploy
 
 volumes:
   worker_venv: {}

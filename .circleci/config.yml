@@ -45,7 +45,6 @@ commands:
             echo "INFLUXDB_USERNAME=$INFLUXDB_USERNAME" >> .env
             echo "REDIS_URL=$REDIS_URL" >> .env
             echo "SECRET_KEY=$SECRET_KEY" >> .env
-            echo "SERVER_PORT=$SERVER_PORT" >> .env
             echo "TELEGRAF_SYSLOG_ADDRESS=$TELEGRAF_SYSLOG_ADDRESS" >> .env
             echo "TELEGRAF_SYSLOG_PORT=$TELEGRAF_SYSLOG_PORT" >> .env
             echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
@@ -90,7 +89,7 @@ jobs:
           command: rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop --exclude=data
       - run:
           name: Deploy Over SSH
-          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && chmod +x scripts/deploy.sh && ./scripts/deploy.sh"
+          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && chmod +x deploy.sh && ./deploy.sh"
 
 workflows:
   version: 2
