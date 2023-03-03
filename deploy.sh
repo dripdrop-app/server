@@ -14,7 +14,7 @@ then
         fi
         set -e
         sleep 1s
-    done 
+    done
     export $(cat .env | xargs) && docker stack deploy --compose-file docker-compose.dev.yml --prune dripdrop-dev
 else
     docker build --tag dripdrop -f ./dockerfiles/Dockerfile .
