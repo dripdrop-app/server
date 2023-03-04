@@ -17,13 +17,13 @@ x-deploy: &deploy
       delay: 0s
       failure_action: pause
       monitor: 5s
-      order: start-first
+      order: stop-first
     update_config:
       parallelism: 0
       delay: 0s
       failure_action: rollback
       monitor: 5s
-      order: start-first
+      order: stop-first
 
 version: '3.8'
 services:
