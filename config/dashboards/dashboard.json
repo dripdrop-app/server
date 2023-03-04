@@ -24,7 +24,6 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 2,
     "links": [],
     "liveNow": false,
     "panels": [
@@ -1255,7 +1254,7 @@
                 "enableLogDetails": true,
                 "prettifyLogMessage": false,
                 "showCommonLabels": false,
-                "showLabels": true,
+                "showLabels": false,
                 "showTime": true,
                 "sortOrder": "Descending",
                 "wrapLogMessage": false
@@ -1267,12 +1266,13 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"syslog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker_log\")\n  |> filter(fn: (r) => r[\"stream\"] == \"stdout\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")",
                     "refId": "A"
                 }
             ],
             "timeFrom": "1h",
             "title": "Logs",
+            "transformations": [],
             "type": "logs"
         },
         {
@@ -1292,7 +1292,7 @@
                 "enableLogDetails": true,
                 "prettifyLogMessage": false,
                 "showCommonLabels": false,
-                "showLabels": true,
+                "showLabels": false,
                 "showTime": true,
                 "sortOrder": "Descending",
                 "wrapLogMessage": false
@@ -1304,7 +1304,7 @@
                         "type": "influxdb",
                         "uid": "P951FEA4DE68E13C5"
                     },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"syslog\")\n  |> filter(fn: (r) => r[\"severity\"] == \"err\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")\n  |> map(fn: (r) => ({ r with \"host\": \"host\" }))\n",
+                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker_log\")\n  |> filter(fn: (r) => r[\"stream\"] == \"stderr\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")\n",
                     "refId": "A"
                 }
             ],
@@ -1329,6 +1329,6 @@
     "timezone": "",
     "title": "Dashboard",
     "uid": "XkL847bV",
-    "version": 3,
+    "version": 1,
     "weekStart": ""
 }
