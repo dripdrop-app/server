@@ -3,6 +3,7 @@ import traceback
 from datetime import datetime, timedelta
 from sqlalchemy import select, func, delete
 
+from dripdrop.apps.authentication.models import User
 from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
 from dripdrop.services.google_api import google_api
@@ -12,14 +13,13 @@ from dripdrop.rq import enqueue
 from dripdrop.utils import worker_task
 
 from .models import (
-    GoogleAccount,
+    YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
     YoutubeNewSubscription,
     YoutubeVideo,
     YoutubeVideoCategory,
 )
-from .utils import update_google_access_token
 
 
 class YoutubeTasker:
@@ -67,21 +67,16 @@ class YoutubeTasker:
 
     @worker_task
     async def update_user_subscriptions(
-        self, user_email: str = ..., session: AsyncSession = ...
+        self, email: str = ..., session: AsyncSession = ...
     ):
-        query = select(GoogleAccount).where(GoogleAccount.user_email == user_email)
+        query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
         results = await session.scalars(query)
-        account = results.first()
-        if not account:
-            return
-        await session.commit()
-        await update_google_access_token(google_email=account.email, session=session)
-        await session.refresh(account)
-        if not account.access_token:
+        user_channel = results.first()
+        if not user_channel:
             return
 
-        async for subscriptions in google_api.get_user_subscriptions(
-            access_token=account.access_token
+        async for subscriptions in google_api.get_channel_subscriptions(
+            channel_id=user_channel.channel_id
         ):
             for subscription in subscriptions:
                 subscription_id = subscription["id"]
@@ -125,7 +120,7 @@ class YoutubeTasker:
                         session.add(
                             YoutubeSubscription(
                                 id=subscription_id,
-                                email=account.email,
+                                email=user_channel.email,
                                 channel_id=channel_id,
                                 published_at=published_at,
                             )
@@ -137,7 +132,7 @@ class YoutubeTasker:
                     if not results.first():
                         session.add(
                             YoutubeNewSubscription(
-                                id=subscription_id, email=account.email
+                                id=subscription_id, email=user_channel.email
                             )
                         )
                     await session.commit()
@@ -145,12 +140,12 @@ class YoutubeTasker:
                     logger.exception(traceback.format_exc())
         subscription_query = (
             select(YoutubeSubscription)
-            .where(YoutubeSubscription.email == account.email)
+            .where(YoutubeSubscription.email == user_channel.email)
             .subquery()
         )
         new_subscription_query = (
             select(YoutubeNewSubscription)
-            .where(YoutubeNewSubscription.email == account.email)
+            .where(YoutubeNewSubscription.email == user_channel.email)
             .subquery()
         )
         query = subscription_query.join(
@@ -169,12 +164,12 @@ class YoutubeTasker:
                 function=self._delete_subscription,
                 kwargs={
                     "subscription_id": row.subscription_id,
-                    "email": account.email,
+                    "email": user_channel.email,
                 },
                 at_front=True,
             )
         query = delete(YoutubeNewSubscription).where(
-            YoutubeNewSubscription.email == account.email
+            YoutubeNewSubscription.email == user_channel.email
         )
         await session.execute(query)
 
@@ -262,12 +257,12 @@ class YoutubeTasker:
 
     @worker_task
     async def update_subscriptions(self, session: AsyncSession = ...):
-        query = select(GoogleAccount)
+        query = select(User)
         stream = await session.stream_scalars(query)
-        async for account in stream:
+        async for user in stream:
             await enqueue(
                 function=self.update_user_subscriptions,
-                kwargs={"user_email": account.user_email},
+                kwargs={"email": user.email},
                 at_front=True,
             )
 

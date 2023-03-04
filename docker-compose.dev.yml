@@ -144,8 +144,6 @@ services:
       INFLUXDB_BUCKET: $INFLUXDB_BUCKET
       INFLUXDB_TOKEN: $INFLUXDB_TOKEN
       INFLUXDB_URL: $INFLUXDB_URL
-      TELEGRAF_SYSLOG_ADDRESS: $TELEGRAF_SYSLOG_ADDRESS
-      TELEGRAF_SYSLOG_PORT: $TELEGRAF_SYSLOG_PORT
     volumes:
       - type: bind
         source: ./config/telegraf.conf

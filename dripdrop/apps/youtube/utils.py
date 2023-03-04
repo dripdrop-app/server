@@ -1,13 +1,10 @@
 import math
-from datetime import datetime
 from sqlalchemy import select, func
 
+from dripdrop.apps.authentication.models import User
 from dripdrop.database import AsyncSession
-from dripdrop.services.google_api import google_api
-from dripdrop.settings import settings
 
 from .models import (
-    GoogleAccount,
     YoutubeSubscription,
     YoutubeChannel,
     YoutubeVideo,
@@ -17,35 +14,9 @@ from .models import (
 )
 
 
-async def update_google_access_token(
-    google_email: str = ..., session: AsyncSession = ...
-):
-    query = select(GoogleAccount).where(GoogleAccount.email == google_email)
-    results = await session.scalars(query)
-    account = results.first()
-    if account:
-        last_updated: datetime = account.last_updated
-        difference = datetime.now(tz=settings.timezone) - last_updated.replace(
-            tzinfo=settings.timezone
-        )
-        if difference.seconds >= account.expires:
-            try:
-                new_access_token = await google_api.refresh_access_token(
-                    refresh_token=account.refresh_token
-                )
-                if new_access_token:
-                    account.access_token = new_access_token["access_token"]
-                    account.expires = new_access_token["expires_in"]
-                    await session.commit()
-            except Exception:
-                account.access_token = ""
-                account.expires = 0
-                await session.commit()
-
-
 async def execute_videos_query(
     session: AsyncSession = ...,
-    google_account: GoogleAccount = ...,
+    user: User = ...,
     channel_id: str | None = None,
     video_ids: list[str] | None = None,
     exclude_video_ids: list[str] | None = None,
@@ -58,7 +29,7 @@ async def execute_videos_query(
 ):
     subscription_query = (
         select(YoutubeSubscription)
-        .where(YoutubeSubscription.email == google_account.email)
+        .where(YoutubeSubscription.email == user.email)
         .subquery()
     )
     channel_query = (
@@ -86,18 +57,16 @@ async def execute_videos_query(
         .subquery()
     )
     video_likes_query = (
-        select(YoutubeVideoLike)
-        .where(YoutubeVideoLike.email == google_account.email)
-        .subquery()
+        select(YoutubeVideoLike).where(YoutubeVideoLike.email == user.email).subquery()
     )
     video_queues_query = (
         select(YoutubeVideoQueue)
-        .where(YoutubeVideoQueue.email == google_account.email)
+        .where(YoutubeVideoQueue.email == user.email)
         .subquery()
     )
     video_watches_query = (
         select(YoutubeVideoWatch)
-        .where(YoutubeVideoWatch.email == google_account.email)
+        .where(YoutubeVideoWatch.email == user.email)
         .subquery()
     )
     subquery = None

@@ -1,26 +1,9 @@
-import traceback
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.responses import PlainTextResponse, RedirectResponse
-from sqlalchemy import select
+from fastapi import Depends, FastAPI, status
 
-from dripdrop.apps.authentication.models import User
-from dripdrop.dependencies import (
-    get_authenticated_user,
-    create_db_session,
-    AsyncSession,
-)
-from dripdrop.rq import enqueue
-from dripdrop.logging import logger
-from dripdrop.services.google_api import google_api
-from dripdrop.settings import settings, ENV
+from dripdrop.dependencies import get_authenticated_user
 
 from .channels import channels_api
-from .dependencies import get_google_account
-from .models import GoogleAccount
-from .responses import AccountResponse
 from .subscriptions import subscriptions_api
-from .tasks import youtube_tasker
-from .utils import update_google_access_token
 from .videos import videos_api
 
 app = FastAPI(
@@ -31,77 +14,3 @@ app = FastAPI(
 app.include_router(videos_api)
 app.include_router(subscriptions_api)
 app.include_router(channels_api)
-
-
-@app.get("/googleoauth2")
-async def google_oauth2(
-    request: Request,
-    state: str = Query(...),
-    code: str = Query(...),
-    error: str = Query(None),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
-):
-    if error:
-        raise HTTPException(400)
-    tokens = None
-    try:
-        tokens = await google_api.get_oauth_tokens(
-            f"{request.base_url}api/youtube/googleoauth2", code
-        )
-        google_email = await google_api.get_user_email(tokens.get("access_token"))
-        query = select(GoogleAccount).where(GoogleAccount.email == google_email)
-        results = await session.scalars(query)
-        google_account = results.first()
-        if google_account:
-            google_account.access_token = tokens["access_token"]
-            google_account.refresh_token = tokens["refresh_token"]
-            google_account.expires = tokens["expires_in"]
-            await session.commit()
-        else:
-            session.add(
-                GoogleAccount(
-                    email=google_email,
-                    user_email=user.email,
-                    access_token=tokens["access_token"],
-                    refresh_token=tokens["refresh_token"],
-                    expires=tokens["expires_in"],
-                )
-            )
-            await session.commit()
-        job = await enqueue(
-            function=youtube_tasker.update_video_categories, args=(False,)
-        )
-        await enqueue(
-            function=youtube_tasker.update_user_subscriptions,
-            args=(user.email,),
-            depends_on=job,
-        )
-    except Exception:
-        logger.error(traceback.format_exc())
-    return RedirectResponse("/youtube/videos")
-
-
-@app.get("/account", response_model=AccountResponse)
-async def get_youtube_account(
-    google_account: GoogleAccount = Depends(get_google_account),
-    session: AsyncSession = Depends(create_db_session),
-):
-    if settings.env != ENV.DEVELOPMENT:
-        await update_google_access_token(
-            google_email=google_account.email, session=session
-        )
-    await session.refresh(google_account)
-    return AccountResponse(
-        email=google_account.email, refresh=not bool(google_account.access_token)
-    )
-
-
-@app.get("/oauth", response_class=PlainTextResponse)
-async def create_oauth_link(
-    request: Request, user: User = Depends(get_authenticated_user)
-):
-    oauth_url = google_api.create_oauth_url(
-        f"{request.base_url}api/youtube/googleoauth2", user.email
-    )
-    return PlainTextResponse(content=oauth_url)

@@ -6,23 +6,19 @@ from dripdrop.apps.authentication.models import User
 from dripdrop.models.base import Base, ModelBaseMixin
 
 
-class GoogleAccount(ModelBaseMixin, Base):
-    __tablename__ = "google_accounts"
+class YoutubeUserChannel(ModelBaseMixin, Base):
+    __tablename__ = "youtube_user_channels"
 
-    email: Mapped[str] = mapped_column(primary_key=True)
-    user_email: Mapped[str] = mapped_column(
+    channel_id: Mapped[str] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(
         ForeignKey(
             User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
-            name="google_accounts_user_email_fkey",
+            name="youtube_user_channels_email_fkey",
         ),
-        nullable=False,
         unique=True,
     )
-    access_token: Mapped[str] = mapped_column(nullable=False)
-    refresh_token: Mapped[str] = mapped_column(nullable=False)
-    expires: Mapped[int] = mapped_column(nullable=False)
 
 
 class YoutubeChannel(ModelBaseMixin, Base):
@@ -51,7 +47,7 @@ class YoutubeSubscription(ModelBaseMixin, Base):
     )
     email: Mapped[str] = mapped_column(
         ForeignKey(
-            GoogleAccount.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_subscriptions_email_fkey",
@@ -69,7 +65,7 @@ class YoutubeNewSubscription(ModelBaseMixin, Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(
         ForeignKey(
-            GoogleAccount.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_new_subscriptions_email_fkey",
@@ -119,7 +115,7 @@ class YoutubeVideoLike(ModelBaseMixin, Base):
 
     email: Mapped[str] = mapped_column(
         ForeignKey(
-            GoogleAccount.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_likes_email_fkey",
@@ -144,7 +140,7 @@ class YoutubeVideoQueue(ModelBaseMixin, Base):
 
     email: Mapped[str] = mapped_column(
         ForeignKey(
-            GoogleAccount.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_queues_email_fkey",
@@ -169,7 +165,7 @@ class YoutubeVideoWatch(ModelBaseMixin, Base):
 
     email: Mapped[str] = mapped_column(
         ForeignKey(
-            GoogleAccount.email,
+            User.email,
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="youtube_video_watches_email_fkey",

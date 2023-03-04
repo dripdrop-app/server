@@ -1,16 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Response
 from sqlalchemy import select
 
-from dripdrop.dependencies import AsyncSession, create_db_session
+from dripdrop.dependencies import (
+    AsyncSession,
+    create_db_session,
+    get_authenticated_user,
+    User,
+)
+from dripdrop.settings import settings
 
-from .dependencies import get_google_account
-from .models import YoutubeChannel
-from .responses import YoutubeChannelResponse, ErrorMessages
+from .models import YoutubeChannel, YoutubeUserChannel
+from .responses import YoutubeChannelResponse, YoutubeUserChannelResponse, ErrorMessages
 
 channels_api = APIRouter(
     prefix="/channels",
     tags=["YouTube Channels"],
-    dependencies=[Depends(get_google_account)],
+    dependencies=[Depends(get_authenticated_user)],
 )
 
 
@@ -36,3 +42,47 @@ async def get_youtube_channel(
     return YoutubeChannelResponse(
         id=channel.id, title=channel.title, thumbnail=channel.thumbnail
     )
+
+
+@channels_api.get("/user")
+async def get_user_youtube_channel(
+    user: User = Depends(get_authenticated_user),
+    session: AsyncSession = Depends(create_db_session),
+):
+    query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == user.email)
+    results = await session.scalars(query)
+    user_channel = results.first()
+    if not user_channel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return YoutubeUserChannelResponse(channel_id=user_channel.channel_id)
+
+
+@channels_api.post(
+    "/user/update",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": ErrorMessages.WAIT_TO_UPDATE_CHANNEL
+        }
+    },
+)
+async def update_user_youtube_channel(
+    channel_id: str = Body(...),
+    user: User = Depends(get_authenticated_user),
+    session: AsyncSession = Depends(create_db_session),
+):
+    query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == user.email)
+    results = await session.scalars(query)
+    user_channel = results.first()
+    if user_channel:
+        current_time = datetime.now(settings.timezone)
+        time_elasped = current_time - user_channel.last_updated
+        if time_elasped.days < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorMessages.WAIT_TO_UPDATE_CHANNEL,
+            )
+        user_channel.channel_id = channel_id
+    else:
+        session.add(YoutubeUserChannel(channel_id=channel_id, email=user.email))
+    await session.commit()
+    return Response(None, status=status.HTTP_200_OK)

@@ -4,7 +4,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dripdrop.apps.youtube.models import (
-    GoogleAccount,
     YoutubeChannel,
     YoutubeSubscription,
     YoutubeVideo,
@@ -14,29 +13,6 @@ from dripdrop.apps.youtube.models import (
     YoutubeVideoWatch,
 )
 from dripdrop.settings import settings
-
-
-@pytest.fixture
-def create_google_account(session: AsyncSession):
-    async def _create_google_account(
-        email: str = ...,
-        user_email: str = ...,
-        access_token: str = ...,
-        refresh_token: str = ...,
-        expires: int = 1000,
-    ):
-        google_account = GoogleAccount(
-            email=email,
-            user_email=user_email,
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires=expires,
-        )
-        session.add(google_account)
-        await session.commit()
-        return google_account
-
-    return _create_google_account
 
 
 @pytest.fixture
