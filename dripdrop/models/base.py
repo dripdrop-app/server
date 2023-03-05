@@ -17,7 +17,7 @@ class ModelBaseMixin(object):
         nullable=False,
         default=get_current_time,
     )
-    last_updated: Mapped[datetime] = mapped_column(
+    modified_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         default=get_current_time,

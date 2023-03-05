@@ -6,7 +6,7 @@ from dripdrop.responses import ResponseBaseModel
 
 
 class YoutubeUserChannelResponse(ResponseBaseModel):
-    channel_id: str
+    id: str
 
 
 class YoutubeChannelResponse(ResponseBaseModel):

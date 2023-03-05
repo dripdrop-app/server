@@ -9,7 +9,7 @@ from dripdrop.models.base import Base, ModelBaseMixin
 class YoutubeUserChannel(ModelBaseMixin, Base):
     __tablename__ = "youtube_user_channels"
 
-    channel_id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(
         ForeignKey(
             User.email,

@@ -54,7 +54,7 @@ async def get_user_youtube_channel(
     user_channel = results.first()
     if not user_channel:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return YoutubeUserChannelResponse(channel_id=user_channel.channel_id)
+    return YoutubeUserChannelResponse(id=user_channel.id)
 
 
 @channels_api.post(
@@ -66,7 +66,7 @@ async def get_user_youtube_channel(
     },
 )
 async def update_user_youtube_channel(
-    channel_id: str = Body(...),
+    channel_id: str = Body(..., embed=True),
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
@@ -75,14 +75,14 @@ async def update_user_youtube_channel(
     user_channel = results.first()
     if user_channel:
         current_time = datetime.now(settings.timezone)
-        time_elasped = current_time - user_channel.last_updated
+        time_elasped = current_time - user_channel.modified_at
         if time_elasped.days < 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=ErrorMessages.WAIT_TO_UPDATE_CHANNEL,
             )
-        user_channel.channel_id = channel_id
+        user_channel.id = channel_id
     else:
-        session.add(YoutubeUserChannel(channel_id=channel_id, email=user.email))
+        session.add(YoutubeUserChannel(id=channel_id, email=user.email))
     await session.commit()
-    return Response(None, status=status.HTTP_200_OK)
+    return Response(None, status_code=status.HTTP_200_OK)
