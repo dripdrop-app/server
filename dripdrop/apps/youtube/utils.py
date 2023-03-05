@@ -1,5 +1,5 @@
 import math
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.database import AsyncSession
@@ -27,95 +27,64 @@ async def execute_videos_query(
     offset: int | None = None,
     limit: int | None = None,
 ):
-    subscription_query = (
-        select(YoutubeSubscription)
-        .where(YoutubeSubscription.email == user.email)
-        .subquery()
-    )
-    channel_query = (
-        select(YoutubeChannel)
-        .where(
-            YoutubeChannel.id == channel_id
-            if channel_id
-            else YoutubeChannel.id.is_not(None)
+    query = (
+        select(
+            YoutubeVideo.id,
+            YoutubeVideo.title,
+            YoutubeVideo.thumbnail,
+            YoutubeVideo.category_id,
+            YoutubeVideo.published_at,
+            YoutubeVideo.channel_id,
+            YoutubeChannel.title.label("channel_title"),
+            YoutubeChannel.thumbnail.label("channel_thumbnail"),
+            YoutubeVideoLike.created_at.label("liked"),
+            YoutubeVideoWatch.created_at.label("watched"),
+            YoutubeVideoQueue.created_at.label("queued"),
         )
-        .subquery()
-    )
-    videos_query = (
-        select(YoutubeVideo)
-        .where(
-            YoutubeVideo.category_id.in_(video_categories)
-            if video_categories and len(video_categories) != 0
-            else YoutubeVideo.category_id.is_not(None),
-            YoutubeVideo.id.in_(video_ids)
-            if video_ids
-            else YoutubeVideo.id.is_not(None),
-            YoutubeVideo.id.not_in(exclude_video_ids)
-            if exclude_video_ids
-            else YoutubeVideo.id.is_not(None),
-        )
-        .subquery()
-    )
-    video_likes_query = (
-        select(YoutubeVideoLike).where(YoutubeVideoLike.email == user.email).subquery()
-    )
-    video_queues_query = (
-        select(YoutubeVideoQueue)
-        .where(YoutubeVideoQueue.email == user.email)
-        .subquery()
-    )
-    video_watches_query = (
-        select(YoutubeVideoWatch)
-        .where(YoutubeVideoWatch.email == user.email)
-        .subquery()
-    )
-    subquery = None
-    if subscribed_only:
-        subquery = subscription_query.join(
-            channel_query,
-            channel_query.columns.id == subscription_query.columns.channel_id,
-        )
-    else:
-        subquery = channel_query
-    query = select(
-        videos_query.columns.id,
-        videos_query.columns.title,
-        videos_query.columns.thumbnail,
-        videos_query.columns.category_id,
-        videos_query.columns.published_at,
-        videos_query.columns.channel_id,
-        channel_query.columns.title.label("channel_title"),
-        channel_query.columns.thumbnail.label("channel_thumbnail"),
-        video_likes_query.columns.created_at.label("liked"),
-        video_watches_query.columns.created_at.label("watched"),
-        video_queues_query.columns.created_at.label("queued"),
-    ).select_from(
-        subquery.join(
-            videos_query,
-            videos_query.columns.channel_id == channel_query.columns.id,
+        .join(YoutubeChannel, YoutubeVideo.channel_id == YoutubeChannel.id)
+        .join(
+            YoutubeSubscription,
+            YoutubeChannel.id == YoutubeSubscription.channel_id,
+            isouter=True,
         )
         .join(
-            video_likes_query,
-            video_likes_query.columns.video_id == videos_query.columns.id,
-            isouter=not liked_only,
-        )
-        .join(
-            video_queues_query,
-            video_queues_query.columns.video_id == videos_query.columns.id,
+            YoutubeVideoQueue,
+            YoutubeVideo.id == YoutubeVideoQueue.video_id,
             isouter=not queued_only,
         )
         .join(
-            video_watches_query,
-            video_watches_query.columns.video_id == videos_query.columns.id,
+            YoutubeVideoLike,
+            YoutubeVideo.id == YoutubeVideoLike.video_id,
+            isouter=not liked_only,
+        )
+        .join(
+            YoutubeVideoWatch,
+            YoutubeVideo.id == YoutubeVideoWatch.video_id,
             isouter=True,
         )
+    ).where(
+        or_(YoutubeVideoLike.email.is_(None), YoutubeVideoLike.email == user.email),
+        or_(YoutubeVideoWatch.email.is_(None), YoutubeVideoWatch.email == user.email),
+        or_(YoutubeVideoQueue.email.is_(None), YoutubeVideoQueue.email == user.email),
     )
+    if channel_id:
+        query = query.where(YoutubeChannel.id == channel_id)
+    if subscribed_only:
+        query = query.where(YoutubeSubscription.email == user.email)
+    if video_categories:
+        query = query.where(YoutubeVideo.category_id.in_(video_categories))
+    if video_ids:
+        query = query.where(YoutubeVideo.id.in_(video_ids))
+    if exclude_video_ids:
+        query = query.where(YoutubeVideo.id.not_in(exclude_video_ids))
+
     if liked_only:
-        query = query.order_by(video_likes_query.columns.created_at.desc())
+        query = query.order_by(YoutubeVideoLike.created_at.desc())
     elif queued_only:
-        query = query.order_by(video_queues_query.columns.created_at.asc())
+        query = query.order_by(YoutubeVideoQueue.created_at.asc())
     else:
-        query = query.order_by(videos_query.columns.published_at.desc())
+        query = query.order_by(YoutubeVideo.published_at.desc())
+
     results = await session.execute(query.offset(offset))
     videos = results.mappings()
     if limit:

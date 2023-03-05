@@ -41,46 +41,25 @@ async def get_youtube_video_categories(
     session: AsyncSession = Depends(create_db_session),
     user: User = Depends(get_authenticated_user),
 ):
-    subscription_query = (
-        select(YoutubeSubscription)
-        .where(
-            YoutubeSubscription.email == user.email
-            if not channel_id
-            else YoutubeSubscription.id.is_not(None)
-        )
-        .subquery()
-    )
-    channel_query = (
-        select(YoutubeChannel)
-        .where(
-            YoutubeChannel.id == channel_id
-            if channel_id
-            else YoutubeChannel.id.is_not(None)
-        )
-        .subquery()
-    )
-    videos_query = select(YoutubeVideo).subquery()
-    video_categories_query = select(YoutubeVideoCategory).subquery()
     query = (
-        subscription_query.join(
-            channel_query,
-            subscription_query.columns.channel_id == channel_query.columns.id,
+        (
+            select(YoutubeVideoCategory.id, YoutubeVideoCategory.name)
+            .join(YoutubeVideo, YoutubeVideo.category_id == YoutubeVideoCategory.id)
+            .join(YoutubeChannel, YoutubeChannel.id == YoutubeVideo.channel_id)
+            .join(
+                YoutubeSubscription,
+                YoutubeSubscription.channel_id == YoutubeChannel.id,
+                isouter=True,
+            )
         )
-        .join(
-            videos_query,
-            videos_query.columns.channel_id == channel_query.columns.id,
-        )
-        .join(
-            video_categories_query,
-            video_categories_query.columns.id == videos_query.columns.category_id,
-        )
-    )
-    results = await session.execute(
-        select(video_categories_query.columns.id, video_categories_query.columns.name)
-        .select_from(query)
-        .order_by(video_categories_query.columns.name.asc())
+        .order_by(YoutubeVideoCategory.name.asc())
         .distinct()
     )
+    if not channel_id:
+        query = query.where(YoutubeSubscription.email == user.email)
+    else:
+        query = query.where(YoutubeChannel.id == channel_id)
+    results = await session.execute(query)
     categories = results.mappings().all()
     return YoutubeVideoCategoriesResponse(categories=categories)
 

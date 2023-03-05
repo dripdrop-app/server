@@ -61,9 +61,7 @@ async def test_get_user_youtube_channel(
 
 
 async def test_update_user_channel_when_not_logged_in(client: AsyncClient):
-    response = await client.post(
-        f"{CHANNELS_URL}/user/update", json={"channel_id": "2"}
-    )
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -71,9 +69,7 @@ async def test_update_user_channel_with_no_channel(
     client: AsyncClient, create_and_login_user
 ):
     await create_and_login_user(email="user@gmail.com", password="password")
-    response = await client.post(
-        f"{CHANNELS_URL}/user/update", json={"channel_id": "2"}
-    )
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
     assert response.status_code == status.HTTP_200_OK
 
 
@@ -84,9 +80,7 @@ async def test_update_user_channel_with_existing_channel_within_day(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     await create_user_channel(id="1", email=user.email)
-    response = await client.post(
-        f"{CHANNELS_URL}/user/update", json={"channel_id": "2"}
-    )
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -102,9 +96,7 @@ async def test_update_user_channel_with_existing_channel(
         email=user.email,
         modified_at=datetime.now(settings.timezone) - timedelta(days=2),
     )
-    response = await client.post(
-        f"{CHANNELS_URL}/user/update", json={"channel_id": "2"}
-    )
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
     print(response.text)
     assert response.status_code == status.HTTP_200_OK
     user_channel = await get_user_channel(email=user.email)

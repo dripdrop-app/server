@@ -79,3 +79,4 @@ class ErrorMessages:
     VIDEO_QUEUE_NOT_FOUND = "Video in queue not found"
     WAIT_TO_UPDATE_CHANNEL = "Must wait 24 hours before updating channel id"
     SUBSCRIPTION_ALREADY_EXIST = "Subscription already exists"
+    SUBSCRIPTION_NOT_FOUND = "Subscription not found"

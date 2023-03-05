@@ -32,24 +32,15 @@ async def get_youtube_subscriptions(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    subscription_query = (
-        select(YoutubeSubscription)
-        .where(YoutubeSubscription.email == user.email)
-        .subquery()
-    )
     query = (
         select(
-            subscription_query.columns.channel_id,
+            YoutubeSubscription.channel_id,
             YoutubeChannel.title.label("channel_title"),
             YoutubeChannel.thumbnail.label("channel_thumbnail"),
-            subscription_query.columns.published_at,
+            YoutubeSubscription.published_at,
         )
-        .select_from(
-            subscription_query.join(
-                YoutubeChannel,
-                YoutubeChannel.id == subscription_query.columns.channel_id,
-            )
-        )
+        .join(YoutubeChannel, YoutubeSubscription.channel_id == YoutubeChannel.id)
+        .where(YoutubeSubscription.email == user.email)
         .order_by(YoutubeChannel.title)
     )
     results = await session.execute(query.offset((page - 1) * per_page))
@@ -66,7 +57,7 @@ async def get_youtube_subscriptions(
 
 
 @subscriptions_api.put(
-    "/add",
+    "/user",
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessages.SUBSCRIPTION_ALREADY_EXIST
@@ -89,6 +80,14 @@ async def add_user_subscription(
             detail=ErrorMessages.SUBSCRIPTION_ALREADY_EXIST,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
+    results = await session.scalars(query)
+    channel = results.first()
+    if not channel:
+        raise HTTPException(
+            detail=ErrorMessages.CHANNEL_NOT_FOUND,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
     session.add(
         YoutubeSubscription(
             id=str(uuid.uuid4()),
@@ -99,3 +98,30 @@ async def add_user_subscription(
     )
     await session.commit()
     return Response(None, status_code=status.HTTP_201_CREATED)
+
+
+@subscriptions_api.delete(
+    "/user",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.SUBSCRIPTION_NOT_FOUND}
+    },
+)
+async def delete_user_subscription(
+    channel_id: str = Query(...),
+    user: User = Depends(get_authenticated_user),
+    session: AsyncSession = Depends(create_db_session),
+):
+    query = select(YoutubeSubscription).where(
+        YoutubeSubscription.email == user.email,
+        YoutubeSubscription.channel_id == channel_id,
+    )
+    results = await session.scalars(query)
+    subscription = results.first()
+    if not subscription:
+        raise HTTPException(
+            detail=ErrorMessages.SUBSCRIPTION_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+    await session.delete(subscription)
+    await session.commit()
+    return Response(None, status_code=status.HTTP_200_OK)

@@ -196,3 +196,80 @@ async def test_subscriptions_are_in_descending_order_by_title(
             )
         ),
     }
+
+
+async def test_add_user_subscription_when_not_logged_in(client: AsyncClient):
+    response = await client.put(f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"})
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+async def test_add_user_subscription_with_non_existent_channel(
+    client: AsyncClient, create_and_login_user
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.put(f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test_add_user_subscription(
+    client: AsyncClient, create_and_login_user, create_channel
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    channel = await create_channel(
+        id="1",
+        title="channel_1",
+        thumbnail="thumbnail",
+    )
+    response = await client.put(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+async def test_add_user_subscription_when_subscription_exists(
+    client: AsyncClient, create_and_login_user, create_channel, create_subscription
+):
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    channel = await create_channel(
+        id="1",
+        title="channel_1",
+        thumbnail="thumbnail",
+    )
+    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    response = await client.put(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test_delete_user_subscription_when_not_logged_in(client: AsyncClient):
+    response = await client.delete(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"}
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+async def test_delete_user_subscription_with_nonexistent_subscription(
+    client: AsyncClient, create_and_login_user
+):
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.delete(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"}
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+async def test_delete_user_subscription(
+    client: AsyncClient, create_and_login_user, create_channel, create_subscription
+):
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    channel = await create_channel(
+        id="1",
+        title="channel_1",
+        thumbnail="thumbnail",
+    )
+    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    response = await client.delete(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
+    )
+    assert response.status_code == status.HTTP_200_OK

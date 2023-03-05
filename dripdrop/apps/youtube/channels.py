@@ -44,7 +44,12 @@ async def get_youtube_channel(
     )
 
 
-@channels_api.get("/user")
+@channels_api.get(
+    "/user",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.CHANNEL_NOT_FOUND}
+    },
+)
 async def get_user_youtube_channel(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
@@ -53,12 +58,15 @@ async def get_user_youtube_channel(
     results = await session.scalars(query)
     user_channel = results.first()
     if not user_channel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            detail=ErrorMessages.CHANNEL_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
     return YoutubeUserChannelResponse(id=user_channel.id)
 
 
 @channels_api.post(
-    "/user/update",
+    "/user",
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessages.WAIT_TO_UPDATE_CHANNEL

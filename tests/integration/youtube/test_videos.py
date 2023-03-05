@@ -293,6 +293,63 @@ async def test_videos_in_descending_order_by_published_date(
     }
 
 
+async def test_videos_with_watched_populated(
+    client: AsyncClient,
+    create_and_login_user,
+    create_user,
+    create_channel,
+    create_subscription,
+    create_video_category,
+    create_video,
+    create_video_watch,
+):
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    other_user = await create_user(email="other@gmail.com", password="password")
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
+    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(id="2", channel_id=channel.id, email=other_user.email)
+    category = await create_video_category(id=1, name="category")
+    watched_video = await create_video(
+        id="1",
+        title="title_1",
+        thumbnail="thumbnail",
+        channel_id=channel.id,
+        category_id=category.id,
+    )
+    other_watched_video = await create_video(
+        id="2",
+        title="title_2",
+        thumbnail="thumbnail",
+        channel_id=channel.id,
+        category_id=category.id,
+    )
+    watch = await create_video_watch(email=user.email, video_id=watched_video.id)
+    await create_video_watch(email=other_user.email, video_id=other_watched_video.id)
+    response = await client.get(f"{VIDEOS_URL}/1/5")
+    assert response.json() == {
+        "totalPages": 1,
+        "videos": [
+            {
+                "id": watched_video.id,
+                "title": watched_video.title,
+                "thumbnail": watched_video.thumbnail,
+                "categoryId": category.id,
+                "publishedAt": watched_video.published_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+                "channelId": channel.id,
+                "channelTitle": channel.title,
+                "channelThumbnail": channel.thumbnail,
+                "liked": None,
+                "queued": None,
+                "watched": watch.created_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+            }
+        ],
+    }
+
+
 async def test_videos_with_specific_video_category(
     client: AsyncClient,
     create_and_login_user,
@@ -464,12 +521,14 @@ async def test_videos_with_queued_only_in_ascending_order_by_created_date(
 async def test_videos_with_liked_only(
     client: AsyncClient,
     create_and_login_user,
+    create_user,
     create_channel,
     create_video_category,
     create_video,
     create_video_like,
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
+    other_user = await create_user(email="other@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     category = await create_video_category(id=1, name="category")
     liked_video = await create_video(
@@ -479,7 +538,7 @@ async def test_videos_with_liked_only(
         channel_id=channel.id,
         category_id=category.id,
     )
-    await create_video(
+    other_liked_video = await create_video(
         id="2",
         title="title_2",
         thumbnail="thumbnail",
@@ -487,6 +546,7 @@ async def test_videos_with_liked_only(
         category_id=category.id,
     )
     like = await create_video_like(email=user.email, video_id=liked_video.id)
+    await create_video_like(email=other_user.email, video_id=other_liked_video.id)
     response = await client.get(f"{VIDEOS_URL}/1/5", params={"liked_only": True})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {

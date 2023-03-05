@@ -138,26 +138,19 @@ class YoutubeTasker:
                     await session.commit()
                 except Exception:
                     logger.exception(traceback.format_exc())
-        subscription_query = (
-            select(YoutubeSubscription)
-            .where(YoutubeSubscription.email == user_channel.email)
-            .subquery()
+        query = (
+            select(YoutubeSubscription.id.label("subscription_id"))
+            .join(
+                YoutubeNewSubscription,
+                YoutubeNewSubscription.id == YoutubeSubscription.id,
+                isouter=True,
+            )
+            .where(
+                YoutubeSubscription.email == user_channel.email,
+                YoutubeNewSubscription.id.is_(None),
+            )
         )
-        new_subscription_query = (
-            select(YoutubeNewSubscription)
-            .where(YoutubeNewSubscription.email == user_channel.email)
-            .subquery()
-        )
-        query = subscription_query.join(
-            new_subscription_query,
-            subscription_query.columns.id == new_subscription_query.columns.id,
-            isouter=True,
-        )
-        stream = await session.stream(
-            select(subscription_query.columns.id.label("subscription_id"))
-            .select_from(query)
-            .where(new_subscription_query.columns.id.is_(None))
-        )
+        stream = await session.stream(query)
         async for row in stream:
             row = row._mapping
             await enqueue(
