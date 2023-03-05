@@ -1,5 +1,5 @@
 import math
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, and_
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.database import AsyncSession
@@ -37,35 +37,43 @@ async def execute_videos_query(
             YoutubeVideo.channel_id,
             YoutubeChannel.title.label("channel_title"),
             YoutubeChannel.thumbnail.label("channel_thumbnail"),
+            YoutubeVideoLike.email,
             YoutubeVideoLike.created_at.label("liked"),
+            YoutubeVideoWatch.email,
             YoutubeVideoWatch.created_at.label("watched"),
+            YoutubeVideoQueue.email,
             YoutubeVideoQueue.created_at.label("queued"),
         )
         .join(YoutubeChannel, YoutubeVideo.channel_id == YoutubeChannel.id)
         .join(
             YoutubeSubscription,
             YoutubeChannel.id == YoutubeSubscription.channel_id,
-            isouter=True,
+            isouter=not subscribed_only,
         )
         .join(
             YoutubeVideoQueue,
-            YoutubeVideo.id == YoutubeVideoQueue.video_id,
+            and_(
+                YoutubeVideo.id == YoutubeVideoQueue.video_id,
+                YoutubeVideoQueue.email == user.email,
+            ),
             isouter=not queued_only,
         )
         .join(
             YoutubeVideoLike,
-            YoutubeVideo.id == YoutubeVideoLike.video_id,
+            and_(
+                YoutubeVideo.id == YoutubeVideoLike.video_id,
+                YoutubeVideoLike.email == user.email,
+            ),
             isouter=not liked_only,
         )
         .join(
             YoutubeVideoWatch,
-            YoutubeVideo.id == YoutubeVideoWatch.video_id,
+            and_(
+                YoutubeVideo.id == YoutubeVideoWatch.video_id,
+                YoutubeVideoWatch.email == user.email,
+            ),
             isouter=True,
         )
-    ).where(
-        or_(YoutubeVideoLike.email.is_(None), YoutubeVideoLike.email == user.email),
-        or_(YoutubeVideoWatch.email.is_(None), YoutubeVideoWatch.email == user.email),
-        or_(YoutubeVideoQueue.email.is_(None), YoutubeVideoQueue.email == user.email),
     )
     if channel_id:
         query = query.where(YoutubeChannel.id == channel_id)

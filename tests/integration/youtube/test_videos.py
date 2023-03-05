@@ -316,7 +316,7 @@ async def test_videos_with_watched_populated(
         channel_id=channel.id,
         category_id=category.id,
     )
-    other_watched_video = await create_video(
+    other_video = await create_video(
         id="2",
         title="title_2",
         thumbnail="thumbnail",
@@ -324,11 +324,26 @@ async def test_videos_with_watched_populated(
         category_id=category.id,
     )
     watch = await create_video_watch(email=user.email, video_id=watched_video.id)
-    await create_video_watch(email=other_user.email, video_id=other_watched_video.id)
+    await create_video_watch(email=other_user.email, video_id=other_video.id)
     response = await client.get(f"{VIDEOS_URL}/1/5")
     assert response.json() == {
         "totalPages": 1,
         "videos": [
+            {
+                "id": other_video.id,
+                "title": other_video.title,
+                "thumbnail": other_video.thumbnail,
+                "categoryId": category.id,
+                "publishedAt": other_video.published_at.replace(
+                    tzinfo=settings.timezone
+                ).isoformat(),
+                "channelId": channel.id,
+                "channelTitle": channel.title,
+                "channelThumbnail": channel.thumbnail,
+                "liked": None,
+                "queued": None,
+                "watched": None,
+            },
             {
                 "id": watched_video.id,
                 "title": watched_video.title,
@@ -345,7 +360,7 @@ async def test_videos_with_watched_populated(
                 "watched": watch.created_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
-            }
+            },
         ],
     }
 
