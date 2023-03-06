@@ -62,7 +62,7 @@ class YoutubeTasker:
         subscription = results.first()
         if not subscription:
             raise Exception(f"Subscription ({subscription_id}) not found")
-        await session.delete(subscription)
+        subscription.deleted_at = datetime.now(settings.timezone)
         await session.commit()
 
     @worker_task
@@ -148,6 +148,7 @@ class YoutubeTasker:
             .where(
                 YoutubeSubscription.email == user_channel.email,
                 YoutubeNewSubscription.id.is_(None),
+                YoutubeSubscription.deleted_at.is_(None),
             )
         )
         stream = await session.stream(query)
@@ -239,12 +240,20 @@ class YoutubeTasker:
     async def update_channel_videos(
         self, date_after: str | None = None, session: AsyncSession = ...
     ):
-        query = select(YoutubeChannel)
-        stream = await session.stream_scalars(query)
-        async for channel in stream:
+        query = (
+            select(YoutubeSubscription.channel_id.label("channel_id"))
+            .where(YoutubeSubscription.deleted_at.is_(None))
+            .distinct()
+        )
+        stream = await session.stream(query)
+        async for subscription in stream:
+            subscription = subscription._mapping
             await enqueue(
                 function=self.add_new_channel_videos_job,
-                kwargs={"channel_id": channel.id, "date_after": date_after},
+                kwargs={
+                    "channel_id": subscription.channel_id,
+                    "date_after": date_after,
+                },
                 at_front=True,
             )
 
@@ -266,19 +275,18 @@ class YoutubeTasker:
         channel = results.first()
         if not channel:
             raise Exception(f"Channel ({channel_id}) not found")
+        query = delete(YoutubeSubscription).where(
+            YoutubeSubscription.channel_id == channel_id
+        )
+        await session.execute(query)
         await session.delete(channel)
         await session.commit()
 
     @worker_task
     async def delete_old_channels(self, session: AsyncSession = ...):
-        query = (
-            select(YoutubeChannel)
-            .join(
-                YoutubeSubscription,
-                YoutubeChannel.id == YoutubeSubscription.channel_id,
-                isouter=True,
-            )
-            .where(YoutubeSubscription.id.is_(None))
+        month_ago = datetime.now(settings.timezone) - timedelta(days=30)
+        query = select(YoutubeChannel).where(
+            YoutubeChannel.last_videos_updated < month_ago
         )
         stream = await session.stream_scalars(query)
         async for channel in stream:

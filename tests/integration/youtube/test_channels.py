@@ -7,12 +7,12 @@ from dripdrop.settings import settings
 CHANNELS_URL = "/api/youtube/channels"
 
 
-async def test_channels_when_not_logged_in(client: AsyncClient):
+async def test_get_channels_when_not_logged_in(client: AsyncClient):
     response = await client.get(CHANNELS_URL, params={"channel_id": "test"})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_channels_with_non_existent_channel(
+async def test_get_channels_with_non_existent_channel(
     client: AsyncClient, create_and_login_user
 ):
     await create_and_login_user(email="user@gmail.com", password="password")
@@ -20,7 +20,7 @@ async def test_channels_with_non_existent_channel(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-async def test_channels(
+async def test_get_channels(
     client: AsyncClient,
     create_and_login_user,
     create_channel,

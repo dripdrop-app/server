@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import status
 from httpx import AsyncClient
 
@@ -6,19 +7,19 @@ from dripdrop.settings import settings
 VIDEOS_URL = "/api/youtube/videos"
 
 
-async def test_videos_when_not_logged_in(client: AsyncClient):
+async def test_get_videos_when_not_logged_in(client: AsyncClient):
     response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_videos_with_no_videos(client: AsyncClient, create_and_login_user):
+async def test_get_videos_with_no_videos(client: AsyncClient, create_and_login_user):
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"totalPages": 0, "videos": []}
 
 
-async def test_videos_with_no_subscriptions(
+async def test_get_videos_with_no_subscriptions(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -40,7 +41,7 @@ async def test_videos_with_no_subscriptions(
     assert response.json() == {"totalPages": 0, "videos": []}
 
 
-async def test_videos_with_channel_id(
+async def test_get_videos_with_channel_id(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -89,7 +90,7 @@ async def test_videos_with_channel_id(
     }
 
 
-async def test_videos_with_out_of_range_page(
+async def test_get_videos_with_out_of_range_page(
     client: AsyncClient, create_and_login_user
 ):
     await create_and_login_user(email="user@gmail.com", password="password")
@@ -97,7 +98,7 @@ async def test_videos_with_out_of_range_page(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-async def test_videos_with_single_result(
+async def test_get_videos_with_single_result(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -140,7 +141,7 @@ async def test_videos_with_single_result(
     }
 
 
-async def test_videos_with_multiple_videos(
+async def test_get_videos_with_multiple_videos(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -191,7 +192,7 @@ async def test_videos_with_multiple_videos(
     }
 
 
-async def test_videos_with_multiple_pages(
+async def test_get_videos_with_multiple_pages(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -242,7 +243,7 @@ async def test_videos_with_multiple_pages(
     }
 
 
-async def test_videos_in_descending_order_by_published_date(
+async def test_get_videos_in_descending_order_by_published_date(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -291,6 +292,35 @@ async def test_videos_in_descending_order_by_published_date(
             )
         ),
     }
+
+
+async def test_get_videos_with_deleted_subscriptions(
+    client: AsyncClient,
+    create_and_login_user,
+    create_channel,
+    create_subscription,
+    create_video_category,
+    create_video,
+):
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
+    await create_subscription(
+        id="1",
+        channel_id=channel.id,
+        email=user.email,
+        deleted_at=datetime.now(settings.timezone),
+    )
+    category = await create_video_category(id=1, name="category")
+    await create_video(
+        id="1",
+        title="title",
+        thumbnail="thumbnail",
+        channel_id=channel.id,
+        category_id=category.id,
+    )
+    response = await client.get(f"{VIDEOS_URL}/1/10")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"totalPages": 0, "videos": []}
 
 
 async def test_videos_with_watched_populated(
@@ -365,7 +395,7 @@ async def test_videos_with_watched_populated(
     }
 
 
-async def test_videos_with_specific_video_category(
+async def test_get_videos_with_specific_video_category(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -418,7 +448,7 @@ async def test_videos_with_specific_video_category(
     }
 
 
-async def test_videos_with_queued_only(
+async def test_get_videos_with_queued_only(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -470,7 +500,7 @@ async def test_videos_with_queued_only(
     }
 
 
-async def test_videos_with_queued_only_in_ascending_order_by_created_date(
+async def test_get_videos_with_queued_only_in_ascending_order_by_created_date(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
@@ -533,7 +563,7 @@ async def test_videos_with_queued_only_in_ascending_order_by_created_date(
     }
 
 
-async def test_videos_with_liked_only(
+async def test_get_videos_with_liked_only(
     client: AsyncClient,
     create_and_login_user,
     create_user,
@@ -586,7 +616,7 @@ async def test_videos_with_liked_only(
     }
 
 
-async def test_videos_with_liked_only_in_descending_order_by_created_date(
+async def test_get_videos_with_liked_only_in_descending_order_by_created_date(
     client: AsyncClient,
     create_and_login_user,
     create_channel,

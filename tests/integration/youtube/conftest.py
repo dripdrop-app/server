@@ -76,6 +76,7 @@ def create_subscription(session: AsyncSession):
         channel_id: str = ...,
         email: str = ...,
         published_at: datetime | None = None,
+        deleted_at: datetime | None = None,
     ):
         youtube_subscription = YoutubeSubscription(
             id=id,
@@ -84,6 +85,7 @@ def create_subscription(session: AsyncSession):
             published_at=published_at
             if published_at
             else datetime.now(tz=settings.timezone),
+            deleted_at=deleted_at,
         )
         session.add(youtube_subscription)
         await session.commit()

@@ -57,6 +57,9 @@ class YoutubeSubscription(ModelBaseMixin, Base):
     published_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
+    deleted_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
 
 class YoutubeNewSubscription(ModelBaseMixin, Base):
@@ -105,7 +108,7 @@ class YoutubeVideo(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    published_at: Mapped[datetime] = mapped_column(
+    published_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
 
