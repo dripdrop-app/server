@@ -263,7 +263,13 @@ async def test_add_user_subscription(
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
     )
-    assert response.status_code == status.HTTP_201_CREATED
+    assert response.status_code == status.HTTP_200_OK
+    subscription = response.json()
+    assert subscription["id"] is not None
+    assert subscription["channelId"] == channel.id
+    assert subscription["channelTitle"] == channel.title
+    assert subscription["channelThumbnail"] == channel.thumbnail
+    assert subscription["publishedAt"] is not None
 
 
 async def test_add_user_subscription_when_subscription_exists(
@@ -300,7 +306,13 @@ async def test_add_user_subscription_with_deleted_subscription(
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
     )
-    assert response.status_code == status.HTTP_201_CREATED
+    assert response.status_code == status.HTTP_200_OK
+    subscription = response.json()
+    assert subscription["id"] is not None
+    assert subscription["channelId"] == channel.id
+    assert subscription["channelTitle"] == channel.title
+    assert subscription["channelThumbnail"] == channel.thumbnail
+    assert subscription["publishedAt"] is not None
 
 
 async def test_delete_user_subscription_when_not_logged_in(client: AsyncClient):

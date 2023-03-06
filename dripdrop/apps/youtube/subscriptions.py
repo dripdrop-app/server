@@ -13,7 +13,7 @@ from dripdrop.dependencies import (
 from dripdrop.settings import settings
 
 from .models import YoutubeSubscription, YoutubeChannel
-from .responses import SubscriptionsResponse, ErrorMessages
+from .responses import SubscriptionsResponse, YoutubeSubscriptionResponse, ErrorMessages
 
 subscriptions_api = APIRouter(
     prefix="/subscriptions",
@@ -84,32 +84,37 @@ async def add_user_subscription(
     )
     results = await session.scalars(query)
     subscription = results.first()
-    if subscription:
+    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
+    results = await session.scalars(query)
+    channel = results.first()
+    if not subscription:
+        if not channel:
+            raise HTTPException(
+                detail=ErrorMessages.CHANNEL_NOT_FOUND,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        subscription = YoutubeSubscription(
+            id=str(uuid.uuid4()),
+            email=user.email,
+            channel_id=channel_id,
+            published_at=datetime.now(settings.timezone),
+        )
+        session.add(subscription)
+    else:
         if subscription.deleted_at is None:
             raise HTTPException(
                 detail=ErrorMessages.SUBSCRIPTION_ALREADY_EXIST,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
         subscription.deleted_at = None
-    else:
-        query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-        results = await session.scalars(query)
-        channel = results.first()
-        if not channel:
-            raise HTTPException(
-                detail=ErrorMessages.CHANNEL_NOT_FOUND,
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-        session.add(
-            YoutubeSubscription(
-                id=str(uuid.uuid4()),
-                email=user.email,
-                channel_id=channel_id,
-                published_at=datetime.now(settings.timezone),
-            )
-        )
     await session.commit()
-    return Response(None, status_code=status.HTTP_201_CREATED)
+    return YoutubeSubscriptionResponse(
+        id=subscription.id,
+        channel_id=subscription.channel_id,
+        channel_title=channel.title,
+        channel_thumbnail=channel.thumbnail,
+        published_at=subscription.published_at,
+    )
 
 
 @subscriptions_api.delete(

@@ -44,6 +44,7 @@ async def get_youtube_channel(
             and_(
                 YoutubeChannel.id == YoutubeSubscription.channel_id,
                 YoutubeSubscription.email == user.email,
+                YoutubeSubscription.deleted_at.is_(None),
             ),
             isouter=True,
         )
