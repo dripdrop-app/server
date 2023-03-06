@@ -2,7 +2,7 @@ import math
 import uuid
 from datetime import datetime
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 
 from dripdrop.dependencies import (
     AsyncSession,
@@ -34,14 +34,20 @@ async def get_youtube_subscriptions(
 ):
     query = (
         select(
+            YoutubeSubscription.id,
             YoutubeSubscription.channel_id,
             YoutubeChannel.title.label("channel_title"),
             YoutubeChannel.thumbnail.label("channel_thumbnail"),
             YoutubeSubscription.published_at,
         )
-        .join(YoutubeChannel, YoutubeSubscription.channel_id == YoutubeChannel.id)
+        .join(
+            YoutubeChannel,
+            and_(
+                YoutubeSubscription.channel_id == YoutubeChannel.id,
+                YoutubeSubscription.email == user.email,
+            ),
+        )
         .where(
-            YoutubeSubscription.email == user.email,
             YoutubeSubscription.deleted_at.is_(None),
         )
         .order_by(YoutubeChannel.title)

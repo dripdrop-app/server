@@ -47,7 +47,10 @@ async def execute_videos_query(
         .join(YoutubeChannel, YoutubeVideo.channel_id == YoutubeChannel.id)
         .join(
             YoutubeSubscription,
-            YoutubeChannel.id == YoutubeSubscription.channel_id,
+            and_(
+                YoutubeChannel.id == YoutubeSubscription.channel_id,
+                YoutubeSubscription.email == user.email,
+            ),
             isouter=not subscribed_only,
         )
         .join(
@@ -78,10 +81,7 @@ async def execute_videos_query(
     if channel_id:
         query = query.where(YoutubeChannel.id == channel_id)
     if subscribed_only:
-        query = query.where(
-            YoutubeSubscription.email == user.email,
-            YoutubeSubscription.deleted_at.is_(None),
-        )
+        query = query.where(YoutubeSubscription.deleted_at.is_(None))
     if video_categories:
         query = query.where(YoutubeVideo.category_id.in_(video_categories))
     if video_ids:

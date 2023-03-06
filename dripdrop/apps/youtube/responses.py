@@ -13,9 +13,11 @@ class YoutubeChannelResponse(ResponseBaseModel):
     id: str
     title: str
     thumbnail: str | None
+    subscription_id: str | None
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel):
+    id: str
     channel_id: str
     channel_title: str
     channel_thumbnail: str | None

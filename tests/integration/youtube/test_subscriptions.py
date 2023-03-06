@@ -51,6 +51,7 @@ async def test_get_subscriptions_with_single_result(
         "totalPages": 1,
         "subscriptions": [
             {
+                "id": subscription.id,
                 "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
@@ -85,6 +86,7 @@ async def test_get_subscriptions_with_deleted_subscription(
         "totalPages": 1,
         "subscriptions": [
             {
+                "id": subscription.id,
                 "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
@@ -125,6 +127,7 @@ async def test_get_subscriptions_with_multiple_pages(
         "totalPages": 3,
         "subscriptions": [
             {
+                "id": subscriptions[0].id,
                 "channelId": channels[0].id,
                 "channelTitle": channels[0].title,
                 "channelThumbnail": channels[0].thumbnail,
@@ -167,6 +170,7 @@ async def test_get_subscriptions_for_logged_in_account(
         "totalPages": 1,
         "subscriptions": [
             {
+                "id": subscription.id,
                 "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
@@ -220,6 +224,7 @@ async def test_get_subscriptions_are_in_descending_order_by_title(
         "subscriptions": list(
             map(
                 lambda i: {
+                    "id": subscriptions[i].id,
                     "channelId": channels[i].id,
                     "channelTitle": channels[i].title,
                     "channelThumbnail": channels[i].thumbnail,

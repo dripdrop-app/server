@@ -24,17 +24,37 @@ async def test_get_channels(
     client: AsyncClient,
     create_and_login_user,
     create_channel,
-    create_subscription,
 ):
-    user = await create_and_login_user(email="user@gmail.com", password="password")
+    await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
     response = await client.get(CHANNELS_URL, params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "id": channel.id,
         "title": channel.title,
         "thumbnail": channel.thumbnail,
+        "subscriptionId": None,
+    }
+
+
+async def test_get_channels_with_subscribed_channel(
+    client: AsyncClient,
+    create_and_login_user,
+    create_channel,
+    create_subscription,
+):
+    user = await create_and_login_user(email="user@gmail.com", password="password")
+    channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
+    subscription = await create_subscription(
+        id="1", channel_id=channel.id, email=user.email
+    )
+    response = await client.get(CHANNELS_URL, params={"channel_id": "1"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "id": channel.id,
+        "title": channel.title,
+        "thumbnail": channel.thumbnail,
+        "subscriptionId": subscription.id,
     }
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Response
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from dripdrop.dependencies import (
     AsyncSession,
@@ -10,7 +10,7 @@ from dripdrop.dependencies import (
 )
 from dripdrop.settings import settings
 
-from .models import YoutubeChannel, YoutubeUserChannel
+from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
 from .responses import YoutubeChannelResponse, YoutubeUserChannelResponse, ErrorMessages
 
 channels_api = APIRouter(
@@ -29,18 +29,38 @@ channels_api = APIRouter(
 )
 async def get_youtube_channel(
     channel_id: str = Query(...),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-    results = await session.scalars(query)
-    channel = results.first()
+    query = (
+        select(
+            YoutubeChannel.id,
+            YoutubeChannel.title,
+            YoutubeChannel.thumbnail,
+            YoutubeSubscription.id.label("subscription_id"),
+        )
+        .join(
+            YoutubeSubscription,
+            and_(
+                YoutubeChannel.id == YoutubeSubscription.channel_id,
+                YoutubeSubscription.email == user.email,
+            ),
+            isouter=True,
+        )
+        .where(YoutubeChannel.id == channel_id)
+    )
+    results = await session.execute(query)
+    channel = results.mappings().first()
     if not channel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.CHANNEL_NOT_FOUND,
         )
     return YoutubeChannelResponse(
-        id=channel.id, title=channel.title, thumbnail=channel.thumbnail
+        id=channel.id,
+        title=channel.title,
+        thumbnail=channel.thumbnail,
+        subscription_id=channel.subscription_id,
     )
 
 
