@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from fastapi import status
 from httpx import AsyncClient
+from pytest import MonkeyPatch
 
 from dripdrop.settings import settings
 
@@ -129,11 +130,14 @@ async def test_update_user_channel_with_existing_channel_within_day(
 
 
 async def test_update_user_channel_with_existing_channel(
+    monkeypatch: MonkeyPatch,
     client: AsyncClient,
     create_and_login_user,
     create_user_channel,
     get_user_channel,
+    mock_async,
 ):
+    monkeypatch.setattr("dripdrop.rq.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     await create_user_channel(
         id="1",
@@ -141,7 +145,6 @@ async def test_update_user_channel_with_existing_channel(
         modified_at=datetime.now(settings.timezone) - timedelta(days=2),
     )
     response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
-    print(response.text)
     assert response.status_code == status.HTTP_200_OK
     user_channel = await get_user_channel(email=user.email)
     assert user_channel.id == "2"

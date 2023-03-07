@@ -8,10 +8,6 @@ from dripdrop.settings import settings
 SUBSCRIPTIONS_URL = "/api/youtube/subscriptions"
 
 
-async def nothing():
-    return None
-
-
 async def test_get_subscriptions_when_not_logged_in(client: AsyncClient):
     response = await client.get(f"{SUBSCRIPTIONS_URL}/1/10")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -257,9 +253,13 @@ async def test_add_user_subscription_with_non_existent_channel_in_database(
 
 
 async def test_add_user_subscription_with_channel_in_database(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, create_channel
+    monkeypatch: MonkeyPatch,
+    client: AsyncClient,
+    create_and_login_user,
+    create_channel,
+    mock_async,
 ):
-    monkeypatch.setattr("dripdrop.rq.enqueue", nothing)
+    monkeypatch.setattr("dripdrop.rq.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
         id="1",
@@ -344,8 +344,9 @@ async def test_add_user_subscription_with_deleted_subscription(
     create_and_login_user,
     create_channel,
     create_subscription,
+    mock_async,
 ):
-    monkeypatch.setattr("dripdrop.rq.enqueue", nothing)
+    monkeypatch.setattr("dripdrop.rq.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
         id="1",

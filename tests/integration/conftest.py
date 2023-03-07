@@ -106,3 +106,11 @@ def create_and_login_user(client: AsyncClient, create_user):
         return user
 
     return _create_and_login_user
+
+
+@pytest.fixture
+def mock_async():
+    async def _mock_async(*args, **kwargs):
+        return None
+
+    return _mock_async
