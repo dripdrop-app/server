@@ -31,10 +31,29 @@ class GoogleAPI:
         logger.warning(response.text)
         raise Exception("Failed to get video categories")
 
+    async def get_channel_info(self, channel_id: str = ...):
+        params = {
+            "part": "snippet",
+            "maxResults": 1,
+            "pageToken": "",
+            "id": channel_id,
+            "key": settings.google_api_key,
+        }
+        response = await http_client.get(
+            f"{GoogleAPI.YOUTUBE_API_URL}/channels",
+            params=params,
+            headers=self.base_headers,
+        )
+        if response.is_success:
+            json = response.json()
+            return json.get("items")[0]
+        else:
+            logger.warning(response.text)
+            raise Exception("Failed to get channel information")
+
     async def get_channel_subscriptions(self, channel_id: str = ...):
         params = {
             "part": "snippet",
-            "mine": True,
             "maxResults": 50,
             "pageToken": "",
             "channelId": channel_id,

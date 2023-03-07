@@ -76,7 +76,7 @@ class YoutubeTasker:
             return
 
         async for subscriptions in google_api.get_channel_subscriptions(
-            channel_id=user_channel.channel_id
+            channel_id=user_channel.id
         ):
             for subscription in subscriptions:
                 subscription_id = subscription["id"]

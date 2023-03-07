@@ -8,10 +8,12 @@ from dripdrop.dependencies import (
     get_authenticated_user,
     User,
 )
+from dripdrop.rq import enqueue
 from dripdrop.settings import settings
 
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
 from .responses import YoutubeChannelResponse, YoutubeUserChannelResponse, ErrorMessages
+from .tasks import youtube_tasker
 
 channels_api = APIRouter(
     prefix="/channels",
@@ -114,4 +116,7 @@ async def update_user_youtube_channel(
     else:
         session.add(YoutubeUserChannel(id=channel_id, email=user.email))
     await session.commit()
+    await enqueue(
+        youtube_tasker.update_user_subscriptions, kwargs={"email": user.email}
+    )
     return Response(None, status_code=status.HTTP_200_OK)

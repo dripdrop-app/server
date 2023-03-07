@@ -4,7 +4,6 @@ from sqlalchemy import select
 from dripdrop.apps.youtube.models import YoutubeVideoCategory
 from dripdrop.apps.youtube.tasks import youtube_tasker
 from dripdrop.database import AsyncSession
-from dripdrop.services.google_api import google_api
 
 
 async def test_update_video_categories_with_failed_google_api_request(
@@ -13,7 +12,9 @@ async def test_update_video_categories_with_failed_google_api_request(
     def raise_exception():
         raise Exception("Fail")
 
-    monkeypatch.setattr(google_api, "get_video_categories", raise_exception)
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.google_api.get_video_categories", raise_exception
+    )
     await youtube_tasker.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)
@@ -26,7 +27,10 @@ async def test_update_video_categories_with_no_categories(
     async def mock_video_categories():
         return []
 
-    monkeypatch.setattr(google_api, "get_video_categories", mock_video_categories)
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.google_api.get_video_categories",
+        mock_video_categories,
+    )
     await youtube_tasker.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)
@@ -41,7 +45,10 @@ async def test_update_video_categories_with_categories(
     async def mock_video_categories():
         return categories
 
-    monkeypatch.setattr(google_api, "get_video_categories", mock_video_categories)
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.google_api.get_video_categories",
+        mock_video_categories,
+    )
     await youtube_tasker.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)

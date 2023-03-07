@@ -1,6 +1,6 @@
 import math
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy import select, func, and_
 
@@ -10,10 +10,13 @@ from dripdrop.dependencies import (
     get_authenticated_user,
     User,
 )
+from dripdrop.rq import enqueue
+from dripdrop.services.google_api import google_api
 from dripdrop.settings import settings
 
 from .models import YoutubeSubscription, YoutubeChannel
 from .responses import SubscriptionsResponse, YoutubeSubscriptionResponse, ErrorMessages
+from .tasks import youtube_tasker
 
 subscriptions_api = APIRouter(
     prefix="/subscriptions",
@@ -89,10 +92,22 @@ async def add_user_subscription(
     channel = results.first()
     if not subscription:
         if not channel:
-            raise HTTPException(
-                detail=ErrorMessages.CHANNEL_NOT_FOUND,
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
+            try:
+                channel_info = await google_api.get_channel_info(channel_id=channel_id)
+                channel = YoutubeChannel(
+                    id=channel_info["id"],
+                    title=channel_info["snippet"]["title"],
+                    thumbnail=channel_info["snippet"]["thumbnails"]["high"]["url"],
+                    last_videos_updated=datetime.now(tz=settings.timezone)
+                    - timedelta(days=30),
+                )
+                session.add(channel)
+                await session.commit()
+            except Exception:
+                raise HTTPException(
+                    detail=ErrorMessages.CHANNEL_NOT_FOUND,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
         subscription = YoutubeSubscription(
             id=str(uuid.uuid4()),
             email=user.email,
@@ -108,6 +123,9 @@ async def add_user_subscription(
             )
         subscription.deleted_at = None
     await session.commit()
+    await enqueue(
+        youtube_tasker.add_new_channel_videos_job, kwargs={"channel_id": channel.id}
+    )
     return YoutubeSubscriptionResponse(
         id=subscription.id,
         channel_id=subscription.channel_id,
