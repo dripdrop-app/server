@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dripdrop.apps.youtube.models import (
-    GoogleAccount,
+    YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
     YoutubeVideo,
@@ -17,26 +17,29 @@ from dripdrop.settings import settings
 
 
 @pytest.fixture
-def create_google_account(session: AsyncSession):
-    async def _create_google_account(
-        email: str = ...,
-        user_email: str = ...,
-        access_token: str = ...,
-        refresh_token: str = ...,
-        expires: int = 1000,
+def create_user_channel(session: AsyncSession):
+    async def _create_user_channel(
+        id: str = ..., email: str = ..., modified_at: datetime | None = None
     ):
-        google_account = GoogleAccount(
-            email=email,
-            user_email=user_email,
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires=expires,
+        youtube_user_channel = YoutubeUserChannel(
+            id=id, email=email, modified_at=modified_at
         )
-        session.add(google_account)
+        session.add(youtube_user_channel)
         await session.commit()
-        return google_account
+        return youtube_user_channel
 
-    return _create_google_account
+    return _create_user_channel
+
+
+@pytest.fixture
+def get_user_channel(session: AsyncSession):
+    async def _get_user_channel(email: str = ...):
+        query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
+        results = await session.scalars(query)
+        user_channel = results.first()
+        return user_channel
+
+    return _get_user_channel
 
 
 @pytest.fixture
@@ -45,8 +48,8 @@ def create_channel(session: AsyncSession):
         id: str = ...,
         title: str = ...,
         thumbnail: str = ...,
+        modified_at: datetime | None = None,
         last_videos_updated: datetime | None = None,
-        last_updated: datetime | None = None,
     ):
         youtube_channel = YoutubeChannel(
             id=id,
@@ -55,8 +58,8 @@ def create_channel(session: AsyncSession):
             last_videos_updated=last_videos_updated
             if last_videos_updated
             else datetime.now(tz=settings.timezone),
-            last_updated=last_updated
-            if last_updated
+            modified_at=modified_at
+            if modified_at
             else datetime.now(tz=settings.timezone),
         )
         session.add(youtube_channel)
@@ -73,6 +76,7 @@ def create_subscription(session: AsyncSession):
         channel_id: str = ...,
         email: str = ...,
         published_at: datetime | None = None,
+        deleted_at: datetime | None = None,
     ):
         youtube_subscription = YoutubeSubscription(
             id=id,
@@ -81,6 +85,7 @@ def create_subscription(session: AsyncSession):
             published_at=published_at
             if published_at
             else datetime.now(tz=settings.timezone),
+            deleted_at=deleted_at,
         )
         session.add(youtube_subscription)
         await session.commit()

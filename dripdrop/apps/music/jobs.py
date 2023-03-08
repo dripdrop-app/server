@@ -29,11 +29,12 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.logging import logger
-from dripdrop.redis import redis
-from dripdrop.rq import enqueue, stop_job
-from dripdrop.services.websocket_handler import websocket_handler, RedisChannels
+from dripdrop.services import websocket_handler, rq
+from dripdrop.services.redis import redis
+from dripdrop.services.websocket_handler import RedisChannels
 from dripdrop.settings import settings
 
+from . import utils, tasks
 from .models import MusicJob
 from .responses import (
     MusicChannelResponse,
@@ -41,8 +42,6 @@ from .responses import (
     JobUpdateResponse,
     ErrorMessages,
 )
-from .tasks import music_tasker
-from .utils import handle_artwork_url, cleanup_job, handle_audio_file
 
 
 jobs_api = APIRouter(
@@ -150,7 +149,7 @@ async def create_job(
             )
     job_id = str(uuid.uuid4())
     try:
-        filename_url, filename = await handle_audio_file(job_id=job_id, file=file)
+        filename_url, filename = await utils.handle_audio_file(job_id=job_id, file=file)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
@@ -158,7 +157,7 @@ async def create_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
     try:
-        artwork_url, artwork_filename = await handle_artwork_url(
+        artwork_url, artwork_filename = await utils.handle_artwork_url(
             job_id=job_id, artwork_url=artwork_url
         )
     except Exception:
@@ -185,9 +184,7 @@ async def create_job(
         )
     )
     await session.commit()
-    await enqueue(
-        function=music_tasker.run_job, kwargs={"job_id": job_id}, job_id=job_id
-    )
+    await rq.enqueue(function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id)
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
         json.dumps(MusicChannelResponse(job_id=job_id, status="STARTED").dict()),
@@ -210,8 +207,8 @@ async def delete_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
-    stop_job(job_id=job_id)
-    await cleanup_job(job=job)
+    rq.stop_job(job_id=job_id)
+    await utils.cleanup_job(job=job)
     job.deleted_at = datetime.now(tz=settings.timezone)
     await session.commit()
     return Response(None)

@@ -2,88 +2,83 @@ from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from typing import Callable
 
-from dripdrop.apps.music.tasks import music_tasker
-from dripdrop.apps.youtube.tasks import youtube_tasker
+from dripdrop.apps.music import tasks as music_tasks
+from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.logging import logger
-from dripdrop.redis import redis
-from dripdrop.rq import queue, enqueue, stop_job
+from dripdrop.services import rq
+from dripdrop.services.redis import redis
 from dripdrop.settings import settings, ENV
 
 
-class Cron:
-    def __init__(self):
-        self.CRONS_ADDED = "crons_added"
-        self.job_ids: list[str] = []
-
-    async def run_cron_jobs(self):
-        video_categories_job = await enqueue(
-            function=youtube_tasker.update_video_categories,
-            kwargs={"cron": True},
-        )
-        update_subscriptions_job = await enqueue(
-            function=youtube_tasker.update_subscriptions,
-            depends_on=video_categories_job,
-        )
-        subscribed_channels_videos_job = await enqueue(
-            function=youtube_tasker.update_channel_videos,
-            depends_on=update_subscriptions_job,
-        )
-        await enqueue(
-            function=youtube_tasker.delete_old_channels,
-            depends_on=subscribed_channels_videos_job,
-        )
-        await enqueue(function=music_tasker.delete_old_jobs)
-
-    def create_cron_job(
-        self,
-        cron_string: str = ...,
-        function: Callable = ...,
-        args: tuple = (),
-        kwargs: dict = {},
-    ):
-        est = timezone(timedelta(hours=-5))
-        cron = croniter(cron_string, datetime.now(est))
-        cron.get_next()
-        next_run_time = cron.get_current(ret_type=datetime)
-        logger.info(f"Scheduling {function.__name__} to run at {next_run_time}")
-        job = queue.enqueue_at(
-            next_run_time,
-            function,
-            args=args,
-            kwargs=kwargs,
-        )
-        self.job_ids.append(job.get_id())
-        queue.enqueue(
-            self.create_cron_job,
-            kwargs={
-                "cron_string": cron_string,
-                "function": function,
-                "args": args,
-                "kwargs": kwargs,
-            },
-            depends_on=job,
-        )
-
-    async def start_cron_jobs(self):
-        if settings.env == ENV.PRODUCTION:
-            crons_added = await redis.get(self.CRONS_ADDED)
-            if not crons_added:
-                await redis.set(self.CRONS_ADDED, 1)
-                self.create_cron_job(
-                    "0 0 * * *",
-                    youtube_tasker.update_video_categories,
-                    kwargs={"cron": True},
-                )
-                self.create_cron_job("0 * * * *", youtube_tasker.update_channel_videos)
-                self.create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
-                self.create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
-                self.create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
-
-    async def end_cron_jobs(self):
-        if settings.env == ENV.PRODUCTION:
-            await redis.delete(self.CRONS_ADDED)
-            for job_id in self.job_ids:
-                stop_job(job_id=job_id)
+CRONS_ADDED = "crons_added"
+job_ids = []
 
 
-cron = Cron()
+async def run_cron_jobs():
+    video_categories_job = await rq.enqueue(
+        function=youtube_tasks.update_video_categories,
+        kwargs={"cron": True},
+    )
+    update_subscriptions_job = await rq.enqueue(
+        function=youtube_tasks.update_subscriptions,
+        depends_on=video_categories_job,
+    )
+    await rq.enqueue(
+        function=youtube_tasks.update_channel_videos,
+        depends_on=update_subscriptions_job,
+    )
+    await rq.enqueue(function=music_tasks.delete_old_jobs)
+
+
+def create_cron_job(
+    cron_string: str = ...,
+    function: Callable = ...,
+    args: tuple = (),
+    kwargs: dict = {},
+):
+    global job_ids
+    est = timezone(timedelta(hours=-5))
+    cron = croniter(cron_string, datetime.now(est))
+    cron.get_next()
+    next_run_time = cron.get_current(ret_type=datetime)
+    logger.info(f"Scheduling {function.__name__} to run at {next_run_time}")
+    job = rq.queue.enqueue_at(
+        next_run_time,
+        function,
+        args=args,
+        kwargs=kwargs,
+    )
+    job_ids.append(job.get_id())
+    rq.queue.enqueue(
+        create_cron_job,
+        kwargs={
+            "cron_string": cron_string,
+            "function": function,
+            "args": args,
+            "kwargs": kwargs,
+        },
+        depends_on=job,
+    )
+
+
+async def start_cron_jobs():
+    if settings.env == ENV.PRODUCTION:
+        crons_added = await redis.get(CRONS_ADDED)
+        if not crons_added:
+            await redis.set(CRONS_ADDED, 1)
+            create_cron_job(
+                "0 0 * * *",
+                youtube_tasks.update_video_categories,
+                kwargs={"cron": True},
+            )
+            create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
+            create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
+            create_cron_job("0 0 * * *", youtube_tasks.update_subscriptions)
+            create_cron_job("0 5 * * sun", youtube_tasks.delete_old_channels)
+
+
+async def end_cron_jobs():
+    if settings.env == ENV.PRODUCTION:
+        await redis.delete(CRONS_ADDED)
+        for job_id in job_ids:
+            rq.stop_job(job_id=job_id)

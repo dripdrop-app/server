@@ -2,8 +2,8 @@ import jwt
 from datetime import datetime, timedelta
 from sqlalchemy import select
 
-from dripdrop.database import AsyncSession
 from dripdrop.dependencies import ALGORITHM
+from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
 
 from .models import User

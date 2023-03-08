@@ -1,7 +1,7 @@
 from dripdrop.apps.authentication.models import User
 from dripdrop.apps.music.models import MusicJob
 from dripdrop.apps.youtube.models import (
-    GoogleAccount,
+    YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
     YoutubeVideoCategory,
@@ -19,7 +19,7 @@ class Register:
         self.models = [
             User,
             MusicJob,
-            GoogleAccount,
+            YoutubeUserChannel,
             YoutubeChannel,
             YoutubeSubscription,
             YoutubeVideoCategory,

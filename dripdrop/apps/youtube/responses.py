@@ -5,18 +5,19 @@ from typing import Optional, List
 from dripdrop.responses import ResponseBaseModel
 
 
-class AccountResponse(ResponseBaseModel):
-    email: str
-    refresh: bool
+class YoutubeUserChannelResponse(ResponseBaseModel):
+    id: str
 
 
 class YoutubeChannelResponse(ResponseBaseModel):
     id: str
     title: str
     thumbnail: str | None
+    subscription_id: str | None
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel):
+    id: str
     channel_id: str
     channel_title: str
     channel_thumbnail: str | None
@@ -78,3 +79,6 @@ class ErrorMessages:
     ADD_VIDEO_QUEUE_ERROR = "Could not add video to queue"
     REMOVE_VIDEO_QUEUE_ERROR = "Could not delete video queue"
     VIDEO_QUEUE_NOT_FOUND = "Video in queue not found"
+    WAIT_TO_UPDATE_CHANNEL = "Must wait 24 hours before updating channel id"
+    SUBSCRIPTION_ALREADY_EXIST = "Subscription already exists"
+    SUBSCRIPTION_NOT_FOUND = "Subscription not found"

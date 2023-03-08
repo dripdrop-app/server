@@ -6,8 +6,9 @@ from sqlalchemy import select
 from typing import Union
 
 from dripdrop.apps.authentication.models import User
+from dripdrop.services import database
+from dripdrop.services.database import AsyncSession
 
-from .database import database, AsyncSession
 from .logging import logger
 from .settings import settings
 

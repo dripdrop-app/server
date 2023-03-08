@@ -2,7 +2,8 @@ import traceback
 from functools import wraps
 from inspect import signature
 
-from .database import database
+from dripdrop.services import database
+
 from .logging import logger
 
 

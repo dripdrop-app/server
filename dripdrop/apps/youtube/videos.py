@@ -2,10 +2,14 @@ import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
 from sqlalchemy import select
 
-from dripdrop.dependencies import create_db_session, AsyncSession
+from dripdrop.dependencies import (
+    create_db_session,
+    AsyncSession,
+    User,
+    get_authenticated_user,
+)
 from dripdrop.logging import logger
 
-from .dependencies import get_google_account, GoogleAccount
 from .models import (
     YoutubeVideoCategory,
     YoutubeChannel,
@@ -27,7 +31,7 @@ from .utils import execute_videos_query
 videos_api = APIRouter(
     prefix="/videos",
     tags=["YouTube Videos"],
-    dependencies=[Depends(get_google_account)],
+    dependencies=[Depends(get_authenticated_user)],
 )
 
 
@@ -35,55 +39,37 @@ videos_api = APIRouter(
 async def get_youtube_video_categories(
     channel_id: str = Query(None),
     session: AsyncSession = Depends(create_db_session),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
 ):
-    subscription_query = (
-        select(YoutubeSubscription)
-        .where(
-            YoutubeSubscription.email == google_account.email
-            if not channel_id
-            else YoutubeSubscription.id.is_not(None)
-        )
-        .subquery()
-    )
-    channel_query = (
-        select(YoutubeChannel)
-        .where(
-            YoutubeChannel.id == channel_id
-            if channel_id
-            else YoutubeChannel.id.is_not(None)
-        )
-        .subquery()
-    )
-    videos_query = select(YoutubeVideo).subquery()
-    video_categories_query = select(YoutubeVideoCategory).subquery()
+    """
+    Get Categories for videos from a channel id or based on subscribed channel videos
+    """
     query = (
-        subscription_query.join(
-            channel_query,
-            subscription_query.columns.channel_id == channel_query.columns.id,
-        )
+        select(YoutubeVideoCategory.id, YoutubeVideoCategory.name)
+        .join(YoutubeVideo, YoutubeVideo.category_id == YoutubeVideoCategory.id)
+        .join(YoutubeChannel, YoutubeChannel.id == YoutubeVideo.channel_id)
         .join(
-            videos_query,
-            videos_query.columns.channel_id == channel_query.columns.id,
+            YoutubeSubscription,
+            YoutubeSubscription.channel_id == YoutubeChannel.id,
+            isouter=True,
         )
-        .join(
-            video_categories_query,
-            video_categories_query.columns.id == videos_query.columns.category_id,
-        )
-    )
-    results = await session.execute(
-        select(video_categories_query.columns.id, video_categories_query.columns.name)
-        .select_from(query)
-        .order_by(video_categories_query.columns.name.asc())
+        .order_by(YoutubeVideoCategory.name.asc())
         .distinct()
     )
+    if not channel_id:
+        query = query.where(
+            YoutubeSubscription.email == user.email,
+            YoutubeSubscription.deleted_at.is_(None),
+        )
+    else:
+        query = query.where(YoutubeChannel.id == channel_id)
+    results = await session.execute(query)
     categories = results.mappings().all()
     return YoutubeVideoCategoriesResponse(categories=categories)
 
 
 @videos_api.get(
     "",
-    dependencies=[Depends(get_google_account)],
     response_model=VideoResponse,
     responses={
         status.HTTP_404_NOT_FOUND: {"description": "Could not find Youtube video"}
@@ -92,12 +78,15 @@ async def get_youtube_video_categories(
 async def get_youtube_video(
     video_id: str = Query(...),
     related_videos_length: int = Query(5, ge=0),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
+    """
+    Get Video details and related videos (based on the same category)
+    """
     (videos, *_) = await execute_videos_query(
         session=session,
-        google_account=google_account,
+        user=user,
         video_ids=[video_id],
         subscribed_only=False,
     )
@@ -108,7 +97,7 @@ async def get_youtube_video(
     if related_videos_length > 0:
         (related_videos, *_) = await execute_videos_query(
             session=session,
-            google_account=google_account,
+            user=user,
             video_categories=[video.category_id],
             limit=related_videos_length,
             exclude_video_ids=[video.id],
@@ -134,7 +123,7 @@ async def get_youtube_videos(
     channel_id: str | None = Query(None),
     liked_only: bool = Query(False),
     queued_only: bool = Query(False),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     try:
@@ -150,7 +139,7 @@ async def get_youtube_videos(
         )
     videos, total_pages = await execute_videos_query(
         session=session,
-        google_account=google_account,
+        user=user,
         channel_id=channel_id,
         video_categories=video_categories,
         liked_only=liked_only,
@@ -172,7 +161,7 @@ async def get_youtube_videos(
 )
 async def add_youtube_video_watch(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
@@ -184,7 +173,7 @@ async def add_youtube_video_watch(
             detail=ErrorMessages.VIDEO_NOT_FOUND,
         )
     query = select(YoutubeVideoWatch).where(
-        YoutubeVideoWatch.email == google_account.email,
+        YoutubeVideoWatch.email == user.email,
         YoutubeVideoWatch.video_id == video_id,
     )
     results = await session.scalars(query)
@@ -194,7 +183,7 @@ async def add_youtube_video_watch(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.ADD_VIDEO_WATCH_ERROR,
         )
-    session.add(YoutubeVideoWatch(email=google_account.email, video_id=video_id))
+    session.add(YoutubeVideoWatch(email=user.email, video_id=video_id))
     await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)
 
@@ -205,7 +194,7 @@ async def add_youtube_video_watch(
 )
 async def add_youtube_video_like(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
@@ -217,7 +206,7 @@ async def add_youtube_video_like(
             detail=ErrorMessages.VIDEO_NOT_FOUND,
         )
     query = select(YoutubeVideoLike).where(
-        YoutubeVideoLike.email == google_account.email,
+        YoutubeVideoLike.email == user.email,
         YoutubeVideoLike.video_id == video_id,
     )
     results = await session.scalars(query)
@@ -227,7 +216,7 @@ async def add_youtube_video_like(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.ADD_VIDEO_LIKE_ERROR,
         )
-    session.add(YoutubeVideoLike(email=google_account.email, video_id=video_id))
+    session.add(YoutubeVideoLike(email=user.email, video_id=video_id))
     await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)
 
@@ -242,11 +231,11 @@ async def add_youtube_video_like(
 )
 async def delete_youtube_video_like(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoLike).where(
-        YoutubeVideoLike.email == google_account.email,
+        YoutubeVideoLike.email == user.email,
         YoutubeVideoLike.video_id == video_id,
     )
     results = await session.scalars(query)
@@ -269,7 +258,7 @@ async def delete_youtube_video_like(
 )
 async def add_youtube_video_queue(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
@@ -282,7 +271,7 @@ async def add_youtube_video_queue(
         )
     query = select(YoutubeVideoQueue).where(
         YoutubeVideoQueue.video_id == video_id,
-        YoutubeVideoQueue.email == google_account.email,
+        YoutubeVideoQueue.email == user.email,
     )
     results = await session.scalars(query)
     video_queue = results.first()
@@ -291,7 +280,7 @@ async def add_youtube_video_queue(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.ADD_VIDEO_QUEUE_ERROR,
         )
-    session.add(YoutubeVideoQueue(email=google_account.email, video_id=video_id))
+    session.add(YoutubeVideoQueue(email=user.email, video_id=video_id))
     await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)
 
@@ -306,11 +295,11 @@ async def add_youtube_video_queue(
 )
 async def delete_youtube_video_queue(
     video_id: str = Query(...),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     query = select(YoutubeVideoQueue).where(
-        YoutubeVideoQueue.email == google_account.email,
+        YoutubeVideoQueue.email == user.email,
         YoutubeVideoQueue.video_id == video_id,
     )
     results = await session.scalars(query)
@@ -334,12 +323,12 @@ async def delete_youtube_video_queue(
 )
 async def get_youtube_video_queue(
     index: int = Query(..., ge=1),
-    google_account: GoogleAccount = Depends(get_google_account),
+    user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
     (videos, *_) = await execute_videos_query(
         session=session,
-        google_account=google_account,
+        user=user,
         queued_only=True,
         offset=max(index - 2, 0),
         limit=2 if index == 1 else 3,
