@@ -6,7 +6,7 @@ import time
 
 def build_docker_image(tag: str = ..., docker_file: str = ..., context: str = ...):
     subprocess.run(
-        ["docker", "build", "--tag", tag, "-f", docker_file, context]
+        ["docker", "image", "build", "--tag", tag, "-f", docker_file, context]
     ).check_returncode()
 
 
@@ -33,7 +33,7 @@ def load_environment_variables(env_file=...):
 def deploy_stack(stack: str = ..., compose_file: str = ..., env_file: str = ...):
     process = subprocess.run(
         ["docker", "stack", "deploy", "--compose-file", compose_file, "--prune", stack],
-        env=load_environment_variables(env_file=env_file)
+        env=load_environment_variables(env_file=env_file),
     )
     process.check_returncode()
 
