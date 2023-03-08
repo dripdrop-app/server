@@ -322,8 +322,8 @@ async def test_add_user_subscription_with_nonexistent_channel_handle_on_youtube(
 ):
     async def fake_channel_handle(handle: str = ...):
         if handle == "@NonExistent":
-            raise Exception("Not Found")
-        return None
+            return None
+        return 1
 
     monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
     monkeypatch.setattr(

@@ -11,7 +11,7 @@ from dripdrop.settings import settings, ENV
 
 
 CRONS_ADDED = "crons_added"
-_job_ids = []
+job_ids = []
 
 
 async def run_cron_jobs():
@@ -36,6 +36,7 @@ def create_cron_job(
     args: tuple = (),
     kwargs: dict = {},
 ):
+    global job_ids
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
@@ -47,7 +48,7 @@ def create_cron_job(
         args=args,
         kwargs=kwargs,
     )
-    _job_ids.append(job.get_id())
+    job_ids.append(job.get_id())
     rq.queue.enqueue(
         create_cron_job,
         kwargs={
@@ -79,5 +80,5 @@ async def start_cron_jobs():
 async def end_cron_jobs():
     if settings.env == ENV.PRODUCTION:
         await redis.delete(CRONS_ADDED)
-        for job_id in _job_ids:
+        for job_id in job_ids:
             rq.stop_job(job_id=job_id)
