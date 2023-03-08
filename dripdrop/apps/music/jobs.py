@@ -34,7 +34,7 @@ from dripdrop.services.redis import redis
 from dripdrop.services.websocket_handler import RedisChannels
 from dripdrop.settings import settings
 
-from . import utils
+from . import utils, tasks
 from .models import MusicJob
 from .responses import (
     MusicChannelResponse,
@@ -42,7 +42,6 @@ from .responses import (
     JobUpdateResponse,
     ErrorMessages,
 )
-from .tasks import music_tasker
 
 
 jobs_api = APIRouter(
@@ -185,9 +184,7 @@ async def create_job(
         )
     )
     await session.commit()
-    await rq.enqueue(
-        function=music_tasker.run_job, kwargs={"job_id": job_id}, job_id=job_id
-    )
+    await rq.enqueue(function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id)
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
         json.dumps(MusicChannelResponse(job_id=job_id, status="STARTED").dict()),

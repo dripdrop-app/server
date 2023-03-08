@@ -56,8 +56,7 @@ def clean_test_s3_folders():
                     if key.startswith("test"):
                         continue
                     await s3.delete_file(filename=key)
-        except Exception as e:
-            print(e)
+        except Exception:
             pass
 
     return _clean_test_s3_folders

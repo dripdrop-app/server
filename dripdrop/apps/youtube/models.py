@@ -54,6 +54,7 @@ class YoutubeSubscription(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
+    user_submitted: Mapped[bool] = mapped_column(nullable=False, default=False)
     published_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )

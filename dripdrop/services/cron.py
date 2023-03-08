@@ -2,8 +2,8 @@ from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from typing import Callable
 
-from dripdrop.apps.music.tasks import music_tasker
-from dripdrop.apps.youtube.tasks import youtube_tasker
+from dripdrop.apps.music import tasks as music_tasks
+from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.logging import logger
 from dripdrop.services import rq
 from dripdrop.services.redis import redis
@@ -16,22 +16,22 @@ _job_ids = []
 
 async def run_cron_jobs():
     video_categories_job = await rq.enqueue(
-        function=youtube_tasker.update_video_categories,
+        function=youtube_tasks.update_video_categories,
         kwargs={"cron": True},
     )
     update_subscriptions_job = await rq.enqueue(
-        function=youtube_tasker.update_subscriptions,
+        function=youtube_tasks.update_subscriptions,
         depends_on=video_categories_job,
     )
     subscribed_channels_videos_job = await rq.enqueue(
-        function=youtube_tasker.update_channel_videos,
+        function=youtube_tasks.update_channel_videos,
         depends_on=update_subscriptions_job,
     )
     await rq.enqueue(
-        function=youtube_tasker.delete_old_channels,
+        function=youtube_tasks.delete_old_channels,
         depends_on=subscribed_channels_videos_job,
     )
-    await rq.enqueue(function=music_tasker.delete_old_jobs)
+    await rq.enqueue(function=music_tasks.delete_old_jobs)
 
 
 def create_cron_job(
@@ -71,13 +71,13 @@ async def start_cron_jobs():
             await redis.set(CRONS_ADDED, 1)
             create_cron_job(
                 "0 0 * * *",
-                youtube_tasker.update_video_categories,
+                youtube_tasks.update_video_categories,
                 kwargs={"cron": True},
             )
-            create_cron_job("0 * * * *", youtube_tasker.update_channel_videos)
-            create_cron_job("0 0 * * *", music_tasker.delete_old_jobs)
-            create_cron_job("0 0 * * *", youtube_tasker.update_subscriptions)
-            create_cron_job("0 5 * * sun", youtube_tasker.delete_old_channels)
+            create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
+            create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
+            create_cron_job("0 0 * * *", youtube_tasks.update_subscriptions)
+            create_cron_job("0 5 * * sun", youtube_tasks.delete_old_channels)
 
 
 async def end_cron_jobs():

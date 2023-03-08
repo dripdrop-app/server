@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import select
 
 from dripdrop.apps.youtube.models import YoutubeVideoCategory
-from dripdrop.apps.youtube.tasks import youtube_tasker
+from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.services.database import AsyncSession
 
 
@@ -21,7 +21,7 @@ async def test_update_video_categories_with_failed_google_api_request(
         raise Exception("Fail")
 
     mock_get_video_categories(raise_exception)
-    await youtube_tasker.update_video_categories(cron=True, session=session)
+    await youtube_tasks.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)
     assert len(results.all()) == 0
@@ -34,7 +34,7 @@ async def test_update_video_categories_with_no_categories(
         return []
 
     mock_get_video_categories(mock_video_categories)
-    await youtube_tasker.update_video_categories(cron=True, session=session)
+    await youtube_tasks.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)
     assert len(results.all()) == 0
@@ -49,7 +49,7 @@ async def test_update_video_categories_with_categories(
         return categories
 
     mock_get_video_categories(mock_video_categories)
-    await youtube_tasker.update_video_categories(cron=True, session=session)
+    await youtube_tasks.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)
     assert len(results.all()) == 5

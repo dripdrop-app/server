@@ -11,10 +11,9 @@ from dripdrop.dependencies import (
 from dripdrop.services import google_api, rq
 from dripdrop.settings import settings
 
-from . import utils
+from . import utils, tasks
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
 from .responses import YoutubeChannelResponse, YoutubeUserChannelResponse, ErrorMessages
-from .tasks import youtube_tasker
 
 channels_api = APIRouter(
     prefix="/channels",
@@ -109,11 +108,8 @@ async def update_user_youtube_channel(
         user_channel.id = channel_id
     else:
         try:
-            print(channel_id)
             if channel_id.startswith("@"):
-                print("RUNNING")
                 channel_id = await utils.get_channel_id_from_handle(handle=channel_id)
-            print(channel_id)
             await google_api.get_channel_info(channel_id=channel_id)
         except Exception:
             raise HTTPException(
@@ -122,7 +118,5 @@ async def update_user_youtube_channel(
             )
         session.add(YoutubeUserChannel(id=channel_id, email=user.email))
     await session.commit()
-    await rq.enqueue(
-        youtube_tasker.update_user_subscriptions, kwargs={"email": user.email}
-    )
+    await rq.enqueue(tasks.update_user_subscriptions, kwargs={"email": user.email})
     return Response(None, status_code=status.HTTP_200_OK)

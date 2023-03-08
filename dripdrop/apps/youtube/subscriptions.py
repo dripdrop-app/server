@@ -14,10 +14,9 @@ from dripdrop.services import google_api
 from dripdrop.services.rq import enqueue
 from dripdrop.settings import settings
 
-from . import utils
+from . import utils, tasks
 from .models import YoutubeSubscription, YoutubeChannel
 from .responses import SubscriptionsResponse, YoutubeSubscriptionResponse, ErrorMessages
-from .tasks import youtube_tasker
 
 subscriptions_api = APIRouter(
     prefix="/subscriptions",
@@ -82,6 +81,8 @@ async def add_user_subscription(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
+    if channel_id.startswith("@"):
+        channel_id = await utils.get_channel_id_from_handle(handle=channel_id)
     query = select(YoutubeSubscription).where(
         YoutubeSubscription.email == user.email,
         YoutubeSubscription.channel_id == channel_id,
@@ -94,10 +95,6 @@ async def add_user_subscription(
     if not subscription:
         if not channel:
             try:
-                if channel_id.startswith("@"):
-                    channel_id = await utils.get_channel_id_from_handle(
-                        handle=channel_id
-                    )
                 channel_info = await google_api.get_channel_info(channel_id=channel_id)
                 channel = YoutubeChannel(
                     id=channel_info["id"],
@@ -118,6 +115,7 @@ async def add_user_subscription(
             id=str(uuid.uuid4()),
             email=user.email,
             channel_id=channel_id,
+            user_submitted=True,
             published_at=datetime.now(settings.timezone),
         )
         session.add(subscription)
@@ -129,9 +127,7 @@ async def add_user_subscription(
             )
         subscription.deleted_at = None
     await session.commit()
-    await enqueue(
-        youtube_tasker.add_new_channel_videos_job, kwargs={"channel_id": channel.id}
-    )
+    await enqueue(tasks.add_new_channel_videos_job, kwargs={"channel_id": channel.id})
     return YoutubeSubscriptionResponse(
         id=subscription.id,
         channel_id=subscription.channel_id,
