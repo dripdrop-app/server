@@ -3,11 +3,30 @@ import os
 import subprocess
 import time
 
+REGISTRY_PORT = 5001
+REGISTRY_ADDRESS = f"localhost:{REGISTRY_PORT}"
+
 
 def build_docker_image(tag: str = ..., docker_file: str = ..., context: str = ...):
-    subprocess.run(["docker", "image", "rm", tag, "--force"])
     subprocess.run(
-        ["docker", "image", "build", "--tag", tag, "-f", docker_file, context]
+        [
+            "docker",
+            "image",
+            "build",
+            "--tag",
+            f"{REGISTRY_ADDRESS}/{tag}",
+            "-f",
+            docker_file,
+            context,
+        ]
+    ).check_returncode()
+    subprocess.run(
+        [
+            "docker",
+            "image",
+            "push",
+            f"{REGISTRY_ADDRESS}/{tag}",
+        ]
     ).check_returncode()
 
 
@@ -21,7 +40,7 @@ def remove_stack(stack: str = ...):
 
 
 def load_environment_variables(env_file=...):
-    environment = {}
+    environment = {"REGISTRY_ADDRESS": REGISTRY_ADDRESS}
     lines = []
     with open(env_file) as f:
         lines = f.readlines()
@@ -37,6 +56,24 @@ def deploy_stack(stack: str = ..., compose_file: str = ..., env_file: str = ...)
         env=load_environment_variables(env_file=env_file),
     )
     process.check_returncode()
+
+
+def create_registry():
+    process = subprocess.run(["docker", "inspect", "registry"])
+    if process.returncode != 0:
+        subprocess.run(
+            [
+                "docker",
+                "run",
+                "-d",
+                "-p",
+                f"{REGISTRY_PORT}:5000",
+                "--restart=always",
+                "--name",
+                "registry",
+                "registry:2",
+            ]
+        ).check_returncode()
 
 
 if __name__ == "__main__":
@@ -64,6 +101,7 @@ if __name__ == "__main__":
     )
     env_file = os.path.join(current_path, ".env")
 
+    create_registry()
     build_docker_image(
         tag=stack,
         docker_file=docker_file,

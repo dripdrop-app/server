@@ -28,7 +28,7 @@ x-deploy: &deploy
 version: '3.8'
 services:
   server:
-    image: dripdrop-dev
+    image: $REGISTRY_ADDRESS/dripdrop-dev
     entrypoint: ["./scripts/server.sh"]
     environment:
       ENV: development
@@ -49,7 +49,7 @@ services:
       - *deploy
 
   worker:
-    image: dripdrop-dev
+    image: $REGISTRY_ADDRESS/dripdrop-dev
     entrypoint: ["./scripts/worker.sh"]
     environment:
       ENV: development
