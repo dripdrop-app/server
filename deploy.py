@@ -5,6 +5,7 @@ import time
 
 
 def build_docker_image(tag: str = ..., docker_file: str = ..., context: str = ...):
+    subprocess.run(["docker", "image", "rm", tag, "--force"])
     subprocess.run(
         ["docker", "image", "build", "--tag", tag, "-f", docker_file, context]
     ).check_returncode()
