@@ -23,13 +23,9 @@ async def run_cron_jobs():
         function=youtube_tasks.update_subscriptions,
         depends_on=video_categories_job,
     )
-    subscribed_channels_videos_job = await rq.enqueue(
+    await rq.enqueue(
         function=youtube_tasks.update_channel_videos,
         depends_on=update_subscriptions_job,
-    )
-    await rq.enqueue(
-        function=youtube_tasks.delete_old_channels,
-        depends_on=subscribed_channels_videos_job,
     )
     await rq.enqueue(function=music_tasks.delete_old_jobs)
 
