@@ -33,8 +33,7 @@ def load_environment_variables(env_file=...):
 def deploy_stack(stack: str = ..., compose_file: str = ..., env_file: str = ...):
     process = subprocess.run(
         ["docker", "stack", "deploy", "--compose-file", compose_file, "--prune", stack],
-        env=load_environment_variables(env_file=env_file),
-        stdout=subprocess.PIPE,
+        env=load_environment_variables(env_file=env_file)
     )
     process.check_returncode()
 
