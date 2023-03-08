@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from dripdrop.settings import settings
 
 
-engine = create_async_engine(settings.async_database_url, echo=False)
+engine = create_async_engine(
+    settings.async_database_url, poolclass=NullPool, echo=False
+)
 session_maker = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
 
