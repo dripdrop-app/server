@@ -7,11 +7,10 @@ import traceback
 import uuid
 from fastapi import UploadFile
 
-from dripdrop.http_client import http_client
 from dripdrop.logging import logger
+from dripdrop.services import image_downloader, s3
 from dripdrop.services.audio_tag import AudioTags
-from dripdrop.services.image_downloader import image_downloader
-from dripdrop.services.s3 import S3, s3
+from dripdrop.services.http_client import http_client
 
 from .models import MusicJob
 from .responses import TagsResponse
@@ -25,7 +24,7 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
             dataString = ",".join(artwork_url.split(",")[1:])
             data = dataString.encode()
             data_bytes = base64.b64decode(data)
-            artwork_filename = f"{S3.ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
+            artwork_filename = f"{s3.ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
             await s3.upload_file(
                 filename=artwork_filename,
                 body=data_bytes,
@@ -45,8 +44,8 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
     filename_url = None
     filename = None
     if file:
-        filename = f"{S3.MUSIC_FOLDER}/{job_id}/old/{file.filename}"
-        filename_url = S3.resolve_url(filename=filename)
+        filename = f"{s3.MUSIC_FOLDER}/{job_id}/old/{file.filename}"
+        filename_url = s3.resolve_url(filename=filename)
         await s3.upload_file(
             filename=filename,
             body=await file.read(),

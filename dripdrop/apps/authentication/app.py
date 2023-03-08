@@ -10,6 +10,7 @@ from dripdrop.dependencies import (
     AsyncSession,
 )
 
+from . import utils
 from .models import User
 from .responses import (
     AuthenticatedResponse,
@@ -17,7 +18,6 @@ from .responses import (
     UserResponse,
     ErrorMessages,
 )
-from .utils import find_user_by_email, create_jwt
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -49,7 +49,7 @@ async def login(
     password: str = Body(..., min_length=8),
     session: AsyncSession = Depends(create_db_session),
 ):
-    user = await find_user_by_email(email=email, session=session)
+    user = await utils.find_user_by_email(email=email, session=session)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     verified, new_hashed_pw = password_context.verify_and_update(
@@ -63,7 +63,7 @@ async def login(
             detail=ErrorMessages.IncorrectCredentials,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    return AuthenticatedResponse(access_token=create_jwt(email=email), user=user)
+    return AuthenticatedResponse(access_token=utils.create_jwt(email=email), user=user)
 
 
 @app.get(
@@ -90,7 +90,7 @@ async def create_account(
     password: str = Body(..., min_length=8),
     session: AsyncSession = Depends(create_db_session),
 ):
-    user = await find_user_by_email(email=email, session=session)
+    user = await utils.find_user_by_email(email=email, session=session)
     if user:
         raise HTTPException(
             detail=ErrorMessages.AccountExists, status_code=status.HTTP_400_BAD_REQUEST
@@ -99,4 +99,4 @@ async def create_account(
     user = User(email=email, password=hashed_pw, admin=False)
     session.add(user)
     await session.commit()
-    return AuthenticatedResponse(access_token=create_jwt(email=email), user=user)
+    return AuthenticatedResponse(access_token=utils.create_jwt(email=email), user=user)

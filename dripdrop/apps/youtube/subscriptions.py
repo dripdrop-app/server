@@ -10,10 +10,11 @@ from dripdrop.dependencies import (
     get_authenticated_user,
     User,
 )
-from dripdrop.rq import enqueue
-from dripdrop.services.google_api import google_api
+from dripdrop.services import google_api
+from dripdrop.services.rq import enqueue
 from dripdrop.settings import settings
 
+from . import utils
 from .models import YoutubeSubscription, YoutubeChannel
 from .responses import SubscriptionsResponse, YoutubeSubscriptionResponse, ErrorMessages
 from .tasks import youtube_tasker
@@ -93,6 +94,10 @@ async def add_user_subscription(
     if not subscription:
         if not channel:
             try:
+                if channel_id.startswith("@"):
+                    channel_id = await utils.get_channel_id_from_handle(
+                        handle=channel_id
+                    )
                 channel_info = await google_api.get_channel_info(channel_id=channel_id)
                 channel = YoutubeChannel(
                     id=channel_info["id"],
@@ -103,7 +108,8 @@ async def add_user_subscription(
                 )
                 session.add(channel)
                 await session.commit()
-            except Exception:
+            except Exception as e:
+                print(e)
                 raise HTTPException(
                     detail=ErrorMessages.CHANNEL_NOT_FOUND,
                     status_code=status.HTTP_400_BAD_REQUEST,

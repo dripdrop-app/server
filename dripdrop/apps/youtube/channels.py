@@ -8,9 +8,10 @@ from dripdrop.dependencies import (
     get_authenticated_user,
     User,
 )
-from dripdrop.rq import enqueue
+from dripdrop.services import google_api, rq
 from dripdrop.settings import settings
 
+from . import utils
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
 from .responses import YoutubeChannelResponse, YoutubeUserChannelResponse, ErrorMessages
 from .tasks import youtube_tasker
@@ -88,14 +89,7 @@ async def get_user_youtube_channel(
     return YoutubeUserChannelResponse(id=user_channel.id)
 
 
-@channels_api.post(
-    "/user",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {
-            "description": ErrorMessages.WAIT_TO_UPDATE_CHANNEL
-        }
-    },
-)
+@channels_api.post("/user", responses={status.HTTP_400_BAD_REQUEST: {}})
 async def update_user_youtube_channel(
     channel_id: str = Body(..., embed=True),
     user: User = Depends(get_authenticated_user),
@@ -114,9 +108,21 @@ async def update_user_youtube_channel(
             )
         user_channel.id = channel_id
     else:
+        try:
+            print(channel_id)
+            if channel_id.startswith("@"):
+                print("RUNNING")
+                channel_id = await utils.get_channel_id_from_handle(handle=channel_id)
+            print(channel_id)
+            await google_api.get_channel_info(channel_id=channel_id)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorMessages.CHANNEL_NOT_FOUND,
+            )
         session.add(YoutubeUserChannel(id=channel_id, email=user.email))
     await session.commit()
-    await enqueue(
+    await rq.enqueue(
         youtube_tasker.update_user_subscriptions, kwargs={"email": user.email}
     )
     return Response(None, status_code=status.HTTP_200_OK)

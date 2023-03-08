@@ -1,8 +1,10 @@
 import math
+from bs4 import BeautifulSoup
 from sqlalchemy import select, func, and_
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import AsyncSession
+from dripdrop.services.database import AsyncSession
+from dripdrop.services.http_client import http_client
 
 from .models import (
     YoutubeSubscription,
@@ -106,3 +108,15 @@ async def execute_videos_query(
     if count is not None and limit is not None:
         total_pages = math.ceil(count / limit)
     return (videos, total_pages)
+
+
+async def get_channel_id_from_handle(handle: str = ...):
+    response = await http_client.get(f"https://youtube.com/{handle}")
+    if response.is_error:
+        return None
+    html = response.text
+    soup = BeautifulSoup(html, "html.parser")
+    tag = soup.find("meta", itemprop="channelId")
+    if not tag:
+        return None
+    return tag["content"]

@@ -259,7 +259,7 @@ async def test_add_user_subscription_with_channel_in_database(
     create_channel,
     mock_async,
 ):
-    monkeypatch.setattr("dripdrop.rq.enqueue", mock_async)
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
         id="1",
@@ -282,22 +282,19 @@ async def test_add_user_subscription_with_nonexistent_channel_on_youtube(
     monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user
 ):
     async def fake_channel(channel_id: str = ...):
-        raise Exception("Not Found")
+        if channel_id == "1":
+            raise Exception("Not Found")
+        return {}
 
-    monkeypatch.setattr(
-        "dripdrop.services.google_api.google_api.get_channel_info", fake_channel
-    )
+    monkeypatch.setattr("dripdrop.services.google_api.get_channel_info", fake_channel)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 async def test_add_user_subscription_with_channel_on_youtube(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
 ):
-    async def nothing():
-        return None
-
     async def fake_channel(channel_id: str = ...):
         return {
             "id": channel_id,
@@ -307,10 +304,8 @@ async def test_add_user_subscription_with_channel_on_youtube(
             },
         }
 
-    monkeypatch.setattr("dripdrop.rq.enqueue", nothing)
-    monkeypatch.setattr(
-        "dripdrop.services.google_api.google_api.get_channel_info", fake_channel
-    )
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
+    monkeypatch.setattr("dripdrop.services.google_api.get_channel_info", fake_channel)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK
@@ -319,6 +314,42 @@ async def test_add_user_subscription_with_channel_on_youtube(
     assert subscription["channelId"] == "1"
     assert subscription["channelTitle"] == "channel"
     assert subscription["channelThumbnail"] == "thumbnail"
+    assert subscription["publishedAt"] is not None
+
+
+async def test_add_user_subscription_with_nonexistent_channel_handle_on_youtube(
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+):
+    async def fake_channel_handle(handle: str = ...):
+        if handle == "@NonExistent":
+            raise Exception("Not Found")
+        return None
+
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
+    monkeypatch.setattr(
+        "dripdrop.apps.youtube.utils.get_channel_id_from_handle", fake_channel_handle
+    )
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.put(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "@NonExistent"}
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test_add_user_subscription_with_channel_handle_on_youtube(
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+):
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.put(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "@TDBarrett"}
+    )
+    assert response.status_code == status.HTTP_200_OK
+    subscription = response.json()
+    assert subscription["id"] is not None
+    assert subscription["channelId"] == "UCYdHjl9aX-8Fwyg0OBOL21g"
+    assert subscription["channelTitle"] == "TDBarrett"
+    assert subscription["channelThumbnail"] is not None
     assert subscription["publishedAt"] is not None
 
 
@@ -346,7 +377,7 @@ async def test_add_user_subscription_with_deleted_subscription(
     create_subscription,
     mock_async,
 ):
-    monkeypatch.setattr("dripdrop.rq.enqueue", mock_async)
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
         id="1",

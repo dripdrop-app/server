@@ -6,10 +6,10 @@ from httpx import AsyncClient
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import database, AsyncSession
+from dripdrop.services import database, s3
+from dripdrop.services.database import AsyncSession
 from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.models.base import Base
-from dripdrop.services.s3 import s3
 from dripdrop.settings import settings, ENV
 
 
@@ -20,7 +20,7 @@ async def check_environment():
 
 @pytest.fixture(autouse=True)
 async def setup_database():
-    async with database._engine.begin() as conn:
+    async with database.engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield

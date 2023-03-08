@@ -8,22 +8,19 @@ from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 
-from dripdrop.database import AsyncSession
-from dripdrop.http_client import http_client
+from dripdrop.services.database import AsyncSession
+from dripdrop.services.http_client import http_client
 from dripdrop.logging import logger
-from dripdrop.services.s3 import s3, S3
+from dripdrop.services import image_downloader, rq, s3, ytdlp
 from dripdrop.services.audio_tag import AudioTags
-from dripdrop.services.image_downloader import image_downloader
+from dripdrop.services.redis import redis
 from dripdrop.services.websocket_handler import RedisChannels
-from dripdrop.services.ytdlp import ytdlp
 from dripdrop.settings import settings
-from dripdrop.redis import redis
-from dripdrop.rq import enqueue
-from dripdrop.utils import worker_task
+from dripdrop.tasks import worker_task
 
+from . import utils
 from .models import MusicJob
 from .responses import MusicChannelResponse
-from .utils import cleanup_job
 
 
 class MusicTasker:
@@ -107,7 +104,7 @@ class MusicTasker:
                 artwork_info=artwork_info,
             )
             new_filename = sanitize_filename(f"{job.title} {job.artist}") + ".mp3"
-            new_filename = f"{S3.MUSIC_FOLDER}/{job.id}/{new_filename}"
+            new_filename = f"{s3.MUSIC_FOLDER}/{job.id}/{new_filename}"
             with open(filename, "rb") as file:
                 await s3.upload_file(
                     filename=new_filename,
@@ -116,7 +113,7 @@ class MusicTasker:
                 )
             job.completed = True
             job.download_filename = new_filename
-            job.download_url = S3.resolve_url(filename=new_filename)
+            job.download_url = s3.resolve_url(filename=new_filename)
         except Exception:
             job.failed = True
             logger.exception(traceback.format_exc())
@@ -138,7 +135,7 @@ class MusicTasker:
         job = results.first()
         if not job:
             raise Exception(f"Job ({job_id}) could not be found")
-        await cleanup_job(job=job)
+        await utils.cleanup_job(job=job)
         job.deleted_at = datetime.now(tz=settings.timezone)
         await session.commit()
 
@@ -152,7 +149,7 @@ class MusicTasker:
         )
         stream = await session.stream_scalars(query)
         async for job in stream:
-            await enqueue(
+            await rq.enqueue(
                 function=self._delete_job, kwargs={"job_id": job.id}, at_front=True
             )
 

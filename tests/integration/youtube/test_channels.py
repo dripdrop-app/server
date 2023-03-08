@@ -110,11 +110,86 @@ async def test_update_user_channel_when_not_logged_in(client: AsyncClient):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_update_user_channel_with_no_channel(
-    client: AsyncClient, create_and_login_user
+async def test_update_user_channel_with_nonexistent_channel_on_youtube(
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user
 ):
+    async def fake_channel(channel_id: str = ...):
+        if channel_id == "2":
+            raise Exception()
+
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.get_channel_info",
+        fake_channel,
+    )
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test_update_user_channel_with_nonexisting_channel_with_youtube_channel(
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+):
+    async def fake_channel(channel_id: str = ...):
+        if channel_id == "2":
+            return {}
+
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.get_channel_info",
+        fake_channel,
+    )
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
+    assert response.status_code == status.HTTP_200_OK
+
+
+async def test_update_user_channel_with_nonexistent_channel_handle_on_youtube(
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user
+):
+    async def fake_channel_id(handle: str = ...):
+        if handle == "@2":
+            return None
+        return "test"
+
+    async def fake_channel(channel_id: str = ...):
+        if not channel_id:
+            raise Exception()
+
+    monkeypatch.setattr(
+        "dripdrop.apps.youtube.utils.get_channel_id_from_handle", fake_channel_id
+    )
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.get_channel_info",
+        fake_channel,
+    )
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "@2"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test_update_user_channel_with_nonexisting_channel_with_youtube_handle(
+    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+):
+    async def fake_channel_id(handle: str = ...):
+        if handle == "@2":
+            return "test"
+        return None
+
+    async def fake_channel(channel_id: str = ...):
+        if channel_id == "test":
+            return {}
+        raise Exception()
+
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
+    monkeypatch.setattr(
+        "dripdrop.apps.youtube.utils.get_channel_id_from_handle", fake_channel_id
+    )
+    monkeypatch.setattr(
+        "dripdrop.services.google_api.get_channel_info",
+        fake_channel,
+    )
+    await create_and_login_user(email="user@gmail.com", password="password")
+    response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "@2"})
     assert response.status_code == status.HTTP_200_OK
 
 
@@ -137,7 +212,7 @@ async def test_update_user_channel_with_existing_channel(
     get_user_channel,
     mock_async,
 ):
-    monkeypatch.setattr("dripdrop.rq.enqueue", mock_async)
+    monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     await create_user_channel(
         id="1",

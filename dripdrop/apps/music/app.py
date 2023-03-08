@@ -2,11 +2,11 @@ import traceback
 from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, status
 from pydantic import HttpUrl
 
-from dripdrop.services.ytdlp import ytdlp
 from dripdrop.dependencies import get_authenticated_user
 from dripdrop.logging import logger
-from dripdrop.services.image_downloader import image_downloader
+from dripdrop.services import image_downloader, ytdlp
 
+from . import utils
 from .jobs import jobs_api
 from .responses import (
     GroupingResponse,
@@ -14,7 +14,6 @@ from .responses import (
     TagsResponse,
     ErrorMessages,
 )
-from .utils import read_tags
 
 
 app = FastAPI(
@@ -69,5 +68,5 @@ async def get_artwork(artwork_url: HttpUrl = Query(...)):
 
 @app.post("/tags", response_model=TagsResponse)
 async def get_tags(file: UploadFile = File(...)):
-    tags = await read_tags(file=await file.read(), filename=file.filename)
+    tags = await utils.read_tags(file=await file.read(), filename=file.filename)
     return tags

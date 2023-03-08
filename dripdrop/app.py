@@ -3,16 +3,15 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from dripdrop.services.cron import cron
-from dripdrop.services.websocket_handler import websocket_handler
+from dripdrop.services import cron, websocket_handler
+from dripdrop.services.http_client import http_client
+from dripdrop.services.redis import redis
 from dripdrop.settings import settings, ENV
 
 from .apps.admin.app import app as admin_app
 from .apps.authentication.app import app as auth_app
 from .apps.music.app import app as music_app
 from .apps.youtube.app import app as youtube_app
-from .http_client import http_client
-from .redis import redis
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(

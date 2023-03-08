@@ -1,6 +1,6 @@
 import pytest
 
-from dripdrop.database import database
+from dripdrop.services import database
 from dripdrop.models.base import Base
 from dripdrop.settings import settings, ENV
 
@@ -12,8 +12,8 @@ async def check_environment():
 
 @pytest.fixture(autouse=True)
 async def setup_database():
-    database._engine.url = "sqlite+aiosqlite:///test.sqlite"
-    async with database._engine.begin() as conn:
+    database.engine.url = "sqlite+aiosqlite:///test.sqlite"
+    async with database.engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield

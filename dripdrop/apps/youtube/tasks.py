@@ -4,13 +4,11 @@ from datetime import datetime, timedelta
 from sqlalchemy import select, func, delete
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.database import AsyncSession
 from dripdrop.logging import logger
-from dripdrop.services.google_api import google_api
-from dripdrop.services.ytdlp import ytdlp
+from dripdrop.services import google_api, rq, ytdlp
+from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
-from dripdrop.rq import enqueue
-from dripdrop.utils import worker_task
+from dripdrop.tasks import worker_task
 
 from .models import (
     YoutubeUserChannel,
@@ -107,7 +105,7 @@ class YoutubeTasker:
                             )
                         )
                         await session.commit()
-                        await enqueue(
+                        await rq.enqueue(
                             self.add_new_channel_videos_job,
                             kwargs={"channel_id": channel_id},
                             at_front=True,
@@ -154,7 +152,7 @@ class YoutubeTasker:
         stream = await session.stream(query)
         async for row in stream:
             row = row._mapping
-            await enqueue(
+            await rq.enqueue(
                 function=self._delete_subscription,
                 kwargs={
                     "subscription_id": row.subscription_id,
@@ -248,7 +246,7 @@ class YoutubeTasker:
         stream = await session.stream(query)
         async for subscription in stream:
             subscription = subscription._mapping
-            await enqueue(
+            await rq.enqueue(
                 function=self.add_new_channel_videos_job,
                 kwargs={
                     "channel_id": subscription.channel_id,
@@ -262,7 +260,7 @@ class YoutubeTasker:
         query = select(User)
         stream = await session.stream_scalars(query)
         async for user in stream:
-            await enqueue(
+            await rq.enqueue(
                 function=self.update_user_subscriptions,
                 kwargs={"email": user.email},
                 at_front=True,
@@ -290,7 +288,7 @@ class YoutubeTasker:
         )
         stream = await session.stream_scalars(query)
         async for channel in stream:
-            await enqueue(
+            await rq.enqueue(
                 function=self._delete_channel,
                 kwargs={"channel_id": channel.id},
                 at_front=True,
