@@ -200,7 +200,7 @@ async def add_new_channel_videos_job(
             tzinfo=settings.timezone,
         )
 
-        if current_time.day != server_current_time.day:
+        if current_time.day != video_upload_date.day:
             video_upload_date.replace(
                 hour=server_current_time.hour,
                 minute=server_current_time.minute,
