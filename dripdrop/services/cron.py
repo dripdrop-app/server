@@ -74,7 +74,6 @@ async def start_cron_jobs():
             create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
             create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
             create_cron_job("0 0 * * *", youtube_tasks.update_subscriptions)
-            create_cron_job("0 5 * * sun", youtube_tasks.delete_old_channels)
 
 
 async def end_cron_jobs():
