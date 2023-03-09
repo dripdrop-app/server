@@ -1,6 +1,7 @@
 import dateutil.parser
 import traceback
 from datetime import datetime, timedelta
+from dateutil.tz import tzlocal
 from sqlalchemy import select, func, delete, false
 
 from dripdrop.apps.authentication.models import User
@@ -183,7 +184,9 @@ async def add_new_channel_videos_job(
         date_after=date_after,
     )
     for video_info in videos_info:
+        server_current_time = datetime.now(tz=tzlocal())
         current_time = datetime.now(tz=settings.timezone)
+
         video_id = video_info["id"]
         video_title = video_info["title"]
         video_thumbnail = video_info["thumbnail"]
@@ -196,6 +199,14 @@ async def add_new_channel_videos_job(
             second=current_time.second,
             tzinfo=settings.timezone,
         )
+
+        if current_time.day != server_current_time.day:
+            video_upload_date.replace(
+                hour=server_current_time.hour,
+                minute=server_current_time.minute,
+                second=server_current_time.second,
+            )
+
         query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
         results = await session.scalars(query)
         video = results.first()
