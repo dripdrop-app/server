@@ -36,7 +36,6 @@ class AuthenticatedResponse(JSONResponse):
             max_age=TWO_WEEKS_EXPIRATION,
             httponly=True,
             secure=settings.env == ENV.PRODUCTION,
-            domain=settings.domain,
         )
 
 

@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     aws_s3_bucket: str
     aws_s3_music_folder: str
     database_url: str
-    domain: str | None = None
     env: ENV = ENV.DEVELOPMENT
     google_client_id: str
     google_client_secret: str
@@ -45,7 +44,6 @@ if settings.env == ENV.TESTING or settings.env == ENV.DEVELOPMENT:
     settings.aws_access_key_id = settings.test_aws_access_key_id
     settings.aws_secret_access_key = settings.test_aws_secret_access_key
     settings.aws_s3_bucket = settings.test_aws_s3_bucket
-    settings.domain = None
 
 if settings.env == ENV.TESTING:
     settings.async_database_url = settings.test_async_database_url
