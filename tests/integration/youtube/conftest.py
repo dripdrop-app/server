@@ -113,6 +113,7 @@ def create_video(session: AsyncSession):
         thumbnail: str = ...,
         channel_id: str = ...,
         category_id: int = ...,
+        description: str | None = None,
         published_at: datetime | None = None,
     ):
         youtube_video = YoutubeVideo(
@@ -121,6 +122,7 @@ def create_video(session: AsyncSession):
             thumbnail=thumbnail,
             channel_id=channel_id,
             category_id=category_id,
+            description=description,
             published_at=published_at
             if published_at
             else datetime.now(settings.timezone),

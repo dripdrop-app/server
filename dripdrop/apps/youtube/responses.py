@@ -44,6 +44,7 @@ class YoutubeVideoResponse(ResponseBaseModel):
     thumbnail: str
     category_id: int
     published_at: datetime
+    description: Optional[str] = Field(None)
     channel_id: str
     channel_title: str
     channel_thumbnail: str

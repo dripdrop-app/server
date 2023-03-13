@@ -58,6 +58,7 @@ async def test_get_videos_with_channel_id(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     await create_video(
         id="2",
@@ -65,6 +66,7 @@ async def test_get_videos_with_channel_id(
         thumbnail="thumbnail",
         channel_id=other_channel.id,
         category_id=category.id,
+        description="2",
     )
     response = await client.get(f"{VIDEOS_URL}/1/10", params={"channel_id": "1"})
     assert response.status_code == status.HTTP_200_OK
@@ -76,6 +78,7 @@ async def test_get_videos_with_channel_id(
                 "title": video.title,
                 "thumbnail": video.thumbnail,
                 "categoryId": category.id,
+                "description": video.description,
                 "publishedAt": video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -116,6 +119,7 @@ async def test_get_videos_with_single_result(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     response = await client.get(f"{VIDEOS_URL}/1/10")
     assert response.status_code == status.HTTP_200_OK
@@ -127,6 +131,7 @@ async def test_get_videos_with_single_result(
                 "title": video.title,
                 "thumbnail": video.thumbnail,
                 "categoryId": category.id,
+                "description": video.description,
                 "publishedAt": video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -162,6 +167,7 @@ async def test_get_videos_with_multiple_videos(
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
+                description=str(i),
             )
         )
     videos.sort(key=lambda video: video.published_at, reverse=True)
@@ -176,6 +182,7 @@ async def test_get_videos_with_multiple_videos(
                     "title": video.title,
                     "thumbnail": video.thumbnail,
                     "categoryId": category.id,
+                    "description": video.description,
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
                     ).isoformat(),
@@ -213,6 +220,7 @@ async def test_get_videos_with_multiple_pages(
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
+                description=str(i),
             )
         )
     videos.sort(key=lambda video: video.published_at, reverse=True)
@@ -227,6 +235,7 @@ async def test_get_videos_with_multiple_pages(
                     "title": video.title,
                     "thumbnail": video.thumbnail,
                     "categoryId": category.id,
+                    "description": video.description,
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
                     ).isoformat(),
@@ -264,6 +273,7 @@ async def test_get_videos_in_descending_order_by_published_date(
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
+                description=str(i),
             )
         )
     videos.sort(key=lambda video: video.published_at, reverse=True)
@@ -278,6 +288,7 @@ async def test_get_videos_in_descending_order_by_published_date(
                     "title": video.title,
                     "thumbnail": video.thumbnail,
                     "categoryId": category.id,
+                    "description": video.description,
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
                     ).isoformat(),
@@ -345,6 +356,7 @@ async def test_videos_with_watched_populated(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     other_video = await create_video(
         id="2",
@@ -352,6 +364,7 @@ async def test_videos_with_watched_populated(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="2",
     )
     watch = await create_video_watch(email=user.email, video_id=watched_video.id)
     await create_video_watch(email=other_user.email, video_id=other_video.id)
@@ -364,6 +377,7 @@ async def test_videos_with_watched_populated(
                 "title": other_video.title,
                 "thumbnail": other_video.thumbnail,
                 "categoryId": category.id,
+                "description": other_video.description,
                 "publishedAt": other_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -379,6 +393,7 @@ async def test_videos_with_watched_populated(
                 "title": watched_video.title,
                 "thumbnail": watched_video.thumbnail,
                 "categoryId": category.id,
+                "description": watched_video.description,
                 "publishedAt": watched_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -414,6 +429,7 @@ async def test_get_videos_with_specific_video_category(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     await create_video(
         id="2",
@@ -421,6 +437,7 @@ async def test_get_videos_with_specific_video_category(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=other_category.id,
+        description="2",
     )
     response = await client.get(
         f"{VIDEOS_URL}/1/5", params={"video_categories": str(category.id)}
@@ -434,6 +451,7 @@ async def test_get_videos_with_specific_video_category(
                 "title": video_in_category.title,
                 "thumbnail": video_in_category.thumbnail,
                 "categoryId": category.id,
+                "description": video_in_category.description,
                 "publishedAt": video_in_category.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -465,6 +483,7 @@ async def test_get_videos_with_queued_only(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     await create_video(
         id="2",
@@ -472,6 +491,7 @@ async def test_get_videos_with_queued_only(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="2",
     )
     queue = await create_video_queue(email=user.email, video_id=queued_video.id)
     response = await client.get(f"{VIDEOS_URL}/1/5", params={"queued_only": True})
@@ -484,6 +504,7 @@ async def test_get_videos_with_queued_only(
                 "title": queued_video.title,
                 "thumbnail": queued_video.thumbnail,
                 "categoryId": category.id,
+                "description": queued_video.description,
                 "publishedAt": queued_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -520,6 +541,7 @@ async def test_get_videos_with_queued_only_in_ascending_order_by_created_date(
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
+                description=str(i),
             )
         )
     queues = []
@@ -545,6 +567,7 @@ async def test_get_videos_with_queued_only_in_ascending_order_by_created_date(
                     "title": videos[i].title,
                     "thumbnail": videos[i].thumbnail,
                     "categoryId": category.id,
+                    "description": videos[i].description,
                     "publishedAt": videos[i]
                     .published_at.replace(tzinfo=settings.timezone)
                     .isoformat(),
@@ -582,6 +605,7 @@ async def test_get_videos_with_liked_only(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     other_liked_video = await create_video(
         id="2",
@@ -589,6 +613,7 @@ async def test_get_videos_with_liked_only(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="2",
     )
     like = await create_video_like(email=user.email, video_id=liked_video.id)
     await create_video_like(email=other_user.email, video_id=other_liked_video.id)
@@ -602,6 +627,7 @@ async def test_get_videos_with_liked_only(
                 "title": liked_video.title,
                 "thumbnail": liked_video.thumbnail,
                 "categoryId": category.id,
+                "description": liked_video.description,
                 "publishedAt": liked_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),
@@ -636,6 +662,7 @@ async def test_get_videos_with_liked_only_in_descending_order_by_created_date(
                 thumbnail="thumbnail",
                 channel_id=channel.id,
                 category_id=category.id,
+                description=str(i),
             )
         )
     likes = []
@@ -661,6 +688,7 @@ async def test_get_videos_with_liked_only_in_descending_order_by_created_date(
                     "title": videos[i].title,
                     "thumbnail": videos[i].thumbnail,
                     "categoryId": category.id,
+                    "description": videos[i].description,
                     "publishedAt": videos[i]
                     .published_at.replace(tzinfo=settings.timezone)
                     .isoformat(),

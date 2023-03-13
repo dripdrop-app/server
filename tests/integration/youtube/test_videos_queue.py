@@ -38,6 +38,7 @@ async def test_add_video_queue(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     response = await client.put(QUEUE, params={"video_id": video.id})
     assert response.status_code == status.HTTP_200_OK
@@ -62,6 +63,7 @@ async def test_add_video_queue_with_the_same_video(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     response = await client.put(QUEUE, params={"video_id": video.id})
     assert response.status_code == status.HTTP_200_OK
@@ -100,6 +102,7 @@ async def test_delete_video_queue(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     await create_video_queue(email=user.email, video_id=video.id)
     response = await client.delete(QUEUE, params={"video_id": video.id})
@@ -132,6 +135,7 @@ async def test_get_video_queue_with_single_video(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     video_queue = await create_video_queue(email=user.email, video_id=video.id)
     response = await client.get(QUEUE, params={"index": 1})
@@ -142,6 +146,7 @@ async def test_get_video_queue_with_single_video(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
             ).isoformat(),
@@ -176,6 +181,7 @@ async def test_get_video_queue_with_next_video(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     next_video = await create_video(
         id="2",
@@ -183,6 +189,7 @@ async def test_get_video_queue_with_next_video(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="2",
     )
     video_queue = await create_video_queue(email=user.email, video_id=video.id)
     await create_video_queue(email=user.email, video_id=next_video.id)
@@ -194,6 +201,7 @@ async def test_get_video_queue_with_next_video(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
             ).isoformat(),
@@ -228,6 +236,7 @@ async def test_get_video_queue_with_prev_video(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     video = await create_video(
         id="2",
@@ -235,6 +244,7 @@ async def test_get_video_queue_with_prev_video(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="2",
     )
     await create_video_queue(email=user.email, video_id=prev_video.id)
     video_queue = await create_video_queue(email=user.email, video_id=video.id)
@@ -246,6 +256,7 @@ async def test_get_video_queue_with_prev_video(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
             ).isoformat(),
@@ -280,6 +291,7 @@ async def test_get_video_queue_with_prev_and_next_videos(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     video = await create_video(
         id="2",
@@ -287,6 +299,7 @@ async def test_get_video_queue_with_prev_and_next_videos(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="2",
     )
     next_video = await create_video(
         id="3",
@@ -294,6 +307,7 @@ async def test_get_video_queue_with_prev_and_next_videos(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="3",
     )
     await create_video_queue(email=user.email, video_id=prev_video.id)
     video_queue = await create_video_queue(email=user.email, video_id=video.id)
@@ -306,6 +320,7 @@ async def test_get_video_queue_with_prev_and_next_videos(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
             ).isoformat(),

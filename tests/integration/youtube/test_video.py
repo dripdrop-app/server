@@ -40,6 +40,7 @@ async def test_get_video_with_no_related_videos(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     await create_video(
         id="2",
@@ -47,6 +48,7 @@ async def test_get_video_with_no_related_videos(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=other_category.id,
+        description="2",
     )
     response = await client.get(
         f"{VIDEOS_URL}", params={"video_id": "1", "related_videos_length": 1}
@@ -58,6 +60,7 @@ async def test_get_video_with_no_related_videos(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
             ).isoformat(),
@@ -91,6 +94,7 @@ async def test_get_video_with_related_videos_by_common_category(
         thumbnail="thumbnail",
         channel_id=channel.id,
         category_id=category.id,
+        description="1",
     )
     related_video = await create_video(
         id="2",
@@ -98,6 +102,7 @@ async def test_get_video_with_related_videos_by_common_category(
         thumbnail="thumbnail",
         channel_id=other_channel.id,
         category_id=category.id,
+        description="2",
     )
     response = await client.get(
         f"{VIDEOS_URL}", params={"video_id": "1", "related_videos_length": 1}
@@ -109,6 +114,7 @@ async def test_get_video_with_related_videos_by_common_category(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
             ).isoformat(),
@@ -125,6 +131,7 @@ async def test_get_video_with_related_videos_by_common_category(
                 "title": related_video.title,
                 "thumbnail": related_video.thumbnail,
                 "categoryId": category.id,
+                "description": related_video.description,
                 "publishedAt": related_video.published_at.replace(
                     tzinfo=settings.timezone
                 ).isoformat(),

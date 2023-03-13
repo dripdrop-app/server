@@ -109,7 +109,8 @@ class YoutubeVideo(ModelBaseMixin, Base):
         ),
         nullable=False,
     )
-    published_at: Mapped[datetime | None] = mapped_column(
+    description: Mapped[str | None] = mapped_column(nullable=True)
+    published_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
 

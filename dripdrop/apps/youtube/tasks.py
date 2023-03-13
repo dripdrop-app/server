@@ -93,7 +93,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                             title=channel_title,
                             thumbnail=channel_thumbnail,
                             last_videos_updated=datetime.now(tz=settings.timezone)
-                            - timedelta(days=30),
+                            - timedelta(days=365),
                         )
                     )
                     await session.commit()
@@ -170,13 +170,17 @@ async def add_new_channel_videos_job(
     channel = results.first()
     if not channel:
         raise Exception("Channel not found")
+
+    week_ago = datetime.now(settings.timezone) - timedelta(days=7)
+    last_updated = min(week_ago, channel.last_videos_updated)
+
     date_after = (
         date_after
         if date_after
         else "{year}{month}{day}".format(
-            year=channel.last_videos_updated.year,
-            month=str(channel.last_videos_updated.month).rjust(2, "0"),
-            day=str(channel.last_videos_updated.day).rjust(2, "0"),
+            year=last_updated.year,
+            month=str(last_updated.month).rjust(2, "0"),
+            day=str(last_updated.day).rjust(2, "0"),
         )
     )
     videos_info = await ytdlp.extract_videos_info(
@@ -190,6 +194,7 @@ async def add_new_channel_videos_job(
         video_id = video_info["id"]
         video_title = video_info["title"]
         video_thumbnail = video_info["thumbnail"]
+        video_description = video_info["description"]
         video_category_name = video_info["categories"][0]
         video_upload_date = datetime.strptime(
             video_info["upload_date"], "%Y%m%d"
@@ -213,6 +218,7 @@ async def add_new_channel_videos_job(
         if video:
             video.title = video_title
             video.thumbnail = video_thumbnail
+            video.description = video_description
             if video.title != video_title or video.thumbnail != video_thumbnail:
                 video.published_at = video_upload_date
         else:
@@ -230,6 +236,7 @@ async def add_new_channel_videos_job(
                     thumbnail=video_thumbnail,
                     channel_id=channel_id,
                     category_id=video_category.id,
+                    description=video_description,
                     published_at=video_upload_date,
                 )
             )

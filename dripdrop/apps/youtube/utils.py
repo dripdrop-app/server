@@ -37,6 +37,7 @@ async def execute_videos_query(
             YoutubeVideo.category_id,
             YoutubeVideo.published_at,
             YoutubeVideo.channel_id,
+            YoutubeVideo.description,
             YoutubeChannel.title.label("channel_title"),
             YoutubeChannel.thumbnail.label("channel_thumbnail"),
             YoutubeVideoLike.email,
