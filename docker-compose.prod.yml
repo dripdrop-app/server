@@ -1,193 +1,52 @@
-x-logging: &logging
-  logging:
-    driver: 'local'
-    options:
-      max-size: '10m'
-      max-file: '5'
-
-x-deploy: &deploy
-  deploy:
-    replicas: 1
-    restart_policy:
-      condition: on-failure
-      delay: 15s
-      max_attempts: 3
-    rollback_config:
-      parallelism: 0
-      delay: 15s
-      failure_action: pause
-      monitor: 0s
-      order: stop-first
-    update_config:
-      parallelism: 0
-      delay: 15s
-      failure_action: rollback
-      monitor: 5s
-      order: stop-first
-
-version: '3.8'
+version: '2.4'
 services:
   server:
-    image: $REGISTRY_ADDRESS/dripdrop
-    entrypoint: ["./scripts/server.sh"]
+    extends:
+      file: docker-compose.base.yml
+      service: server
     environment:
       ENV: production
-    ports:
-      - 5000:5000
-    volumes:
-      - type: volume
-        source: server_venv
-        target: /src/.venv
-    healthcheck:
-      test: "curl -f http://localhost:5000/api/docs"
-      interval: 30s 
-    <<: 
-      - *logging
-      - *deploy
 
   worker:
-    image: $REGISTRY_ADDRESS/dripdrop
-    entrypoint: ["./scripts/worker.sh"]
+    extends:
+      file: docker-compose.base.yml
+      service: worker
     environment:
       ENV: production
-      REDIS_URL: $REDIS_URL
-    volumes:
-      - type: volume
-        source: worker_venv
-        target: /src/.venv 
-    <<: 
-      - *logging
-      - *deploy
-    deploy:
-      replicas: 2
 
   postgres:
-    image: postgres:14
-    environment:
-      POSTGRES_USER: $DATABASE_USER
-      POSTGRES_PASSWORD: $DATABASE_PASSWORD
-      POSTGRES_DB: $DATABASE
-      POSTGRES_HOST_AUTH_METHOD: md5
-    volumes:
-      - type: volume
-        source: postgresql
-        target: /var/lib/postgresql/data
-    healthcheck:
-      test: pg_isready -U $DATABASE
-      interval: 10s
-    <<: 
-      - *logging
-      - *deploy
+    extends:
+      file: docker-compose.base.yml
+      service: postgres
 
   pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: $DATABASE_USER@$DATABASE.com
-      PGADMIN_DEFAULT_PASSWORD: $DATABASE_PASSWORD
-    ports:
-      - 5050:80
-    healthcheck:
-      test: "wget -O - http://localhost/misc/ping"
-      interval: 30s
-    <<: 
-      - *logging
-      - *deploy
+    extends:
+      file: docker-compose.base.yml
+      service: pgadmin
 
   redis:
-    image: redis
-    volumes:
-      - type: volume
-        source: redis
-        target: /data
-    healthcheck:
-      test: redis-cli ping
-      interval: 10s
-    <<: 
-      - *logging
-      - *deploy
+    extends:
+      file: docker-compose.base.yml
+      service: redis
 
   influxdb:
-    image: influxdb
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: $INFLUXDB_USERNAME
-      DOCKER_INFLUXDB_INIT_PASSWORD: $INFLUXDB_PASSWORD
-      DOCKER_INFLUXDB_INIT_ORG: $INFLUXDB_ORG
-      DOCKER_INFLUXDB_INIT_BUCKET: $INFLUXDB_BUCKET
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: $INFLUXDB_TOKEN
-      DOCKER_INFLUXDB_INIT_RETENTION: 14d
-    volumes:
-      - type: volume
-        source: influxdb
-        target: /var/lib/influxdb
-    ports:
-      - 8086:8086
-    healthcheck:
-      test: "curl -f http://localhost:8086/ping"
-      interval: 10s
-    <<:
-      - *logging
-      - *deploy
+    extends:
+      file: docker-compose.base.yml
+      service: influxdb
 
   telegraf:
-    image: telegraf
-    environment:
-      HOST_MOUNT_PREFIX: /hostfs
-      HOST_PROC: /hostfs/proc
-      INFLUXDB_USERNAME: $INFLUXDB_USERNAME
-      INFLUXDB_PASSWORD: $INFLUXDB_PASSWORD
-      INFLUXDB_ORG: $INFLUXDB_ORG
-      INFLUXDB_BUCKET: $INFLUXDB_BUCKET
-      INFLUXDB_TOKEN: $INFLUXDB_TOKEN
-      INFLUXDB_URL: $INFLUXDB_URL
-    volumes:
-      - type: bind
-        source: ./config/telegraf.conf
-        target: /etc/telegraf/telegraf.conf
-        read_only: true
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-        read_only: true
-      - type: bind
-        source: /proc
-        target: /hostfs/proc
-        read_only: true
-    ports:
-      - 6514:6514/udp
-    healthcheck:
-      test: "curl -f http://localhost:8080"
-      interval: 10s
-    <<: *deploy
+    extends:
+      file: docker-compose.base.yml
+      service: telegraf
 
   grafana:
-    image: grafana/grafana-oss
-    environment:
-      GF_SECURITY_ADMIN_USER: $INFLUXDB_USERNAME
-      GF_SECURITY_ADMIN_PASSWORD: $INFLUXDB_PASSWORD
-      INFLUXDB_ORG: $INFLUXDB_ORG
-      INFLUXDB_BUCKET: $INFLUXDB_BUCKET
-      INFLUXDB_TOKEN: $INFLUXDB_TOKEN
-      INFLUXDB_URL: $INFLUXDB_URL
-    volumes:
-      - type: bind
-        source: ./config/provisioning
-        target: /etc/grafana/provisioning
-      - type: bind
-        source: ./config/dashboards
-        target: /var/lib/grafana/dashboards
-    ports:
-      - 8888:3000
-    healthcheck:
-      test: "wget -O - http://localhost:3000/api/health"
-      interval: 10s
-    <<: 
-      - *deploy
-      - *logging
-   
+    extends:
+      file: docker-compose.base.yml
+      service: grafana
+
 volumes:
   worker_venv: {}
   server_venv: {}
-  postgresql: {}
-  redis: {}
-  influxdb: {}
+  postgres_volume: {}
+  redis_volume: {}
+  influxdb_volume: {}

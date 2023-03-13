@@ -89,7 +89,7 @@ jobs:
           command: rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop --exclude=data
       - run:
           name: Deploy Over SSH
-          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 deploy.py --env production"
+          command: ssh -o StrictHostKeyChecking=no -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
 
 workflows:
   version: 2
