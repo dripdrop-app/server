@@ -13,6 +13,7 @@ services:
       service: worker
     environment:
       ENV: production
+    scale: 2
 
   postgres:
     extends:
