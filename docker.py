@@ -8,8 +8,16 @@ PRODUCTION = "production"
 REMOVE = "remove"
 DEPLOY = "deploy"
 
+
 class DockerInterface:
-    def __init__(self, docker_file: str = ..., compose_file: str = ..., env_file: str = ..., context: str = ..., tag: str = ...) -> None:
+    def __init__(
+        self,
+        docker_file: str = ...,
+        compose_file: str = ...,
+        env_file: str = ...,
+        context: str = ...,
+        tag: str = ...,
+    ) -> None:
         self._REGISTRY_PORT = 5001
         self._REGISTRY_ADDRESS = f"localhost:{self._REGISTRY_PORT}"
         self._docker_file = docker_file
@@ -33,22 +41,13 @@ class DockerInterface:
                 self._context,
             ]
         ).check_returncode()
-        subprocess.run(
-            [
-                "docker",
-                "image",
-                "push",
-                self._image
-            ]
-        ).check_returncode()
-
+        subprocess.run(["docker", "image", "push", self._image]).check_returncode()
 
     def remove_services(self):
         subprocess.run(
-            ["docker", "compose", "-p", self._tag, "-f", self._compose_file, "down"], 
-            env=self._load_environment_variables()
+            ["docker", "compose", "-p", self._tag, "-f", self._compose_file, "down"],
+            env=self._load_environment_variables(),
         ).check_returncode()
-
 
     def _load_environment_variables(self):
         if self._env is None:
@@ -62,13 +61,20 @@ class DockerInterface:
         return self._env
 
     def _deploy_services(self):
-        projects = subprocess.run(["docker", "compose", "ls", "--filter", f"name={self._tag}", "--format", "json"], stdout=subprocess.PIPE)
-        process = subprocess.run(
-            ["docker", "compose", "-p", self._tag, "-f", self._compose_file, "up", "--wait"],
+        subprocess.run(["docker", "compose", "run", "server", "./scripts/migrate.sh"]).check_returncode()
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-p",
+                self._tag,
+                "-f",
+                self._compose_file,
+                "up",
+                "--wait",
+            ],
             env=self._load_environment_variables(),
-        )
-        process.check_returncode()
-
+        ).check_returncode()
 
     def _create_registry(self):
         process = subprocess.run(["docker", "inspect", "registry"])
@@ -96,14 +102,16 @@ class DockerInterface:
             self.remove_services()
         self._deploy_services()
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--env", type=str, required=True, choices=[DEVELOPMENT, PRODUCTION],
+        "--env",
+        type=str,
+        required=True,
+        choices=[DEVELOPMENT, PRODUCTION],
     )
-    parser.add_argument(
-        "--action", type=str, required=True, choices=[REMOVE, DEPLOY]
-    )
+    parser.add_argument("--action", type=str, required=True, choices=[REMOVE, DEPLOY])
 
     args = parser.parse_args()
 
@@ -111,14 +119,14 @@ if __name__ == "__main__":
     context = os.path.join(current_path, ".")
 
     development_options = {
-        'tag': 'dripdrop-dev',
-        'docker_file': os.path.join(current_path, "./dockerfiles/Dockerfile.dev"),
-        'compose_file': os.path.join(current_path, "docker-compose.dev.yml"),
+        "tag": "dripdrop-dev",
+        "docker_file": os.path.join(current_path, "./dockerfiles/Dockerfile.dev"),
+        "compose_file": os.path.join(current_path, "docker-compose.dev.yml"),
     }
     production_options = {
-        'tag': 'dripdrop',
-        'docker_file': os.path.join(current_path, "./dockerfiles/Dockerfile"),
-        'compose_file': os.path.join(current_path, "docker-compose.prod.yml"),     
+        "tag": "dripdrop",
+        "docker_file": os.path.join(current_path, "./dockerfiles/Dockerfile"),
+        "compose_file": os.path.join(current_path, "docker-compose.prod.yml"),
     }
     options = development_options if args.env == DEVELOPMENT else production_options
     env_file = os.path.join(current_path, ".env")

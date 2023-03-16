@@ -2,7 +2,6 @@
 
 set -e
 source .venv/bin/activate
-alembic upgrade head
 
 if [ "$ENV" == "development" ] 
 then
