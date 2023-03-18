@@ -61,7 +61,6 @@ class DockerInterface:
         return self._env
 
     def _deploy_services(self):
-        subprocess.run(["docker", "compose", "run", "server", "./scripts/migrate.sh"]).check_returncode()
         subprocess.run(
             [
                 "docker",

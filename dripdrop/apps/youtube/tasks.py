@@ -249,11 +249,16 @@ async def add_new_channel_videos_job(
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
+    current_time = datetime.now(settings.timezone)
     query = (
         select(YoutubeSubscription.channel_id.label("channel_id"))
         .where(YoutubeSubscription.deleted_at.is_(None))
         .distinct()
     )
+    if current_time.hour % 2 == 0:
+        query = query.order_by(YoutubeSubscription.channel_id.desc())
+    else:
+        query = query.order_by(YoutubeSubscription.channel_id.asc())
     stream = await session.stream(query)
     async for subscription in stream:
         subscription = subscription._mapping
