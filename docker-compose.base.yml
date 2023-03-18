@@ -31,13 +31,9 @@ services:
   server:
     image: ${IMAGE}
     entrypoint: ["./scripts/server.sh"]
-    restart: always
+    restart: on-failure:5
     ports:
       - 5000:5000
-    volumes:
-      - type: volume
-        source: server_venv
-        target: /src/.venv 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/docs"]
       interval: 10s
@@ -48,13 +44,9 @@ services:
   worker:
     image: ${IMAGE}
     entrypoint: ["./scripts/worker.sh"]
-    restart: always
+    restart: on-failure:5
     environment:
       REDIS_URL: ${REDIS_URL}
-    volumes:
-      - type: volume
-        source: worker_venv
-        target: /src/.venv 
     <<: 
       - *depends-all
       - *logging

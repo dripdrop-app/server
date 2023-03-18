@@ -52,8 +52,6 @@ services:
       service: grafana
 
 volumes:
-  worker_venv: {}
-  server_venv: {}
   postgres_volume: {}
   redis_volume: {}
   influxdb_volume: {}

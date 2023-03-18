@@ -10,5 +10,6 @@ COPY ./poetry.lock ./
 COPY ./pyproject.toml ./
 RUN poetry config virtualenvs.in-project true
 RUN poetry install
+VOLUME [ "/src/.venv" ]
 COPY ./scripts ./scripts
 RUN chmod +x ./scripts/*
