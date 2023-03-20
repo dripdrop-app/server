@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,29 +14,33 @@ from .apps.authentication.app import app as auth_app
 from .apps.music.app import app as music_app
 from .apps.youtube.app import app as youtube_app
 
+
 api_router = APIRouter(prefix="/api")
-api_router.include_router(
-    prefix="/admin", router=admin_app.router, tags=admin_app.openapi_tags
-)
-api_router.include_router(
-    prefix="/auth", router=auth_app.router, tags=auth_app.openapi_tags
-)
-api_router.include_router(
-    prefix="/music", router=music_app.router, tags=music_app.openapi_tags
-)
-api_router.include_router(
-    prefix="/youtube", router=youtube_app.router, tags=youtube_app.openapi_tags
-)
+
+
+def register_router(prefix: str = ..., app: FastAPI = ...):
+    api_router.include_router(prefix=prefix, router=app.router, tags=app.openapi_tags)
+
+
+register_router(prefix="/admin", app=admin_app)
+register_router(prefix="/auth", app=auth_app)
+register_router(prefix="/music", app=music_app)
+register_router(prefix="/youtube", app=youtube_app)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await cron.start_cron_jobs()
+    yield
+    await cron.end_cron_jobs()
+    websocket_handler.close()
+    await http_client.aclose()
+    await redis.close()
+
 
 app = FastAPI(
     title="DripDrop",
-    on_startup=[cron.start_cron_jobs],
-    on_shutdown=[
-        cron.end_cron_jobs,
-        http_client.aclose,
-        redis.close,
-        websocket_handler.close,
-    ],
+    lifespan=lifespan,
     routes=api_router.routes,
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
