@@ -39,7 +39,7 @@ async def create_websocket_redis_channel_listener(
                 message_handler=handler,
             )
         )
-        while True:
+        while not close_sockets:
             await websocket.send_json(PingResponse(status="PING").dict())
             if task.done():
                 expection = task.exception()

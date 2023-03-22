@@ -7,6 +7,7 @@ import traceback
 import uuid
 from fastapi import UploadFile
 
+from dataclasses import dataclass
 from dripdrop.logging import logger
 from dripdrop.services import image_downloader, s3
 from dripdrop.services.audio_tag import AudioTags
@@ -16,42 +17,51 @@ from .models import MusicJob
 from .responses import TagsResponse
 
 
+@dataclass
+class UploadedFileInfo:
+    url: str | None
+    filename: str | None
+
+
 async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
-    artwork_filename = None
+    uploaded_file_info = UploadedFileInfo(url=artwork_url, filename=None)
     if artwork_url:
         if re.search("^data:image/", artwork_url):
             extension = artwork_url.split(";")[0].split("/")[1]
             dataString = ",".join(artwork_url.split(",")[1:])
             data = dataString.encode()
             data_bytes = base64.b64decode(data)
-            artwork_filename = f"{s3.ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
+            uploaded_file_info.filename = (
+                f"{s3.ARTWORK_FOLDER}/{job_id}/artwork.{extension}"
+            )
             await s3.upload_file(
-                filename=artwork_filename,
+                filename=uploaded_file_info.filename,
                 body=data_bytes,
                 content_type=f"image/{extension}",
             )
-            artwork_url = s3.resolve_url(filename=artwork_filename)
+            uploaded_file_info.url = s3.resolve_url(
+                filename=uploaded_file_info.filename
+            )
         else:
             response = await http_client.get(artwork_url)
             if not response.is_success or not image_downloader.is_image_link(
                 response=response
             ):
-                return None, None
-    return artwork_url, artwork_filename
+                return UploadedFileInfo(url=None, filename=None)
+    return uploaded_file_info
 
 
 async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
-    filename_url = None
-    filename = None
+    uploaded_file_info = UploadedFileInfo(url=None, filename=None)
     if file:
-        filename = f"{s3.MUSIC_FOLDER}/{job_id}/old/{file.filename}"
-        filename_url = s3.resolve_url(filename=filename)
+        uploaded_file_info.filename = f"{s3.MUSIC_FOLDER}/{job_id}/old/{file.filename}"
+        uploaded_file_info.url = s3.resolve_url(filename=uploaded_file_info.filename)
         await s3.upload_file(
-            filename=filename,
+            filename=uploaded_file_info.filename,
             body=await file.read(),
             content_type=file.content_type,
         )
-    return filename_url, filename
+    return uploaded_file_info
 
 
 async def cleanup_job(job: MusicJob):

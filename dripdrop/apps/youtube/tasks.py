@@ -1,3 +1,4 @@
+import asyncio
 import dateutil.parser
 import traceback
 from datetime import datetime, timedelta
@@ -6,11 +7,12 @@ from sqlalchemy import select, func, delete, false
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.logging import logger
-from dripdrop.services import google_api, rq, ytdlp
+from dripdrop.services import google_api, rq, ytdlp, scraper
 from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
 from dripdrop.tasks import worker_task
 
+from . import utils
 from .models import (
     YoutubeUserChannel,
     YoutubeChannel,
@@ -68,6 +70,16 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     user_channel = results.first()
     if not user_channel:
         return
+
+    subscriptions_scraper = scraper.Scraper()
+    scraped_subscriptions = await asyncio.to_thread(
+        subscriptions_scraper.get_channel_subscriptions, channel_id=user_channel.id
+    )
+
+    subscription_ids = scraped_subscriptions.ids
+    for subscription_handle in scraped_subscriptions.handles:
+        channel_id = await utils.get_channel_id_from_handle(handle=subscription_handle)
+        subscription_ids.append(channel_id)
 
     async for subscriptions in google_api.get_channel_subscriptions(
         channel_id=user_channel.id

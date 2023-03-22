@@ -23,7 +23,10 @@ async def enqueue(
     at_front=False,
 ):
     if settings.env == ENV.TESTING:
-        await asyncio.wait_for(function(*args, **kwargs), timeout=settings.timeout)
+        try:
+            await asyncio.wait_for(function(*args, **kwargs), timeout=settings.timeout)
+        except Exception:
+            pass
         return None
     return queue.enqueue(
         function,

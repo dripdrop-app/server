@@ -35,7 +35,6 @@ class YoutubeChannel(ModelBaseMixin, Base):
 class YoutubeSubscription(ModelBaseMixin, Base):
     __tablename__ = "youtube_subscriptions"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
     channel_id: Mapped[str] = mapped_column(
         ForeignKey(
             YoutubeChannel.id,
@@ -44,6 +43,7 @@ class YoutubeSubscription(ModelBaseMixin, Base):
             name="youtube_subscriptions_channel_id_fkey",
         ),
         nullable=False,
+        primary_key=True,
     )
     email: Mapped[str] = mapped_column(
         ForeignKey(
@@ -53,11 +53,9 @@ class YoutubeSubscription(ModelBaseMixin, Base):
             name="youtube_subscriptions_email_fkey",
         ),
         nullable=False,
+        primary_key=True,
     )
     user_submitted: Mapped[bool] = mapped_column(nullable=False, default=False)
-    published_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False
-    )
     deleted_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )

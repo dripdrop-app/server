@@ -15,16 +15,16 @@ x-depends-redis: &depends-redis
     redis:
       condition: service_healthy
 
-x-depends-logging: &depends-logging
+x-depends-selenium: &depends-selenium
   depends_on:
-    telegraf:
+    selenium:
       condition: service_healthy
 
 x-depends-all: &depends-all
   <<:
     - *depends-database
     - *depends-redis
-    - *depends-logging
+    - *depends-selenium
 
 version: '2.4'
 services:
@@ -168,5 +168,14 @@ services:
       - 8888:3000
     healthcheck:
       test: ["CMD", "wget", "-O", "-", "http://localhost:3000/api/health"]
+      interval: 10s
+    <<: *logging
+
+  selenium:
+    image: selenium/standalone-chrome
+    ports:
+      - 7900:7900
+    healthcheck:
+      test: "curl -sSL http://localhost:4444/wd/hub/status | jq -r '.value.ready' | grep -q \"true\" || exit 1"
       interval: 10s
     <<: *logging

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     google_api_key: str
     redis_url: str
     secret_key: str
+    selenium_webdriver_url: str
     test_async_database_url: str
     test_aws_access_key_id: str
     test_aws_s3_bucket: str

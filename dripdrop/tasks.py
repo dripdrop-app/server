@@ -12,8 +12,9 @@ def exception_handler(function):
     async def wrapper(*args, **kwargs):
         try:
             return await function(*args, **kwargs)
-        except Exception:
+        except Exception as e:
             logger.error(traceback.format_exc())
+            raise e
 
     return wrapper
 
