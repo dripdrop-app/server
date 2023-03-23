@@ -659,6 +659,18 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "fake-useragent"
+version = "1.1.3"
+description = "Up-to-date simple useragent faker with real world database"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "fake-useragent-1.1.3.tar.gz", hash = "sha256:1c06f0aa7d6e4894b919b30b9c7ebd72ff497325191057fbb5df3d5db06b93fc"},
+    {file = "fake_useragent-1.1.3-py3-none-any.whl", hash = "sha256:695d3b1bf7d11d04ab0f971fb73b0ca8de98b78bbadfbc8bacbc9a48423f7531"},
+]
+
+[[package]]
 name = "fastapi"
 version = "0.95.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -2265,4 +2277,4 @@ websockets = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1c4951216f1a9c0aac43c6806ffe7415bc2d583a0522e6f935fdbfd33b8de1cd"
+content-hash = "12f374a5e60a445bd5135737bd427258a95f9916a548850529c83e8f5eba59fc"

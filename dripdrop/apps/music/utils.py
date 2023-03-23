@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from dripdrop.logging import logger
 from dripdrop.services import image_downloader, s3
 from dripdrop.services.audio_tag import AudioTags
-from dripdrop.services.http_client import http_client
+from dripdrop.services.http_client import create_http_client
 
 from .models import MusicJob
 from .responses import TagsResponse
@@ -43,7 +43,8 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
                 filename=uploaded_file_info.filename
             )
         else:
-            response = await http_client.get(artwork_url)
+            async with create_http_client() as http_client:
+                response = await http_client.get(artwork_url)
             if not response.is_success or not image_downloader.is_image_link(
                 response=response
             ):

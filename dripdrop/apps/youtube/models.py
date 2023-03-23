@@ -64,7 +64,7 @@ class YoutubeSubscription(ModelBaseMixin, Base):
 class YoutubeNewSubscription(ModelBaseMixin, Base):
     __tablename__ = "youtube_new_subscriptions"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    channel_id: Mapped[str] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(
         ForeignKey(
             User.email,
@@ -73,6 +73,7 @@ class YoutubeNewSubscription(ModelBaseMixin, Base):
             name="youtube_new_subscriptions_email_fkey",
         ),
         nullable=False,
+        primary_key=True,
     )
 
 

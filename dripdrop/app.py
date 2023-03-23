@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from dripdrop.services import cron, websocket_handler
-from dripdrop.services.http_client import http_client
 from dripdrop.services.redis import redis
 from dripdrop.settings import settings, ENV
 
@@ -34,7 +33,6 @@ async def lifespan(app: FastAPI):
     yield
     await cron.end_cron_jobs()
     websocket_handler.close()
-    await http_client.aclose()
     await redis.close()
 
 

@@ -2,18 +2,16 @@ import asyncio
 import time
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
+from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 
-from dripdrop.services.http_client import http_client
+from dripdrop import utils
+from dripdrop.services.http_client import create_http_client
 from dripdrop.settings import settings
 
-
-@dataclass
-class ScrapedSubscriptions:
-    handles: list[str]
-    ids: list[str]
+user_agent = UserAgent()
 
 
 @dataclass
@@ -25,11 +23,12 @@ class YoutubeChannelInfo:
 
 async def get_channel_subscriptions(channel_id: str = ...):
     def _get_channel_subscriptions(channel_id: str = ...):
+        options = webdriver.ChromeOptions()
+        options.add_argument(f"user-agent={user_agent.random}")
         driver = webdriver.Remote(
             command_executor=settings.selenium_webdriver_url,
-            options=webdriver.ChromeOptions(),
+            options=options,
         )
-        scraped_subscriptions = ScrapedSubscriptions(handles=[], ids=[])
         try:
             driver.get(f"https://youtube.com/channel/{channel_id}/channels")
             subscription_header = next(
@@ -59,20 +58,26 @@ async def get_channel_subscriptions(channel_id: str = ...):
                     "arguments[0].scrollIntoView(true);", channels[-1]
                 )
                 time.sleep(5)
-
-            for channel in channels:
-                channel_link = channel.get_attribute("href")
-                if channel_link:
-                    channel_id = channel_link.split("/")[-1]
-                    if channel_id.startswith("@"):
-                        scraped_subscriptions.handles.append(channel_id)
-                    else:
-                        scraped_subscriptions.ids.append(channel_id)
+            channel_links = [
+                channel.get_attribute("href")
+                for channel in channels
+                if channel.get_attribute("href")
+            ]
+            return channel_links
+        except Exception as e:
+            raise e
         finally:
             driver.quit()
-        return scraped_subscriptions
 
-    return await asyncio.to_thread(_get_channel_subscriptions, channel_id=channel_id)
+    channel_ids = await asyncio.to_thread(
+        _get_channel_subscriptions, channel_id=channel_id
+    )
+    channels = await utils.gather_with_limit(
+        *[get_channel_info(channel_id=channel_id) for channel_id in channel_ids],
+        limit=5,
+    )
+    print(channels)
+    return [channel for channel in channels if channel]
 
 
 async def get_channel_info(channel_id: str = ...):
@@ -81,7 +86,8 @@ async def get_channel_info(channel_id: str = ...):
         url += channel_id
     else:
         url += f"channel/{channel_id}"
-    response = await http_client.get(url=url)
+    async with create_http_client() as http_client:
+        response = await http_client.get(url=url)
     if response.is_error:
         return None
     html = response.text
@@ -89,13 +95,14 @@ async def get_channel_info(channel_id: str = ...):
     channel_id_tag = soup.find("meta", itemprop="channelId")
     name_tag = soup.find("meta", itemprop="name")
     thumbnail_tag = soup.find("link", itemprop="thumbnailUrl")
-    if not (channel_id_tag or name_tag or thumbnail_tag):
+    try:
+        return YoutubeChannelInfo(
+            id=channel_id_tag["content"],
+            title=name_tag["content"],
+            thumbnail=thumbnail_tag["href"],
+        )
+    except TypeError:
         return None
-    return YoutubeChannelInfo(
-        id=channel_id_tag["content"],
-        title=name_tag["content"],
-        thumbnail=thumbnail_tag["href"],
-    )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from dripdrop.services.http_client import http_client
+from dripdrop.services.http_client import create_http_client
 from dripdrop.settings import settings
 from dripdrop.logging import logger
 
@@ -12,9 +12,10 @@ async def get_video_categories():
         "part": "snippet",
         "regionCode": "US",
     }
-    response = await http_client.get(
-        f"{YOUTUBE_API_URL}/videoCategories", params=params
-    )
+    async with create_http_client() as http_client:
+        response = await http_client.get(
+            f"{YOUTUBE_API_URL}/videoCategories", params=params
+        )
     if response.is_success:
         json = response.json()
         return json.get("items", [])
