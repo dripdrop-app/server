@@ -10,7 +10,7 @@ async def test_deleting_job_when_not_logged_in(client: AsyncClient):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_deleting_non_existent_job(client: AsyncClient, create_and_login_user):
+async def test_deleting_nonexistent_job(client: AsyncClient, create_and_login_user):
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.delete(DELETE_URL, params={"job_id": "1"})
     assert response.status_code == status.HTTP_404_NOT_FOUND

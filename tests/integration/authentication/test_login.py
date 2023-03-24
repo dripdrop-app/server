@@ -14,7 +14,7 @@ async def test_login_with_incorrect_password(client: AsyncClient, create_user):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-async def test_login_with_non_existent_email(client: AsyncClient):
+async def test_login_with_nonexistent_email(client: AsyncClient):
     response = await client.post(
         LOGIN_URL, json={"email": "user@gmail.com", "password": "password"}
     )

@@ -42,7 +42,7 @@ async def test_get_categories_with_subscribed_channels(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     category = await create_video_category(id=1, name="category")
     await create_video(
         id="1",

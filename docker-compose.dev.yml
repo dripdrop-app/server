@@ -20,7 +20,6 @@ services:
         source: ./
         target: /src
 
-
   postgres:
     extends:
       file: docker-compose.base.yml
@@ -36,22 +35,11 @@ services:
       file: docker-compose.base.yml
       service: redis
 
-  influxdb:
+  selenium:
     extends:
       file: docker-compose.base.yml
-      service: influxdb
-
-  telegraf:
-    extends:
-      file: docker-compose.base.yml
-      service: telegraf
-
-  grafana:
-    extends:
-      file: docker-compose.base.yml
-      service: grafana
+      service: selenium
 
 volumes:
   postgres_volume: {}
   redis_volume: {}
-  influxdb_volume: {}

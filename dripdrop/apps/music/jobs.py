@@ -149,7 +149,7 @@ async def create_job(
             )
     job_id = str(uuid.uuid4())
     try:
-        filename_url, filename = await utils.handle_audio_file(job_id=job_id, file=file)
+        audiofile_info = await utils.handle_audio_file(job_id=job_id, file=file)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
@@ -157,7 +157,7 @@ async def create_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
     try:
-        artwork_url, artwork_filename = await utils.handle_artwork_url(
+        artwork_info = await utils.handle_artwork_url(
             job_id=job_id, artwork_url=artwork_url
         )
     except Exception:
@@ -170,10 +170,10 @@ async def create_job(
         MusicJob(
             id=job_id,
             user_email=user.email,
-            artwork_url=artwork_url,
-            artwork_filename=artwork_filename,
-            original_filename=filename,
-            filename_url=filename_url,
+            artwork_url=artwork_info.url,
+            artwork_filename=artwork_info.filename,
+            original_filename=audiofile_info.filename,
+            filename_url=audiofile_info.url,
             video_url=video_url,
             title=title,
             artist=artist,

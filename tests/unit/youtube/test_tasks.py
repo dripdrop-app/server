@@ -21,7 +21,8 @@ async def test_update_video_categories_with_failed_google_api_request(
         raise Exception("Fail")
 
     mock_get_video_categories(raise_exception)
-    await youtube_tasks.update_video_categories(cron=True, session=session)
+    with pytest.raises(Exception):
+        await youtube_tasks.update_video_categories(cron=True, session=session)
     query = select(YoutubeVideoCategory)
     results = await session.scalars(query)
     assert len(results.all()) == 0

@@ -30,7 +30,7 @@ async def test_get_subscriptions_out_of_range_page(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     response = await client.get(f"{SUBSCRIPTIONS_URL}/2/1")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -43,22 +43,16 @@ async def test_get_subscriptions_with_single_result(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    subscription = await create_subscription(
-        id="1", channel_id=channel.id, email=user.email
-    )
+    await create_subscription(channel_id=channel.id, email=user.email)
     response = await client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
         "subscriptions": [
             {
-                "id": subscription.id,
                 "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
-                "publishedAt": subscription.published_at.replace(
-                    tzinfo=settings.timezone
-                ).isoformat(),
             }
         ],
     }
@@ -72,11 +66,8 @@ async def test_get_subscriptions_with_deleted_subscription(
     other_channel = await create_channel(
         id="2", title="channel_2", thumbnail="thumbnail"
     )
-    subscription = await create_subscription(
-        id="1", channel_id=channel.id, email=user.email
-    )
+    await create_subscription(channel_id=channel.id, email=user.email)
     await create_subscription(
-        id="2",
         channel_id=other_channel.id,
         email=user.email,
         deleted_at=datetime.now(settings.timezone),
@@ -87,13 +78,9 @@ async def test_get_subscriptions_with_deleted_subscription(
         "totalPages": 1,
         "subscriptions": [
             {
-                "id": subscription.id,
                 "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
-                "publishedAt": subscription.published_at.replace(
-                    tzinfo=settings.timezone
-                ).isoformat(),
             }
         ],
     }
@@ -118,9 +105,7 @@ async def test_get_subscriptions_with_multiple_pages(
     subscriptions = []
     for i, channel in enumerate(channels):
         subscriptions.append(
-            await create_subscription(
-                id=str(i), channel_id=channel.id, email=user.email
-            )
+            await create_subscription(channel_id=channel.id, email=user.email)
         )
     response = await client.get(f"{SUBSCRIPTIONS_URL}/1/1")
     assert response.status_code == status.HTTP_200_OK
@@ -128,13 +113,9 @@ async def test_get_subscriptions_with_multiple_pages(
         "totalPages": 3,
         "subscriptions": [
             {
-                "id": subscriptions[0].id,
                 "channelId": channels[0].id,
                 "channelTitle": channels[0].title,
                 "channelThumbnail": channels[0].thumbnail,
-                "publishedAt": subscriptions[0]
-                .published_at.replace(tzinfo=settings.timezone)
-                .isoformat(),
             }
         ],
     }
@@ -159,25 +140,17 @@ async def test_get_subscriptions_for_logged_in_account(
         title="channel_2",
         thumbnail="thumbnail",
     )
-    await create_subscription(
-        id="1", channel_id=other_channel.id, email=other_user.email
-    )
-    subscription = await create_subscription(
-        id="2", channel_id=channel.id, email=user.email
-    )
+    await create_subscription(channel_id=other_channel.id, email=other_user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     response = await client.get(f"{SUBSCRIPTIONS_URL}/1/2")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "totalPages": 1,
         "subscriptions": [
             {
-                "id": subscription.id,
                 "channelId": channel.id,
                 "channelTitle": channel.title,
                 "channelThumbnail": channel.thumbnail,
-                "publishedAt": subscription.published_at.replace(
-                    tzinfo=settings.timezone
-                ).isoformat(),
             }
         ],
     }
@@ -202,9 +175,7 @@ async def test_get_subscriptions_are_in_descending_order_by_title(
     subscriptions = []
     for i, channel in enumerate(channels):
         subscriptions.append(
-            await create_subscription(
-                id=str(i), channel_id=channel.id, email=user.email
-            )
+            await create_subscription(channel_id=channel.id, email=user.email)
         )
     channels.sort(key=lambda channel: channel.title)
     subscriptions = list(
@@ -225,13 +196,9 @@ async def test_get_subscriptions_are_in_descending_order_by_title(
         "subscriptions": list(
             map(
                 lambda i: {
-                    "id": subscriptions[i].id,
                     "channelId": channels[i].id,
                     "channelTitle": channels[i].title,
                     "channelThumbnail": channels[i].thumbnail,
-                    "publishedAt": subscriptions[i]
-                    .published_at.replace(tzinfo=settings.timezone)
-                    .isoformat(),
                 },
                 range(len(subscriptions)),
             )
@@ -244,7 +211,7 @@ async def test_add_user_subscription_when_not_logged_in(client: AsyncClient):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_add_user_subscription_with_non_existent_channel_in_database(
+async def test_add_user_subscription_with_nonexistent_channel_in_database(
     client: AsyncClient, create_and_login_user
 ):
     await create_and_login_user(email="user@gmail.com", password="password")
@@ -262,31 +229,24 @@ async def test_add_user_subscription_with_channel_in_database(
     monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
-        id="1",
-        title="channel_1",
+        id="UCCuIpl5564hhP8Qpucvu7RA",
+        title="Food Dip",
         thumbnail="thumbnail",
     )
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
     )
     assert response.status_code == status.HTTP_200_OK
-    subscription = response.json()
-    assert subscription["id"] is not None
-    assert subscription["channelId"] == channel.id
-    assert subscription["channelTitle"] == channel.title
-    assert subscription["channelThumbnail"] == channel.thumbnail
-    assert subscription["publishedAt"] is not None
+    assert response.json() == {
+        "channelId": channel.id,
+        "channelTitle": channel.title,
+        "channelThumbnail": channel.thumbnail,
+    }
 
 
 async def test_add_user_subscription_with_nonexistent_channel_on_youtube(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user
+    client: AsyncClient, create_and_login_user
 ):
-    async def fake_channel(channel_id: str = ...):
-        if channel_id == "1":
-            raise Exception("Not Found")
-        return {}
-
-    monkeypatch.setattr("dripdrop.services.google_api.get_channel_info", fake_channel)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -295,43 +255,26 @@ async def test_add_user_subscription_with_nonexistent_channel_on_youtube(
 async def test_add_user_subscription_with_channel_on_youtube(
     monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
 ):
-    async def fake_channel(channel_id: str = ...):
-        return {
-            "id": channel_id,
-            "snippet": {
-                "title": "channel",
-                "thumbnails": {"high": {"url": "thumbnail"}},
-            },
-        }
-
     monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
-    monkeypatch.setattr("dripdrop.services.google_api.get_channel_info", fake_channel)
     await create_and_login_user(email="user@gmail.com", password="password")
-    response = await client.put(f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"})
+    response = await client.put(
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "UCCuIpl5564hhP8Qpucvu7RA"}
+    )
     assert response.status_code == status.HTTP_200_OK
     subscription = response.json()
-    assert subscription["id"] is not None
-    assert subscription["channelId"] == "1"
-    assert subscription["channelTitle"] == "channel"
-    assert subscription["channelThumbnail"] == "thumbnail"
-    assert subscription["publishedAt"] is not None
+    assert subscription["channelId"] == "UCCuIpl5564hhP8Qpucvu7RA"
+    assert subscription["channelTitle"] == "Food Dip"
+    assert subscription["channelThumbnail"] is not None
 
 
 async def test_add_user_subscription_with_nonexistent_channel_handle_on_youtube(
     monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
 ):
-    async def fake_channel_handle(handle: str = ...):
-        if handle == "@NonExistent":
-            return None
-        return 1
-
     monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
-    monkeypatch.setattr(
-        "dripdrop.apps.youtube.utils.get_channel_id_from_handle", fake_channel_handle
-    )
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(
-        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "@NonExistent"}
+        f"{SUBSCRIPTIONS_URL}/user",
+        params={"channel_id": "@dripdrop-channel-non-existent"},
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -346,11 +289,9 @@ async def test_add_user_subscription_with_channel_handle_on_youtube(
     )
     assert response.status_code == status.HTTP_200_OK
     subscription = response.json()
-    assert subscription["id"] is not None
     assert subscription["channelId"] == "UCYdHjl9aX-8Fwyg0OBOL21g"
     assert subscription["channelTitle"] == "TDBarrett"
     assert subscription["channelThumbnail"] is not None
-    assert subscription["publishedAt"] is not None
 
 
 async def test_add_user_subscription_when_subscription_exists(
@@ -358,11 +299,11 @@ async def test_add_user_subscription_when_subscription_exists(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
-        id="1",
-        title="channel_1",
+        id="UC_ZYORKR3s_0qL5CuySVSPA",
+        title="dripdrop-channel",
         thumbnail="thumbnail",
     )
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
     )
@@ -380,12 +321,11 @@ async def test_add_user_subscription_with_deleted_subscription(
     monkeypatch.setattr("dripdrop.services.rq.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
-        id="1",
-        title="channel_1",
+        id="UC_ZYORKR3s_0qL5CuySVSPA",
+        title="dripdrop-channel",
         thumbnail="thumbnail",
     )
     await create_subscription(
-        id="1",
         channel_id=channel.id,
         email=user.email,
         deleted_at=datetime.now(settings.timezone),
@@ -394,17 +334,16 @@ async def test_add_user_subscription_with_deleted_subscription(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
     )
     assert response.status_code == status.HTTP_200_OK
-    subscription = response.json()
-    assert subscription["id"] is not None
-    assert subscription["channelId"] == channel.id
-    assert subscription["channelTitle"] == channel.title
-    assert subscription["channelThumbnail"] == channel.thumbnail
-    assert subscription["publishedAt"] is not None
+    assert response.json() == {
+        "channelId": channel.id,
+        "channelTitle": channel.title,
+        "channelThumbnail": channel.thumbnail,
+    }
 
 
 async def test_delete_user_subscription_when_not_logged_in(client: AsyncClient):
     response = await client.delete(
-        f"{SUBSCRIPTIONS_URL}/user", params={"subscription_id": "1"}
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -414,7 +353,7 @@ async def test_delete_user_subscription_with_nonexistent_subscription(
 ):
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.delete(
-        f"{SUBSCRIPTIONS_URL}/user", params={"subscription_id": "1"}
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "1"}
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -428,10 +367,8 @@ async def test_delete_user_subscription(
         title="channel_1",
         thumbnail="thumbnail",
     )
-    subscription = await create_subscription(
-        id="1", channel_id=channel.id, email=user.email
-    )
+    await create_subscription(channel_id=channel.id, email=user.email)
     response = await client.delete(
-        f"{SUBSCRIPTIONS_URL}/user", params={"subscription_id": subscription.id}
+        f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": channel.id}
     )
     assert response.status_code == status.HTTP_200_OK

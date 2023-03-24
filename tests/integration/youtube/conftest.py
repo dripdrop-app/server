@@ -72,19 +72,15 @@ def create_channel(session: AsyncSession):
 @pytest.fixture
 def create_subscription(session: AsyncSession):
     async def _create_subscription(
-        id: str = ...,
         channel_id: str = ...,
         email: str = ...,
-        published_at: datetime | None = None,
+        user_submitted: str | None = None,
         deleted_at: datetime | None = None,
     ):
         youtube_subscription = YoutubeSubscription(
-            id=id,
             channel_id=channel_id,
             email=email,
-            published_at=published_at
-            if published_at
-            else datetime.now(tz=settings.timezone),
+            user_submitted=user_submitted,
             deleted_at=deleted_at,
         )
         session.add(youtube_subscription)
