@@ -46,6 +46,7 @@ async def run_update_subscriptions(email: EmailStr | None = Query(None)):
             function=youtube_tasks.update_user_subscriptions,
             kwargs={"email": email},
             depends_on=job,
+            retry=rq.Retry(max=2),
         )
     else:
         await rq.enqueue(

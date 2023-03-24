@@ -2,6 +2,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Response
 from sqlalchemy import select, and_
 
+from dripdrop.apps.admin import tasks as admin_tasks
 from dripdrop.dependencies import (
     AsyncSession,
     create_db_session,
@@ -110,5 +111,11 @@ async def update_user_youtube_channel(
     else:
         session.add(YoutubeUserChannel(id=channel_info.id, email=user.email))
     await session.commit()
-    await rq.enqueue(tasks.update_user_subscriptions, kwargs={"email": user.email})
+    proxy_job = await rq.enqueue(admin_tasks.update_proxies, kwargs={"cron": False})
+    await rq.enqueue(
+        tasks.update_user_subscriptions,
+        kwargs={"email": user.email},
+        depends_on=proxy_job,
+        retry=rq.Retry(max=2),
+    )
     return Response(None, status_code=status.HTTP_200_OK)

@@ -150,8 +150,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
         )
     )
     stream = await session.stream(query)
-    async for row in stream:
-        row = row._mapping
+    async for row in stream.mappings():
         await rq.enqueue(
             function=_delete_subscription,
             kwargs={
@@ -162,6 +161,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
         )
     query = delete(YoutubeNewSubscription).where(YoutubeNewSubscription.email == email)
     await session.execute(query)
+    await session.commit()
 
 
 @worker_task
@@ -286,4 +286,5 @@ async def update_subscriptions(session: AsyncSession = ...):
             function=update_user_subscriptions,
             kwargs={"email": user.email},
             at_front=True,
+            retry=rq.Retry(max=2),
         )

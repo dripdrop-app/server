@@ -33,6 +33,7 @@ async def update_proxies(cron: bool = ..., session: AsyncSession = ...):
     json = response.json()
     query = delete(Proxy)
     await session.execute(query)
+    await session.commit()
     new_proxies = [
         Proxy(ip_address=proxy["ip"], port=int(proxy["port"])) for proxy in json["data"]
     ]

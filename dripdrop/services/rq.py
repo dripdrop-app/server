@@ -3,7 +3,7 @@ from redis import Redis
 from rq import Queue
 from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
-from rq.job import Job, JobStatus
+from rq.job import Job, JobStatus, Retry
 from typing import Coroutine
 
 from dripdrop.settings import ENV, settings
@@ -21,6 +21,7 @@ async def enqueue(
     job_id: str = None,
     depends_on: Job = None,
     at_front=False,
+    retry: Retry | None = None,
 ):
     if settings.env == ENV.TESTING:
         try:
@@ -35,6 +36,7 @@ async def enqueue(
         job_id=job_id,
         depends_on=depends_on,
         at_front=at_front,
+        retry=retry,
     )
 
 
