@@ -1,11 +1,14 @@
 import os
+from fake_useragent import UserAgent
 from httpx import Response
 from urllib import parse
 
-from dripdrop.services.http_client import http_client
+from dripdrop.services.http_client import create_http_client
 
 
 IMAGE_EXTENSIONS = [".jpg", ".ico", "png", ".jpeg"]
+
+user_agent = UserAgent()
 
 
 def is_image_link(response: Response = ...):
@@ -16,7 +19,8 @@ def is_image_link(response: Response = ...):
 
 
 async def download_image(artwork: str = ...):
-    response = await http_client.get(artwork)
+    async with create_http_client() as http_client:
+        response = await http_client.get(artwork)
     if not is_image_link(response=response):
         raise Exception("Link does not produce an image")
     return response.content
@@ -44,15 +48,16 @@ def _get_images(response: Response = ...) -> list:
 
 
 async def resolve_artwork(artwork: str = ...):
-    response = await http_client.get(
-        artwork,
-        headers={
-            "User-Agent": (
-                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101"
-                "Firefox/12.0"
-            )
-        },
-    )
+    async with create_http_client() as http_client:
+        response = await http_client.get(
+            artwork,
+            headers={
+                "User-Agent": (
+                    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101"
+                    "Firefox/12.0"
+                )
+            },
+        )
     if response.is_success:
         if is_image_link(response=response):
             return artwork

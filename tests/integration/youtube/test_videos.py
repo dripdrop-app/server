@@ -111,7 +111,7 @@ async def test_get_videos_with_single_result(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     category = await create_video_category(id=1, name="category")
     video = await create_video(
         id="1",
@@ -156,7 +156,7 @@ async def test_get_videos_with_multiple_videos(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     category = await create_video_category(id=1, name="category")
     videos = []
     for i in range(5):
@@ -209,7 +209,7 @@ async def test_get_videos_with_multiple_pages(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     category = await create_video_category(id=1, name="category")
     videos = []
     for i in range(5):
@@ -262,7 +262,7 @@ async def test_get_videos_in_descending_order_by_published_date(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     category = await create_video_category(id=1, name="category")
     videos = []
     for i in range(5):
@@ -316,7 +316,6 @@ async def test_get_videos_with_deleted_subscriptions(
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
     await create_subscription(
-        id="1",
         channel_id=channel.id,
         email=user.email,
         deleted_at=datetime.now(settings.timezone),
@@ -347,8 +346,8 @@ async def test_videos_with_watched_populated(
     user = await create_and_login_user(email="user@gmail.com", password="password")
     other_user = await create_user(email="other@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
-    await create_subscription(id="2", channel_id=channel.id, email=other_user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=other_user.email)
     category = await create_video_category(id=1, name="category")
     watched_video = await create_video(
         id="1",
@@ -420,7 +419,7 @@ async def test_get_videos_with_specific_video_category(
 ):
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(id="1", title="channel", thumbnail="thumbnail")
-    await create_subscription(id="1", channel_id=channel.id, email=user.email)
+    await create_subscription(channel_id=channel.id, email=user.email)
     category = await create_video_category(id=1, name="category")
     other_category = await create_video_category(id=2, name="other category")
     video_in_category = await create_video(

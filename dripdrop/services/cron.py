@@ -2,6 +2,7 @@ from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from typing import Callable
 
+from dripdrop.apps.admin import tasks as admin_tasks
 from dripdrop.apps.music import tasks as music_tasks
 from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.logging import logger
@@ -11,13 +12,17 @@ from dripdrop.settings import settings, ENV
 
 
 CRONS_ADDED = "crons_added"
-job_ids = []
+_job_ids = []
 
 
 async def run_cron_jobs():
+    proxy_job = await rq.enqueue(
+        function=admin_tasks.update_proxies, kwargs={"cron": True}
+    )
     video_categories_job = await rq.enqueue(
         function=youtube_tasks.update_video_categories,
         kwargs={"cron": True},
+        depends_on=proxy_job,
     )
     update_subscriptions_job = await rq.enqueue(
         function=youtube_tasks.update_subscriptions,
@@ -36,7 +41,7 @@ def create_cron_job(
     args: tuple = (),
     kwargs: dict = {},
 ):
-    global job_ids
+    global _job_ids
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
@@ -48,7 +53,7 @@ def create_cron_job(
         args=args,
         kwargs=kwargs,
     )
-    job_ids.append(job.get_id())
+    _job_ids.append(job.get_id())
     rq.queue.enqueue(
         create_cron_job,
         kwargs={
@@ -73,11 +78,12 @@ async def start_cron_jobs():
             )
             create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
             create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
-            create_cron_job("0 0 * * *", youtube_tasks.update_subscriptions)
+            create_cron_job("15 0 * * *", admin_tasks.update_proxies)
+            create_cron_job("30 0 * * *", youtube_tasks.update_subscriptions)
 
 
 async def end_cron_jobs():
     if settings.env == ENV.PRODUCTION:
         await redis.delete(CRONS_ADDED)
-        for job_id in job_ids:
+        for job_id in _job_ids:
             rq.stop_job(job_id=job_id)

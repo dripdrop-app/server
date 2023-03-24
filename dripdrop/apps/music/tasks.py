@@ -9,7 +9,7 @@ from typing import Union
 from yt_dlp.utils import sanitize_filename
 
 from dripdrop.services.database import AsyncSession
-from dripdrop.services.http_client import http_client
+from dripdrop.services.http_client import create_http_client
 from dripdrop.logging import logger
 from dripdrop.services import image_downloader, rq, s3, ytdlp
 from dripdrop.services.audio_tag import AudioTags
@@ -39,7 +39,8 @@ def _create_job_folder(job: MusicJob = ...):
 async def _retrieve_audio_file(job_path: str = ..., job: MusicJob = ...):
     filename = None
     if job.filename_url:
-        res = await http_client.get(job.filename_url)
+        async with create_http_client() as http_client:
+            res = await http_client.get(job.filename_url)
         audio_file_path = os.path.join(
             job_path, f"temp{os.path.splitext(job.original_filename)[1]}"
         )
