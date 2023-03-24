@@ -1,7 +1,7 @@
 import traceback
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
-from sqlalchemy import select, func, delete, false, and_
+from sqlalchemy import select, func, delete, false, and_, nulls_first
 
 from dripdrop.apps.admin.models import Proxy
 from dripdrop.apps.authentication.models import User
@@ -69,7 +69,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     if not user_channel:
         return
 
-    query = select(Proxy).order_by(Proxy.last_used.asc())
+    query = select(Proxy).order_by(nulls_first(Proxy.last_used.asc()))
     results = await session.scalars(query)
     proxy = results.first()
     proxy_address = None

@@ -1,4 +1,4 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.http_client import create_http_client
@@ -31,6 +31,10 @@ async def update_proxies(cron: bool = ..., session: AsyncSession = ...):
         )
     response.raise_for_status()
     json = response.json()
-    for proxy in json["data"]:
-        session.add(Proxy(ip_address=proxy["ip"], port=int(proxy["port"])))
-        await session.commit()
+    query = delete(Proxy)
+    await session.execute(query)
+    new_proxies = [
+        Proxy(ip_address=proxy["ip"], port=int(proxy["port"])) for proxy in json["data"]
+    ]
+    session.add_all(new_proxies)
+    await session.commit()
