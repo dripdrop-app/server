@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from sqlalchemy import select, func, delete, false, and_
 
+from dripdrop.apps.admin.models import Proxy
 from dripdrop.apps.authentication.models import User
 from dripdrop.logging import logger
 from dripdrop.services import google_api, rq, ytdlp, scraper
@@ -68,8 +69,18 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     if not user_channel:
         return
 
+    query = select(Proxy).order_by(Proxy.last_used.asc())
+    results = await session.scalars(query)
+    proxy = results.first()
+    proxy_address = None
+
+    if proxy:
+        proxy_address = f"{proxy.ip_address}:{proxy.port}"
+        proxy.last_used = datetime.now(settings.timezone)
+        await session.commit()
+
     for subscribed_channel in await scraper.get_channel_subscriptions(
-        channel_id=user_channel.id
+        channel_id=user_channel.id, proxy=proxy_address
     ):
         query = select(YoutubeChannel).where(YoutubeChannel.id == subscribed_channel.id)
         results = await session.scalars(query)
@@ -141,14 +152,14 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     stream = await session.stream(query)
     async for row in stream:
         row = row._mapping
-        # await rq.enqueue(
-        #     function=_delete_subscription,
-        #     kwargs={
-        #         "channel_id": row.channel_id,
-        #         "email": email,
-        #     },
-        #     at_front=True,
-        # )
+        await rq.enqueue(
+            function=_delete_subscription,
+            kwargs={
+                "channel_id": row.channel_id,
+                "email": email,
+            },
+            at_front=True,
+        )
     query = delete(YoutubeNewSubscription).where(YoutubeNewSubscription.email == email)
     await session.execute(query)
 

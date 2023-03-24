@@ -2,6 +2,7 @@ from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from typing import Callable
 
+from dripdrop.apps.admin import tasks as admin_tasks
 from dripdrop.apps.music import tasks as music_tasks
 from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.logging import logger
@@ -15,9 +16,13 @@ _job_ids = []
 
 
 async def run_cron_jobs():
+    proxy_job = await rq.enqueue(
+        function=admin_tasks.update_proxies, kwargs={"cron": True}
+    )
     video_categories_job = await rq.enqueue(
         function=youtube_tasks.update_video_categories,
         kwargs={"cron": True},
+        depends_on=proxy_job,
     )
     update_subscriptions_job = await rq.enqueue(
         function=youtube_tasks.update_subscriptions,
@@ -73,7 +78,8 @@ async def start_cron_jobs():
             )
             create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
             create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
-            create_cron_job("0 0 * * *", youtube_tasks.update_subscriptions)
+            create_cron_job("15 0 * * *", admin_tasks.update_proxies)
+            create_cron_job("30 0 * * *", youtube_tasks.update_subscriptions)
 
 
 async def end_cron_jobs():

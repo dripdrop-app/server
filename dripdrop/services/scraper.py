@@ -4,8 +4,9 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from fake_useragent import UserAgent
 from selenium import webdriver
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.proxy import Proxy, ProxyType
+from selenium.webdriver.remote.webelement import WebElement
 
 from dripdrop import utils
 from dripdrop.services.http_client import create_http_client
@@ -21,16 +22,24 @@ class YoutubeChannelInfo:
     thumbnail: str
 
 
-async def get_channel_subscriptions(channel_id: str = ...):
-    def _get_channel_subscriptions(channel_id: str = ...):
+async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = ...):
+    def _get_channel_subscriptions(channel_id: str = ..., proxy: str | None = ...):
+        webdriver_proxy = None
+        if proxy:
+            webdriver_proxy = Proxy()
+            webdriver_proxy.proxy_type = ProxyType.MANUAL
+            webdriver_proxy.http_proxy = proxy
+            webdriver_proxy.socks_proxy = proxy
         options = webdriver.ChromeOptions()
         options.add_argument(f"user-agent={user_agent.random}")
         driver = webdriver.Remote(
             command_executor=settings.selenium_webdriver_url,
+            proxy=webdriver_proxy,
             options=options,
         )
         try:
             driver.get(f"https://youtube.com/channel/{channel_id}/channels")
+            time.sleep(5)
             subscription_header = next(
                 (
                     header
@@ -59,7 +68,7 @@ async def get_channel_subscriptions(channel_id: str = ...):
                 )
                 time.sleep(5)
             channel_links = [
-                channel.get_attribute("href")
+                channel.get_attribute("href").split("/")[-1]
                 for channel in channels
                 if channel.get_attribute("href")
             ]
@@ -69,15 +78,21 @@ async def get_channel_subscriptions(channel_id: str = ...):
         finally:
             driver.quit()
 
-    channel_ids = await asyncio.to_thread(
-        _get_channel_subscriptions, channel_id=channel_id
+    subscribed_channel_ids = await asyncio.to_thread(
+        _get_channel_subscriptions, channel_id=channel_id, proxy=proxy
     )
-    channels = await utils.gather_with_limit(
-        *[get_channel_info(channel_id=channel_id) for channel_id in channel_ids],
+    subscribed_channels = await utils.gather_with_limit(
+        *[
+            get_channel_info(channel_id=subscribed_channel_id)
+            for subscribed_channel_id in subscribed_channel_ids
+        ],
         limit=5,
     )
-    print(channels)
-    return [channel for channel in channels if channel]
+    return [
+        subscribed_channel
+        for subscribed_channel in subscribed_channels
+        if subscribed_channel
+    ]
 
 
 async def get_channel_info(channel_id: str = ...):
