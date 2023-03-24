@@ -45,6 +45,7 @@ commands:
             echo "INFLUXDB_USERNAME=$INFLUXDB_USERNAME" >> .env
             echo "REDIS_URL=$REDIS_URL" >> .env
             echo "SECRET_KEY=$SECRET_KEY" >> .env
+            echo "SELENIUM_WEBDRIVER_URL=$SELENIUM_WEBDRIVER_URL" >> .env
             echo "TELEGRAF_SYSLOG_ADDRESS=$TELEGRAF_SYSLOG_ADDRESS" >> .env
             echo "TELEGRAF_SYSLOG_PORT=$TELEGRAF_SYSLOG_PORT" >> .env
             echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
