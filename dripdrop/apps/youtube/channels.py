@@ -23,11 +23,7 @@ channels_api = APIRouter(
 
 
 @channels_api.get(
-    "",
-    response_model=YoutubeChannelResponse,
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.CHANNEL_NOT_FOUND}
-    },
+    "", response_model=YoutubeChannelResponse, responses={status.HTTP_404_NOT_FOUND: {}}
 )
 async def get_youtube_channel(
     channel_id: str = Query(...),
@@ -69,9 +65,8 @@ async def get_youtube_channel(
 
 @channels_api.get(
     "/user",
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.CHANNEL_NOT_FOUND}
-    },
+    response_model=YoutubeUserChannelResponse,
+    responses={status.HTTP_404_NOT_FOUND: {}},
 )
 async def get_user_youtube_channel(
     user: User = Depends(get_authenticated_user),

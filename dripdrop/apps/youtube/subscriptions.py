@@ -26,6 +26,7 @@ subscriptions_api = APIRouter(
 @subscriptions_api.get(
     "/{page}/{per_page}",
     response_model=SubscriptionsResponse,
+    responses={status.HTTP_404_NOT_FOUND: {}},
 )
 async def get_youtube_subscriptions(
     page: int = Path(..., ge=1),
@@ -66,6 +67,7 @@ async def get_youtube_subscriptions(
 
 @subscriptions_api.put(
     "/user",
+    response_model=YoutubeSubscriptionResponse,
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessages.SUBSCRIPTION_ALREADY_EXIST
@@ -127,12 +129,7 @@ async def add_user_subscription(
     )
 
 
-@subscriptions_api.delete(
-    "/user",
-    responses={
-        status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.SUBSCRIPTION_NOT_FOUND}
-    },
-)
+@subscriptions_api.delete("/user", responses={status.HTTP_404_NOT_FOUND: {}})
 async def delete_user_subscription(
     channel_id: str = Query(...),
     user: User = Depends(get_authenticated_user),
