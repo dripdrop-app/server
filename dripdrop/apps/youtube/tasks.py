@@ -1,15 +1,16 @@
 import traceback
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
-from sqlalchemy import select, func, delete, false, and_, nulls_first
+from sqlalchemy import select, func, delete, false, and_
 
-from dripdrop.apps.admin.models import Proxy
+from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.logging import logger
 from dripdrop.services import google_api, rq, ytdlp, scraper
 from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
 from dripdrop.tasks import worker_task
+from dripdrop.utils import get_current_time
 
 from .models import (
     YoutubeUserChannel,
@@ -57,7 +58,7 @@ async def _delete_subscription(
     subscription = results.first()
     if not subscription:
         raise Exception(f"Subscription ({channel_id}, {email}) not found")
-    subscription.deleted_at = datetime.now(settings.timezone)
+    subscription.deleted_at = get_current_time()
     await session.commit()
 
 
@@ -69,14 +70,10 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     if not user_channel:
         return
 
-    query = select(Proxy).order_by(nulls_first(Proxy.last_used.asc()))
-    results = await session.scalars(query)
-    proxy = results.first()
-    proxy_address = None
-
+    proxy = await admin_utils.get_proxy(session=session)
     if proxy:
         proxy_address = f"{proxy.ip_address}:{proxy.port}"
-        proxy.last_used = datetime.now(settings.timezone)
+        proxy.last_used = get_current_time()
         await session.commit()
 
     for subscribed_channel in await scraper.get_channel_subscriptions(
@@ -94,8 +91,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                     id=subscribed_channel.id,
                     title=subscribed_channel.title,
                     thumbnail=subscribed_channel.thumbnail,
-                    last_videos_updated=datetime.now(tz=settings.timezone)
-                    - timedelta(days=365),
+                    last_videos_updated=get_current_time() - timedelta(days=365),
                 )
             )
             await session.commit()
@@ -176,7 +172,7 @@ async def add_new_channel_videos_job(
     if not channel:
         raise Exception("Channel not found")
 
-    week_ago = datetime.now(settings.timezone) - timedelta(days=7)
+    week_ago = get_current_time() - timedelta(days=7)
     last_updated = min(week_ago, channel.last_videos_updated)
 
     date_after = (
@@ -194,7 +190,7 @@ async def add_new_channel_videos_job(
     )
     for video_info in videos_info:
         server_current_time = datetime.now(tz=tzlocal())
-        current_time = datetime.now(tz=settings.timezone)
+        current_time = get_current_time()
 
         video_id = video_info["id"]
         video_title = video_info["title"]
@@ -246,7 +242,7 @@ async def add_new_channel_videos_job(
                 )
             )
         await session.commit()
-    channel.last_videos_updated = datetime.now(tz=settings.timezone)
+    channel.last_videos_updated = get_current_time()
     await session.commit()
 
 
@@ -254,7 +250,7 @@ async def add_new_channel_videos_job(
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
-    current_time = datetime.now(settings.timezone)
+    current_time = get_current_time()
     query = (
         select(YoutubeSubscription.channel_id.label("channel_id"))
         .where(YoutubeSubscription.deleted_at.is_(None))

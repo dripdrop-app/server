@@ -2,13 +2,9 @@ from datetime import datetime
 from sqlalchemy import MetaData, TIMESTAMP
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 
-from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
 
 metadata = MetaData()
-
-
-def get_current_time():
-    return datetime.now(tz=settings.timezone)
 
 
 class ModelBaseMixin(object):

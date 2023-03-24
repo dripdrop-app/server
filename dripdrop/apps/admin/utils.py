@@ -1,21 +1,28 @@
-from sqlalchemy import select, func, delete
+from datetime import timedelta
+from sqlalchemy import select, delete, nulls_first
 
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.http_client import create_http_client
-from dripdrop.tasks import worker_task
+from dripdrop.utils import get_current_time
 
 from .models import Proxy
 
 PROXY_LIST_URL = "https://proxylist.geonode.com/api/proxy-list"
 
 
-@worker_task
-async def update_proxies(cron: bool = ..., session: AsyncSession = ...):
-    if not cron:
-        query = select(func.count(Proxy.ip_address))
-        count = await session.scalar(query)
-        if count > 0:
-            return
+async def get_proxy(session: AsyncSession = ...):
+    async def _get_proxy():
+        query = select(Proxy).order_by(nulls_first(Proxy.last_used.asc()))
+        results = await session.scalars(query)
+        return results.first()
+
+    proxy = await _get_proxy()
+    if proxy:
+        current_time = get_current_time()
+        limit = current_time - timedelta(hours=1)
+        if proxy.created_at > limit:
+            return proxy
+
     async with create_http_client() as http_client:
         response = await http_client.get(
             PROXY_LIST_URL,
@@ -39,3 +46,4 @@ async def update_proxies(cron: bool = ..., session: AsyncSession = ...):
     ]
     session.add_all(new_proxies)
     await session.commit()
+    return await _get_proxy()

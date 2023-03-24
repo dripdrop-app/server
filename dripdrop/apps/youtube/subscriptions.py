@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timedelta
+from datetime import timedelta
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy import select, func, and_
 
@@ -10,7 +10,7 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.services import rq, scraper
-from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
 
 from . import tasks
 from .models import YoutubeSubscription, YoutubeChannel
@@ -100,8 +100,7 @@ async def add_user_subscription(
                 id=channel_info.id,
                 title=channel_info.title,
                 thumbnail=channel_info.thumbnail,
-                last_videos_updated=datetime.now(tz=settings.timezone)
-                - timedelta(days=30),
+                last_videos_updated=get_current_time() - timedelta(days=30),
             )
             session.add(channel)
             await session.commit()
@@ -146,6 +145,6 @@ async def delete_user_subscription(
             detail=ErrorMessages.SUBSCRIPTION_NOT_FOUND,
             status_code=status.HTTP_404_NOT_FOUND,
         )
-    subscription.deleted_at = datetime.now(settings.timezone)
+    subscription.deleted_at = get_current_time()
     await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)

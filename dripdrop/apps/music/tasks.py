@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 import traceback
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pydub import AudioSegment
 from sqlalchemy import select
 from typing import Union
@@ -15,8 +15,8 @@ from dripdrop.services import image_downloader, rq, s3, ytdlp
 from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.redis import redis
 from dripdrop.services.websocket_handler import RedisChannels
-from dripdrop.settings import settings
 from dripdrop.tasks import worker_task
+from dripdrop.utils import get_current_time
 
 from . import utils
 from .models import MusicJob
@@ -136,13 +136,13 @@ async def _delete_job(job_id: str = ..., session: AsyncSession = ...):
     if not job:
         raise Exception(f"Job ({job_id}) could not be found")
     await utils.cleanup_job(job=job)
-    job.deleted_at = datetime.now(tz=settings.timezone)
+    job.deleted_at = get_current_time()
     await session.commit()
 
 
 @worker_task
 async def delete_old_jobs(session: AsyncSession = ...):
-    limit = datetime.now(tz=settings.timezone) - timedelta(days=14)
+    limit = get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(
         MusicJob.created_at < limit,
         MusicJob.completed.is_(True),

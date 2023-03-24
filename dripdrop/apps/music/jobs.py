@@ -3,7 +3,6 @@ import math
 import re
 import traceback
 import uuid
-from datetime import datetime
 from fastapi import (
     APIRouter,
     Depends,
@@ -32,7 +31,7 @@ from dripdrop.logging import logger
 from dripdrop.services import websocket_handler, rq
 from dripdrop.services.redis import redis
 from dripdrop.services.websocket_handler import RedisChannels
-from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
 
 from . import utils, tasks
 from .models import MusicJob
@@ -209,6 +208,6 @@ async def delete_job(
         )
     rq.stop_job(job_id=job_id)
     await utils.cleanup_job(job=job)
-    job.deleted_at = datetime.now(tz=settings.timezone)
+    job.deleted_at = get_current_time()
     await session.commit()
     return Response(None)

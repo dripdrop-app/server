@@ -1,8 +1,6 @@
-from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Response
 from sqlalchemy import select, and_
 
-from dripdrop.apps.admin import tasks as admin_tasks
 from dripdrop.dependencies import (
     AsyncSession,
     create_db_session,
@@ -10,7 +8,7 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.services import rq, scraper
-from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
 
 from . import tasks
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
@@ -100,7 +98,7 @@ async def update_user_youtube_channel(
     results = await session.scalars(query)
     user_channel = results.first()
     if user_channel:
-        current_time = datetime.now(settings.timezone)
+        current_time = get_current_time()
         time_elasped = current_time - user_channel.modified_at
         if time_elasped.days < 1:
             raise HTTPException(
@@ -111,11 +109,9 @@ async def update_user_youtube_channel(
     else:
         session.add(YoutubeUserChannel(id=channel_info.id, email=user.email))
     await session.commit()
-    proxy_job = await rq.enqueue(admin_tasks.update_proxies, kwargs={"cron": False})
     await rq.enqueue(
         tasks.update_user_subscriptions,
         kwargs={"email": user.email},
-        depends_on=proxy_job,
         retry=rq.Retry(max=2),
     )
     return Response(None, status_code=status.HTTP_200_OK)

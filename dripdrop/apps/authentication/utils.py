@@ -1,10 +1,11 @@
 import jwt
-from datetime import datetime, timedelta
+from datetime import timedelta
 from sqlalchemy import select
 
 from dripdrop.dependencies import ALGORITHM
 from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
 
 from .models import User
 
@@ -20,7 +21,7 @@ def create_jwt(email: str = ...):
     return jwt.encode(
         payload={
             "email": email,
-            "exp": datetime.now(tz=settings.timezone) + timedelta(days=14),
+            "exp": get_current_time() + timedelta(days=14),
         },
         key=settings.secret_key,
         algorithm=ALGORITHM,
