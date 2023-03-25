@@ -80,7 +80,7 @@ class YoutubeNewSubscription(ModelBaseMixin, Base):
 class YoutubeVideoCategory(ModelBaseMixin, Base):
     __tablename__ = "youtube_video_categories"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
 
 

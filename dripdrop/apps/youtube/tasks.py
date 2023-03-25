@@ -1,12 +1,10 @@
-import traceback
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
-from sqlalchemy import select, func, delete, false, and_
+from sqlalchemy import select, delete, false, and_
 
 from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
-from dripdrop.logging import logger
-from dripdrop.services import google_api, rq, ytdlp, scraper
+from dripdrop.services import rq, ytdlp, scraper
 from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
 from dripdrop.tasks import worker_task
@@ -20,30 +18,6 @@ from .models import (
     YoutubeVideo,
     YoutubeVideoCategory,
 )
-
-
-@worker_task
-async def update_video_categories(cron: bool = ..., session: AsyncSession = ...):
-    if not cron:
-        query = select(func.count(YoutubeVideoCategory.id))
-        count = await session.scalar(query)
-        if count > 0:
-            return
-    video_categories = await google_api.get_video_categories()
-    for category in video_categories:
-        try:
-            id = int(category["id"])
-            name = category["snippet"]["title"]
-            query = select(YoutubeVideoCategory).where(YoutubeVideoCategory.id == id)
-            results = await session.scalars(query)
-            category = results.first()
-            if category:
-                category.name = name
-            else:
-                session.add(YoutubeVideoCategory(id=id, name=name))
-            await session.commit()
-        except Exception:
-            logger.exception(traceback.format_exc())
 
 
 @worker_task
@@ -229,7 +203,9 @@ async def add_new_channel_videos_job(
             results = await session.scalars(query)
             video_category = results.first()
             if not video_category:
-                raise Exception(f"video category not found {video_category_name}")
+                video_category = YoutubeVideoCategory(name=video_category_name)
+                session.add(video_category)
+                await session.commit()
             session.add(
                 YoutubeVideo(
                     id=video_id,

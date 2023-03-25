@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import traceback
 from datetime import timedelta
 from pydub import AudioSegment
 from sqlalchemy import select
@@ -10,7 +9,6 @@ from yt_dlp.utils import sanitize_filename
 
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.http_client import create_http_client
-from dripdrop.logging import logger
 from dripdrop.services import image_downloader, rq, s3, ytdlp
 from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.redis import redis
@@ -31,7 +29,7 @@ def _create_job_folder(job: MusicJob = ...):
     try:
         os.mkdir(JOB_DIR)
     except FileExistsError:
-        logger.exception(traceback.format_exc())
+        pass
     os.mkdir(job_path)
     return job_path
 
@@ -66,7 +64,7 @@ async def _retrieve_artwork(job: MusicJob = ...):
             extension = os.path.splitext(job.artwork_url)[0]
             return {"image": imageData, "extension": extension}
         except Exception:
-            logger.exception(traceback.format_exc())
+            pass
     return None
 
 
@@ -115,9 +113,9 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
         job.completed = True
         job.download_filename = new_filename
         job.download_url = s3.resolve_url(filename=new_filename)
-    except Exception:
+    except Exception as e:
         job.failed = True
-        logger.exception(traceback.format_exc())
+        raise e
     finally:
         await session.commit()
         await redis.publish(

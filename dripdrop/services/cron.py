@@ -15,13 +15,8 @@ _job_ids = []
 
 
 async def run_cron_jobs():
-    video_categories_job = await rq.enqueue(
-        function=youtube_tasks.update_video_categories,
-        kwargs={"cron": True},
-    )
     update_subscriptions_job = await rq.enqueue(
-        function=youtube_tasks.update_subscriptions,
-        depends_on=video_categories_job,
+        function=youtube_tasks.update_subscriptions
     )
     await rq.enqueue(
         function=youtube_tasks.update_channel_videos,
@@ -66,11 +61,6 @@ async def start_cron_jobs():
         crons_added = await redis.get(CRONS_ADDED)
         if not crons_added:
             await redis.set(CRONS_ADDED, 1)
-            create_cron_job(
-                "0 0 * * *",
-                youtube_tasks.update_video_categories,
-                kwargs={"cron": True},
-            )
             create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
             create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
             create_cron_job("30 0 * * *", youtube_tasks.update_subscriptions)

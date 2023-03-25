@@ -35,22 +35,14 @@ async def run_delete_old_jobs():
 
 @app.get("/update_subscriptions")
 async def run_update_subscriptions(email: EmailStr | None = Query(None)):
-    job = await rq.enqueue(
-        function=youtube_tasks.update_video_categories,
-        kwargs={"cron": False},
-    )
     if email:
         await rq.enqueue(
             function=youtube_tasks.update_user_subscriptions,
             kwargs={"email": email},
-            depends_on=job,
             retry=rq.Retry(max=2),
         )
     else:
-        await rq.enqueue(
-            function=youtube_tasks.update_subscriptions,
-            depends_on=job,
-        )
+        await rq.enqueue(function=youtube_tasks.update_subscriptions)
     return Response(None, status_code=status.HTTP_200_OK)
 
 
@@ -68,10 +60,4 @@ async def run_update_channel_videos(
             function=youtube_tasks.add_new_channel_videos_job,
             kwargs={"channel_id": channel_id, "date_after": date_after},
         )
-    return Response(None, status_code=status.HTTP_200_OK)
-
-
-@app.get("/update_video_categories")
-def run_update_video_categories():
-    rq.enqueue(function=youtube_tasks.update_video_categories)
     return Response(None, status_code=status.HTTP_200_OK)

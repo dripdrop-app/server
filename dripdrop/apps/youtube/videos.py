@@ -41,9 +41,6 @@ async def get_youtube_video_categories(
     session: AsyncSession = Depends(create_db_session),
     user: User = Depends(get_authenticated_user),
 ):
-    """
-    Get Categories for videos from a channel id or based on subscribed channel videos
-    """
     query = (
         select(YoutubeVideoCategory.id, YoutubeVideoCategory.name)
         .join(YoutubeVideo, YoutubeVideo.category_id == YoutubeVideoCategory.id)
@@ -81,9 +78,6 @@ async def get_youtube_video(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    """
-    Get Video details and related videos (based on the same category)
-    """
     (videos, *_) = await execute_videos_query(
         session=session,
         user=user,

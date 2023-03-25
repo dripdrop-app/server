@@ -20,9 +20,6 @@ class Settings(BaseSettings):
     aws_s3_music_folder: str
     database_url: str
     env: ENV = ENV.DEVELOPMENT
-    google_client_id: str
-    google_client_secret: str
-    google_api_key: str
     redis_url: str
     secret_key: str
     selenium_webdriver_url: str

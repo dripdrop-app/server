@@ -100,7 +100,7 @@ async def add_user_subscription(
                 id=channel_info.id,
                 title=channel_info.title,
                 thumbnail=channel_info.thumbnail,
-                last_videos_updated=get_current_time() - timedelta(days=30),
+                last_videos_updated=get_current_time() - timedelta(days=365),
             )
             session.add(channel)
             await session.commit()
