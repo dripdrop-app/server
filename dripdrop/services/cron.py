@@ -10,8 +10,8 @@ from dripdrop.services.redis import redis
 from dripdrop.settings import settings, ENV
 
 
-CRONS_ADDED = "crons_added"
-_job_ids = []
+CRONS_ADDED = "crons:added"
+CRON_JOBS_LIST = "crons:jobs"
 
 
 async def run_cron_jobs():
@@ -25,13 +25,12 @@ async def run_cron_jobs():
     await rq.enqueue(function=music_tasks.delete_old_jobs)
 
 
-def create_cron_job(
+async def create_cron_job(
     cron_string: str = ...,
     function: Callable = ...,
     args: tuple = (),
     kwargs: dict = {},
 ):
-    global _job_ids
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
@@ -43,7 +42,7 @@ def create_cron_job(
         args=args,
         kwargs=kwargs,
     )
-    _job_ids.append(job.get_id())
+    await redis.rpush(CRON_JOBS_LIST, job.id)
     rq.queue.enqueue(
         create_cron_job,
         kwargs={
@@ -60,14 +59,12 @@ async def start_cron_jobs():
     if settings.env == ENV.PRODUCTION:
         crons_added = await redis.get(CRONS_ADDED)
         if not crons_added:
-            await redis.set(CRONS_ADDED, 1)
-            create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
-            create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
-            create_cron_job("30 0 * * *", youtube_tasks.update_subscriptions)
-
-
-async def end_cron_jobs():
-    if settings.env == ENV.PRODUCTION:
-        await redis.delete(CRONS_ADDED)
-        for job_id in _job_ids:
-            rq.stop_job(job_id=job_id)
+            await redis.set(CRONS_ADDED, 1, ex=30)
+            while await redis.llen(CRON_JOBS_LIST) != 0:
+                job_id = await redis.rpop(CRON_JOBS_LIST)
+                job_id = job_id.decode()
+                rq.stop_job(job_id=job_id)
+                logger.info(f"Removing job {job_id}")
+            await create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
+            await create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
+            await create_cron_job("30 0 * * *", youtube_tasks.update_subscriptions)

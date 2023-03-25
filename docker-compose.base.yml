@@ -30,7 +30,7 @@ version: '2.4'
 services:
   server:
     image: ${IMAGE}
-    entrypoint: ["./scripts/server.sh"]
+    command: ["./scripts/server.sh"]
     restart: on-failure:5
     ports:
       - 5000:5000
@@ -43,7 +43,7 @@ services:
 
   worker:
     image: ${IMAGE}
-    entrypoint: ["./scripts/worker.sh"]
+    command: ["./scripts/worker.sh"]
     restart: on-failure:5
     environment:
       REDIS_URL: ${REDIS_URL}

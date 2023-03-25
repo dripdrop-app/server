@@ -1,11 +1,10 @@
 #!/bin/bash
 
 set -e
-source .venv/bin/activate
 
 if [ "$ENV" == "development" ] 
 then
-    watchfiles 'python worker.py' ./worker.py
+    poetry run watchfiles 'python worker.py' ./worker.py
 else
-    python worker.py
+    poetry run python worker.py
 fi
