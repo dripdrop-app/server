@@ -146,7 +146,7 @@ async def add_new_channel_videos_job(
     if not channel:
         raise Exception("Channel not found")
 
-    week_ago = get_current_time() - timedelta(days=7)
+    week_ago = get_current_time() - timedelta(days=1)
     last_updated = min(week_ago, channel.last_videos_updated)
 
     date_after = (
