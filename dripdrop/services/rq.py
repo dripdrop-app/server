@@ -51,4 +51,5 @@ def stop_job(job_id: str = ...):
         logger.info(f"Stopped job {job.get_call_string()}")
         job.delete(delete_dependents=True)
     except NoSuchJobError:
+        logger.info(f"Job not found ({job_id})")
         pass

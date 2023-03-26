@@ -59,12 +59,11 @@ async def start_cron_jobs():
     if settings.env == ENV.PRODUCTION:
         crons_added = await redis.get(CRONS_ADDED)
         if not crons_added:
-            await redis.set(CRONS_ADDED, 1, ex=30)
+            await redis.set(CRONS_ADDED, 1, ex=timedelta(seconds=10))
             while await redis.llen(CRON_JOBS_LIST) != 0:
                 job_id = await redis.rpop(CRON_JOBS_LIST)
                 job_id = job_id.decode()
                 rq.stop_job(job_id=job_id)
-                logger.info(f"Removing job {job_id}")
             await create_cron_job("0 * * * *", youtube_tasks.update_channel_videos)
             await create_cron_job("0 0 * * *", music_tasks.delete_old_jobs)
             await create_cron_job("30 0 * * *", youtube_tasks.update_subscriptions)
