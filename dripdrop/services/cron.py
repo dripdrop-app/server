@@ -35,7 +35,6 @@ async def create_cron_job(
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
     next_run_time = cron.get_current(ret_type=datetime)
-    logger.info(f"Scheduling {function.__name__} to run at {next_run_time}")
     job = rq.queue.enqueue_at(
         next_run_time,
         function,
@@ -43,6 +42,7 @@ async def create_cron_job(
         kwargs=kwargs,
     )
     await redis.rpush(CRON_JOBS_LIST, job.id)
+    logger.info(f"Scheduling {job.get_call_string()} to run at {next_run_time}")
     rq.queue.enqueue(
         create_cron_job,
         kwargs={
