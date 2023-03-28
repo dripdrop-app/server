@@ -1,4 +1,5 @@
-import json
+import asyncio
+import orjson
 import os
 import shutil
 from datetime import timedelta
@@ -94,10 +95,11 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
         raise Exception(f"Job with id ({job_id}) not found")
     job_path = None
     try:
-        job_path = _create_job_folder(job=job)
+        job_path = await asyncio.to_thread(_create_job_folder, job=job)
         filename = await _retrieve_audio_file(job_path=job_path, job=job)
         artwork_info = await _retrieve_artwork(job=job)
-        _update_audio_tags(
+        await asyncio.to_thread(
+            _update_audio_tags,
             job=job,
             filename=filename,
             artwork_info=artwork_info,
@@ -120,7 +122,9 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
         await session.commit()
         await redis.publish(
             RedisChannels.MUSIC_JOB_CHANNEL,
-            json.dumps(MusicChannelResponse(job_id=job_id, status="COMPLETED").dict()),
+            orjson.dumps(
+                MusicChannelResponse(job_id=job_id, status="COMPLETED").dict()
+            ),
         )
         if job_path:
             shutil.rmtree(job_path)

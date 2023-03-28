@@ -4,13 +4,11 @@ import yaml
 from redis import Redis
 from rq import Connection, Worker
 
-from dripdrop.settings import settings, ENV
+from dripdrop.settings import settings
 
 
 if __name__ == "__main__":
-    with open(
-        os.path.join(os.path.dirname(__file__), "./config/logging.yml")
-    ) as file:
+    with open(os.path.join(os.path.dirname(__file__), "./config/logging.yml")) as file:
         loaded_config = yaml.safe_load(file)
         logging.config.dictConfig(loaded_config)
 

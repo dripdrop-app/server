@@ -1,5 +1,5 @@
-import json
 import math
+import orjson
 import re
 import traceback
 import uuid
@@ -87,7 +87,7 @@ async def listen_jobs(
     session: AsyncSession = Depends(create_db_session),
 ):
     async def handler(msg):
-        message = json.loads(msg.get("data").decode())
+        message = orjson.loads(msg.get("data").decode())
         message = MusicChannelResponse.parse_obj(message)
         job_id = message.job_id
         query = select(MusicJob).where(
@@ -186,7 +186,7 @@ async def create_job(
     await rq.enqueue(function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id)
     await redis.publish(
         RedisChannels.MUSIC_JOB_CHANNEL,
-        json.dumps(MusicChannelResponse(job_id=job_id, status="STARTED").dict()),
+        orjson.dumps(MusicChannelResponse(job_id=job_id, status="STARTED").dict()),
     )
     return Response(None, status_code=status.HTTP_201_CREATED)
 
