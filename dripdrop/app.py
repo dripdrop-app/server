@@ -31,7 +31,6 @@ register_router(prefix="/youtube", app=youtube_app)
 async def lifespan(app: FastAPI):
     await cron.start_cron_jobs()
     yield
-    await cron.end_cron_jobs()
     websocket_handler.close()
     await redis.close()
 
