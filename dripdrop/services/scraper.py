@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.remote.webelement import WebElement
 
-from dripdrop import utils
+import dripdrop.utils as dripdrop_utils
 from dripdrop.services.http_client import create_http_client
 from dripdrop.settings import settings
 
@@ -81,7 +81,7 @@ async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = .
     subscribed_channel_ids = await asyncio.to_thread(
         _get_channel_subscriptions, channel_id=channel_id, proxy=proxy
     )
-    subscribed_channels = await utils.gather_with_limit(
+    subscribed_channels = await dripdrop_utils.gather_with_limit(
         *[
             get_channel_info(channel_id=subscribed_channel_id)
             for subscribed_channel_id in subscribed_channel_ids

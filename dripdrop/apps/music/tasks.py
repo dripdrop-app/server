@@ -8,14 +8,14 @@ from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 
+import dripdrop.tasks as dripdrop_tasks
+import dripdrop.utils as dripdrop_utils
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.http_client import create_http_client
 from dripdrop.services import image_downloader, rq, s3, ytdlp
 from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.redis import redis
 from dripdrop.services.websocket_handler import RedisChannels
-from dripdrop.tasks import worker_task
-from dripdrop.utils import get_current_time
 
 from . import utils
 from .models import MusicJob
@@ -86,7 +86,7 @@ def _update_audio_tags(
         )
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def run_job(job_id: str = ..., session: AsyncSession = ...):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
@@ -130,7 +130,7 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
             shutil.rmtree(job_path)
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def _delete_job(job_id: str = ..., session: AsyncSession = ...):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
@@ -138,13 +138,13 @@ async def _delete_job(job_id: str = ..., session: AsyncSession = ...):
     if not job:
         raise Exception(f"Job ({job_id}) could not be found")
     await utils.cleanup_job(job=job)
-    job.deleted_at = get_current_time()
+    job.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def delete_old_jobs(session: AsyncSession = ...):
-    limit = get_current_time() - timedelta(days=14)
+    limit = dripdrop_utils.get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(
         MusicJob.created_at < limit,
         MusicJob.completed.is_(True),

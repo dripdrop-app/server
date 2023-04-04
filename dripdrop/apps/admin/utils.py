@@ -1,9 +1,9 @@
 from datetime import timedelta
 from sqlalchemy import select, delete, nulls_first
 
+import dripdrop.utils as dripdrop_utils
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.http_client import create_http_client
-from dripdrop.utils import get_current_time
 
 from .models import Proxy
 
@@ -18,7 +18,7 @@ async def get_proxy(session: AsyncSession = ...):
 
     proxy = await _get_proxy()
     if proxy:
-        current_time = get_current_time()
+        current_time = dripdrop_utils.get_current_time()
         limit = current_time - timedelta(hours=1)
         if proxy.created_at > limit:
             return proxy
@@ -41,9 +41,12 @@ async def get_proxy(session: AsyncSession = ...):
     query = delete(Proxy)
     await session.execute(query)
     await session.commit()
-    new_proxies = [
-        Proxy(ip_address=proxy["ip"], port=int(proxy["port"])) for proxy in json["data"]
-    ]
-    session.add_all(new_proxies)
-    await session.commit()
+    for proxy in json["data"]:
+        query = select(Proxy).where(ip_address=proxy["ip"])
+        results = await session.scalars(query)
+        existing_proxy = results.first()
+        if existing_proxy:
+            continue
+        session.add(Proxy(ip_address=proxy["ip"], port=int(proxy["port"])))
+        await session.commit()
     return await _get_proxy()

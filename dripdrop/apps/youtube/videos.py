@@ -26,7 +26,7 @@ from .responses import (
     VideoQueueResponse,
     VideoResponse,
 )
-from .utils import execute_videos_query
+from . import utils
 
 videos_api = APIRouter(
     prefix="/videos",
@@ -78,7 +78,7 @@ async def get_youtube_video(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    (videos, *_) = await execute_videos_query(
+    (videos, *_) = await utils.execute_videos_query(
         session=session,
         user=user,
         video_ids=[video_id],
@@ -89,7 +89,7 @@ async def get_youtube_video(
         raise HTTPException(404)
     related_videos = []
     if related_videos_length > 0:
-        (related_videos, *_) = await execute_videos_query(
+        (related_videos, *_) = await utils.execute_videos_query(
             session=session,
             user=user,
             video_categories=[video.category_id],
@@ -131,7 +131,7 @@ async def get_youtube_videos(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.VIDEO_CATEGORIES_INVALID,
         )
-    videos, total_pages = await execute_videos_query(
+    videos, total_pages = await utils.execute_videos_query(
         session=session,
         user=user,
         channel_id=channel_id,
@@ -320,7 +320,7 @@ async def get_youtube_video_queue(
     user: User = Depends(get_authenticated_user),
     session: AsyncSession = Depends(create_db_session),
 ):
-    (videos, *_) = await execute_videos_query(
+    (videos, *_) = await utils.execute_videos_query(
         session=session,
         user=user,
         queued_only=True,

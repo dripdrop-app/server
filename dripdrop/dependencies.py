@@ -4,10 +4,10 @@ from fastapi import HTTPException, status, Request, WebSocket, Depends
 from sqlalchemy import select
 from typing import Union
 
+import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.services import database
 from dripdrop.services.database import AsyncSession
-from dripdrop.utils import get_current_time
 
 from .logging import logger
 from .settings import settings
@@ -27,7 +27,7 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
         expires = payload.get("exp", None)
         if expires is None:
             return None
-        if expires < get_current_time().timestamp():
+        if expires < dripdrop_utils.get_current_time().timestamp():
             pass
         email = payload.get("email", None)
         if email:

@@ -5,9 +5,9 @@ import re
 import shutil
 import traceback
 import uuid
+from dataclasses import dataclass
 from fastapi import UploadFile
 
-from dataclasses import dataclass
 from dripdrop.logging import logger
 from dripdrop.services import image_downloader, s3
 from dripdrop.services.audio_tag import AudioTags

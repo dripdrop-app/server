@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Response
 from sqlalchemy import select, and_
 
+import dripdrop.utils as dripdrop_utils
 from dripdrop.dependencies import (
     AsyncSession,
     create_db_session,
@@ -8,7 +9,6 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.services import rq, scraper
-from dripdrop.utils import get_current_time
 
 from . import tasks
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
@@ -98,7 +98,7 @@ async def update_user_youtube_channel(
     results = await session.scalars(query)
     user_channel = results.first()
     if user_channel:
-        current_time = get_current_time()
+        current_time = dripdrop_utils.get_current_time()
         time_elasped = current_time - user_channel.modified_at
         if time_elasped.days < 1:
             raise HTTPException(

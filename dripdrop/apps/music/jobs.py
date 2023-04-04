@@ -21,6 +21,7 @@ from pydantic import HttpUrl
 from sqlalchemy import select, func
 from typing import Optional
 
+import dripdrop.utils as dripdrop_utils
 from dripdrop.dependencies import (
     get_authenticated_user,
     create_db_session,
@@ -31,7 +32,6 @@ from dripdrop.logging import logger
 from dripdrop.services import websocket_handler, rq
 from dripdrop.services.redis import redis
 from dripdrop.services.websocket_handler import RedisChannels
-from dripdrop.utils import get_current_time
 
 from . import utils, tasks
 from .models import MusicJob
@@ -208,6 +208,6 @@ async def delete_job(
         )
     rq.stop_job(job_id=job_id)
     await utils.cleanup_job(job=job)
-    job.deleted_at = get_current_time()
+    job.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()
     return Response(None)

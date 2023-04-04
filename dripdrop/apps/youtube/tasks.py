@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from sqlalchemy import select, delete, false, and_
 
+import dripdrop.tasks as dripdrop_tasks
+import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.services import rq, ytdlp, scraper
 from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
-from dripdrop.tasks import worker_task
-from dripdrop.utils import get_current_time
 
 from .models import (
     YoutubeUserChannel,
@@ -20,7 +20,7 @@ from .models import (
 )
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def _delete_subscription(
     channel_id: str = ..., email: str = ..., session: AsyncSession = ...
 ):
@@ -32,11 +32,11 @@ async def _delete_subscription(
     subscription = results.first()
     if not subscription:
         raise Exception(f"Subscription ({channel_id}, {email}) not found")
-    subscription.deleted_at = get_current_time()
+    subscription.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def update_user_subscriptions(email: str = ..., session: AsyncSession = ...):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
     results = await session.scalars(query)
@@ -47,7 +47,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     proxy = await admin_utils.get_proxy(session=session)
     if proxy:
         proxy_address = f"{proxy.ip_address}:{proxy.port}"
-        proxy.last_used = get_current_time()
+        proxy.last_used = dripdrop_utils.get_current_time()
         await session.commit()
 
     for subscribed_channel in await scraper.get_channel_subscriptions(
@@ -65,7 +65,8 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                     id=subscribed_channel.id,
                     title=subscribed_channel.title,
                     thumbnail=subscribed_channel.thumbnail,
-                    last_videos_updated=get_current_time() - timedelta(days=365),
+                    last_videos_updated=dripdrop_utils.get_current_time()
+                    - timedelta(days=365),
                 )
             )
             await session.commit()
@@ -134,7 +135,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     await session.commit()
 
 
-@worker_task
+@dripdrop_tasks.worker_task(raise_exception=False)
 async def add_new_channel_videos_job(
     channel_id: str = ...,
     date_after: str | None = None,
@@ -146,7 +147,7 @@ async def add_new_channel_videos_job(
     if not channel:
         raise Exception("Channel not found")
 
-    day_ago = get_current_time() - timedelta(days=1)
+    day_ago = dripdrop_utils.get_current_time() - timedelta(days=1)
     last_updated = min(day_ago, channel.last_videos_updated)
 
     date_after = (
@@ -164,7 +165,7 @@ async def add_new_channel_videos_job(
     )
     for video_info in videos_info:
         server_current_time = datetime.now(tz=tzlocal())
-        current_time = get_current_time()
+        current_time = dripdrop_utils.get_current_time()
 
         video_id = video_info["id"]
         video_title = video_info["title"]
@@ -218,15 +219,15 @@ async def add_new_channel_videos_job(
                 )
             )
         await session.commit()
-    channel.last_videos_updated = get_current_time()
+    channel.last_videos_updated = dripdrop_utils.get_current_time()
     await session.commit()
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
-    current_time = get_current_time()
+    current_time = dripdrop_utils.get_current_time()
     query = (
         select(YoutubeSubscription.channel_id.label("channel_id"))
         .where(YoutubeSubscription.deleted_at.is_(None))
@@ -236,27 +237,36 @@ async def update_channel_videos(
         query = query.order_by(YoutubeSubscription.channel_id.desc())
     else:
         query = query.order_by(YoutubeSubscription.channel_id.asc())
-    stream = await session.stream(query)
-    async for subscription in stream:
-        subscription = subscription._mapping
-        await rq.enqueue(
-            function=add_new_channel_videos_job,
-            kwargs={
-                "channel_id": subscription.channel_id,
-                "date_after": date_after,
-            },
-            at_front=True,
+    page = 0
+    while True:
+        results = await session.execute(query.offset(page * 10))
+        subscriptions = results.mappings().fetchmany(10)
+        if not subscriptions:
+            break
+        await dripdrop_utils.gather_with_limit(
+            *[
+                add_new_channel_videos_job(
+                    channel_id=subscription.channel_id, date_after=date_after
+                )
+                for subscription in subscriptions
+            ],
         )
+        page += 1
 
 
-@worker_task
+@dripdrop_tasks.worker_task()
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
-    stream = await session.stream_scalars(query)
-    async for user in stream:
+    page = 0
+    while True:
+        results = await session.execute(query.offset(page * 1))
+        user = results.scalars().first()
+        if not user:
+            break
         await rq.enqueue(
             function=update_user_subscriptions,
             kwargs={"email": user.email},
             at_front=True,
             retry=rq.Retry(max=2),
         )
+        page += 1
