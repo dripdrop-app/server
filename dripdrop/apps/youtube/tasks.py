@@ -71,7 +71,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             )
             await session.commit()
             await rq.enqueue(
-                add_new_channel_videos_job,
+                add_new_channel_videos,
                 kwargs={"channel_id": subscribed_channel.id},
                 at_front=True,
             )
@@ -136,7 +136,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 
 
 @dripdrop_tasks.worker_task(raise_exception=False)
-async def add_new_channel_videos_job(
+async def add_new_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
     session: AsyncSession = ...,
@@ -224,6 +224,19 @@ async def add_new_channel_videos_job(
 
 
 @dripdrop_tasks.worker_task()
+async def add_many_new_channel_videos(
+    channel_ids: list[str] = ...,
+    date_after: str | None = None,
+):
+    await dripdrop_utils.gather_with_limit(
+        *[
+            add_new_channel_videos(channel_id=channel_id, date_after=date_after)
+            for channel_id in channel_ids
+        ]
+    )
+
+
+@dripdrop_tasks.worker_task()
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -240,13 +253,15 @@ async def update_channel_videos(
     async for subscriptions in database.stream_mappings(
         query=query, yield_per=10, session=session
     ):
-        await dripdrop_utils.gather_with_limit(
-            *[
-                add_new_channel_videos_job(
-                    channel_id=subscription.channel_id, date_after=date_after
-                )
-                for subscription in subscriptions
-            ],
+        await rq.enqueue(
+            function=add_many_new_channel_videos,
+            kwargs={
+                "channel_ids": [
+                    subscription.channel_id for subscription in subscriptions
+                ],
+                "date_after": date_after,
+            },
+            at_front=True,
         )
 
 

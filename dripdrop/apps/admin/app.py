@@ -57,7 +57,7 @@ async def run_update_channel_videos(
         )
     else:
         await rq.enqueue(
-            function=youtube_tasks.add_new_channel_videos_job,
+            function=youtube_tasks.add_new_channel_videos,
             kwargs={"channel_id": channel_id, "date_after": date_after},
         )
     return Response(None, status_code=status.HTTP_200_OK)
