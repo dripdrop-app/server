@@ -119,9 +119,7 @@ async def add_user_subscription(
             )
         subscription.deleted_at = None
     await session.commit()
-    await rq.enqueue(
-        tasks.add_new_channel_videos_job, kwargs={"channel_id": channel.id}
-    )
+    await rq.enqueue(tasks.add_new_channel_videos, kwargs={"channel_id": channel.id})
     return YoutubeSubscriptionResponse(
         channel_id=subscription.channel_id,
         channel_title=channel.title,
