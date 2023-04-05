@@ -9,7 +9,7 @@ from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.remote.webelement import WebElement
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.services.http_client import create_http_client
+from dripdrop.services import http_client
 from dripdrop.settings import settings
 
 user_agent = UserAgent()
@@ -101,8 +101,8 @@ async def get_channel_info(channel_id: str = ...):
         url += channel_id
     else:
         url += f"channel/{channel_id}"
-    async with create_http_client() as http_client:
-        response = await http_client.get(url=url)
+    async with http_client.create_client() as client:
+        response = await client.get(url=url)
     if response.is_error:
         return None
     html = response.text

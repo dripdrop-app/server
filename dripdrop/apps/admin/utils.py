@@ -2,8 +2,8 @@ from datetime import timedelta
 from sqlalchemy import select, delete, nulls_first
 
 import dripdrop.utils as dripdrop_utils
+from dripdrop.services import http_client
 from dripdrop.services.database import AsyncSession
-from dripdrop.services.http_client import create_http_client
 
 from .models import Proxy
 
@@ -23,8 +23,8 @@ async def get_proxy(session: AsyncSession = ...):
         if proxy.created_at > limit:
             return proxy
 
-    async with create_http_client() as http_client:
-        response = await http_client.get(
+    async with http_client.create_client() as client:
+        response = await client.get(
             PROXY_LIST_URL,
             params={
                 "limit": 30,

@@ -4,8 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from dripdrop.services import cron, websocket_handler
-from dripdrop.services.redis import redis
+from dripdrop.services import cron, redis, websocket_handler
 from dripdrop.settings import settings, ENV
 
 from .apps.admin.app import app as admin_app

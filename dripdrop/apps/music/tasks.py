@@ -11,10 +11,16 @@ from yt_dlp.utils import sanitize_filename
 import dripdrop.tasks as dripdrop_tasks
 import dripdrop.utils as dripdrop_utils
 from dripdrop.services.database import AsyncSession
-from dripdrop.services.http_client import create_http_client
-from dripdrop.services import image_downloader, rq, s3, ytdlp
-from dripdrop.services.audio_tag import AudioTags
-from dripdrop.services.redis import redis
+from dripdrop.services import (
+    AudioTags,
+    database,
+    http_client,
+    image_downloader,
+    redis,
+    rq,
+    s3,
+    ytdlp,
+)
 from dripdrop.services.websocket_handler import RedisChannels
 
 from . import utils
@@ -38,8 +44,8 @@ def _create_job_folder(job: MusicJob = ...):
 async def _retrieve_audio_file(job_path: str = ..., job: MusicJob = ...):
     filename = None
     if job.filename_url:
-        async with create_http_client() as http_client:
-            res = await http_client.get(job.filename_url)
+        async with http_client.create_client() as client:
+            res = await client.get(job.filename_url)
         audio_file_path = os.path.join(
             job_path, f"temp{os.path.splitext(job.original_filename)[1]}"
         )
@@ -150,6 +156,8 @@ async def delete_old_jobs(session: AsyncSession = ...):
         MusicJob.completed.is_(True),
         MusicJob.deleted_at.is_(None),
     )
-    stream = await session.stream_scalars(query)
-    async for job in stream:
+    async for jobs in database.stream_scalars(
+        query=query, yield_per=1, session=session
+    ):
+        job = jobs[0]
         await rq.enqueue(function=_delete_job, kwargs={"job_id": job.id}, at_front=True)

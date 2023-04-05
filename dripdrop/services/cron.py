@@ -5,8 +5,7 @@ from typing import Callable
 from dripdrop.apps.music import tasks as music_tasks
 from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.logging import logger
-from dripdrop.services import rq
-from dripdrop.services.redis import redis
+from dripdrop.services import redis, rq
 from dripdrop.settings import settings, ENV
 
 

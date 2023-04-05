@@ -6,7 +6,7 @@ user_agent = UserAgent()
 
 
 @asynccontextmanager
-async def create_http_client():
+async def create_client():
     client = AsyncClient(
         follow_redirects=True, headers={"User-Agent": user_agent.random}
     )

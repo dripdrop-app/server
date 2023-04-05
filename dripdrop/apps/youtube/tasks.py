@@ -6,7 +6,7 @@ import dripdrop.tasks as dripdrop_tasks
 import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
-from dripdrop.services import rq, ytdlp, scraper
+from dripdrop.services import database, rq, ytdlp, scraper
 from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings
 
@@ -237,12 +237,9 @@ async def update_channel_videos(
         query = query.order_by(YoutubeSubscription.channel_id.desc())
     else:
         query = query.order_by(YoutubeSubscription.channel_id.asc())
-    page = 0
-    while True:
-        results = await session.execute(query.offset(page * 10))
-        subscriptions = results.mappings().fetchmany(10)
-        if not subscriptions:
-            break
+    async for subscriptions in database.stream_mappings(
+        query=query, yield_per=10, session=session
+    ):
         await dripdrop_utils.gather_with_limit(
             *[
                 add_new_channel_videos_job(
@@ -251,22 +248,18 @@ async def update_channel_videos(
                 for subscription in subscriptions
             ],
         )
-        page += 1
 
 
 @dripdrop_tasks.worker_task()
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
-    page = 0
-    while True:
-        results = await session.execute(query.offset(page * 1))
-        user = results.scalars().first()
-        if not user:
-            break
+    async for users in database.stream_scalars(
+        query=query, yield_per=1, session=session
+    ):
+        user = users[0]
         await rq.enqueue(
             function=update_user_subscriptions,
             kwargs={"email": user.email},
             at_front=True,
             retry=rq.Retry(max=2),
         )
-        page += 1

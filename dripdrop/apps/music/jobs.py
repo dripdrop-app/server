@@ -29,8 +29,7 @@ from dripdrop.dependencies import (
     User,
 )
 from dripdrop.logging import logger
-from dripdrop.services import websocket_handler, rq
-from dripdrop.services.redis import redis
+from dripdrop.services import rq, redis, websocket_handler
 from dripdrop.services.websocket_handler import RedisChannels
 
 from . import utils, tasks
