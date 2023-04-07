@@ -4,11 +4,11 @@ from passlib.context import CryptContext
 from pydantic import EmailStr
 
 from dripdrop.dependencies import (
-    create_db_session,
+    create_database_session,
     get_authenticated_user,
     COOKIE_NAME,
-    AsyncSession,
 )
+from dripdrop.services.database import AsyncSession
 
 from . import utils
 from .models import User
@@ -47,7 +47,7 @@ async def check_session(user: User = Depends(get_authenticated_user)):
 async def login(
     email: str = Body(...),
     password: str = Body(..., min_length=8),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     user = await utils.find_user_by_email(email=email, session=session)
     if not user:
@@ -88,7 +88,7 @@ async def logout():
 async def create_account(
     email: EmailStr = Body(...),
     password: str = Body(..., min_length=8),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     user = await utils.find_user_by_email(email=email, session=session)
     if user:

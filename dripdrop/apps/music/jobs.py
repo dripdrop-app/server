@@ -22,14 +22,11 @@ from sqlalchemy import select, func
 from typing import Optional
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.dependencies import (
-    get_authenticated_user,
-    create_db_session,
-    AsyncSession,
-    User,
-)
+from dripdrop.apps.authentication.models import User
+from dripdrop.dependencies import create_database_session, get_authenticated_user
 from dripdrop.logging import logger
 from dripdrop.services import rq, redis, websocket_handler
+from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_handler import RedisChannels
 
 from . import utils, tasks
@@ -60,7 +57,7 @@ async def get_jobs(
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
     user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     query = (
         select(MusicJob)
@@ -83,7 +80,7 @@ async def get_jobs(
 async def listen_jobs(
     websocket: WebSocket,
     user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     async def handler(msg):
         message = orjson.loads(msg.get("data").decode())
@@ -127,7 +124,7 @@ async def create_job(
     album: str = Form(...),
     grouping: Optional[str] = Form(None),
     user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     if file and video_url:
         raise HTTPException(
@@ -196,7 +193,7 @@ async def create_job(
 )
 async def delete_job(
     job_id: str = Query(...),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)

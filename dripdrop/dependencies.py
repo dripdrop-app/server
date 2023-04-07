@@ -16,12 +16,12 @@ ALGORITHM = "HS256"
 COOKIE_NAME = "token"
 
 
-async def create_db_session():
+async def create_database_session():
     async with database.create_session() as session:
         yield session
 
 
-async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
+async def get_user_from_token(token: str = ..., session: AsyncSession = ...):
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         expires = payload.get("exp", None)
@@ -32,7 +32,7 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
         email = payload.get("email", None)
         if email:
             query = select(User).where(User.email == email)
-            results = await db.scalars(query)
+            results = await session.scalars(query)
             user: Union[User, None] = results.first()
             return user
     except jwt.PyJWTError:
@@ -43,7 +43,7 @@ async def get_user_from_token(token: str = ..., db: AsyncSession = ...):
 async def get_user(
     request: Request = None,
     websocket: WebSocket = None,
-    db: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     connection = request if request else websocket
     if connection:
@@ -51,7 +51,7 @@ async def get_user(
         headers = connection.headers
         token = cookies.get(COOKIE_NAME, headers.get("Authorization", None))
         if token:
-            return await get_user_from_token(token=token, db=db)
+            return await get_user_from_token(token=token, session=session)
     return None
 
 

@@ -2,13 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Resp
 from sqlalchemy import select, and_
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.dependencies import (
-    AsyncSession,
-    create_db_session,
-    get_authenticated_user,
-    User,
-)
+from dripdrop.apps.authentication.models import User
+from dripdrop.dependencies import create_database_session, get_authenticated_user
 from dripdrop.services import rq, scraper
+from dripdrop.services.database import AsyncSession
 
 from . import tasks
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
@@ -27,7 +24,7 @@ channels_api = APIRouter(
 async def get_youtube_channel(
     channel_id: str = Query(...),
     user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     query = (
         select(
@@ -69,7 +66,7 @@ async def get_youtube_channel(
 )
 async def get_user_youtube_channel(
     user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == user.email)
     results = await session.scalars(query)
@@ -86,7 +83,7 @@ async def get_user_youtube_channel(
 async def update_user_youtube_channel(
     channel_id: str = Body(..., embed=True),
     user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_db_session),
+    session: AsyncSession = Depends(create_database_session),
 ):
     channel_info = await scraper.get_channel_info(channel_id=channel_id)
     if not channel_info:

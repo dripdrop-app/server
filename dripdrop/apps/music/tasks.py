@@ -10,7 +10,6 @@ from yt_dlp.utils import sanitize_filename
 
 import dripdrop.tasks as dripdrop_tasks
 import dripdrop.utils as dripdrop_utils
-from dripdrop.services.database import AsyncSession
 from dripdrop.services import (
     AudioTags,
     database,
@@ -21,6 +20,7 @@ from dripdrop.services import (
     s3,
     ytdlp,
 )
+from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_handler import RedisChannels
 
 from . import utils
