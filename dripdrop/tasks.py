@@ -30,12 +30,6 @@ def worker_task(raise_exception=True):
         async def wrapper(*args, **kwargs):
             func_signature = signature(function)
             parameters = func_signature.parameters
-            format_arguments = ", ".join(args) + ", ".join(
-                [f"{kwarg}={kwargs[kwarg]}" for kwarg in kwargs]
-            )
-            logger.info(
-                f"{function.__module__}.{function.__name__}({format_arguments})"
-            )
             if "session" in parameters and "session" not in kwargs:
                 async with database.create_session() as session:
                     kwargs["session"] = session
