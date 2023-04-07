@@ -1,9 +1,6 @@
 name: Server
 
-on: 
-  push: 
-  pull_request:
-  work_dispatch:
+on: [push, pull_request]
 
 jobs:
   test:
