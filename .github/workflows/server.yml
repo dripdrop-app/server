@@ -5,9 +5,6 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: 
-      image: python:3.10
-      options: --user root
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
