@@ -95,5 +95,5 @@ if __name__ == "__main__":
 
     if args.action == REMOVE:
         docker_interface.remove_services()
-    else:
+    elif args.action == DEPLOY:
         docker_interface.deploy()
