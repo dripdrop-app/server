@@ -26,18 +26,18 @@ jobs:
           echo "${{ secrets.ENV }}" >> .env
       - name: Export ssh key
         run: |
-          echo "${{ secrets.SSH_KEY }}" >> ssh_key
+          echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
       - name: Install rsync
         run: |
           sudo apt-get -y update
           sudo apt-get -y install rsync
-      - name: Sync repo to vm
+      - name: Sync repo to VM
         run: |
           rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
-      - name: Deploy over ssh
+      - name: Deploy over SSH
         run: |
           ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
         env:
