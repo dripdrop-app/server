@@ -13,4 +13,4 @@ jobs:
           echo ${{ secrets.ENV }} >> .env
       - name: Run tests
         run: |
-          docker compose -f docker-compose.prod.yml run server bash -c "source venv/bin/activate && ENV=testing pytest"
+          python docker.py --env production --action test

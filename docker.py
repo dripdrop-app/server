@@ -7,6 +7,7 @@ PRODUCTION = "production"
 
 REMOVE = "remove"
 DEPLOY = "deploy"
+TEST = "test"
 
 
 class DockerInterface:
@@ -27,7 +28,15 @@ class DockerInterface:
 
     def remove_services(self):
         subprocess.run(
-            ["docker", "compose", "-p", self._project, "-f", self._compose_file, "down"],
+            [
+                "docker",
+                "compose",
+                "-p",
+                self._project,
+                "-f",
+                self._compose_file,
+                "down",
+            ],
             env=self._load_environment_variables(),
         ).check_returncode()
 
@@ -62,6 +71,27 @@ class DockerInterface:
             self.remove_services()
         self._deploy_services()
 
+    def test(self):
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-p",
+                self._project,
+                "-f",
+                self._compose_file,
+                "run",
+                "--rm",
+                "--env",
+                "env=testing",
+                "server",
+                "poetry",
+                "run",
+                "pytest",
+            ],
+            env=self._load_environment_variables(),
+        ).check_returncode()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -69,9 +99,11 @@ if __name__ == "__main__":
         "--env",
         type=str,
         required=True,
-        choices=[DEVELOPMENT, PRODUCTION],
+        choices=[DEVELOPMENT, PRODUCTION, TEST],
     )
-    parser.add_argument("--action", type=str, required=True, choices=[REMOVE, DEPLOY])
+    parser.add_argument(
+        "--action", type=str, required=True, choices=[REMOVE, DEPLOY, TEST]
+    )
 
     args = parser.parse_args()
 
@@ -88,7 +120,7 @@ if __name__ == "__main__":
         "docker_file": os.path.join(current_path, "./dockerfiles/Dockerfile"),
         "compose_file": os.path.join(current_path, "docker-compose.prod.yml"),
     }
-    options = development_options if args.env == DEVELOPMENT else production_options
+    options = production_options if args.env == PRODUCTION else development_options
     env_file = os.path.join(current_path, ".env")
 
     docker_interface = DockerInterface(**options, env_file=env_file, context=context)
@@ -97,3 +129,5 @@ if __name__ == "__main__":
         docker_interface.remove_services()
     elif args.action == DEPLOY:
         docker_interface.deploy()
+    elif args.action == TEST:
+        docker_interface.test()
