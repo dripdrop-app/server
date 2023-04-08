@@ -4,6 +4,7 @@ import subprocess
 
 DEVELOPMENT = "development"
 PRODUCTION = "production"
+TESTING = "testing"
 
 REMOVE = "remove"
 DEPLOY = "deploy"
@@ -13,18 +14,19 @@ TEST = "test"
 class DockerInterface:
     def __init__(
         self,
-        docker_file: str = ...,
         compose_file: str = ...,
         env_file: str = ...,
+        env: str = ...,
         context: str = ...,
         project: str = ...,
     ) -> None:
-        self._docker_file = docker_file
+        self._docker_file = './dockerfiles/Dockerfile'
         self._compose_file = compose_file
         self._env_file = env_file
+        self._env = env
         self._context = context
         self._project = project
-        self._env = None
+        self._env_vars = None
 
     def remove_services(self):
         subprocess.run(
@@ -41,15 +43,15 @@ class DockerInterface:
         ).check_returncode()
 
     def _load_environment_variables(self):
-        if self._env is None:
-            self._env = {}
+        if self._env_vars is None:
+            self._env_vars = {'ENV': self._env}
             lines = []
             with open(self._env_file) as f:
                 lines = f.readlines()
             for line in lines:
                 variable, value = line.split("=")
-                self._env[variable] = value.strip()
-        return self._env
+                self._env_vars[variable] = value.strip()
+        return self._env_vars
 
     def _deploy_services(self):
         subprocess.run(
@@ -82,8 +84,6 @@ class DockerInterface:
                 self._compose_file,
                 "run",
                 "--rm",
-                "--env",
-                "env=testing",
                 "server",
                 "poetry",
                 "run",
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         "--env",
         type=str,
         required=True,
-        choices=[DEVELOPMENT, PRODUCTION, TEST],
+        choices=[DEVELOPMENT, PRODUCTION],
     )
     parser.add_argument(
         "--action", type=str, required=True, choices=[REMOVE, DEPLOY, TEST]
@@ -111,20 +111,19 @@ if __name__ == "__main__":
     current_path = os.path.dirname(os.path.abspath(__file__))
     context = os.path.join(current_path, ".")
 
-    development_options = {
-        "project": "dripdrop-dev",
-        "docker_file": os.path.join(current_path, "./dockerfiles/Dockerfile.dev"),
-        "compose_file": os.path.join(current_path, "docker-compose.dev.yml"),
+    OPTIONS = {
+        DEVELOPMENT: {
+            "project": "dripdrop-dev",
+            "compose_file": os.path.join(current_path, "docker-compose.dev.yml"),
+        },
+        PRODUCTION: {
+            "project": "dripdrop",
+            "compose_file": os.path.join(current_path, "docker-compose.prod.yml"),
+        },
     }
-    production_options = {
-        "project": "dripdrop",
-        "docker_file": os.path.join(current_path, "./dockerfiles/Dockerfile"),
-        "compose_file": os.path.join(current_path, "docker-compose.prod.yml"),
-    }
-    options = production_options if args.env == PRODUCTION else development_options
-    env_file = os.path.join(current_path, ".env")
 
-    docker_interface = DockerInterface(**options, env_file=env_file, context=context)
+    env_file = os.path.join(current_path, ".env")
+    docker_interface = DockerInterface(**OPTIONS[args.env], env_file=env_file, context=context, env=TESTING if args.action == TEST else args.env)
 
     if args.action == REMOVE:
         docker_interface.remove_services()

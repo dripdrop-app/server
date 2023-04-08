@@ -7,8 +7,6 @@ services:
     build: 
       context: .
       dockerfile: ./dockerfiles/Dockerfile
-    environment:
-      ENV: production
 
   worker:
     extends:
@@ -17,8 +15,6 @@ services:
     build: 
       context: .
       dockerfile: ./dockerfiles/Dockerfile
-    environment:
-      ENV: production
     deploy:
       replicas: 2
 

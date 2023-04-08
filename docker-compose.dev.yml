@@ -6,9 +6,7 @@ services:
       service: server
     build: 
       context: .
-      dockerfile: ./dockerfiles/Dockerfile.dev
-    environment:
-      ENV: development
+      dockerfile: ./dockerfiles/Dockerfile
     volumes:
       - type: bind
         source: ./
@@ -20,7 +18,7 @@ services:
       service: worker
     build: 
       context: .
-      dockerfile: ./dockerfiles/Dockerfile.dev
+      dockerfile: ./dockerfiles/Dockerfile
     volumes:
       - type: bind
         source: ./

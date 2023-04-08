@@ -34,6 +34,8 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/docs"]
       interval: 30s
+    environment:
+      ENV: ${ENV}
     <<: 
       - *depends-all
       - *logging
@@ -42,6 +44,7 @@ services:
     command: ["./scripts/worker.sh"]
     restart: on-failure:5
     environment:
+      ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
     <<: 
       - *depends-all
