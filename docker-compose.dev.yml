@@ -4,6 +4,9 @@ services:
     extends:
       file: docker-compose.base.yml
       service: server
+    build: 
+      context: .
+      dockerfile: ./dockerfiles/Dockerfile.dev
     environment:
       ENV: development
     volumes:
@@ -15,6 +18,9 @@ services:
     extends:
       file: docker-compose.base.yml
       service: worker
+    build: 
+      context: .
+      dockerfile: ./dockerfiles/Dockerfile.dev
     volumes:
       - type: bind
         source: ./
