@@ -14,3 +14,26 @@ jobs:
       - name: Run tests
         run: |
           python docker.py --env production --action test
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == '/refs/head/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Export environment
+        run: |
+          echo "${{ secrets.ENV }}" >> .env
+      - name: Export ssh key
+        run: |
+          echo "${{ secrets.SSH_KEY }} >> ssh_key"
+      - name: Install rsync
+        run: |
+          apt-get -y update
+          apt-get -y install rsync
+      - name: Sync repo to vm
+        run: |
+          rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop
+      - name: Deploy over ssh
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
