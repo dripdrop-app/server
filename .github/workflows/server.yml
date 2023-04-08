@@ -2,73 +2,15 @@ name: Server
 
 on: [push, pull_request]
 
-env:
-  ASYNC_DATABASE_URL: ${{ secrets.ASYNC_DATABASE_URL }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_ENDPOINT_URL: ${{ vars.AWS_ENDPOINT_URL }}
-  AWS_REGION_NAME: ${{ vars.AWS_REGION_NAME }}
-  AWS_S3_ARTWORK_FOLDER: ${{ vars.AWS_S3_ARTWORK_FOLDER }}
-  AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
-  AWS_S3_MUSIC_FOLDER: ${{ vars.AWS_S3_MUSIC_FOLDER }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  DATABASE: ${{ secrets.DATABASE }}
-  DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  DATABASE_USER: ${{ secrets.DATABASE_USER }}
-  INFLUXDB_BUCKET: ${{ secrets.INFLUXDB_BUCKET }}
-  INFLUXDB_ORG: ${{ secrets.INFLUXDB_ORG }}
-  INFLUXDB_PASSWORD: ${{ secrets.INFLUXDB_PASSWORD }}
-  INFLUXDB_TOKEN: ${{ secrets.INFLUXDB_TOKEN }}
-  INFLUXDB_URL: ${{ secrets.INFLUXDB_URL }}
-  INFLUXDB_USERNAME: ${{ secrets.INFLUXDB_USERNAME }}
-  REDIS_URL: ${{ secrets.REDIS_URL }}
-  SECRET_KEY: ${{ secrets.SECRET_KEY }}
-  SELENIUM_WEBDRIVER_URL: ${{ secrets.SELENIUM_WEBDRIVER_URL }}
-  TEST_ASYNC_DATABASE_URL: ${{ secrets.ASYNC_DATABASE_URL }}
-  TEST_AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
-  TEST_AWS_S3_BUCKET: ${{ vars.TEST_AWS_S3_BUCKET }}
-  TEST_AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
-  TEST_REDIS_URL: ${{ secrets.REDIS_URL }}
-
-x-export-environment-step: &export-environment-step
-  name: Export environment
-  run: |
-    touch .env
-    echo "ASYNC_DATABASE_URL=$ASYNC_DATABASE_URL" >> .env
-    echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
-    echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
-    echo "AWS_REGION_NAME=$AWS_REGION_NAME" >> .env
-    echo "AWS_S3_ARTWORK_FOLDER=$AWS_S3_ARTWORK_FOLDER" >> .env
-    echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
-    echo "AWS_S3_MUSIC_FOLDER=$AWS_S3_MUSIC_FOLDER" >> .env
-    echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
-    echo "DATABASE=$DATABASE" >> .env
-    echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
-    echo "DATABASE_URL=$DATABASE_URL" >> .env
-    echo "DATABASE_USER=$DATABASE_USER" >> .env
-    echo "DOMAIN=$DOMAIN" >> .env
-    echo "INFLUXDB_BUCKET=$INFLUXDB_BUCKET" >> .env
-    echo "INFLUXDB_ORG=$INFLUXDB_ORG" >> .env
-    echo "INFLUXDB_PASSWORD=$INFLUXDB_PASSWORD" >> .env
-    echo "INFLUXDB_TOKEN=$INFLUXDB_TOKEN" >> .env
-    echo "INFLUXDB_URL=$INFLUXDB_URL" >> .env
-    echo "INFLUXDB_USERNAME=$INFLUXDB_USERNAME" >> .env
-    echo "REDIS_URL=$REDIS_URL" >> .env
-    echo "SECRET_KEY=$SECRET_KEY" >> .env
-    echo "SELENIUM_WEBDRIVER_URL=$SELENIUM_WEBDRIVER_URL" >> .env
-    echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
-    echo "TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCESS_KEY_ID" >> .env
-    echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
-    echo "TEST_AWS_SECRET_ACCESS_KEY=$TEST_AWS_SECRET_ACCESS_KEY" >> .env
-    echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
-
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      <<: *export-environment-step
+      - name: Export environment
+        run: |
+          echo ${{ secrest.ENV }} >> .env
       - name: Run tests
         run: |
           docker compose -f docker-compose.prod.yml run server bash -c "source venv/bin/activate && ENV=testing pytest"
