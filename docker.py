@@ -91,6 +91,7 @@ class DockerInterface:
             ],
             env=self._load_environment_variables(),
         ).check_returncode()
+        self.remove_services()
 
 
 if __name__ == "__main__":

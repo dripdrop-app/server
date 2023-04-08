@@ -6,25 +6,23 @@ x-logging: &logging
       max-file: '5'
 
 x-depends-database: &depends-database
-  depends_on:
-    postgres:
-      condition: service_healthy
+  postgres:
+    condition: service_healthy
 
 x-depends-redis: &depends-redis
-  depends_on:
-    redis:
-      condition: service_healthy
+  redis:
+    condition: service_healthy
 
 x-depends-selenium: &depends-selenium
-  depends_on:
-    selenium:
-      condition: service_healthy
+  selenium:
+    condition: service_healthy
 
 x-depends-all: &depends-all
-  <<:
-    - *depends-database
-    - *depends-redis
-    - *depends-selenium
+  depends_on:
+    <<:
+      - *depends-database
+      - *depends-redis
+      - *depends-selenium
 
 version: '2.4'
 services:
@@ -77,9 +75,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-O", "-", "http://localhost/misc/ping"]
       interval: 30s
-    <<:
-      - *depends-database
-      - *logging
+    depends_on:
+      <<: *depends-database
+    <<: *logging
 
   redis:
     image: redis
