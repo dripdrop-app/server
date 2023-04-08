@@ -20,7 +20,7 @@ class DockerInterface:
         context: str = ...,
         project: str = ...,
     ) -> None:
-        self._docker_file = './dockerfiles/Dockerfile'
+        self._docker_file = "./dockerfiles/Dockerfile"
         self._compose_file = compose_file
         self._env_file = env_file
         self._env = env
@@ -44,7 +44,7 @@ class DockerInterface:
 
     def _load_environment_variables(self):
         if self._env_vars is None:
-            self._env_vars = {'ENV': self._env}
+            self._env_vars = {"ENV": self._env}
             lines = []
             with open(self._env_file) as f:
                 lines = f.readlines()
@@ -123,7 +123,12 @@ if __name__ == "__main__":
     }
 
     env_file = os.path.join(current_path, ".env")
-    docker_interface = DockerInterface(**OPTIONS[args.env], env_file=env_file, context=context, env=TESTING if args.action == TEST else args.env)
+    docker_interface = DockerInterface(
+        **OPTIONS[args.env],
+        env_file=env_file,
+        context=context,
+        env=TESTING if args.action == TEST else args.env
+    )
 
     if args.action == REMOVE:
         docker_interface.remove_services()
