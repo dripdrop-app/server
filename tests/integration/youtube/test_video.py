@@ -60,6 +60,7 @@ async def test_get_video_with_no_related_videos(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "categoryName": category.name,
             "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
@@ -114,6 +115,7 @@ async def test_get_video_with_related_videos_by_common_category(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "categoryName": category.name,
             "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
@@ -131,6 +133,7 @@ async def test_get_video_with_related_videos_by_common_category(
                 "title": related_video.title,
                 "thumbnail": related_video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": related_video.description,
                 "publishedAt": related_video.published_at.replace(
                     tzinfo=settings.timezone

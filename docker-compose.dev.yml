@@ -4,9 +4,6 @@ services:
     extends:
       file: docker-compose.base.yml
       service: server
-    build: 
-      context: .
-      dockerfile: ./dockerfiles/Dockerfile
     volumes:
       - type: bind
         source: ./
@@ -16,9 +13,6 @@ services:
     extends:
       file: docker-compose.base.yml
       service: worker
-    build: 
-      context: .
-      dockerfile: ./dockerfiles/Dockerfile
     volumes:
       - type: bind
         source: ./

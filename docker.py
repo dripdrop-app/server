@@ -20,7 +20,7 @@ class DockerInterface:
         context: str = ...,
         project: str = ...,
     ) -> None:
-        self._docker_file = "./dockerfiles/Dockerfile"
+        self._docker_file = "./Dockerfile"
         self._compose_file = compose_file
         self._env_file = env_file
         self._env = env

@@ -27,6 +27,7 @@ x-depends-all: &depends-all
 version: '2.4'
 services:
   server:
+    build: .
     command: ["./scripts/server.sh"]
     restart: on-failure:5
     ports:
@@ -41,6 +42,7 @@ services:
       - *logging
 
   worker:
+    build: .
     command: ["./scripts/worker.sh"]
     restart: on-failure:5
     environment:

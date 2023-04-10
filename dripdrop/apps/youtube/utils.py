@@ -8,6 +8,7 @@ from .models import (
     YoutubeSubscription,
     YoutubeChannel,
     YoutubeVideo,
+    YoutubeVideoCategory,
     YoutubeVideoLike,
     YoutubeVideoQueue,
     YoutubeVideoWatch,
@@ -36,6 +37,7 @@ async def execute_videos_query(
             YoutubeVideo.published_at,
             YoutubeVideo.channel_id,
             YoutubeVideo.description,
+            YoutubeVideoCategory.name.label("category_name"),
             YoutubeChannel.title.label("channel_title"),
             YoutubeChannel.thumbnail.label("channel_thumbnail"),
             YoutubeVideoLike.email,
@@ -55,6 +57,7 @@ async def execute_videos_query(
             ),
             isouter=not subscribed_only,
         )
+        .join(YoutubeVideoCategory, YoutubeVideoCategory.id == YoutubeVideo.category_id)
         .join(
             YoutubeVideoQueue,
             and_(

@@ -146,6 +146,7 @@ async def test_get_video_queue_with_single_video(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "categoryName": category.name,
             "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
@@ -201,6 +202,7 @@ async def test_get_video_queue_with_next_video(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "categoryName": category.name,
             "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
@@ -256,6 +258,7 @@ async def test_get_video_queue_with_prev_video(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "categoryName": category.name,
             "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone
@@ -320,6 +323,7 @@ async def test_get_video_queue_with_prev_and_next_videos(
             "title": video.title,
             "thumbnail": video.thumbnail,
             "categoryId": category.id,
+            "categoryName": category.name,
             "description": video.description,
             "publishedAt": video.published_at.replace(
                 tzinfo=settings.timezone

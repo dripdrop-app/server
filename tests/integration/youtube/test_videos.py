@@ -78,6 +78,7 @@ async def test_get_videos_with_channel_id(
                 "title": video.title,
                 "thumbnail": video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": video.description,
                 "publishedAt": video.published_at.replace(
                     tzinfo=settings.timezone
@@ -131,6 +132,7 @@ async def test_get_videos_with_single_result(
                 "title": video.title,
                 "thumbnail": video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": video.description,
                 "publishedAt": video.published_at.replace(
                     tzinfo=settings.timezone
@@ -182,6 +184,7 @@ async def test_get_videos_with_multiple_videos(
                     "title": video.title,
                     "thumbnail": video.thumbnail,
                     "categoryId": category.id,
+                    "categoryName": category.name,
                     "description": video.description,
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
@@ -235,6 +238,7 @@ async def test_get_videos_with_multiple_pages(
                     "title": video.title,
                     "thumbnail": video.thumbnail,
                     "categoryId": category.id,
+                    "categoryName": category.name,
                     "description": video.description,
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
@@ -288,6 +292,7 @@ async def test_get_videos_in_descending_order_by_published_date(
                     "title": video.title,
                     "thumbnail": video.thumbnail,
                     "categoryId": category.id,
+                    "categoryName": category.name,
                     "description": video.description,
                     "publishedAt": video.published_at.replace(
                         tzinfo=settings.timezone
@@ -333,7 +338,7 @@ async def test_get_videos_with_deleted_subscriptions(
     assert response.json() == {"totalPages": 0, "videos": []}
 
 
-async def test_videos_with_watched_populated(
+async def test_get_videos_with_watched_populated(
     client: AsyncClient,
     create_and_login_user,
     create_user,
@@ -376,6 +381,7 @@ async def test_videos_with_watched_populated(
                 "title": other_video.title,
                 "thumbnail": other_video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": other_video.description,
                 "publishedAt": other_video.published_at.replace(
                     tzinfo=settings.timezone
@@ -392,6 +398,7 @@ async def test_videos_with_watched_populated(
                 "title": watched_video.title,
                 "thumbnail": watched_video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": watched_video.description,
                 "publishedAt": watched_video.published_at.replace(
                     tzinfo=settings.timezone
@@ -450,6 +457,7 @@ async def test_get_videos_with_specific_video_category(
                 "title": video_in_category.title,
                 "thumbnail": video_in_category.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": video_in_category.description,
                 "publishedAt": video_in_category.published_at.replace(
                     tzinfo=settings.timezone
@@ -503,6 +511,7 @@ async def test_get_videos_with_queued_only(
                 "title": queued_video.title,
                 "thumbnail": queued_video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": queued_video.description,
                 "publishedAt": queued_video.published_at.replace(
                     tzinfo=settings.timezone
@@ -566,6 +575,7 @@ async def test_get_videos_with_queued_only_in_ascending_order_by_created_date(
                     "title": videos[i].title,
                     "thumbnail": videos[i].thumbnail,
                     "categoryId": category.id,
+                    "categoryName": category.name,
                     "description": videos[i].description,
                     "publishedAt": videos[i]
                     .published_at.replace(tzinfo=settings.timezone)
@@ -626,6 +636,7 @@ async def test_get_videos_with_liked_only(
                 "title": liked_video.title,
                 "thumbnail": liked_video.thumbnail,
                 "categoryId": category.id,
+                "categoryName": category.name,
                 "description": liked_video.description,
                 "publishedAt": liked_video.published_at.replace(
                     tzinfo=settings.timezone
@@ -687,6 +698,7 @@ async def test_get_videos_with_liked_only_in_descending_order_by_created_date(
                     "title": videos[i].title,
                     "thumbnail": videos[i].thumbnail,
                     "categoryId": category.id,
+                    "categoryName": category.name,
                     "description": videos[i].description,
                     "publishedAt": videos[i]
                     .published_at.replace(tzinfo=settings.timezone)

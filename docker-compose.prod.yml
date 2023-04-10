@@ -4,17 +4,11 @@ services:
     extends:
       file: docker-compose.base.yml
       service: server
-    build: 
-      context: .
-      dockerfile: ./dockerfiles/Dockerfile
 
   worker:
     extends:
       file: docker-compose.base.yml
       service: worker
-    build: 
-      context: .
-      dockerfile: ./dockerfiles/Dockerfile
     deploy:
       replicas: 2
 
