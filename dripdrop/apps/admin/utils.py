@@ -42,7 +42,7 @@ async def get_proxy(session: AsyncSession = ...):
     await session.execute(query)
     await session.commit()
     for proxy in json["data"]:
-        query = select(Proxy).where(ip_address=proxy["ip"])
+        query = select(Proxy).where(Proxy.ip_address == proxy["ip"])
         results = await session.scalars(query)
         existing_proxy = results.first()
         if existing_proxy:
