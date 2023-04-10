@@ -52,6 +52,20 @@ class DockerInterface:
                 variable, value = line.split("=")
                 self._env_vars[variable] = value.strip()
         return self._env_vars
+    
+    def _build_services(self):
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-p",
+                self._project,
+                "-f",
+                self._compose_file,
+                "build"
+            ],
+            env=self._load_environment_variables()
+        ).check_returncode()
 
     def _deploy_services(self):
         subprocess.run(
@@ -71,9 +85,11 @@ class DockerInterface:
     def deploy(self, env: str = ...):
         if env == DEVELOPMENT:
             self.remove_services()
+        self._build_services()
         self._deploy_services()
 
     def test(self):
+        self._build_services()
         subprocess.run(
             [
                 "docker",
