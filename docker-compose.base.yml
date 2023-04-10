@@ -27,7 +27,9 @@ x-depends-all: &depends-all
 version: '2.4'
 services:
   server:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     command: ["./scripts/server.sh"]
     restart: on-failure:5
     ports:
@@ -42,7 +44,9 @@ services:
       - *logging
 
   worker:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     command: ["./scripts/worker.sh"]
     restart: on-failure:5
     environment:
