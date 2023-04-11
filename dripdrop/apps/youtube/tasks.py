@@ -169,72 +169,76 @@ async def add_new_channel_videos(
             day=str(last_updated.day).rjust(2, "0"),
         )
     )
-    videos_info = await ytdlp.extract_videos_info(
-        url=f"https://youtube.com/channel/{channel_id}/videos",
-        date_after=date_after,
-    )
-    for video_info in videos_info:
-        server_current_time = datetime.now(tz=tzlocal())
-        current_time = dripdrop_utils.get_current_time()
-
-        video_id = video_info["id"]
-        video_title = video_info["title"]
-        video_thumbnail = video_info["thumbnail"]
-        video_description = video_info["description"]
-        video_category_name = video_info["categories"][0]
-        video_upload_date = datetime.strptime(
-            video_info["upload_date"], "%Y%m%d"
-        ).replace(
-            hour=current_time.hour,
-            minute=current_time.minute,
-            second=current_time.second,
-            tzinfo=settings.timezone,
+    try:
+        videos_info = await ytdlp.extract_videos_info(
+            url=f"https://youtube.com/channel/{channel_id}/videos",
+            date_after=date_after,
         )
+        for video_info in videos_info:
+            server_current_time = datetime.now(tz=tzlocal())
+            current_time = dripdrop_utils.get_current_time()
 
-        if current_time.day != video_upload_date.day:
-            video_upload_date.replace(
-                hour=server_current_time.hour,
-                minute=server_current_time.minute,
-                second=server_current_time.second,
+            video_id = video_info["id"]
+            video_title = video_info["title"]
+            video_thumbnail = video_info["thumbnail"]
+            video_description = video_info["description"]
+            video_category_name = video_info["categories"][0]
+            video_upload_date = datetime.strptime(
+                video_info["upload_date"], "%Y%m%d"
+            ).replace(
+                hour=current_time.hour,
+                minute=current_time.minute,
+                second=current_time.second,
+                tzinfo=settings.timezone,
             )
 
-        query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-        results = await session.scalars(query)
-        video = results.first()
-        if video:
-            video.title = video_title
-            video.thumbnail = video_thumbnail
-            video.description = video_description
-            if video.title != video_title or video.thumbnail != video_thumbnail:
-                video.published_at = video_upload_date
-        else:
-            query = select(YoutubeVideoCategory).where(
-                YoutubeVideoCategory.name == video_category_name
-            )
-            results = await session.scalars(query)
-            video_category = results.first()
-            if not video_category:
-                video_category = YoutubeVideoCategory(name=video_category_name)
-                session.add(video_category)
-                await session.commit()
-            session.add(
-                YoutubeVideo(
-                    id=video_id,
-                    title=video_title,
-                    thumbnail=video_thumbnail,
-                    channel_id=channel_id,
-                    category_id=video_category.id,
-                    description=video_description,
-                    published_at=video_upload_date,
+            if current_time.day != video_upload_date.day:
+                video_upload_date.replace(
+                    hour=server_current_time.hour,
+                    minute=server_current_time.minute,
+                    second=server_current_time.second,
                 )
-            )
+
+            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+            results = await session.scalars(query)
+            video = results.first()
+            if video:
+                video.title = video_title
+                video.thumbnail = video_thumbnail
+                video.description = video_description
+                if video.title != video_title or video.thumbnail != video_thumbnail:
+                    video.published_at = video_upload_date
+            else:
+                query = select(YoutubeVideoCategory).where(
+                    YoutubeVideoCategory.name == video_category_name
+                )
+                results = await session.scalars(query)
+                video_category = results.first()
+                if not video_category:
+                    video_category = YoutubeVideoCategory(name=video_category_name)
+                    session.add(video_category)
+                    await session.commit()
+                session.add(
+                    YoutubeVideo(
+                        id=video_id,
+                        title=video_title,
+                        thumbnail=video_thumbnail,
+                        channel_id=channel_id,
+                        category_id=video_category.id,
+                        description=video_description,
+                        published_at=video_upload_date,
+                    )
+                )
+            await session.commit()
+        channel.last_videos_updated = dripdrop_utils.get_current_time()
+    except Exception as e:
+        raise e
+    finally:
+        channel.updating = False
         await session.commit()
-    channel.last_videos_updated = dripdrop_utils.get_current_time()
-    channel.updating = False
-    await session.commit()
-    await websocket_channel.publish(
-        message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
-    )
+        await websocket_channel.publish(
+            message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
+        )
 
 
 @dripdrop_tasks.worker_task()
