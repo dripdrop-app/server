@@ -14,6 +14,7 @@ class YoutubeChannelResponse(ResponseBaseModel):
     title: str
     thumbnail: str | None
     subscribed: bool
+    updating: bool
 
 
 class YoutubeSubscriptionResponse(ResponseBaseModel):

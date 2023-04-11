@@ -30,6 +30,7 @@ class YoutubeChannel(ModelBaseMixin, Base):
     last_videos_updated: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
+    updating: Mapped[bool] = mapped_column(nullable=False, default=False)
 
 
 class YoutubeSubscription(ModelBaseMixin, Base):

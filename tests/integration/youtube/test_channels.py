@@ -35,6 +35,7 @@ async def test_get_channels(
         "title": channel.title,
         "thumbnail": channel.thumbnail,
         "subscribed": False,
+        "updating": False,
     }
 
 
@@ -54,6 +55,7 @@ async def test_get_channels_with_subscription(
         "title": channel.title,
         "thumbnail": channel.thumbnail,
         "subscribed": True,
+        "updating": False,
     }
 
 
@@ -77,6 +79,7 @@ async def test_get_channels_with_deleted_subscription(
         "title": channel.title,
         "thumbnail": channel.thumbnail,
         "subscribed": False,
+        "updating": False,
     }
 
 

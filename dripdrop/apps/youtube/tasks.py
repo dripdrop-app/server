@@ -147,6 +147,9 @@ async def add_new_channel_videos(
     if not channel:
         raise Exception("Channel not found")
 
+    channel.updating = True
+    await session.commit()
+
     day_ago = dripdrop_utils.get_current_time() - timedelta(days=1)
     last_updated = min(day_ago, channel.last_videos_updated)
 
@@ -220,6 +223,7 @@ async def add_new_channel_videos(
             )
         await session.commit()
     channel.last_videos_updated = dripdrop_utils.get_current_time()
+    channel.updating = False
     await session.commit()
 
 

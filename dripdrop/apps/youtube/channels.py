@@ -31,6 +31,7 @@ async def get_youtube_channel(
             YoutubeChannel.id,
             YoutubeChannel.title,
             YoutubeChannel.thumbnail,
+            YoutubeChannel.updating,
             YoutubeSubscription.channel_id.label("subscribed"),
         )
         .join(
@@ -56,6 +57,7 @@ async def get_youtube_channel(
         title=channel.title,
         thumbnail=channel.thumbnail,
         subscribed=bool(channel.subscribed),
+        updating=channel.updating,
     )
 
 
