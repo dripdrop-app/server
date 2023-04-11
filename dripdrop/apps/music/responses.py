@@ -29,8 +29,8 @@ class MusicJobResponse(ResponseBaseModel):
         return value
 
 
-class MusicChannelResponse(ResponseBaseModel):
-    job_id: str
+class MusicJobUpdateResponse(ResponseBaseModel):
+    id: str
     status: Literal["STARTED", "COMPLETED"]
 
 
@@ -53,11 +53,6 @@ class TagsResponse(ResponseBaseModel):
 class JobsResponse(ResponseBaseModel):
     jobs: List[MusicJobResponse]
     total_pages: int
-
-
-class JobUpdateResponse(ResponseBaseModel):
-    job: MusicJobResponse
-    status: Literal["STARTED", "COMPLETED"]
 
 
 class ErrorMessages:

@@ -8,6 +8,7 @@ from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.services import database, rq, ytdlp, scraper
 from dripdrop.services.database import AsyncSession
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
 
 from .models import (
@@ -18,6 +19,7 @@ from .models import (
     YoutubeVideo,
     YoutubeVideoCategory,
 )
+from .responses import YoutubeChannelUpdateResponse
 
 
 @dripdrop_tasks.worker_task()
@@ -150,6 +152,11 @@ async def add_new_channel_videos(
     channel.updating = True
     await session.commit()
 
+    websocket_channel = WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE)
+    await websocket_channel.publish(
+        message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
+    )
+
     day_ago = dripdrop_utils.get_current_time() - timedelta(days=1)
     last_updated = min(day_ago, channel.last_videos_updated)
 
@@ -225,6 +232,9 @@ async def add_new_channel_videos(
     channel.last_videos_updated = dripdrop_utils.get_current_time()
     channel.updating = False
     await session.commit()
+    await websocket_channel.publish(
+        message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
+    )
 
 
 @dripdrop_tasks.worker_task()

@@ -1,5 +1,4 @@
 import math
-import orjson
 import re
 import traceback
 import uuid
@@ -25,18 +24,16 @@ import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import create_database_session, get_authenticated_user
 from dripdrop.logging import logger
-from dripdrop.services import rq, redis, websocket_handler
+from dripdrop.services import rq
 from dripdrop.services.database import AsyncSession
-from dripdrop.services.websocket_handler import RedisChannels
+from dripdrop.services.websocket_channel import (
+    RedisChannels,
+    WebsocketChannel,
+)
 
 from . import utils, tasks
 from .models import MusicJob
-from .responses import (
-    MusicChannelResponse,
-    JobsResponse,
-    JobUpdateResponse,
-    ErrorMessages,
-)
+from .responses import MusicJobUpdateResponse, JobsResponse, ErrorMessages
 
 
 jobs_api = APIRouter(
@@ -78,35 +75,24 @@ async def get_jobs(
 
 @jobs_api.websocket("/listen")
 async def listen_jobs(
-    websocket: WebSocket,
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    websocket: WebSocket, user: User = Depends(get_authenticated_user)
 ):
     async def handler(msg):
-        message = orjson.loads(msg.get("data").decode())
-        message = MusicChannelResponse.parse_obj(message)
-        job_id = message.job_id
-        query = select(MusicJob).where(
-            MusicJob.user_email == user.email,
-            MusicJob.id == job_id,
-            MusicJob.deleted_at.is_(None),
-        )
-        results = await session.scalars(query)
-        job = results.first()
-        if job:
-            await websocket.send_json(
-                jsonable_encoder(
-                    JobUpdateResponse(job=job, status=message.status).dict(
-                        by_alias=True
-                    )
-                )
+        message = MusicJobUpdateResponse.parse_obj(msg)
+        job_id = message.id
+        async with create_database_session() as session:
+            query = select(MusicJob).where(
+                MusicJob.user_email == user.email,
+                MusicJob.id == job_id,
+                MusicJob.deleted_at.is_(None),
             )
+            results = await session.scalars(query)
+            job = results.first()
+            if job:
+                await websocket.send_json(jsonable_encoder(message))
 
-    await websocket.accept()
-    await websocket_handler.create_websocket_redis_channel_listener(
-        websocket=websocket,
-        channel=RedisChannels.MUSIC_JOB_CHANNEL,
-        handler=handler,
+    await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).listen(
+        websocket=websocket, handler=handler
     )
 
 
@@ -180,10 +166,6 @@ async def create_job(
     )
     await session.commit()
     await rq.enqueue(function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id)
-    await redis.publish(
-        RedisChannels.MUSIC_JOB_CHANNEL,
-        orjson.dumps(MusicChannelResponse(job_id=job_id, status="STARTED").dict()),
-    )
     return Response(None, status_code=status.HTTP_201_CREATED)
 
 

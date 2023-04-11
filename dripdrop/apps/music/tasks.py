@@ -1,5 +1,4 @@
 import asyncio
-import orjson
 import os
 import shutil
 from datetime import timedelta
@@ -15,17 +14,16 @@ from dripdrop.services import (
     database,
     http_client,
     image_downloader,
-    redis,
     rq,
     s3,
     ytdlp,
 )
 from dripdrop.services.database import AsyncSession
-from dripdrop.services.websocket_handler import RedisChannels
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
 from . import utils
 from .models import MusicJob
-from .responses import MusicChannelResponse
+from .responses import MusicJobUpdateResponse
 
 
 JOB_DIR = "music_jobs"
@@ -100,7 +98,11 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
     if not job:
         raise Exception(f"Job with id ({job_id}) not found")
     job_path = None
+    websocket_channel = WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE)
     try:
+        await websocket_channel.publish(
+            message=MusicJobUpdateResponse(id=job_id, status="STARTED")
+        )
         job_path = await asyncio.to_thread(_create_job_folder, job=job)
         filename = await _retrieve_audio_file(job_path=job_path, job=job)
         artwork_info = await _retrieve_artwork(job=job)
@@ -126,11 +128,8 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
         raise e
     finally:
         await session.commit()
-        await redis.publish(
-            RedisChannels.MUSIC_JOB_CHANNEL,
-            orjson.dumps(
-                MusicChannelResponse(job_id=job_id, status="COMPLETED").dict()
-            ),
+        await websocket_channel.publish(
+            message=MusicJobUpdateResponse(id=job_id, status="COMPLETED")
         )
         if job_path:
             shutil.rmtree(job_path)

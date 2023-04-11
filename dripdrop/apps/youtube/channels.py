@@ -1,4 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, status, Body, Response
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Depends,
+    Query,
+    status,
+    Body,
+    Response,
+    WebSocket,
+)
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, and_
 
 import dripdrop.utils as dripdrop_utils
@@ -6,10 +16,16 @@ from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import create_database_session, get_authenticated_user
 from dripdrop.services import rq, scraper
 from dripdrop.services.database import AsyncSession
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
 from . import tasks
 from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
-from .responses import YoutubeChannelResponse, YoutubeUserChannelResponse, ErrorMessages
+from .responses import (
+    YoutubeChannelResponse,
+    YoutubeChannelUpdateResponse,
+    YoutubeUserChannelResponse,
+    ErrorMessages,
+)
 
 channels_api = APIRouter(
     prefix="/channels",
@@ -58,6 +74,18 @@ async def get_youtube_channel(
         thumbnail=channel.thumbnail,
         subscribed=bool(channel.subscribed),
         updating=channel.updating,
+    )
+
+
+@channels_api.websocket("/listen")
+async def listen_channels(websocket: WebSocket):
+    async def handler(msg):
+        await websocket.send_json(
+            jsonable_encoder(YoutubeChannelUpdateResponse.parse_obj(msg).dict())
+        )
+
+    await WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE).listen(
+        websocket=websocket, handler=handler
     )
 
 

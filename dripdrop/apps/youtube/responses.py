@@ -17,6 +17,11 @@ class YoutubeChannelResponse(ResponseBaseModel):
     updating: bool
 
 
+class YoutubeChannelUpdateResponse(ResponseBaseModel):
+    id: str
+    updating: bool
+
+
 class YoutubeSubscriptionResponse(ResponseBaseModel):
     channel_id: str
     channel_title: str
