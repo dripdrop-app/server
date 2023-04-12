@@ -33,10 +33,9 @@ app.include_router(router=jobs_api)
 )
 async def get_grouping(video_url: HttpUrl = Query(...)):
     try:
-        videos_info = await ytdlp.extract_videos_info(url=video_url)
-        if not videos_info:
+        video_info = await ytdlp.extract_video_info(url=video_url)
+        if not video_info:
             raise Exception()
-        video_info = videos_info[0]
         uploader = video_info.get("uploader")
         return GroupingResponse(grouping=uploader)
     except Exception:

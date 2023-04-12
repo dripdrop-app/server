@@ -1,8 +1,12 @@
 import asyncio
-import json
+import os
+import orjson
+import shutil
+from yt_dlp.utils import sanitize_filename
 
 
 EXECUTABLE = "yt-dlp"
+VIDEOS_INFO_DIR = "videos_info"
 
 
 async def _run(*args):
@@ -29,20 +33,49 @@ async def download_audio_from_video(download_path: str = ..., url: str = ...):
         *["--output", download_path],
         url,
     ]
-    return await _run(*args)
+    await _run(*args)
 
 
-async def extract_videos_info(
-    url: str = ...,
-    date_after: str | None = None,
-):
+async def extract_video_info(url: str = ...):
+    jsons = await _run("--lazy-playlist", "--break-on-reject", "--dump-json", url)
+    if not jsons:
+        return None
+    return await asyncio.to_thread(orjson.loads, jsons[0])
+
+
+async def extract_videos_info(url: str = ..., date_after: str | None = None):
+    info_directory = os.path.join(VIDEOS_INFO_DIR, sanitize_filename(url))
+
+    def _create_info_folder():
+        try:
+            os.mkdir(VIDEOS_INFO_DIR)
+        except FileExistsError:
+            pass
+        os.mkdir(info_directory)
+
+    await asyncio.to_thread(_create_info_folder)
+
     args = [
         "--lazy-playlist",
         "--break-on-reject",
-        "--dump-json",
+        "--write-info-json",
+        "--no-write-playlist-metafiles",
+        "-o",
+        os.path.join(info_directory, "%(title)s.%(ext)s"),
     ]
     if date_after:
         args.extend(["--dateafter", date_after])
     args.extend([url])
-    output = [json.loads(json_string) for json_string in await _run(*args)]
-    return output
+    await _run(*args)
+
+    try:
+        with os.scandir(path=info_directory) as it:
+            for file in it:
+                if file.is_file() and file.name.endswith(".json"):
+                    with open(file.path, "r") as f:
+                        text = await asyncio.to_thread(f.read)
+                        yield await asyncio.to_thread(orjson.loads, text)
+    except Exception as e:
+        raise e
+    finally:
+        await asyncio.to_thread(shutil.rmtree, info_directory)

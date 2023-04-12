@@ -170,11 +170,10 @@ async def add_new_channel_videos(
         )
     )
     try:
-        videos_info = await ytdlp.extract_videos_info(
+        async for video_info in ytdlp.extract_videos_info(
             url=f"https://youtube.com/channel/{channel_id}/videos",
             date_after=date_after,
-        )
-        for video_info in videos_info:
+        ):
             server_current_time = datetime.now(tz=tzlocal())
             current_time = dripdrop_utils.get_current_time()
 

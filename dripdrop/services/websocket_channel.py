@@ -9,7 +9,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from dripdrop.logging import logger
 from dripdrop.responses import ResponseBaseModel
-from dripdrop.services import redis
+from dripdrop.services.redis import redis
 
 
 class PingResponse(ResponseBaseModel):

@@ -118,7 +118,3 @@ async def get_channel_info(channel_id: str = ...):
         )
     except TypeError:
         return None
-
-
-if __name__ == "__main__":
-    print(get_channel_subscriptions(channel_id="UCDNmtdocWQHo_mwse8kaOCQ"))

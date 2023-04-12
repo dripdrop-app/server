@@ -10,7 +10,6 @@ from yt_dlp.utils import sanitize_filename
 import dripdrop.tasks as dripdrop_tasks
 import dripdrop.utils as dripdrop_utils
 from dripdrop.services import (
-    AudioTags,
     database,
     http_client,
     image_downloader,
@@ -19,6 +18,7 @@ from dripdrop.services import (
     ytdlp,
 )
 from dripdrop.services.database import AsyncSession
+from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
 from . import utils
@@ -117,7 +117,7 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
         with open(filename, "rb") as file:
             await s3.upload_file(
                 filename=new_filename,
-                body=file.read(),
+                body=await asyncio.to_thread(file.read),
                 content_type="audio/mpeg",
             )
         job.completed = True
@@ -132,7 +132,7 @@ async def run_job(job_id: str = ..., session: AsyncSession = ...):
             message=MusicJobUpdateResponse(id=job_id, status="COMPLETED")
         )
         if job_path:
-            shutil.rmtree(job_path)
+            await asyncio.to_thread(shutil.rmtree, job_path)
 
 
 @dripdrop_tasks.worker_task()

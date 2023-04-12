@@ -1,5 +1,4 @@
 import math
-from datetime import timedelta
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy import select, func, and_
 
@@ -97,8 +96,7 @@ async def add_user_subscription(
                 id=channel_info.id,
                 title=channel_info.title,
                 thumbnail=channel_info.thumbnail,
-                last_videos_updated=dripdrop_utils.get_current_time()
-                - timedelta(days=365),
+                last_videos_updated=dripdrop_utils.get_current_time(),
             )
             session.add(channel)
             await session.commit()
@@ -116,7 +114,10 @@ async def add_user_subscription(
             )
         subscription.deleted_at = None
     await session.commit()
-    await rq.enqueue(tasks.add_new_channel_videos, kwargs={"channel_id": channel.id})
+    await rq.enqueue(
+        tasks.add_new_channel_videos,
+        kwargs={"channel_id": channel.id, "date_after": "20050214"},
+    )
     return YoutubeSubscriptionResponse(
         channel_id=subscription.channel_id,
         channel_title=channel.title,
