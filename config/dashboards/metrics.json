@@ -24,10 +24,12 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
+    "id": 2,
     "links": [],
     "liveNow": false,
     "panels": [
         {
+            "collapsed": false,
             "gridPos": {
                 "h": 1,
                 "w": 24,
@@ -35,6 +37,7 @@
                 "y": 0
             },
             "id": 39,
+            "panels": [],
             "title": "System Metrics",
             "type": "row"
         },
@@ -1181,81 +1184,6 @@
             "title": "Docker Network Received Traffic",
             "transformations": [],
             "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "influxdb",
-                "uid": "P951FEA4DE68E13C5"
-            },
-            "gridPos": {
-                "h": 10,
-                "w": 24,
-                "x": 0,
-                "y": 50
-            },
-            "id": 12,
-            "options": {
-                "dedupStrategy": "none",
-                "enableLogDetails": true,
-                "prettifyLogMessage": false,
-                "showCommonLabels": false,
-                "showLabels": false,
-                "showTime": true,
-                "sortOrder": "Descending",
-                "wrapLogMessage": false
-            },
-            "pluginVersion": "9.3.6",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "influxdb",
-                        "uid": "P951FEA4DE68E13C5"
-                    },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker_log\")\n  |> filter(fn: (r) => r[\"stream\"] == \"stdout\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")",
-                    "refId": "A"
-                }
-            ],
-            "timeFrom": "1h",
-            "title": "Logs",
-            "transformations": [],
-            "type": "logs"
-        },
-        {
-            "datasource": {
-                "type": "influxdb",
-                "uid": "P951FEA4DE68E13C5"
-            },
-            "gridPos": {
-                "h": 10,
-                "w": 24,
-                "x": 0,
-                "y": 60
-            },
-            "id": 44,
-            "options": {
-                "dedupStrategy": "none",
-                "enableLogDetails": true,
-                "prettifyLogMessage": false,
-                "showCommonLabels": false,
-                "showLabels": false,
-                "showTime": true,
-                "sortOrder": "Descending",
-                "wrapLogMessage": false
-            },
-            "pluginVersion": "9.3.6",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "influxdb",
-                        "uid": "P951FEA4DE68E13C5"
-                    },
-                    "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker_log\")\n  |> filter(fn: (r) => r[\"stream\"] == \"stderr\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")\n",
-                    "refId": "A"
-                }
-            ],
-            "timeFrom": "6h",
-            "title": "Error Logs",
-            "type": "logs"
         }
     ],
     "refresh": "30s",
@@ -1267,13 +1195,13 @@
         "list": []
     },
     "time": {
-        "from": "now-3h",
+        "from": "now-6h",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "",
-    "title": "Dashboard",
-    "uid": "XkL847bV",
-    "version": 1,
+    "title": "Metrics",
+    "uid": "XkL847bVz",
+    "version": 2,
     "weekStart": ""
 }

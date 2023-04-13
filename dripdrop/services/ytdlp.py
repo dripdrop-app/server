@@ -2,6 +2,7 @@ import asyncio
 import os
 import orjson
 import shutil
+from contextlib import asynccontextmanager
 from yt_dlp.utils import sanitize_filename
 
 from dripdrop.services import temp_files
@@ -18,8 +19,8 @@ async def _run(*args):
     )
     output = await process.stdout.read()
     error = await process.stderr.read()
-    await process.wait()
-    if error:
+    return_code = await process.wait()
+    if return_code in [1, 2, 100]:
         raise Exception(error.decode())
     return output.decode().splitlines()
 
@@ -43,6 +44,18 @@ async def extract_video_info(url: str = ...):
     return await asyncio.to_thread(orjson.loads, jsons[0])
 
 
+async def _stream_files(path: str = ...):
+    with os.scandir(path=path) as it:
+        for file in it:
+            if file.is_file() and file.name.endswith(".json"):
+                text = None
+                with open(file.path, "r") as f:
+                    text = await asyncio.to_thread(f.read)
+                yield await asyncio.to_thread(orjson.loads, text)
+                await asyncio.to_thread(os.remove, file.path)
+
+
+@asynccontextmanager
 async def extract_videos_info(url: str = ..., date_after: str | None = None):
     VIDEOS_INFO_DIRECTORY = "videos_info"
 
@@ -50,8 +63,6 @@ async def extract_videos_info(url: str = ..., date_after: str | None = None):
         directory=VIDEOS_INFO_DIRECTORY, raise_on_exists=False
     )
     url_info_path = os.path.join(videos_info_path, sanitize_filename(url))
-    if os.path.exists(url_info_path):
-        await asyncio.to_thread(shutil.rmtree, url_info_path)
     await asyncio.to_thread(os.mkdir, url_info_path)
     try:
         args = [
@@ -67,12 +78,7 @@ async def extract_videos_info(url: str = ..., date_after: str | None = None):
             args.extend(["--dateafter", date_after])
         args.extend([url])
         await _run(*args)
-        with os.scandir(path=url_info_path) as it:
-            for file in it:
-                if file.is_file() and file.name.endswith(".json"):
-                    with open(file.path, "r") as f:
-                        text = await asyncio.to_thread(f.read)
-                        yield await asyncio.to_thread(orjson.loads, text)
+        yield _stream_files(path=url_info_path)
     except Exception as e:
         raise e
     finally:
