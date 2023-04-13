@@ -41,7 +41,6 @@ async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = .
             channel_url = f"https://youtube.com/channel/{channel_id}/channels"
             driver.get(channel_url)
             time.sleep(5)
-            assert driver.current_url == channel_url
             subscription_header = next(
                 (
                     header
