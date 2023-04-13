@@ -38,8 +38,10 @@ async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = .
             options=options,
         )
         try:
-            driver.get(f"https://youtube.com/channel/{channel_id}/channels")
+            channel_url = f"https://youtube.com/channel/{channel_id}/channels"
+            driver.get(channel_url)
             time.sleep(5)
+            assert driver.current_url == channel_url
             subscription_header = next(
                 (
                     header
@@ -54,6 +56,7 @@ async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = .
             contents_element: WebElement | None = driver.execute_script(
                 "return arguments[0].nextElementSibling;", subscription_header
             )
+            assert contents_element is not None
             assert contents_element.get_dom_attribute("id") == "contents"
             channels = []
             while True:
