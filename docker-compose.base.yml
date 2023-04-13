@@ -37,6 +37,10 @@ services:
       interval: 30s
     environment:
       ENV: ${ENV}
+    volumes: 
+      - type: volume
+        source: temp_volume
+        target: /src/temp
     <<: 
       - *depends-all
       - *logging
@@ -48,6 +52,10 @@ services:
     environment:
       ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
+    volumes: 
+      - type: volume
+        source: temp_volume
+        target: /src/temp
     <<: 
       - *depends-all
       - *logging

@@ -137,10 +137,5 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-music_jobs
-tags
-data
-logs
-*.sqlite*
 tmp
-videos_info
+temp

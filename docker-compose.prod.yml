@@ -51,3 +51,4 @@ volumes:
   postgres_volume: {}
   redis_volume: {}
   influxdb_volume: {}
+  temp_volume: {}

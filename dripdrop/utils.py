@@ -8,7 +8,9 @@ T = TypeVar("T")
 
 
 async def gather_with_limit(
-    *coroutines: Coroutine[Any, Any, T], limit: int = -1
+    *coroutines: Coroutine[Any, Any, T],
+    limit: int = -1,
+    return_exceptions=False,
 ) -> list[T]:
     semaphore = asyncio.Semaphore(value=limit if limit != -1 else len(coroutines))
 
@@ -16,8 +18,10 @@ async def gather_with_limit(
         async with semaphore:
             return await coroutine
 
-    tasks = [run_coro(coroutine=coroutine) for coroutine in coroutines]
-    return await asyncio.gather(*tasks)
+    tasks = [
+        asyncio.create_task(run_coro(coroutine=coroutine)) for coroutine in coroutines
+    ]
+    return await asyncio.gather(*tasks, return_exceptions=return_exceptions)
 
 
 def get_current_time():

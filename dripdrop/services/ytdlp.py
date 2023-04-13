@@ -4,9 +4,9 @@ import orjson
 import shutil
 from yt_dlp.utils import sanitize_filename
 
+from dripdrop.services import temp_files
 
 EXECUTABLE = "yt-dlp"
-VIDEOS_INFO_DIR = "videos_info"
 
 
 async def _run(*args):
@@ -44,32 +44,30 @@ async def extract_video_info(url: str = ...):
 
 
 async def extract_videos_info(url: str = ..., date_after: str | None = None):
-    info_directory = os.path.join(VIDEOS_INFO_DIR, sanitize_filename(url))
+    VIDEOS_INFO_DIRECTORY = "videos_info"
 
-    def _create_info_folder():
-        try:
-            os.mkdir(VIDEOS_INFO_DIR)
-        except FileExistsError:
-            pass
-        os.mkdir(info_directory)
-
-    await asyncio.to_thread(_create_info_folder)
-
-    args = [
-        "--lazy-playlist",
-        "--break-on-reject",
-        "--write-info-json",
-        "--no-write-playlist-metafiles",
-        "-o",
-        os.path.join(info_directory, "%(title)s.%(ext)s"),
-    ]
-    if date_after:
-        args.extend(["--dateafter", date_after])
-    args.extend([url])
-    await _run(*args)
-
+    videos_info_path = await temp_files.create_new_directory(
+        directory=VIDEOS_INFO_DIRECTORY, raise_on_exists=False
+    )
+    url_info_path = os.path.join(videos_info_path, sanitize_filename(url))
+    if os.path.exists(url_info_path):
+        await asyncio.to_thread(shutil.rmtree, url_info_path)
+    await asyncio.to_thread(os.mkdir, url_info_path)
     try:
-        with os.scandir(path=info_directory) as it:
+        args = [
+            "--lazy-playlist",
+            "--break-on-reject",
+            "--write-info-json",
+            "--no-write-playlist-metafiles",
+            "--skip-download",
+            "-o",
+            os.path.join(url_info_path, "%(title)s.%(ext)s"),
+        ]
+        if date_after:
+            args.extend(["--dateafter", date_after])
+        args.extend([url])
+        await _run(*args)
+        with os.scandir(path=url_info_path) as it:
             for file in it:
                 if file.is_file() and file.name.endswith(".json"):
                     with open(file.path, "r") as f:
@@ -78,4 +76,4 @@ async def extract_videos_info(url: str = ..., date_after: str | None = None):
     except Exception as e:
         raise e
     finally:
-        await asyncio.to_thread(shutil.rmtree, info_directory)
+        await asyncio.to_thread(shutil.rmtree, url_info_path)

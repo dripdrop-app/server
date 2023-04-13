@@ -241,6 +241,19 @@ async def add_new_channel_videos(
 
 
 @dripdrop_tasks.worker_task()
+async def add_many_new_channel_videos(
+    channel_ids: list[str] = ..., date_after: str | None = None
+):
+    await dripdrop_utils.gather_with_limit(
+        *[
+            add_new_channel_videos(channel_id=channel_id, date_after=date_after)
+            for channel_id in channel_ids
+        ],
+        return_exceptions=True,
+    )
+
+
+@dripdrop_tasks.worker_task()
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -255,12 +268,16 @@ async def update_channel_videos(
     else:
         query = query.order_by(YoutubeSubscription.channel_id.asc())
     async for subscriptions in database.stream_mappings(
-        query=query, yield_per=1, session=session
+        query=query, yield_per=5, session=session
     ):
-        subscription = subscriptions[0]
         await rq.enqueue(
-            function=add_new_channel_videos,
-            kwargs={"channel_id": subscription.channel_id, "date_after": date_after},
+            function=add_many_new_channel_videos,
+            kwargs={
+                "channel_ids": [
+                    subscription.channel_id for subscription in subscriptions
+                ],
+                "date_after": date_after,
+            },
             at_front=True,
         )
 

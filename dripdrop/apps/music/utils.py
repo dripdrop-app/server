@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from fastapi import UploadFile
 
 from dripdrop.logging import logger
-from dripdrop.services import http_client, image_downloader, s3
+from dripdrop.services import http_client, image_downloader, s3, temp_files
 from dripdrop.services.audio_tag import AudioTags
 
 from .models import MusicJob
@@ -79,48 +79,40 @@ async def cleanup_job(job: MusicJob):
         )
 
 
+def _read_tags(file_path: str = ...):
+    audio_tags = AudioTags(file_path=file_path)
+    title = audio_tags.title
+    artist = audio_tags.artist
+    album = audio_tags.album
+    grouping = audio_tags.grouping
+    artwork_url = audio_tags.get_artwork_as_base64()
+    return TagsResponse(
+        title=title,
+        artist=artist,
+        album=album,
+        grouping=grouping,
+        artwork_url=artwork_url,
+    )
+
+
 async def read_tags(file: bytes = ..., filename: str = ...):
-    def _create_tags_directory():
-        TAGS_FOLDER = "tags"
-        folder_id = str(uuid.uuid4())
-        tag_path = os.path.join(TAGS_FOLDER, folder_id)
-        try:
-            os.mkdir("tags")
-        except FileExistsError:
-            logger.exception(traceback.format_exc())
-        os.mkdir(tag_path)
-        return tag_path
+    TAGS_DIRECTORY = "tags"
 
-    def _clean_up(tag_path: str = ...):
-        try:
-            shutil.rmtree(tag_path)
-        except Exception:
-            pass
+    tags_directory_path = await temp_files.create_new_directory(
+        directory=TAGS_DIRECTORY, raise_on_exists=False
+    )
+    directory_id = str(uuid.uuid4())
+    directory_path = os.path.join(tags_directory_path, directory_id)
+    await asyncio.to_thread(os.mkdir, directory_path)
+    file_path = os.path.join(directory_path, filename)
+    tags = TagsResponse()
+    try:
+        with open(file_path, "wb") as f:
+            await asyncio.to_thread(f.write, file)
+        tags = await asyncio.to_thread(_read_tags, file_path)
+    except Exception:
+        logger.exception(traceback.format_exc())
+    finally:
+        await asyncio.to_thread(shutil.rmtree, directory_path)
 
-    def _read_tags(file: bytes = ..., filename: str = ...):
-        tag_path = _create_tags_directory()
-        try:
-            file_path = os.path.join(tag_path, filename)
-            with open(file_path, "wb") as f:
-                f.write(file)
-
-            audio_tags = AudioTags(file_path=file_path)
-            title = audio_tags.title
-            artist = audio_tags.artist
-            album = audio_tags.album
-            grouping = audio_tags.grouping
-            artwork_url = audio_tags.get_artwork_as_base64()
-            _clean_up(tag_path=tag_path)
-            return TagsResponse(
-                title=title,
-                artist=artist,
-                album=album,
-                grouping=grouping,
-                artwork_url=artwork_url,
-            )
-        except Exception:
-            _clean_up(tag_path=tag_path)
-            logger.exception(traceback.format_exc())
-            return TagsResponse()
-
-    return await asyncio.to_thread(_read_tags, file=file, filename=filename)
+    return tags

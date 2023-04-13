@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dripdrop.apps.music.models import MusicJob
+from dripdrop.services import temp_files
 from dripdrop.services.audio_tag import AudioTags
 
 
@@ -111,10 +112,11 @@ def get_completed_job(session: AsyncSession):
 def get_tags_from_file():
     @contextmanager
     def _get_tags_from_file(file: bytes = ...):
-        with open("test.mp3", "wb") as f:
+        path = os.path.join(temp_files.TEMP_DIRECTORY, "test.mp3")
+        with open(path, "wb") as f:
             f.write(file)
 
-        yield AudioTags(file_path="test.mp3")
-        os.remove("test.mp3")
+        yield AudioTags(file_path=path)
+        os.remove(path)
 
     return _get_tags_from_file

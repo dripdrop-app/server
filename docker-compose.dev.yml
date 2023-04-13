@@ -41,3 +41,4 @@ services:
 volumes:
   postgres_volume: {}
   redis_volume: {}
+  temp_volume: {}

@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from dripdrop.app import app
 from dripdrop.apps.authentication.app import password_context
 from dripdrop.apps.authentication.models import User
-from dripdrop.services import database, s3
+from dripdrop.services import database, s3, temp_files
 from dripdrop.services.database import AsyncSession
 from dripdrop.dependencies import COOKIE_NAME
 from dripdrop.models.base import Base
@@ -30,11 +30,7 @@ async def setup_database():
 def delete_directories():
     def _delete_directories():
         try:
-            shutil.rmtree("music_jobs")
-        except Exception:
-            pass
-        try:
-            shutil.rmtree("tags")
+            shutil.rmtree(temp_files.TEMP_DIRECTORY)
         except Exception:
             pass
 

@@ -15,6 +15,7 @@ from dripdrop.services import (
     image_downloader,
     rq,
     s3,
+    temp_files,
     ytdlp,
 )
 from dripdrop.services.database import AsyncSession
@@ -24,19 +25,6 @@ from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from . import utils
 from .models import MusicJob
 from .responses import MusicJobUpdateResponse
-
-
-JOB_DIR = "music_jobs"
-
-
-def _create_job_folder(job: MusicJob = ...):
-    job_path = os.path.join(JOB_DIR, job.id)
-    try:
-        os.mkdir(JOB_DIR)
-    except FileExistsError:
-        pass
-    os.mkdir(job_path)
-    return job_path
 
 
 async def _retrieve_audio_file(job_path: str = ..., job: MusicJob = ...):
@@ -92,18 +80,24 @@ def _update_audio_tags(
 
 @dripdrop_tasks.worker_task()
 async def run_job(job_id: str = ..., session: AsyncSession = ...):
+    JOB_DIR = "music_jobs"
+
+    root_job_path = await temp_files.create_new_directory(
+        directory=JOB_DIR, raise_on_exists=False
+    )
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
     job = results.first()
     if not job:
         raise Exception(f"Job with id ({job_id}) not found")
-    job_path = None
     websocket_channel = WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE)
+    await websocket_channel.publish(
+        message=MusicJobUpdateResponse(id=job_id, status="STARTED")
+    )
+    job_path = None
     try:
-        await websocket_channel.publish(
-            message=MusicJobUpdateResponse(id=job_id, status="STARTED")
-        )
-        job_path = await asyncio.to_thread(_create_job_folder, job=job)
+        job_path = os.path.join(root_job_path, job.id)
+        await asyncio.to_thread(os.mkdir, job_path)
         filename = await _retrieve_audio_file(job_path=job_path, job=job)
         artwork_info = await _retrieve_artwork(job=job)
         await asyncio.to_thread(
