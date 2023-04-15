@@ -23,6 +23,7 @@ def upgrade():
         sa.text("SELECT max(youtube_video_categories.id) FROM youtube_video_categories")
     )
     restart = results.scalar()
+    restart = restart if restart else 1
     op.execute(f"ALTER SEQUENCE youtube_video_categories_id_seq RESTART WITH {restart}")
     pass
     # ### end Alembic commands ###

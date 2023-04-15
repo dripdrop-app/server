@@ -77,6 +77,7 @@ class DockerInterface:
                 "-f",
                 self._compose_file,
                 "up",
+                "--remove-orphans",
                 "--wait",
             ],
             env=self._load_environment_variables(),

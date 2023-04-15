@@ -4,7 +4,7 @@ from typing import Optional
 
 from dripdrop.apps.music import tasks as music_tasks
 from dripdrop.apps.youtube import tasks as youtube_tasks
-from dripdrop.services import rq_client, tasker
+from dripdrop.services import cron, rq_client
 
 from . import dependencies
 
@@ -23,7 +23,7 @@ async def check_admin_session():
 
 @app.get("/cron/run")
 async def run_cron_jobs():
-    await tasker.run_cron_jobs()
+    await cron.run_cron_jobs()
     return Response(None, status_code=status.HTTP_200_OK)
 
 
