@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from dripdrop.logger import logger
 from dripdrop.services.cron import start_cron_jobs, clear_cron_jobs
 
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--schedule", action="store_true", default=False)
