@@ -1,7 +1,5 @@
-import asyncio
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
-from rq.job import Job
 from sqlalchemy import select, delete, false, and_
 
 import dripdrop.tasks as dripdrop_tasks
@@ -135,21 +133,16 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 
 @dripdrop_tasks.worker_task()
 async def add_new_channel_videos(
-    channel_id: str = ...,
-    date_after: str | None = None,
-    session: AsyncSession = ...,
-    job: Job = ...,
+    channel_id: str = ..., date_after: str | None = None, session: AsyncSession = ...
 ):
-    REFETCH = "refetch"
-
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
     results = await session.scalars(query)
     channel = results.first()
     if not channel:
-        raise Exception("Channel not found")
+        raise Exception(f"Channel ({channel_id}) not found")
 
-    if channel.updating:
-        raise Exception("Channel already updating")
+    # if channel.updating:
+    #     raise Exception(f"Channel ({channel_id}) already updating")
 
     channel.updating = True
     await session.commit()
@@ -175,7 +168,6 @@ async def add_new_channel_videos(
         async for video_info in ytdlp.extract_videos_info(
             url=f"https://youtube.com/channel/{channel_id}/videos",
             date_after=date_after,
-            refetch=not job.meta.get(REFETCH, True),
         ):
             server_current_time = datetime.now(tz=tzlocal())
             current_time = dripdrop_utils.get_current_time()
@@ -234,8 +226,6 @@ async def add_new_channel_videos(
             await session.commit()
         channel.last_videos_updated = dripdrop_utils.get_current_time()
     except Exception as e:
-        job.meta[REFETCH] = False
-        await asyncio.to_thread(job.save_meta)
         raise e
     finally:
         channel.updating = False

@@ -29,7 +29,7 @@ async def run_cron_jobs():
 
 @app.get("/delete_old_jobs")
 async def run_delete_old_jobs():
-    await rq_client.enqueue(function=music_tasks.delete_old_jobs)
+    await rq_client.enqueue(function=music_tasks.delete_old_music_jobs)
     return Response(None, status_code=status.HTTP_200_OK)
 
 

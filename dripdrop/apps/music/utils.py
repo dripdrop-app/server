@@ -64,18 +64,18 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
     return uploaded_file_info
 
 
-async def cleanup_job(job: MusicJob):
-    if job.artwork_filename:
+async def cleanup_music_job(music_job: MusicJob = ...):
+    if music_job.artwork_filename:
         await s3.delete_file(
-            filename=job.artwork_filename,
+            filename=music_job.artwork_filename,
         )
-    if job.download_filename:
+    if music_job.download_filename:
         await s3.delete_file(
-            filename=job.download_filename,
+            filename=music_job.download_filename,
         )
-    if job.original_filename:
+    if music_job.original_filename:
         await s3.delete_file(
-            filename=job.original_filename,
+            filename=music_job.original_filename,
         )
 
 

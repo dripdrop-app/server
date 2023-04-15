@@ -20,7 +20,7 @@ async def run_cron_jobs():
         function=youtube_tasks.update_channel_videos,
         depends_on=update_subscriptions_job,
     )
-    await rq_client.enqueue(function=music_tasks.delete_old_jobs)
+    await rq_client.enqueue(function=music_tasks.delete_old_music_jobs)
 
 
 async def create_cron_job(
@@ -40,7 +40,9 @@ async def create_cron_job(
         kwargs=kwargs,
     )
     await redis.rpush(CRON_JOBS_LIST, job.id)
-    logger.info(f"Scheduling {job.get_call_string()} to run at {next_run_time}")
+    logger.info(
+        f"Scheduling {job.get_call_string()} ({job.args}, {job.kwargs}) to run at {next_run_time}"
+    )
     rq_client.queue.enqueue(
         create_cron_job,
         kwargs={
@@ -58,7 +60,9 @@ async def start_cron_jobs():
         cron_string="0 * * * *",
         function=youtube_tasks.update_channel_videos,
     )
-    await create_cron_job(cron_string="0 0 * * *", function=music_tasks.delete_old_jobs)
+    await create_cron_job(
+        cron_string="0 0 * * *", function=music_tasks.delete_old_music_jobs
+    )
     await create_cron_job(
         cron_string="30 0 * * *", function=youtube_tasks.update_subscriptions
     )

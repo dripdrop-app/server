@@ -50,8 +50,8 @@ class TagsResponse(ResponseBaseModel):
     artwork_url: Optional[str] = Field(None)
 
 
-class JobsResponse(ResponseBaseModel):
-    jobs: List[MusicJobResponse]
+class MusicJobsResponse(ResponseBaseModel):
+    music_jobs: List[MusicJobResponse]
     total_pages: int
 
 

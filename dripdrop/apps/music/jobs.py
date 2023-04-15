@@ -33,7 +33,7 @@ from dripdrop.services.websocket_channel import (
 
 from . import utils, tasks
 from .models import MusicJob
-from .responses import MusicJobUpdateResponse, JobsResponse, ErrorMessages
+from .responses import MusicJobUpdateResponse, MusicJobsResponse, ErrorMessages
 
 
 jobs_api = APIRouter(
@@ -45,7 +45,7 @@ jobs_api = APIRouter(
 
 @jobs_api.get(
     "/{page}/{per_page}",
-    response_model=JobsResponse,
+    response_model=MusicJobsResponse,
     responses={
         status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.PAGE_NOT_FOUND}
     },
@@ -62,7 +62,7 @@ async def get_jobs(
         .order_by(MusicJob.created_at.desc())
     )
     results = await session.scalars(query.offset((page - 1) * per_page))
-    jobs = list(map(lambda job: job, results.fetchmany(per_page)))
+    music_jobs = list(map(lambda job: job, results.fetchmany(per_page)))
     count_query = select(func.count(query.subquery().columns.id))
     count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
@@ -70,7 +70,7 @@ async def get_jobs(
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
         )
-    return JobsResponse(jobs=jobs, total_pages=total_pages)
+    return MusicJobsResponse(music_jobs=music_jobs, total_pages=total_pages)
 
 
 @jobs_api.websocket("/listen")
@@ -87,8 +87,8 @@ async def listen_jobs(
                 MusicJob.deleted_at.is_(None),
             )
             results = await session.scalars(query)
-            job = results.first()
-            if job:
+            music_job = results.first()
+            if music_job:
                 await websocket.send_json(jsonable_encoder(message))
 
     await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).listen(
@@ -166,7 +166,7 @@ async def create_job(
     )
     await session.commit()
     await rq_client.enqueue(
-        function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id
+        function=tasks.run_music_job, kwargs={"job_id": job_id}, job_id=job_id
     )
     return Response(None, status_code=status.HTTP_201_CREATED)
 
@@ -181,13 +181,13 @@ async def delete_job(
 ):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
-    job = results.first()
-    if not job:
+    music_job = results.first()
+    if not music_job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
     rq_client.stop_job(job_id=job_id)
-    await utils.cleanup_job(job=job)
-    job.deleted_at = dripdrop_utils.get_current_time()
+    await utils.cleanup_music_job(music_job=music_job)
+    music_job.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()
     return Response(None)
