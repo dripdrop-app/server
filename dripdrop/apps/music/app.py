@@ -3,7 +3,7 @@ from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, st
 from pydantic import HttpUrl
 
 from dripdrop.dependencies import get_authenticated_user
-from dripdrop.logging import logger
+from dripdrop.logger import logger
 from dripdrop.services import image_downloader, ytdlp
 
 from . import utils

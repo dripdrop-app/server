@@ -1,10 +1,11 @@
 import traceback
 from functools import wraps
 from inspect import signature
+from rq import get_current_job
 
 from dripdrop.services import database
 
-from .logging import logger
+from .logger import logger
 
 
 def exception_handler(raise_exception=True):
@@ -33,6 +34,8 @@ def worker_task(raise_exception=True):
             if "session" in parameters and "session" not in kwargs:
                 async with database.create_session() as session:
                     kwargs["session"] = session
+                    if "job" in parameters:
+                        kwargs["job"] = get_current_job()
                     return await function(*args, **kwargs)
             else:
                 return await function(*args, **kwargs)

@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import create_database_session, get_authenticated_user
-from dripdrop.logging import logger
+from dripdrop.logger import logger
 from dripdrop.services.database import AsyncSession
 
 from .models import (

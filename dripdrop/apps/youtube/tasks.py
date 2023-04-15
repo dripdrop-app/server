@@ -1,12 +1,14 @@
+import asyncio
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
+from rq.job import Job
 from sqlalchemy import select, delete, false, and_
 
 import dripdrop.tasks as dripdrop_tasks
 import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
-from dripdrop.services import database, rq, ytdlp, scraper
+from dripdrop.services import database, rq_client, scraper, ytdlp
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
@@ -72,10 +74,8 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                 )
             )
             await session.commit()
-            await rq.enqueue(
-                add_new_channel_videos,
-                kwargs={"channel_id": subscribed_channel.id},
-                at_front=True,
+            await rq_client.enqueue(
+                add_new_channel_videos, kwargs={"channel_id": subscribed_channel.id}
             )
         query = select(YoutubeSubscription).where(
             YoutubeSubscription.channel_id == subscribed_channel.id,
@@ -124,13 +124,9 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     )
     stream = await session.stream(query)
     async for row in stream.mappings():
-        await rq.enqueue(
+        await rq_client.enqueue(
             function=_delete_subscription,
-            kwargs={
-                "channel_id": row.channel_id,
-                "email": email,
-            },
-            at_front=True,
+            kwargs={"channel_id": row.channel_id, "email": email},
         )
     query = delete(YoutubeNewSubscription).where(YoutubeNewSubscription.email == email)
     await session.execute(query)
@@ -142,12 +138,18 @@ async def add_new_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
     session: AsyncSession = ...,
+    job: Job = ...,
 ):
+    REFETCH = "refetch"
+
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
     results = await session.scalars(query)
     channel = results.first()
     if not channel:
         raise Exception("Channel not found")
+
+    if channel.updating:
+        raise Exception("Channel already updating")
 
     channel.updating = True
     await session.commit()
@@ -170,68 +172,70 @@ async def add_new_channel_videos(
         )
     )
     try:
-        async with ytdlp.extract_videos_info(
+        async for video_info in ytdlp.extract_videos_info(
             url=f"https://youtube.com/channel/{channel_id}/videos",
             date_after=date_after,
-        ) as video_info_stream:
-            async for video_info in video_info_stream:
-                server_current_time = datetime.now(tz=tzlocal())
-                current_time = dripdrop_utils.get_current_time()
+            refetch=not job.meta.get(REFETCH, True),
+        ):
+            server_current_time = datetime.now(tz=tzlocal())
+            current_time = dripdrop_utils.get_current_time()
 
-                video_id = video_info["id"]
-                video_title = video_info["title"]
-                video_thumbnail = video_info["thumbnail"]
-                video_description = video_info["description"]
-                video_category_name = video_info["categories"][0]
-                video_upload_date = datetime.strptime(
-                    video_info["upload_date"], "%Y%m%d"
-                ).replace(
-                    hour=current_time.hour,
-                    minute=current_time.minute,
-                    second=current_time.second,
-                    tzinfo=settings.timezone,
+            video_id = video_info["id"]
+            video_title = video_info["title"]
+            video_thumbnail = video_info["thumbnail"]
+            video_description = video_info["description"]
+            video_category_name = video_info["categories"][0]
+            video_upload_date = datetime.strptime(
+                video_info["upload_date"], "%Y%m%d"
+            ).replace(
+                hour=current_time.hour,
+                minute=current_time.minute,
+                second=current_time.second,
+                tzinfo=settings.timezone,
+            )
+
+            if current_time.day != video_upload_date.day:
+                video_upload_date.replace(
+                    hour=server_current_time.hour,
+                    minute=server_current_time.minute,
+                    second=server_current_time.second,
                 )
 
-                if current_time.day != video_upload_date.day:
-                    video_upload_date.replace(
-                        hour=server_current_time.hour,
-                        minute=server_current_time.minute,
-                        second=server_current_time.second,
-                    )
-
-                query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+            results = await session.scalars(query)
+            video = results.first()
+            if video:
+                video.title = video_title
+                video.thumbnail = video_thumbnail
+                video.description = video_description
+                if video.title != video_title or video.thumbnail != video_thumbnail:
+                    video.published_at = video_upload_date
+            else:
+                query = select(YoutubeVideoCategory).where(
+                    YoutubeVideoCategory.name == video_category_name
+                )
                 results = await session.scalars(query)
-                video = results.first()
-                if video:
-                    video.title = video_title
-                    video.thumbnail = video_thumbnail
-                    video.description = video_description
-                    if video.title != video_title or video.thumbnail != video_thumbnail:
-                        video.published_at = video_upload_date
-                else:
-                    query = select(YoutubeVideoCategory).where(
-                        YoutubeVideoCategory.name == video_category_name
+                video_category = results.first()
+                if not video_category:
+                    video_category = YoutubeVideoCategory(name=video_category_name)
+                    session.add(video_category)
+                    await session.commit()
+                session.add(
+                    YoutubeVideo(
+                        id=video_id,
+                        title=video_title,
+                        thumbnail=video_thumbnail,
+                        channel_id=channel_id,
+                        category_id=video_category.id,
+                        description=video_description,
+                        published_at=video_upload_date,
                     )
-                    results = await session.scalars(query)
-                    video_category = results.first()
-                    if not video_category:
-                        video_category = YoutubeVideoCategory(name=video_category_name)
-                        session.add(video_category)
-                        await session.commit()
-                    session.add(
-                        YoutubeVideo(
-                            id=video_id,
-                            title=video_title,
-                            thumbnail=video_thumbnail,
-                            channel_id=channel_id,
-                            category_id=video_category.id,
-                            description=video_description,
-                            published_at=video_upload_date,
-                        )
-                    )
-                await session.commit()
+                )
+            await session.commit()
         channel.last_videos_updated = dripdrop_utils.get_current_time()
     except Exception as e:
+        job.meta[REFETCH] = False
+        await asyncio.to_thread(job.save_meta)
         raise e
     finally:
         channel.updating = False
@@ -259,10 +263,10 @@ async def update_channel_videos(
         query=query, yield_per=1, session=session
     ):
         subscription = subscriptions[0]
-        await rq.enqueue(
+        await rq_client.enqueue(
             function=add_new_channel_videos,
             kwargs={"channel_id": subscription.channel_id, "date_after": date_after},
-            at_front=True,
+            retry=rq_client.Retry(max=2, interval=settings.timeout),
         )
 
 
@@ -273,9 +277,7 @@ async def update_subscriptions(session: AsyncSession = ...):
         query=query, yield_per=1, session=session
     ):
         user = users[0]
-        await rq.enqueue(
+        await rq_client.enqueue(
             function=update_user_subscriptions,
             kwargs={"email": user.email},
-            at_front=True,
-            retry=rq.Retry(max=2),
         )

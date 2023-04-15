@@ -3,6 +3,7 @@ import os
 import shutil
 from datetime import timedelta
 from pydub import AudioSegment
+
 from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
@@ -13,7 +14,7 @@ from dripdrop.services import (
     database,
     http_client,
     image_downloader,
-    rq,
+    rq_client,
     s3,
     temp_files,
     ytdlp,
@@ -153,4 +154,4 @@ async def delete_old_jobs(session: AsyncSession = ...):
         query=query, yield_per=1, session=session
     ):
         job = jobs[0]
-        await rq.enqueue(function=_delete_job, kwargs={"job_id": job.id}, at_front=True)
+        await rq_client.enqueue(function=_delete_job, kwargs={"job_id": job.id})

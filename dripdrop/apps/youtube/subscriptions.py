@@ -5,7 +5,7 @@ from sqlalchemy import select, func, and_
 import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import create_database_session, get_authenticated_user
-from dripdrop.services import rq, scraper
+from dripdrop.services import rq_client, scraper
 from dripdrop.services.database import AsyncSession
 
 from . import tasks
@@ -114,7 +114,7 @@ async def add_user_subscription(
             )
         subscription.deleted_at = None
     await session.commit()
-    await rq.enqueue(
+    await rq_client.enqueue(
         tasks.add_new_channel_videos,
         kwargs={"channel_id": channel.id, "date_after": "20050214"},
     )

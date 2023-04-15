@@ -7,7 +7,7 @@ from rq.job import Job, JobStatus, Retry
 from typing import Coroutine
 
 from dripdrop.settings import ENV, settings
-from dripdrop.logging import logger
+from dripdrop.logger import logger
 
 queue = Queue(
     connection=Redis.from_url(settings.redis_url), default_timeout=settings.timeout
@@ -37,6 +37,8 @@ async def enqueue(
         depends_on=depends_on,
         at_front=at_front,
         retry=retry,
+        failure_ttl=1,
+        result_ttl=1,
     )
 
 
@@ -48,7 +50,7 @@ def stop_job(job_id: str = ...):
             job.cancel()
         elif status == JobStatus.STARTED:
             send_stop_job_command(queue.connection, job_id)
-        logger.info(f"Stopped job {job.get_call_string()}")
+        logger.info(f"Stopped job {job.get_call_string()} ({job.args}, {job.kwargs})")
         job.delete(delete_dependents=True)
     except NoSuchJobError:
         logger.info(f"Job not found ({job_id})")

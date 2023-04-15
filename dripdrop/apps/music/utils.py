@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass
 from fastapi import UploadFile
 
-from dripdrop.logging import logger
+from dripdrop.logger import logger
 from dripdrop.services import http_client, image_downloader, s3, temp_files
 from dripdrop.services.audio_tag import AudioTags
 

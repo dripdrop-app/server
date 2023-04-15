@@ -23,8 +23,8 @@ from typing import Optional
 import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import create_database_session, get_authenticated_user
-from dripdrop.logging import logger
-from dripdrop.services import rq
+from dripdrop.logger import logger
+from dripdrop.services import rq_client
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import (
     RedisChannels,
@@ -165,7 +165,9 @@ async def create_job(
         )
     )
     await session.commit()
-    await rq.enqueue(function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id)
+    await rq_client.enqueue(
+        function=tasks.run_job, kwargs={"job_id": job_id}, job_id=job_id
+    )
     return Response(None, status_code=status.HTTP_201_CREATED)
 
 
@@ -184,7 +186,7 @@ async def delete_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
-    rq.stop_job(job_id=job_id)
+    rq_client.stop_job(job_id=job_id)
     await utils.cleanup_job(job=job)
     job.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()

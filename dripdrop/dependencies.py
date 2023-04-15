@@ -9,7 +9,7 @@ from dripdrop.apps.authentication.models import User
 from dripdrop.services import database
 from dripdrop.services.database import AsyncSession
 
-from .logging import logger
+from .logger import logger
 from .settings import settings
 
 ALGORITHM = "HS256"

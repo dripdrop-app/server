@@ -14,7 +14,7 @@ from sqlalchemy import select, and_
 import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.dependencies import create_database_session, get_authenticated_user
-from dripdrop.services import rq, scraper
+from dripdrop.services import rq_client, scraper
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
@@ -136,9 +136,9 @@ async def update_user_youtube_channel(
     else:
         session.add(YoutubeUserChannel(id=channel_info.id, email=user.email))
     await session.commit()
-    await rq.enqueue(
+    await rq_client.enqueue(
         tasks.update_user_subscriptions,
         kwargs={"email": user.email},
-        retry=rq.Retry(max=2),
+        retry=rq_client.Retry(max=2),
     )
     return Response(None, status_code=status.HTTP_200_OK)
