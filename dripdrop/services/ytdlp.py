@@ -65,7 +65,8 @@ async def extract_videos_info(url: str = ..., date_after: str | None = None):
             await _run(*args, stdout=f)
         with open(file=url_info_path, mode="r") as f:
             json = await asyncio.to_thread(f.readline)
-            yield await asyncio.to_thread(orjson.loads, json)
+            if json:
+                yield await asyncio.to_thread(orjson.loads, json)
     except Exception as e:
         raise e
     finally:
