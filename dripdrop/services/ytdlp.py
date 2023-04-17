@@ -55,17 +55,13 @@ async def _read_lines(stream):
 
 
 async def get_videos_playlist_length(url: str = ...):
-    args = [
-        *["--playlist-items", "1:1"],
-        *["--print", "n_entries"],
-        "--skip-download",
-        url,
-    ]
+    args = [*["--print", "n_entries"], "--skip-download", url]
     async with _run(*args) as process:
-        output = await process.stdout.read()
-        if not output:
-            raise Exception("Could not retrieve playlist length")
-        return int(output)
+        async for line in _read_lines(process.stdout):
+            try:
+                return int(line)
+            except Exception:
+                raise Exception("Could not retrieve playlist length")
 
 
 async def extract_videos_info(
