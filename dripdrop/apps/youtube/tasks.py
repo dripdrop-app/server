@@ -137,7 +137,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 
 
 @dripdrop_tasks.worker_task()
-async def _add_channel_videos(
+async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
     playlist_items: str | None = None,
@@ -264,12 +264,12 @@ async def add_new_channel_videos(
     )
     jobs = []
     while playlist_length > 0:
-        start = max(0, playlist_length - 100)
+        start = max(0, playlist_length - 25)
         end = playlist_length
         playlist_length = start - 1
         jobs.append(
             await rq_client.enqueue(
-                function=_add_channel_videos,
+                function=add_channel_videos,
                 kwargs={
                     "channel_id": channel_id,
                     "date_after": date_after,

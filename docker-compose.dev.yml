@@ -17,7 +17,9 @@ services:
       - type: bind
         source: ./
         target: /src
-      
+    deploy:
+      replicas: 2
+
   postgres:
     extends:
       file: docker-compose.base.yml
