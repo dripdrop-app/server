@@ -39,20 +39,25 @@ class CustomJob(Job):
         )
 
 
-queue = Queue(connection=connection, default_timeout=settings.timeout)
+queue = Queue(
+    connection=connection, default_timeout=settings.timeout, job_class=CustomJob
+)
 high_queue = Queue(
-    name="high", connection=connection, is_async=settings.env != ENV.TESTING
+    name="high",
+    connection=connection,
+    is_async=settings.env != ENV.TESTING,
+    job_class=CustomJob,
 )
 
 
 def stop_job(job_id: str = ...):
     try:
-        job = Job.fetch(job_id, connection=queue.connection)
+        job = Job.fetch(job_id, connection=connection)
         status = job.get_status()
         if status == JobStatus.SCHEDULED:
             job.cancel()
         elif status == JobStatus.STARTED:
-            send_stop_job_command(queue.connection, job_id)
+            send_stop_job_command(connection, job_id)
         logger.info(f"Stopped job {job.get_call_string()} ({job.args}, {job.kwargs})")
         job.delete(delete_dependents=True)
     except NoSuchJobError:
