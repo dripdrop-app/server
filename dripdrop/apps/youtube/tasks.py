@@ -282,6 +282,7 @@ async def add_new_channel_videos(
             )
         )
     await asyncio.to_thread(
+        rq_client.queue.enqueue,
         qa_add_new_channel_videos,
         channel_id=channel_id,
         job_ids=[job.id for job in jobs],
