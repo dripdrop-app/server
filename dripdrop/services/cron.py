@@ -25,22 +25,13 @@ async def run_cron_jobs():
     await asyncio.to_thread(rq_client.queue.enqueue, music_tasks.delete_old_music_jobs)
 
 
-async def create_cron_job(
-    cron_string: str = ...,
-    function: Callable = ...,
-    args: tuple = (),
-    kwargs: dict = {},
-):
+async def create_cron_job(cron_string: str = ..., function: Callable = ...):
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
     next_run_time = cron.get_current(ret_type=datetime)
     job = await asyncio.to_thread(
-        rq_client.high_queue.enqueue_at,
-        next_run_time,
-        function,
-        args=args,
-        kwargs=kwargs,
+        rq_client.high_queue.enqueue_at, next_run_time, function
     )
     async with redis_client.create_client() as redis:
         await redis.rpush(CRON_JOBS_LIST, job.id)
@@ -52,8 +43,6 @@ async def create_cron_job(
         create_cron_job,
         cron_string=cron_string,
         function=function,
-        args=args,
-        kwargs=kwargs,
         depends_on=Dependency(jobs=[job], allow_failure=True),
     )
 
