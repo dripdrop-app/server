@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 import shutil
 from fastapi import status
@@ -106,21 +105,13 @@ def create_and_login_user(client: AsyncClient, create_user):
 
 @pytest.fixture
 def mock_enqueue(monkeypatch: pytest.MonkeyPatch):
-    async def _mock_enqueue(no_task=False):
-        async def run(*other_args, function=..., args=(), kwargs={}, **other_kwargs):
-            try:
-                return await asyncio.wait_for(
-                    function(*args, **kwargs), settings.timeout
-                )
-            except Exception:
-                pass
-
-        async def run_no_task(*args, **kwargs):
+    async def _mock_enqueue():
+        def run_no_task(*args, **kwargs):
             return None
 
-        if no_task:
-            monkeypatch.setattr("dripdrop.services.rq_client.enqueue", run_no_task)
-        else:
-            monkeypatch.setattr("dripdrop.services.rq_client.enqueue", run)
+        monkeypatch.setattr("dripdrop.services.rq_client.queue.enqueue", run_no_task)
+        monkeypatch.setattr(
+            "dripdrop.services.rq_client.high_queue.enqueue", run_no_task
+        )
 
     return _mock_enqueue

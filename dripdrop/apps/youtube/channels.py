@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import (
     APIRouter,
     HTTPException,
@@ -136,7 +137,7 @@ async def update_user_youtube_channel(
     else:
         session.add(YoutubeUserChannel(id=channel_info.id, email=user.email))
     await session.commit()
-    await rq_client.enqueue(
-        tasks.update_user_subscriptions, kwargs={"email": user.email}
+    await asyncio.to_thread(
+        rq_client.queue.enqueue, tasks.update_user_subscriptions, email=user.email
     )
     return Response(None, status_code=status.HTTP_200_OK)

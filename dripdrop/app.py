@@ -4,7 +4,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from dripdrop.services.redis_client import redis
 from dripdrop.services.websocket_channel import WebsocketChannel
 from dripdrop.settings import settings, ENV
 
@@ -31,7 +30,6 @@ register_router(prefix="/youtube", app=youtube_app)
 async def lifespan(app: FastAPI):
     yield
     WebsocketChannel.close()
-    await redis.close()
 
 
 app = FastAPI(

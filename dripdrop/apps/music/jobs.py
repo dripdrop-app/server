@@ -1,3 +1,4 @@
+import asyncio
 import math
 import re
 import traceback
@@ -165,8 +166,11 @@ async def create_job(
         )
     )
     await session.commit()
-    await rq_client.enqueue(
-        function=tasks.run_music_job, kwargs={"job_id": job_id}, job_id=job_id
+    await asyncio.to_thread(
+        rq_client.high_queue.enqueue,
+        tasks.run_music_job,
+        music_job_id=job_id,
+        job_id=job_id,
     )
     return Response(None, status_code=status.HTTP_201_CREATED)
 
@@ -186,7 +190,7 @@ async def delete_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
-    rq_client.stop_job(job_id=job_id)
+    await asyncio.to_thread(rq_client.stop_job, job_id=job_id)
     await utils.cleanup_music_job(music_job=music_job)
     music_job.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()

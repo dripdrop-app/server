@@ -9,7 +9,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from dripdrop.logger import logger
 from dripdrop.responses import ResponseBaseModel
-from dripdrop.services.redis_client import redis
+from dripdrop.services import redis_client
 
 
 class PingResponse(ResponseBaseModel):
@@ -32,7 +32,8 @@ class WebsocketChannel:
         WebsocketChannel.close_sockets = True
 
     async def publish(self, message: ResponseBaseModel = ...):
-        await redis.publish(self.channel.value, orjson.dumps(message.dict()))
+        async with redis_client.create_client() as redis:
+            await redis.publish(self.channel.value, orjson.dumps(message.dict()))
 
     async def listen(self, websocket: WebSocket = ..., handler: Coroutine = ...):
         task: Task = None
@@ -65,12 +66,13 @@ class WebsocketChannel:
                     pass
 
     async def _subscribe(self, handler: Coroutine = ...):
-        pubsub = redis.pubsub()
-        await pubsub.subscribe(self.channel.value)
-        while True:
-            message = await pubsub.get_message(
-                ignore_subscribe_messages=True,
-                timeout=1.0,
-            )
-            if message and message.get("type") == "message":
-                await handler(orjson.loads(message.get("data").decode()))
+        async with redis_client.create_client() as redis:
+            pubsub = redis.pubsub()
+            await pubsub.subscribe(self.channel.value)
+            while True:
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True,
+                    timeout=1.0,
+                )
+                if message and message.get("type") == "message":
+                    await handler(orjson.loads(message.get("data").decode()))

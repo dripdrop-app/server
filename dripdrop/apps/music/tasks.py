@@ -80,10 +80,11 @@ def _update_audio_tags(
         )
 
 
-@dripdrop_tasks.worker_task()
-async def run_music_job(job_id: str = ..., session: AsyncSession = ...):
+@dripdrop_tasks.worker_task
+async def run_music_job(music_job_id: str = ..., session: AsyncSession = ...):
     JOB_DIR = "music_jobs"
 
+    job_id = music_job_id
     root_job_path = await temp_files.create_new_directory(
         directory=JOB_DIR, raise_on_exists=False
     )
@@ -135,19 +136,19 @@ async def run_music_job(job_id: str = ..., session: AsyncSession = ...):
             await asyncio.to_thread(shutil.rmtree, job_path)
 
 
-@dripdrop_tasks.worker_task()
-async def _delete_music_job(job_id: str = ..., session: AsyncSession = ...):
-    query = select(MusicJob).where(MusicJob.id == job_id)
+@dripdrop_tasks.worker_task
+async def _delete_music_job(music_job_id: str = ..., session: AsyncSession = ...):
+    query = select(MusicJob).where(MusicJob.id == music_job_id)
     results = await session.scalars(query)
     music_job = results.first()
     if not music_job:
-        raise Exception(f"Job ({job_id}) could not be found")
+        raise Exception(f"Music Job ({music_job_id}) could not be found")
     await utils.cleanup_music_job(music_job=music_job)
     music_job.deleted_at = dripdrop_utils.get_current_time()
     await session.commit()
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def delete_old_music_jobs(session: AsyncSession = ...):
     limit = dripdrop_utils.get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(
@@ -159,6 +160,6 @@ async def delete_old_music_jobs(session: AsyncSession = ...):
         query=query, yield_per=1, session=session
     ):
         music_job = music_jobs[0]
-        await rq_client.enqueue(
-            function=_delete_music_job, kwargs={"job_id": music_job.id}
+        await asyncio.to_thread(
+            rq_client.queue.enqueue, _delete_music_job, music_job_id=music_job.id
         )

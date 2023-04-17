@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
+from rq.job import Dependency
 from sqlalchemy import select, delete, false, and_
 
 import dripdrop.tasks as dripdrop_tasks
@@ -27,7 +28,7 @@ def generate_channel_videos_url(channel_id: str = ...):
     return f"https://youtube.com/channel/{channel_id}/videos"
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def _delete_subscription(
     channel_id: str = ..., email: str = ..., session: AsyncSession = ...
 ):
@@ -43,7 +44,7 @@ async def _delete_subscription(
     await session.commit()
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def update_user_subscriptions(email: str = ..., session: AsyncSession = ...):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
     results = await session.scalars(query)
@@ -77,8 +78,10 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                 )
             )
             await session.commit()
-            await rq_client.enqueue(
-                add_new_channel_videos, kwargs={"channel_id": subscribed_channel.id}
+            await asyncio.to_thread(
+                rq_client.queue.enqueue,
+                add_channel_videos,
+                channel_id=subscribed_channel.id,
             )
         query = select(YoutubeSubscription).where(
             YoutubeSubscription.channel_id == subscribed_channel.id,
@@ -127,16 +130,18 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     )
     stream = await session.stream(query)
     async for row in stream.mappings():
-        await rq_client.enqueue(
-            function=_delete_subscription,
-            kwargs={"channel_id": row.channel_id, "email": email},
+        await asyncio.to_thread(
+            rq_client.queue.enqueue,
+            _delete_subscription,
+            channel_id=row.channel_id,
+            email=email,
         )
     query = delete(YoutubeNewSubscription).where(YoutubeNewSubscription.email == email)
     await session.execute(query)
     await session.commit()
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
@@ -211,7 +216,7 @@ async def add_channel_videos(
         await session.commit()
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def qa_add_new_channel_videos(
     channel_id: str = ..., job_ids: list[str] = ..., session: AsyncSession = ...
 ):
@@ -242,7 +247,7 @@ async def qa_add_new_channel_videos(
         raise Exception("Failed to update channel videos")
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def add_new_channel_videos(
     channel_id: str = ..., date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -268,24 +273,23 @@ async def add_new_channel_videos(
         end = playlist_length
         playlist_length = start - 1
         jobs.append(
-            await rq_client.enqueue(
-                function=add_channel_videos,
-                kwargs={
-                    "channel_id": channel_id,
-                    "date_after": date_after,
-                    "playlist_items": f"{start}:{end}",
-                },
+            await asyncio.to_thread(
+                rq_client.queue.enqueue,
+                add_channel_videos,
+                channel_id=channel_id,
+                date_after=date_after,
+                playlist_items=f"{start}:{end}",
             )
         )
-    await rq_client.enqueue(
-        function=qa_add_new_channel_videos,
-        kwargs={"channel_id": channel_id, "job_ids": [job.id for job in jobs]},
-        depends_on=jobs,
-        run_on_depends_failure=True,
+    await asyncio.to_thread(
+        qa_add_new_channel_videos,
+        channel_id=channel_id,
+        job_ids=[job.id for job in jobs],
+        depends_on=Dependency(jobs=jobs, allow_failure=True),
     )
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def update_channel_videos(
     date_after: str | None = None,
     session: AsyncSession = ...,
@@ -310,23 +314,21 @@ async def update_channel_videos(
                 if date_after
                 else channel.last_videos_updated.strftime("%y%m%d")
             )
-            await rq_client.enqueue(
-                function=add_new_channel_videos,
-                kwargs={
-                    "channel_id": subscription.channel_id,
-                    "date_after": date_after,
-                },
+            await asyncio.to_thread(
+                rq_client.queue.enqueue,
+                add_new_channel_videos,
+                channel_id=subscription.channel_id,
+                date_after=date_after,
             )
 
 
-@dripdrop_tasks.worker_task()
+@dripdrop_tasks.worker_task
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
     async for users in database.stream_scalars(
         query=query, yield_per=1, session=session
     ):
         user = users[0]
-        await rq_client.enqueue(
-            function=update_user_subscriptions,
-            kwargs={"email": user.email},
+        await asyncio.to_thread(
+            rq_client.queue.enqueue, update_user_subscriptions, email=user.email
         )

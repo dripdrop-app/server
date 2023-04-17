@@ -18,7 +18,7 @@ from dripdrop.settings import settings
 
 @pytest.fixture(autouse=True)
 async def mock_youtube_enqueue(mock_enqueue):
-    await mock_enqueue(no_task=True)
+    await mock_enqueue()
 
 
 @pytest.fixture

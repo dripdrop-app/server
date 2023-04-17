@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, Depends, Response, status, Query
 from pydantic import EmailStr
 from typing import Optional
@@ -29,18 +30,22 @@ async def run_cron_jobs():
 
 @app.get("/delete_old_jobs")
 async def run_delete_old_jobs():
-    await rq_client.enqueue(function=music_tasks.delete_old_music_jobs)
+    await asyncio.to_thread(rq_client.queue.enqueue, music_tasks.delete_old_music_jobs)
     return Response(None, status_code=status.HTTP_200_OK)
 
 
 @app.get("/update_subscriptions")
 async def run_update_subscriptions(email: EmailStr | None = Query(None)):
     if email:
-        await rq_client.enqueue(
-            function=youtube_tasks.update_user_subscriptions, kwargs={"email": email}
+        await asyncio.to_thread(
+            rq_client.queue.enqueue,
+            youtube_tasks.update_user_subscriptions,
+            email=email,
         )
     else:
-        await rq_client.enqueue(function=youtube_tasks.update_subscriptions)
+        await asyncio.to_thread(
+            rq_client.queue.enqueue, youtube_tasks.update_subscriptions
+        )
     return Response(None, status_code=status.HTTP_200_OK)
 
 
@@ -49,13 +54,16 @@ async def run_update_channel_videos(
     channel_id: Optional[str] = Query(None), date_after: Optional[str] = Query(None)
 ):
     if not channel_id:
-        await rq_client.enqueue(
-            function=youtube_tasks.update_channel_videos,
-            kwargs={"date_after": date_after},
+        await asyncio.to_thread(
+            rq_client.queue.enqueue,
+            youtube_tasks.update_channel_videos,
+            date_after=date_after,
         )
     else:
-        await rq_client.enqueue(
-            function=youtube_tasks.add_new_channel_videos,
-            kwargs={"channel_id": channel_id, "date_after": date_after},
+        await asyncio.to_thread(
+            rq_client.queue.enqueue,
+            youtube_tasks.add_new_channel_videos,
+            channel_id=channel_id,
+            date_after=date_after,
         )
     return Response(None, status_code=status.HTTP_200_OK)

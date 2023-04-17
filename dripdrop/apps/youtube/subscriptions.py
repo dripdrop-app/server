@@ -1,3 +1,4 @@
+import asyncio
 import math
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy import select, func, and_
@@ -114,9 +115,11 @@ async def add_user_subscription(
             )
         subscription.deleted_at = None
     await session.commit()
-    await rq_client.enqueue(
+    await asyncio.to_thread(
+        rq_client.queue.enqueue,
         tasks.add_new_channel_videos,
-        kwargs={"channel_id": channel.id, "date_after": "20050214"},
+        channel_id=channel.id,
+        date_after="20050214",
     )
     return YoutubeSubscriptionResponse(
         channel_id=subscription.channel_id,
