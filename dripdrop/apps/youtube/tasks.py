@@ -313,7 +313,7 @@ async def update_channel_videos(
             date_after = (
                 date_after
                 if date_after
-                else channel.last_videos_updated.strftime("%y%m%d")
+                else channel.last_videos_updated.strftime("%Y%m%d")
             )
             await asyncio.to_thread(
                 rq_client.queue.enqueue,
