@@ -28,8 +28,7 @@ async def run_cron_jobs():
 async def create_cron_job(cron_string: str = ..., function: Callable = ...):
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est).replace(second=0))
-    cron.get_next()
-    next_run_time = cron.get_current(ret_type=datetime)
+    next_run_time = cron.get_next(ret_type=datetime)
     job = await asyncio.to_thread(
         rq_client.high_queue.enqueue_at, next_run_time, function
     )
