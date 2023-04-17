@@ -137,8 +137,6 @@ async def update_user_youtube_channel(
         session.add(YoutubeUserChannel(id=channel_info.id, email=user.email))
     await session.commit()
     await rq_client.enqueue(
-        tasks.update_user_subscriptions,
-        kwargs={"email": user.email},
-        retry=rq_client.Retry(max=2),
+        tasks.update_user_subscriptions, kwargs={"email": user.email}
     )
     return Response(None, status_code=status.HTTP_200_OK)

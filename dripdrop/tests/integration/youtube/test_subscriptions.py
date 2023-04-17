@@ -1,7 +1,6 @@
 from datetime import datetime
 from fastapi import status
 from httpx import AsyncClient
-from pytest import MonkeyPatch
 
 from dripdrop.settings import settings
 
@@ -220,13 +219,8 @@ async def test_add_user_subscription_with_nonexistent_channel_in_database(
 
 
 async def test_add_user_subscription_with_channel_in_database(
-    monkeypatch: MonkeyPatch,
-    client: AsyncClient,
-    create_and_login_user,
-    create_channel,
-    mock_async,
+    client: AsyncClient, create_and_login_user, create_channel
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
         id="UCCuIpl5564hhP8Qpucvu7RA",
@@ -253,9 +247,8 @@ async def test_add_user_subscription_with_nonexistent_channel_on_youtube(
 
 
 async def test_add_user_subscription_with_channel_on_youtube(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+    client: AsyncClient, create_and_login_user
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "UCCuIpl5564hhP8Qpucvu7RA"}
@@ -268,9 +261,8 @@ async def test_add_user_subscription_with_channel_on_youtube(
 
 
 async def test_add_user_subscription_with_nonexistent_channel_handle_on_youtube(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+    client: AsyncClient, create_and_login_user
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user",
@@ -280,9 +272,8 @@ async def test_add_user_subscription_with_nonexistent_channel_handle_on_youtube(
 
 
 async def test_add_user_subscription_with_channel_handle_on_youtube(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+    client: AsyncClient, create_and_login_user
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.put(
         f"{SUBSCRIPTIONS_URL}/user", params={"channel_id": "@TDBarrett"}
@@ -311,14 +302,11 @@ async def test_add_user_subscription_when_subscription_exists(
 
 
 async def test_add_user_subscription_with_deleted_subscription(
-    monkeypatch: MonkeyPatch,
     client: AsyncClient,
     create_and_login_user,
     create_channel,
     create_subscription,
-    mock_async,
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     channel = await create_channel(
         id="UC_ZYORKR3s_0qL5CuySVSPA",

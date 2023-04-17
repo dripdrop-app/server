@@ -15,7 +15,10 @@ async def test_run_cron_as_regular_user(client: AsyncClient, create_and_login_us
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-async def test_run_cron_as_admin_user(client: AsyncClient, create_and_login_user):
+async def test_run_cron_as_admin_user(
+    client: AsyncClient, create_and_login_user, mock_enqueue
+):
+    await mock_enqueue()
     await create_and_login_user(email="user@gmail.com", password="password", admin=True)
     response = await client.get(CRON_URL)
     assert response.status_code == status.HTTP_200_OK

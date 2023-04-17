@@ -38,7 +38,7 @@ loggers:
     handlers: ["console"]
   rq.worker:
     level: "INFO"
-    handlers: ["console"]
+    handlers: ["console", "error_console"]
   rq.queue:
     level: "INFO"
-    handlers: ["console"]
+    handlers: ["console", "error_console"]

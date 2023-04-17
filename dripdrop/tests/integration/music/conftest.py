@@ -14,6 +14,11 @@ from dripdrop.services import temp_files
 from dripdrop.services.audio_tag import AudioTags
 
 
+@pytest.fixture(autouse=True)
+async def mock_music_enqueue(mock_enqueue):
+    await mock_enqueue()
+
+
 @pytest.fixture(scope="session")
 def test_image_url():
     return "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"

@@ -1,3 +1,4 @@
+import asyncio
 from croniter import croniter
 from datetime import datetime, timezone, timedelta
 from typing import Callable
@@ -18,7 +19,7 @@ async def run_cron_jobs():
     )
     await rq_client.enqueue(
         function=youtube_tasks.update_channel_videos,
-        depends_on=update_subscriptions_job,
+        depends_on=[update_subscriptions_job],
     )
     await rq_client.enqueue(function=music_tasks.delete_old_music_jobs)
 
@@ -33,7 +34,8 @@ async def create_cron_job(
     cron = croniter(cron_string, datetime.now(est))
     cron.get_next()
     next_run_time = cron.get_current(ret_type=datetime)
-    job = rq_client.queue.enqueue_at(
+    job = await asyncio.to_thread(
+        rq_client.queue.enqueue_at,
         next_run_time,
         function,
         args=args,
@@ -43,7 +45,7 @@ async def create_cron_job(
     logger.info(
         f"Scheduling {job.get_call_string()} ({job.args}, {job.kwargs}) to run at {next_run_time}"
     )
-    rq_client.queue.enqueue(
+    await rq_client.enqueue(
         create_cron_job,
         kwargs={
             "cron_string": cron_string,
@@ -51,7 +53,8 @@ async def create_cron_job(
             "args": args,
             "kwargs": kwargs,
         },
-        depends_on=job,
+        depends_on=[job],
+        run_on_depends_failure=True,
     )
 
 

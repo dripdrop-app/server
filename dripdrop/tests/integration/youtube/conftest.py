@@ -16,6 +16,11 @@ from dripdrop.apps.youtube.models import (
 from dripdrop.settings import settings
 
 
+@pytest.fixture(autouse=True)
+async def mock_youtube_enqueue(mock_enqueue):
+    await mock_enqueue(no_task=True)
+
+
 @pytest.fixture
 def create_user_channel(session: AsyncSession):
     async def _create_user_channel(

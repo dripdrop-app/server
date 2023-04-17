@@ -37,9 +37,7 @@ async def run_delete_old_jobs():
 async def run_update_subscriptions(email: EmailStr | None = Query(None)):
     if email:
         await rq_client.enqueue(
-            function=youtube_tasks.update_user_subscriptions,
-            kwargs={"email": email},
-            retry=rq_client.Retry(max=2),
+            function=youtube_tasks.update_user_subscriptions, kwargs={"email": email}
         )
     else:
         await rq_client.enqueue(function=youtube_tasks.update_subscriptions)

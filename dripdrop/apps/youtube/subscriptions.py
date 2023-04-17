@@ -116,7 +116,7 @@ async def add_user_subscription(
     await session.commit()
     await rq_client.enqueue(
         tasks.add_new_channel_videos,
-        kwargs={"channel_id": channel.id, "date_after": "20050214"},
+        kwargs={"channel_id": channel.id, "date_after": "20140205"},
     )
     return YoutubeSubscriptionResponse(
         channel_id=subscription.channel_id,

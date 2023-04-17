@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from sqlalchemy import select, delete, false, and_
@@ -20,6 +21,10 @@ from .models import (
     YoutubeVideoCategory,
 )
 from .responses import YoutubeChannelUpdateResponse
+
+
+def generate_channel_videos_url(channel_id: str = ...):
+    return f"https://youtube.com/channel/{channel_id}/videos"
 
 
 @dripdrop_tasks.worker_task()
@@ -132,6 +137,112 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 
 
 @dripdrop_tasks.worker_task()
+async def _add_channel_videos(
+    channel_id: str = ...,
+    date_after: str | None = None,
+    playlist_items: str | None = None,
+    session: AsyncSession = ...,
+):
+    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
+    results = await session.scalars(query)
+    channel = results.first()
+    if not channel:
+        raise Exception(f"Channel ({channel_id}) not found")
+
+    async for video_info in ytdlp.extract_videos_info(
+        url=generate_channel_videos_url(channel_id=channel_id),
+        date_after=date_after,
+        playlist_items=playlist_items,
+    ):
+        server_current_time = datetime.now(tz=tzlocal())
+        current_time = dripdrop_utils.get_current_time()
+
+        video_id = video_info["id"]
+        video_title = video_info["title"]
+        video_thumbnail = video_info["thumbnail"]
+        video_description = video_info["description"]
+        video_category_name = video_info["categories"][0]
+        video_upload_date = datetime.strptime(
+            video_info["upload_date"], "%Y%m%d"
+        ).replace(
+            hour=current_time.hour,
+            minute=current_time.minute,
+            second=current_time.second,
+            tzinfo=settings.timezone,
+        )
+
+        if current_time.day != video_upload_date.day:
+            video_upload_date.replace(
+                hour=server_current_time.hour,
+                minute=server_current_time.minute,
+                second=server_current_time.second,
+            )
+
+        query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+        results = await session.scalars(query)
+        video = results.first()
+        if video:
+            video.title = video_title
+            video.thumbnail = video_thumbnail
+            video.description = video_description
+            if video.title != video_title or video.thumbnail != video_thumbnail:
+                video.published_at = video_upload_date
+        else:
+            query = select(YoutubeVideoCategory).where(
+                YoutubeVideoCategory.name == video_category_name
+            )
+            results = await session.scalars(query)
+            video_category = results.first()
+            if not video_category:
+                video_category = YoutubeVideoCategory(name=video_category_name)
+                session.add(video_category)
+                await session.commit()
+            session.add(
+                YoutubeVideo(
+                    id=video_id,
+                    title=video_title,
+                    thumbnail=video_thumbnail,
+                    channel_id=channel_id,
+                    category_id=video_category.id,
+                    description=video_description,
+                    published_at=video_upload_date,
+                )
+            )
+        await session.commit()
+
+
+@dripdrop_tasks.worker_task()
+async def qa_add_new_channel_videos(
+    channel_id: str = ..., job_ids: list[str] = ..., session: AsyncSession = ...
+):
+    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
+    results = await session.scalars(query)
+    channel = results.first()
+    if not channel:
+        raise Exception(f"Channel ({channel_id}) not found")
+
+    websocket_channel = WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE)
+    await websocket_channel.publish(
+        message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
+    )
+    channel.updating = False
+    channel.last_videos_updated = dripdrop_utils.get_current_time()
+    await session.commit()
+
+    jobs = await asyncio.to_thread(
+        rq_client.Job.fetch_many, job_ids, rq_client.queue.connection
+    )
+
+    is_success = True
+    for job in jobs:
+        if job and job.is_failed:
+            is_success = False
+            break
+    if not is_success:
+        raise Exception("Failed to update channel videos")
+
+
+@dripdrop_tasks.worker_task()
 async def add_new_channel_videos(
     channel_id: str = ..., date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -140,10 +251,6 @@ async def add_new_channel_videos(
     channel = results.first()
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
-
-    # if channel.updating:
-    #     raise Exception(f"Channel ({channel_id}) already updating")
-
     channel.updating = True
     await session.commit()
 
@@ -152,112 +259,64 @@ async def add_new_channel_videos(
         message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
     )
 
-    day_ago = dripdrop_utils.get_current_time() - timedelta(days=1)
-    last_updated = min(day_ago, channel.last_videos_updated)
-
-    date_after = (
-        date_after
-        if date_after
-        else "{year}{month}{day}".format(
-            year=last_updated.year,
-            month=str(last_updated.month).rjust(2, "0"),
-            day=str(last_updated.day).rjust(2, "0"),
-        )
+    playlist_length = await ytdlp.get_videos_playlist_length(
+        url=generate_channel_videos_url(channel_id=channel_id)
     )
-    try:
-        async for video_info in ytdlp.extract_videos_info(
-            url=f"https://youtube.com/channel/{channel_id}/videos",
-            date_after=date_after,
-        ):
-            server_current_time = datetime.now(tz=tzlocal())
-            current_time = dripdrop_utils.get_current_time()
-
-            video_id = video_info["id"]
-            video_title = video_info["title"]
-            video_thumbnail = video_info["thumbnail"]
-            video_description = video_info["description"]
-            video_category_name = video_info["categories"][0]
-            video_upload_date = datetime.strptime(
-                video_info["upload_date"], "%Y%m%d"
-            ).replace(
-                hour=current_time.hour,
-                minute=current_time.minute,
-                second=current_time.second,
-                tzinfo=settings.timezone,
+    jobs = []
+    while playlist_length > 0:
+        start = max(0, playlist_length - 100)
+        end = playlist_length
+        playlist_length = start - 1
+        jobs.append(
+            await rq_client.enqueue(
+                function=_add_channel_videos,
+                kwargs={
+                    "channel_id": channel_id,
+                    "date_after": date_after,
+                    "playlist_items": f"{start}:{end}",
+                },
             )
-
-            if current_time.day != video_upload_date.day:
-                video_upload_date.replace(
-                    hour=server_current_time.hour,
-                    minute=server_current_time.minute,
-                    second=server_current_time.second,
-                )
-
-            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-            results = await session.scalars(query)
-            video = results.first()
-            if video:
-                video.title = video_title
-                video.thumbnail = video_thumbnail
-                video.description = video_description
-                if video.title != video_title or video.thumbnail != video_thumbnail:
-                    video.published_at = video_upload_date
-            else:
-                query = select(YoutubeVideoCategory).where(
-                    YoutubeVideoCategory.name == video_category_name
-                )
-                results = await session.scalars(query)
-                video_category = results.first()
-                if not video_category:
-                    video_category = YoutubeVideoCategory(name=video_category_name)
-                    session.add(video_category)
-                    await session.commit()
-                session.add(
-                    YoutubeVideo(
-                        id=video_id,
-                        title=video_title,
-                        thumbnail=video_thumbnail,
-                        channel_id=channel_id,
-                        category_id=video_category.id,
-                        description=video_description,
-                        published_at=video_upload_date,
-                    )
-                )
-            await session.commit()
-        channel.last_videos_updated = dripdrop_utils.get_current_time()
-    except Exception as e:
-        raise e
-    finally:
-        channel.updating = False
-        await session.commit()
-        await websocket_channel.publish(
-            message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
         )
+    await rq_client.enqueue(
+        function=qa_add_new_channel_videos,
+        kwargs={"channel_id": channel_id, "job_ids": [job.id for job in jobs]},
+        depends_on=jobs,
+        run_on_depends_failure=True,
+    )
 
 
 @dripdrop_tasks.worker_task()
 async def update_channel_videos(
-    date_after: str | None = None, session: AsyncSession = ...
+    date_after: str | None = None,
+    session: AsyncSession = ...,
 ):
-    current_time = dripdrop_utils.get_current_time()
     query = (
         select(YoutubeSubscription.channel_id.label("channel_id"))
         .where(YoutubeSubscription.deleted_at.is_(None))
         .distinct()
     )
-    if current_time.hour % 2 == 0:
-        query = query.order_by(YoutubeSubscription.channel_id.desc())
-    else:
-        query = query.order_by(YoutubeSubscription.channel_id.asc())
     async for subscriptions in database.stream_mappings(
         query=query, yield_per=1, session=session
     ):
         subscription = subscriptions[0]
-        await rq_client.enqueue(
-            function=add_new_channel_videos,
-            kwargs={"channel_id": subscription.channel_id, "date_after": date_after},
-            retry=rq_client.Retry(max=2, interval=settings.timeout),
+        query = select(YoutubeChannel).where(
+            YoutubeChannel.id == subscription.channel_id
         )
+        results = await session.scalars(query)
+        channel = results.first()
+        if channel:
+            date_after = (
+                date_after
+                if date_after
+                else channel.last_videos_updated.strftime("%y%m%d")
+            )
+            await rq_client.enqueue(
+                function=add_new_channel_videos,
+                kwargs={
+                    "channel_id": subscription.channel_id,
+                    "date_after": date_after,
+                },
+            )
 
 
 @dripdrop_tasks.worker_task()

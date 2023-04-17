@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from fastapi import status
 from httpx import AsyncClient
-from pytest import MonkeyPatch
 
 from dripdrop.settings import settings
 
@@ -111,7 +110,7 @@ async def test_update_user_channel_when_not_logged_in(client: AsyncClient):
 
 
 async def test_update_user_channel_with_nonexistent_channel_on_youtube(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user
+    client: AsyncClient, create_and_login_user
 ):
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.post(f"{CHANNELS_URL}/user", json={"channel_id": "2"})
@@ -119,9 +118,8 @@ async def test_update_user_channel_with_nonexistent_channel_on_youtube(
 
 
 async def test_update_user_channel_with_nonexisting_channel_with_youtube_channel(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+    client: AsyncClient, create_and_login_user
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.post(
         f"{CHANNELS_URL}/user", json={"channel_id": "UC_ZYORKR3s_0qL5CuySVSPA"}
@@ -138,9 +136,8 @@ async def test_update_user_channel_with_nonexistent_channel_handle_on_youtube(
 
 
 async def test_update_user_channel_with_nonexisting_channel_with_youtube_handle(
-    monkeypatch: MonkeyPatch, client: AsyncClient, create_and_login_user, mock_async
+    client: AsyncClient, create_and_login_user
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     await create_and_login_user(email="user@gmail.com", password="password")
     response = await client.post(
         f"{CHANNELS_URL}/user", json={"channel_id": "@dripdrop-channel"}
@@ -160,14 +157,11 @@ async def test_update_user_channel_with_existing_channel_within_day(
 
 
 async def test_update_user_channel_with_existing_channel(
-    monkeypatch: MonkeyPatch,
     client: AsyncClient,
     create_and_login_user,
     create_user_channel,
     get_user_channel,
-    mock_async,
 ):
-    monkeypatch.setattr("dripdrop.services.rq_client.enqueue", mock_async)
     user = await create_and_login_user(email="user@gmail.com", password="password")
     await create_user_channel(
         id="UC_ZYORKR3s_0qL5CuySVSPA",

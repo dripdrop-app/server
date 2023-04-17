@@ -1,28 +1,24 @@
 import asyncio
-import os
 import orjson
-from io import TextIOWrapper
-from yt_dlp.utils import sanitize_filename
-
-from dripdrop.services import temp_files
+from contextlib import asynccontextmanager
 
 
-async def _run(*args, stdout: TextIOWrapper | int = asyncio.subprocess.PIPE):
-    process = await asyncio.subprocess.create_subprocess_exec(
-        "yt-dlp",
-        *args,
-        stdout=stdout,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    output = None
-    if process.stdout:
-        output = await process.stdout.read()
-        output = output.decode().splitlines()
-    return_code = await process.wait()
-    if return_code in [1, 2, 100]:
-        error = await process.stderr.read()
-        raise Exception(error.decode())
-    return output
+@asynccontextmanager
+async def _run(*args):
+    process = None
+    try:
+        process = await asyncio.subprocess.create_subprocess_exec(
+            "yt-dlp",
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        yield process
+    finally:
+        if process:
+            if process.returncode is None:
+                process.kill()
+            await process.wait()
 
 
 async def download_audio_from_video(download_path: str = ..., url: str = ...):
@@ -34,41 +30,54 @@ async def download_audio_from_video(download_path: str = ..., url: str = ...):
         *["--output", download_path],
         url,
     ]
-    await _run(*args)
+    async with _run(*args) as process:
+        await process.wait()
 
 
 async def extract_video_info(url: str = ...):
-    jsons = await _run("--lazy-playlist", "--break-on-reject", "--dump-json", url)
-    if not jsons:
-        return None
-    return await asyncio.to_thread(orjson.loads, jsons[0])
+    async with _run("--no-playlist", "--dump-json", "--skip-download", url) as process:
+        output = await process.stdout.read()
+        if not output:
+            return None
+        return await asyncio.to_thread(orjson.loads, output)
 
 
-async def extract_videos_info(url: str = ..., date_after: str | None = None):
-    VIDEOS_INFO_DIRECTORY = "videos_info"
+async def _read_lines(stream):
+    while not stream.at_eof():
+        line = ""
+        while True:
+            output = await stream.read(1)
+            output = output.decode()
+            if not output or output == "\n":
+                yield line
+                break
+            line += output
 
-    videos_info_path = await temp_files.create_new_directory(
-        directory=VIDEOS_INFO_DIRECTORY, raise_on_exists=False
-    )
-    url_info_path = os.path.join(videos_info_path, f"{sanitize_filename(url)}.json")
-    try:
-        args = [
-            "--lazy-playlist",
-            "--break-on-reject",
-            "--dump-json",
-            "--skip-download",
-        ]
-        if date_after:
-            args.extend(["--dateafter", date_after])
-        args.extend([url])
-        with open(file=url_info_path, mode="w") as f:
-            await _run(*args, stdout=f)
-        with open(file=url_info_path, mode="r") as f:
-            json = await asyncio.to_thread(f.readline)
-            if json:
-                yield await asyncio.to_thread(orjson.loads, json)
-    except Exception as e:
-        raise e
-    finally:
-        if os.stat(path=url_info_path):
-            await asyncio.to_thread(os.remove, url_info_path)
+
+async def get_videos_playlist_length(url: str = ...):
+    args = [*["--print", "n_entries"], "--skip-download", url]
+    async with _run(*args) as process:
+        async for line in _read_lines(process.stdout):
+            return int(line)
+
+
+async def extract_videos_info(
+    url: str = ..., date_after: str | None = None, playlist_items: str | None = None
+):
+    args = [
+        "--lazy-playlist",
+        "--break-on-reject",
+        "--dump-json",
+        "--skip-download",
+    ]
+    if date_after:
+        args.extend(["--dateafter", date_after])
+    if playlist_items:
+        args.extend(["--playlist-items", playlist_items])
+    args.extend([url])
+    async with _run(*args) as process:
+        async for line in _read_lines(process.stdout):
+            try:
+                yield await asyncio.to_thread(orjson.loads, line)
+            except orjson.JSONDecodeError:
+                pass
