@@ -18,5 +18,5 @@ def timeout_handler(job: Job, exc_type, exc_value, traceback):
 
 if __name__ == "__main__":
     with Connection(connection=Redis.from_url(settings.redis_url)):
-        worker = Worker(["default"])
+        worker = Worker(["high", "default"])
         worker.work(with_scheduler=True)
