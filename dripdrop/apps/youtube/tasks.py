@@ -269,7 +269,7 @@ async def add_new_channel_videos(
     )
     jobs = []
     while playlist_length > 0:
-        start = max(0, playlist_length - 25)
+        start = max(0, playlist_length - 100)
         end = playlist_length
         playlist_length = start - 1
         jobs.append(
