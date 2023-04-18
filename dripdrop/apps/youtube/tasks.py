@@ -1,7 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
-from rq.job import Dependency
 from sqlalchemy import select, delete, false, and_
 
 import dripdrop.tasks as dripdrop_tasks
@@ -145,7 +144,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
-    playlist_items: str | None = None,
+    playlist_chunk: tuple[int, int] = ...,
     session: AsyncSession = ...,
 ):
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
@@ -154,10 +153,14 @@ async def add_channel_videos(
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
 
+    playlist_start, playlist_end = playlist_chunk
+    playlist_chunk_size = playlist_end - playlist_start
+    received_videos_length = 0
+
     async for video_info in ytdlp.extract_videos_info(
         url=generate_channel_videos_url(channel_id=channel_id),
         date_after=date_after,
-        playlist_items=playlist_items,
+        playlist_items=f"{playlist_start}:{playlist_end}",
     ):
         server_current_time = datetime.now(tz=tzlocal())
         current_time = dripdrop_utils.get_current_time()
@@ -214,37 +217,30 @@ async def add_channel_videos(
                 )
             )
         await session.commit()
+        received_videos_length += 1
 
-
-@dripdrop_tasks.worker_task
-async def qa_add_new_channel_videos(
-    channel_id: str = ..., job_ids: list[str] = ..., session: AsyncSession = ...
-):
-    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-    results = await session.scalars(query)
-    channel = results.first()
-    if not channel:
-        raise Exception(f"Channel ({channel_id}) not found")
-
-    websocket_channel = WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE)
-    await websocket_channel.publish(
-        message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
-    )
-    channel.updating = False
-    channel.last_videos_updated = dripdrop_utils.get_current_time()
-    await session.commit()
-
-    jobs = await asyncio.to_thread(
-        rq_client.Job.fetch_many, job_ids, rq_client.queue.connection
-    )
-
-    is_success = True
-    for job in jobs:
-        if job and job.is_failed:
-            is_success = False
-            break
-    if not is_success:
-        raise Exception("Failed to update channel videos")
+    if playlist_chunk_size == received_videos_length and playlist_start != 0:
+        next_playlist_chunk = (
+            max(0, playlist_start - playlist_chunk_size - 1),
+            playlist_start - 1,
+        )
+        await asyncio.to_thread(
+            rq_client.queue.enqueue,
+            add_channel_videos,
+            channel_id=channel_id,
+            date_after=date_after,
+            playlist_chunk=next_playlist_chunk,
+        )
+    else:
+        websocket_channel = WebsocketChannel(
+            channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE
+        )
+        await websocket_channel.publish(
+            message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
+        )
+        channel.updating = False
+        channel.last_videos_updated = dripdrop_utils.get_current_time()
+        await session.commit()
 
 
 @dripdrop_tasks.worker_task
@@ -256,6 +252,11 @@ async def add_new_channel_videos(
     channel = results.first()
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
+
+    playlist_length = await ytdlp.get_videos_playlist_length(
+        url=generate_channel_videos_url(channel_id=channel_id)
+    )
+
     channel.updating = True
     await session.commit()
 
@@ -264,29 +265,12 @@ async def add_new_channel_videos(
         message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
     )
 
-    playlist_length = await ytdlp.get_videos_playlist_length(
-        url=generate_channel_videos_url(channel_id=channel_id)
-    )
-    jobs = []
-    while playlist_length > 0:
-        start = max(0, playlist_length - 500)
-        end = playlist_length
-        playlist_length = start - 1
-        jobs.append(
-            await asyncio.to_thread(
-                rq_client.queue.enqueue,
-                add_channel_videos,
-                channel_id=channel_id,
-                date_after=date_after,
-                playlist_items=f"{start}:{end}",
-            )
-        )
     await asyncio.to_thread(
         rq_client.queue.enqueue,
-        qa_add_new_channel_videos,
+        add_channel_videos,
         channel_id=channel_id,
-        job_ids=[job.id for job in jobs],
-        depends_on=Dependency(jobs=jobs, allow_failure=True),
+        date_after=date_after,
+        playlist_chunk=(max(0, playlist_length - 500), playlist_length),
     )
 
 
