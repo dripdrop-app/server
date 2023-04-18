@@ -270,7 +270,7 @@ async def add_new_channel_videos(
         add_channel_videos,
         channel_id=channel_id,
         date_after=date_after,
-        playlist_chunk=(max(0, playlist_length - 500), playlist_length),
+        playlist_chunk=(max(0, playlist_length - 200), playlist_length),
     )
 
 
