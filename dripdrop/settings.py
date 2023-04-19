@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     test_aws_s3_bucket: str
     test_aws_secret_access_key: str
     test_redis_url: str
-    timeout: int = 300
+    timeout: int = 600
     timezone: tz | None = tz.utc
 
     class Config:

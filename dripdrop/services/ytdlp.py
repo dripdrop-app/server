@@ -37,8 +37,9 @@ async def download_audio_from_video(download_path: str = ..., url: str = ...):
 async def extract_video_info(url: str = ...):
     async with _run("--no-playlist", "--dump-json", "--skip-download", url) as process:
         output = await process.stdout.read()
-        if not output:
-            return None
+        error = await process.stderr.read()
+        if error:
+            raise Exception(error)
         return await asyncio.to_thread(orjson.loads, output)
 
 
@@ -61,7 +62,8 @@ async def get_videos_playlist_length(url: str = ...):
             try:
                 return int(line)
             except Exception:
-                raise Exception("Could not retrieve playlist length")
+                error = await process.stderr.read()
+                raise Exception(error)
 
 
 async def extract_videos_info(
