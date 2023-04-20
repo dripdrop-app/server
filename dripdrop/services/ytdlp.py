@@ -39,7 +39,7 @@ async def extract_video_info(url: str = ...):
         output = await process.stdout.read()
         error = await process.stderr.read()
         if error:
-            raise Exception(error)
+            raise Exception(error.decode())
         return await asyncio.to_thread(orjson.loads, output)
 
 
@@ -61,9 +61,9 @@ async def get_videos_playlist_length(url: str = ...):
         async for line in _read_lines(process.stdout):
             try:
                 return int(line)
-            except Exception:
+            except ValueError:
                 error = await process.stderr.read()
-                raise Exception(error)
+                raise Exception(error.decode())
 
 
 async def extract_videos_info(

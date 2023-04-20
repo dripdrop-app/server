@@ -282,8 +282,7 @@ async def add_new_channel_videos(
 
 @dripdrop_tasks.worker_task
 async def update_channel_videos(
-    date_after: str | None = None,
-    session: AsyncSession = ...,
+    date_after: str | None = None, session: AsyncSession = ...
 ):
     query = (
         select(YoutubeSubscription.channel_id.label("channel_id"))
