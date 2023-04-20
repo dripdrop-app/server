@@ -160,6 +160,7 @@ async def add_channel_videos(
 
     videos_info = ytdlp.extract_videos_info(
         url=generate_channel_videos_url(channel_id=channel_id),
+        date_after=date_after,
         playlist_items=f"{playlist_start}:{playlist_end}",
     )
 
@@ -177,13 +178,13 @@ async def add_channel_videos(
         ).replace(tzinfo=settings.timezone)
 
         if current_time.day != video_upload_date.day:
-            video_upload_date.replace(
+            video_upload_date = video_upload_date.replace(
                 hour=server_current_time.hour,
                 minute=server_current_time.minute,
                 second=server_current_time.second,
             )
         else:
-            video_upload_date.replace(
+            video_upload_date = video_upload_date.replace(
                 hour=current_time.hour,
                 minute=current_time.minute,
                 second=current_time.second,
