@@ -299,16 +299,19 @@ async def update_channel_videos(
         results = await session.scalars(query)
         channel = results.first()
         if channel:
-            date_after = (
-                date_after
+            date_after_time = (
+                datetime.strptime(date_after, "%Y%m%d")
                 if date_after
-                else channel.last_videos_updated.strftime("%Y%m%d")
+                else channel.last_videos_updated
+            )
+            limit = min(
+                dripdrop_utils.get_current_time() - timedelta(days=1), date_after_time
             )
             await asyncio.to_thread(
                 rq_client.queue.enqueue,
                 add_new_channel_videos,
                 channel_id=subscription.channel_id,
-                date_after=date_after,
+                date_after=limit.strftime("%Y%m%d"),
             )
 
 
