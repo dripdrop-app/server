@@ -10,7 +10,7 @@ services:
       file: docker-compose.base.yml
       service: worker
     deploy:
-      replicas: 3
+      replicas: 4
 
   postgres:
     extends:
