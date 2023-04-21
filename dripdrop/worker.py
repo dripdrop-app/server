@@ -3,6 +3,8 @@ from rq import Connection, Worker
 from rq.job import Job
 from rq.timeouts import JobTimeoutException
 
+import dripdrop.apps.music.tasks  # noqa
+import dripdrop.apps.youtube.tasks  # noqa
 from dripdrop.logger import logger
 from dripdrop.settings import settings
 
