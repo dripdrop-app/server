@@ -145,7 +145,6 @@ async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
     playlist_chunk: tuple[int, int] = ...,
-    playlist_length: int = ...,
     session: AsyncSession = ...,
 ):
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
@@ -223,10 +222,10 @@ async def add_channel_videos(
         await session.commit()
         num_received_videos += 1
 
-    if playlist_chunk_size == num_received_videos and playlist_end != playlist_length:
+    if playlist_chunk_size == num_received_videos:
         next_playlist_chunk = (
             playlist_end + 1,
-            min(playlist_end + playlist_chunk_size, playlist_length),
+            playlist_end + playlist_chunk_size,
         )
         await asyncio.to_thread(
             rq_client.queue.enqueue,
@@ -234,7 +233,6 @@ async def add_channel_videos(
             channel_id=channel_id,
             date_after=date_after,
             playlist_chunk=next_playlist_chunk,
-            playlist_length=playlist_length,
         )
     else:
         websocket_channel = WebsocketChannel(
@@ -258,10 +256,6 @@ async def add_new_channel_videos(
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
 
-    playlist_length = await ytdlp.get_videos_playlist_length(
-        url=generate_channel_videos_url(channel_id=channel_id)
-    )
-
     channel.updating = True
     await session.commit()
 
@@ -275,8 +269,7 @@ async def add_new_channel_videos(
         add_channel_videos,
         channel_id=channel_id,
         date_after=date_after,
-        playlist_chunk=(1, min(100, playlist_length)),
-        playlist_length=playlist_length,
+        playlist_chunk=(1, 100),
     )
 
 
