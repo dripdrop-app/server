@@ -76,7 +76,7 @@ async def session():
 
 @pytest.fixture
 def create_user(session: AsyncSession):
-    async def _create_user(email: str = ..., password: str = ..., admin=False):
+    async def _create_user(email: str, password: str, admin=False):
         assert type(email) is str
         assert type(password) is str
         user = User(email=email, password=password_context.hash(password), admin=admin)
@@ -89,9 +89,7 @@ def create_user(session: AsyncSession):
 
 @pytest.fixture
 def create_and_login_user(client: AsyncClient, create_user):
-    async def _create_and_login_user(
-        email: str = ..., password: str = ..., admin=False
-    ):
+    async def _create_and_login_user(email: str, password: str, admin=False):
         user = await create_user(email=email, password=password, admin=admin)
         response = await client.post(
             "/api/auth/login", json={"email": email, "password": password}

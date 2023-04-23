@@ -21,7 +21,7 @@ async def _run(*args):
             await process.wait()
 
 
-async def download_audio_from_video(download_path: str = ..., url: str = ...):
+async def download_audio_from_video(download_path: str, url: str):
     args = [
         "--no-playlist",
         "--extract-audio",
@@ -34,7 +34,7 @@ async def download_audio_from_video(download_path: str = ..., url: str = ...):
         await process.wait()
 
 
-async def extract_video_info(url: str = ...):
+async def extract_video_info(url: str):
     async with _run("--no-playlist", "--dump-json", "--skip-download", url) as process:
         output = await process.stdout.read()
         error = await process.stderr.read()
@@ -55,7 +55,7 @@ async def _read_lines(stream):
             line += output
 
 
-async def get_videos_playlist_length(url: str = ...):
+async def get_videos_playlist_length(url: str):
     args = [*["--print", "n_entries"], "--skip-download", url]
     async with _run(*args) as process:
         async for line in _read_lines(process.stdout):
@@ -67,7 +67,7 @@ async def get_videos_playlist_length(url: str = ...):
 
 
 async def extract_videos_info(
-    url: str = ..., date_after: str | None = None, playlist_items: str | None = None
+    url: str, date_after: str | None = None, playlist_items: str | None = None
 ):
     args = [
         "--lazy-playlist",

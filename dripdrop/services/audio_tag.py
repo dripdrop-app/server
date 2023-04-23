@@ -11,7 +11,7 @@ class AudioTags:
     _GROUPING_TAG = "TIT1"
     _ARTWORK_TAG = "APIC:"
 
-    def __init__(self, file_path: str = ...):
+    def __init__(self, file_path: str):
         self.tags = mutagen.id3.ID3(file_path)
 
     def _get_tag(self, tag_name: str = ...) -> str | None:
@@ -67,7 +67,7 @@ class AudioTags:
                 tag = self.tags.get(tag_name)
                 return tag
 
-    def set_artwork(self, data: bytes = ..., mime_type: str = ...):
+    def set_artwork(self, data: bytes, mime_type: str):
         self.tags.delall(AudioTags._ARTWORK_TAG)
         self.tags.add(mutagen.id3.APIC(mime=mime_type, data=data))
         self.tags.save()

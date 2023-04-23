@@ -21,7 +21,7 @@ async def create_database_session():
         yield session
 
 
-async def get_user_from_token(token: str = ..., session: AsyncSession = ...):
+async def get_user_from_token(token: str, session: AsyncSession):
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         expires = payload.get("exp", None)

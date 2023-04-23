@@ -28,9 +28,9 @@ _client = _session.client(
 
 
 async def upload_file(
-    filename: str = ...,
-    body: bytes = ...,
-    content_type: str = ...,
+    filename: str,
+    body: bytes,
+    content_type: str,
     acl="public-read",
 ):
     return await asyncio.to_thread(
@@ -43,7 +43,7 @@ async def upload_file(
     )
 
 
-async def delete_file(filename: str = ...):
+async def delete_file(filename: str):
     return await asyncio.to_thread(_client.delete_object, Bucket=BUCKET, Key=filename)
 
 

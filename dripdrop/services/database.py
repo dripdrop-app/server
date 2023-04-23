@@ -36,29 +36,29 @@ async def create_session():
 
 @overload
 async def stream(
-    query: Select[Tuple[T]] = ...,
-    yield_per: int = ...,
-    session: AsyncSession = ...,
-    stream_type: Literal[StreamType.SCALARS] = ...,
+    query: Select[Tuple[T]],
+    yield_per: int,
+    session: AsyncSession,
+    stream_type: Literal[StreamType.SCALARS],
 ) -> AsyncGenerator[Sequence[T], None]:
     ...
 
 
 @overload
 async def stream(
-    query: Select[Tuple[T]] = ...,
-    yield_per: int = ...,
-    session: AsyncSession = ...,
-    stream_type: Literal[StreamType.MAPPINGS] = ...,
+    query: Select[Tuple[T]],
+    yield_per: int,
+    session: AsyncSession,
+    stream_type: Literal[StreamType.MAPPINGS],
 ) -> AsyncGenerator[Sequence[RowMapping], None]:
     ...
 
 
 async def stream(
-    query: Select[Tuple[T]] = ...,
-    yield_per: int = ...,
-    session: AsyncSession = ...,
-    stream_type: StreamType = ...,
+    query: Select[Tuple[T]],
+    yield_per: int,
+    session: AsyncSession,
+    stream_type: StreamType,
 ):
     page = 0
     while True:
@@ -74,7 +74,7 @@ async def stream(
 
 
 async def stream_scalars(
-    query: Select[Tuple[T]] = ..., yield_per: int = ..., session: AsyncSession = ...
+    query: Select[Tuple[T]], yield_per: int, session: AsyncSession
 ):
     async for rows in stream(
         query=query,
@@ -86,7 +86,7 @@ async def stream_scalars(
 
 
 async def stream_mappings(
-    query: Select[Tuple[T]] = ..., yield_per: int = ..., session: AsyncSession = ...
+    query: Select[Tuple[T]], yield_per: int, session: AsyncSession
 ):
     async for rows in stream(
         query=query,

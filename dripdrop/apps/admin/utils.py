@@ -10,7 +10,7 @@ from .models import Proxy
 PROXY_LIST_URL = "https://proxylist.geonode.com/api/proxy-list"
 
 
-async def get_proxy(session: AsyncSession = ...):
+async def get_proxy(session: AsyncSession):
     async def _get_proxy():
         query = select(Proxy).order_by(nulls_first(Proxy.last_used.asc()))
         results = await session.scalars(query)

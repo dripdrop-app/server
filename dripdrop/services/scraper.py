@@ -22,8 +22,8 @@ class YoutubeChannelInfo:
     thumbnail: str
 
 
-async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = ...):
-    def _get_channel_subscriptions(channel_id: str = ..., proxy: str | None = ...):
+async def get_channel_subscriptions(channel_id: str, proxy: str | None = None):
+    def _get_channel_subscriptions():
         webdriver_proxy = None
         if proxy:
             webdriver_proxy = Proxy()
@@ -80,9 +80,7 @@ async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = .
         finally:
             driver.quit()
 
-    subscribed_channel_ids = await asyncio.to_thread(
-        _get_channel_subscriptions, channel_id=channel_id, proxy=proxy
-    )
+    subscribed_channel_ids = await asyncio.to_thread(_get_channel_subscriptions)
     subscribed_channels = await dripdrop_utils.gather_with_limit(
         *[
             get_channel_info(channel_id=subscribed_channel_id)
@@ -97,7 +95,7 @@ async def get_channel_subscriptions(channel_id: str = ..., proxy: str | None = .
     ]
 
 
-async def get_channel_info(channel_id: str = ...):
+async def get_channel_info(channel_id: str):
     url = "https://youtube.com/"
     if channel_id.startswith("@"):
         url += channel_id

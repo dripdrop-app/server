@@ -24,18 +24,18 @@ class RedisChannels(Enum):
 class WebsocketChannel:
     close_sockets = False
 
-    def __init__(self, channel: RedisChannels = ...):
+    def __init__(self, channel: RedisChannels):
         self.channel = channel
 
     @classmethod
     def close(cls):
         WebsocketChannel.close_sockets = True
 
-    async def publish(self, message: ResponseBaseModel = ...):
+    async def publish(self, message: ResponseBaseModel):
         async with redis_client.create_client() as redis:
             await redis.publish(self.channel.value, orjson.dumps(message.dict()))
 
-    async def listen(self, websocket: WebSocket = ..., handler: Coroutine = ...):
+    async def listen(self, websocket: WebSocket, handler: Coroutine):
         task: Task = None
         try:
             await websocket.accept()
@@ -65,7 +65,7 @@ class WebsocketChannel:
                 except asyncio.CancelledError:
                     pass
 
-    async def _subscribe(self, handler: Coroutine = ...):
+    async def _subscribe(self, handler: Coroutine):
         async with redis_client.create_client() as redis:
             pubsub = redis.pubsub()
             await pubsub.subscribe(self.channel.value)

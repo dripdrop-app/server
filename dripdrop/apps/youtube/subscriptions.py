@@ -117,9 +117,8 @@ async def add_user_subscription(
     await session.commit()
     await asyncio.to_thread(
         rq_client.queue.enqueue,
-        tasks.add_new_channel_videos,
+        tasks.add_channel_videos,
         channel_id=channel.id,
-        date_after="20050214",
     )
     return YoutubeSubscriptionResponse(
         channel_id=subscription.channel_id,

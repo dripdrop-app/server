@@ -52,7 +52,9 @@ async def run_update_subscriptions(email: EmailStr | None = Query(None)):
 @app.get("/update_channel_videos")
 async def run_update_channel_videos(
     channel_id: Optional[str] = Query(None),
-    date_after: Optional[str] = Query(None, example="YYYYMMDD"),
+    date_after: Optional[str] = Query(
+        None, description="date string with format YYYYMMDD"
+    ),
 ):
     if not channel_id:
         await asyncio.to_thread(
@@ -63,7 +65,7 @@ async def run_update_channel_videos(
     else:
         await asyncio.to_thread(
             rq_client.queue.enqueue,
-            youtube_tasks.add_new_channel_videos,
+            youtube_tasks.add_channel_videos,
             channel_id=channel_id,
             date_after=date_after,
         )

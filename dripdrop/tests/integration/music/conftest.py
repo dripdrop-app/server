@@ -53,8 +53,11 @@ def test_base64_image(test_image_file):
 @pytest.fixture
 def create_music_job(session: AsyncSession):
     async def _create_music_job(
-        id: str = ...,
-        email: str = ...,
+        id: str,
+        email: str,
+        title: str,
+        artist: str,
+        album: str,
         artwork_url: str | None = None,
         artwork_filename: str | None = None,
         original_filename: str | None = None,
@@ -62,9 +65,6 @@ def create_music_job(session: AsyncSession):
         video_url: str | None = None,
         download_filename: str | None = None,
         download_url: str | None = None,
-        title: str = ...,
-        artist: str = ...,
-        album: str = ...,
         grouping: str | None = None,
         completed: bool = False,
         failed: bool = False,
@@ -73,6 +73,9 @@ def create_music_job(session: AsyncSession):
         job = MusicJob(
             id=id,
             user_email=email,
+            title=title,
+            artist=artist,
+            album=album,
             artwork_url=artwork_url,
             artwork_filename=artwork_filename,
             original_filename=original_filename,
@@ -80,9 +83,6 @@ def create_music_job(session: AsyncSession):
             video_url=video_url,
             download_filename=download_filename,
             download_url=download_url,
-            title=title,
-            artist=artist,
-            album=album,
             grouping=grouping,
             completed=completed,
             failed=failed,
@@ -97,7 +97,7 @@ def create_music_job(session: AsyncSession):
 
 @pytest.fixture
 def get_completed_job(session: AsyncSession):
-    async def _get_completed_job(email: str = ...):
+    async def _get_completed_job(email: str):
         results = await session.scalars(
             select(MusicJob).where(MusicJob.user_email == email)
         )
@@ -111,7 +111,7 @@ def get_completed_job(session: AsyncSession):
 @pytest.fixture
 def get_tags_from_file():
     @contextmanager
-    def _get_tags_from_file(file: bytes = ...):
+    def _get_tags_from_file(file: bytes):
         path = os.path.join(temp_files.TEMP_DIRECTORY, "test.mp3")
         with open(path, "wb") as f:
             f.write(file)

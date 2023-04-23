@@ -14,7 +14,7 @@ async def gather_with_limit(
 ) -> list[T]:
     semaphore = asyncio.Semaphore(value=limit if limit != -1 else len(coroutines))
 
-    async def run_coro(coroutine: Coroutine = ...):
+    async def run_coro(coroutine: Coroutine):
         async with semaphore:
             return await coroutine
 

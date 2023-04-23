@@ -11,14 +11,14 @@ IMAGE_EXTENSIONS = [".jpg", ".ico", "png", ".jpeg"]
 user_agent = UserAgent()
 
 
-def is_image_link(response: Response = ...):
+def is_image_link(response: Response):
     content_type = response.headers.get("Content-Type", None)
     if content_type and content_type.split("/")[0] == "image":
         return True
     return None
 
 
-async def download_image(artwork: str = ...):
+async def download_image(artwork: str):
     async with http_client.create_client() as client:
         response = await client.get(artwork)
     if not is_image_link(response=response):
@@ -26,13 +26,13 @@ async def download_image(artwork: str = ...):
     return response.content
 
 
-def is_valid_url(url: str = ...) -> bool:
+def is_valid_url(url: str) -> bool:
     u = parse.urlparse(url)
     # Check if scheme(http or https) and netloc(domain) are not empty
     return u[0] != "" and u[1] != ""
 
 
-def _get_images(response: Response = ...) -> list:
+def _get_images(response: Response) -> list:
     html = response.text
     links = set()
     for element in html.split('"'):
@@ -47,7 +47,7 @@ def _get_images(response: Response = ...) -> list:
     return links
 
 
-async def resolve_artwork(artwork: str = ...):
+async def resolve_artwork(artwork: str):
     async with http_client.create_client() as client:
         response = await client.get(
             artwork,

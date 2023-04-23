@@ -27,7 +27,7 @@ from .models import MusicJob
 from .responses import MusicJobUpdateResponse
 
 
-async def _retrieve_audio_file(music_job_path: str = ..., music_job: MusicJob = ...):
+async def _retrieve_audio_file(music_job_path: str, music_job: MusicJob):
     filename = None
     if music_job.filename_url:
         async with http_client.create_client() as client:
@@ -50,7 +50,7 @@ async def _retrieve_audio_file(music_job_path: str = ..., music_job: MusicJob = 
     return filename
 
 
-async def _retrieve_artwork(music_job: MusicJob = ...):
+async def _retrieve_artwork(music_job: MusicJob):
     if music_job.artwork_url:
         try:
             imageData = await image_downloader.download_image(
@@ -64,8 +64,8 @@ async def _retrieve_artwork(music_job: MusicJob = ...):
 
 
 def _update_audio_tags(
-    music_job: MusicJob = ...,
-    filename: str = ...,
+    music_job: MusicJob,
+    filename: str,
     artwork_info: Union[dict, None] = None,
 ):
     audio_tag_service = AudioTags(file_path=filename)
@@ -81,7 +81,7 @@ def _update_audio_tags(
 
 
 @dripdrop_tasks.worker_task
-async def run_music_job(music_job_id: str = ..., session: AsyncSession = ...):
+async def run_music_job(music_job_id: str, session: AsyncSession):
     JOB_DIR = "music_jobs"
 
     job_id = music_job_id
@@ -137,7 +137,7 @@ async def run_music_job(music_job_id: str = ..., session: AsyncSession = ...):
 
 
 @dripdrop_tasks.worker_task
-async def _delete_music_job(music_job_id: str = ..., session: AsyncSession = ...):
+async def _delete_music_job(music_job_id: str, session: AsyncSession):
     query = select(MusicJob).where(MusicJob.id == music_job_id)
     results = await session.scalars(query)
     music_job = results.first()
@@ -149,7 +149,7 @@ async def _delete_music_job(music_job_id: str = ..., session: AsyncSession = ...
 
 
 @dripdrop_tasks.worker_task
-async def delete_old_music_jobs(session: AsyncSession = ...):
+async def delete_old_music_jobs(session: AsyncSession):
     limit = dripdrop_utils.get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(
         MusicJob.created_at < limit,

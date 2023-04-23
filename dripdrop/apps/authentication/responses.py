@@ -21,7 +21,7 @@ class AuthenticatedResponseModel(ResponseBaseModel):
 
 
 class AuthenticatedResponse(JSONResponse):
-    def __init__(self, access_token: str = ..., user: UserResponse = ...):
+    def __init__(self, access_token: str, user: UserResponse):
         super().__init__(
             content=AuthenticatedResponseModel(
                 access_token=access_token, user=user, token_type="Bearer"

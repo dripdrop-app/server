@@ -50,7 +50,7 @@ high_queue = Queue(
 )
 
 
-def stop_job(job_id: str = ...):
+def stop_job(job_id: str):
     try:
         job = Job.fetch(job_id, connection=connection)
         status = job.get_status()

@@ -144,7 +144,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
-    playlist_chunk: tuple[int, int] = ...,
+    playlist_chunk: tuple[int, int] = (1, 100),
     session: AsyncSession = ...,
 ):
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
@@ -156,6 +156,17 @@ async def add_channel_videos(
     playlist_start, playlist_end = playlist_chunk
     playlist_chunk_size = playlist_end - playlist_start + 1  # Inclusive
     num_received_videos = 0
+
+    if playlist_start == 1:
+        channel.updating = True
+        await session.commit()
+
+        websocket_channel = WebsocketChannel(
+            channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE
+        )
+        await websocket_channel.publish(
+            message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
+        )
 
     videos_info = ytdlp.extract_videos_info(
         url=generate_channel_videos_url(channel_id=channel_id),
@@ -247,33 +258,6 @@ async def add_channel_videos(
 
 
 @dripdrop_tasks.worker_task
-async def add_new_channel_videos(
-    channel_id: str = ..., date_after: str | None = None, session: AsyncSession = ...
-):
-    query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-    results = await session.scalars(query)
-    channel = results.first()
-    if not channel:
-        raise Exception(f"Channel ({channel_id}) not found")
-
-    channel.updating = True
-    await session.commit()
-
-    websocket_channel = WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE)
-    await websocket_channel.publish(
-        message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
-    )
-
-    await asyncio.to_thread(
-        rq_client.queue.enqueue,
-        add_channel_videos,
-        channel_id=channel_id,
-        date_after=date_after,
-        playlist_chunk=(1, 100),
-    )
-
-
-@dripdrop_tasks.worker_task
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -300,7 +284,7 @@ async def update_channel_videos(
                 date_after_time = datetime.strptime(date_after, "%Y%m%d")
             await asyncio.to_thread(
                 rq_client.queue.enqueue,
-                add_new_channel_videos,
+                add_channel_videos,
                 channel_id=subscription.channel_id,
                 date_after=date_after_time.strftime("%Y%m%d"),
             )

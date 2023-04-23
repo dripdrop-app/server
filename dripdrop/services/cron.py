@@ -25,7 +25,7 @@ async def run_cron_jobs():
     await asyncio.to_thread(rq_client.queue.enqueue, music_tasks.delete_old_music_jobs)
 
 
-async def create_cron_job(cron_string: str = ..., function: Callable = ...):
+async def create_cron_job(cron_string: str, function: Callable):
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est).replace(second=0))
     next_run_time = cron.get_next(ret_type=datetime)

@@ -16,7 +16,7 @@ from .apps.youtube.app import app as youtube_app
 api_router = APIRouter(prefix="/api")
 
 
-def register_router(prefix: str = ..., app: FastAPI = ...):
+def register_router(prefix: str, app: FastAPI):
     api_router.include_router(prefix=prefix, router=app.router, tags=app.openapi_tags)
 
 

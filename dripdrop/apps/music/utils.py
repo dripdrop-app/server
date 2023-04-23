@@ -22,7 +22,7 @@ class UploadedFileInfo:
     filename: str | None
 
 
-async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
+async def handle_artwork_url(job_id: str, artwork_url: str | None = None):
     uploaded_file_info = UploadedFileInfo(url=artwork_url, filename=None)
     if artwork_url:
         if re.search("^data:image/", artwork_url):
@@ -51,7 +51,7 @@ async def handle_artwork_url(job_id: str = ..., artwork_url: str | None = None):
     return uploaded_file_info
 
 
-async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
+async def handle_audio_file(job_id: str, file: UploadFile):
     uploaded_file_info = UploadedFileInfo(url=None, filename=None)
     if file:
         uploaded_file_info.filename = f"{s3.MUSIC_FOLDER}/{job_id}/old/{file.filename}"
@@ -64,7 +64,7 @@ async def handle_audio_file(job_id: str = ..., file: UploadFile = ...):
     return uploaded_file_info
 
 
-async def cleanup_music_job(music_job: MusicJob = ...):
+async def cleanup_music_job(music_job: MusicJob):
     if music_job.artwork_filename:
         await s3.delete_file(
             filename=music_job.artwork_filename,
@@ -79,7 +79,7 @@ async def cleanup_music_job(music_job: MusicJob = ...):
         )
 
 
-def _read_tags(file_path: str = ...):
+def _read_tags(file_path: str):
     audio_tags = AudioTags(file_path=file_path)
     title = audio_tags.title
     artist = audio_tags.artist
@@ -95,7 +95,7 @@ def _read_tags(file_path: str = ...):
     )
 
 
-async def read_tags(file: bytes = ..., filename: str = ...):
+async def read_tags(file: bytes, filename: str):
     TAGS_DIRECTORY = "tags"
 
     tags_directory_path = await temp_files.create_new_directory(

@@ -11,7 +11,7 @@ async def _create_temp_directory():
         pass
 
 
-async def create_new_directory(directory: str = ..., raise_on_exists=True):
+async def create_new_directory(directory: str, raise_on_exists=True):
     directory_path = os.path.join(TEMP_DIRECTORY, os.path.normpath(directory))
     await _create_temp_directory()
     if not raise_on_exists:

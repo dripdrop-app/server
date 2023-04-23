@@ -16,8 +16,8 @@ from .models import (
 
 
 async def execute_videos_query(
-    session: AsyncSession = ...,
-    user: User = ...,
+    session: AsyncSession,
+    user: User,
     channel_id: str | None = None,
     video_ids: list[str] | None = None,
     exclude_video_ids: list[str] | None = None,
