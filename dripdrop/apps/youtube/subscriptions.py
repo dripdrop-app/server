@@ -4,10 +4,12 @@ from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Resp
 from sqlalchemy import select, func, and_
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.apps.authentication.models import User
-from dripdrop.dependencies import create_database_session, get_authenticated_user
+from dripdrop.apps.authentication.dependencies import (
+    get_authenticated_user,
+    AuthenticatedUser,
+)
+from dripdrop.dependencies import DatabaseSession
 from dripdrop.services import rq_client, scraper
-from dripdrop.services.database import AsyncSession
 
 from . import tasks
 from .models import YoutubeSubscription, YoutubeChannel
@@ -26,10 +28,10 @@ subscriptions_api = APIRouter(
     responses={status.HTTP_404_NOT_FOUND: {}},
 )
 async def get_youtube_subscriptions(
+    user: AuthenticatedUser,
+    session: DatabaseSession,
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
 ):
     query = (
         select(
@@ -72,9 +74,7 @@ async def get_youtube_subscriptions(
     },
 )
 async def add_user_subscription(
-    channel_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Query(...)
 ):
     channel_info = await scraper.get_channel_info(channel_id=channel_id)
     if not channel_info:
@@ -129,9 +129,7 @@ async def add_user_subscription(
 
 @subscriptions_api.delete("/user", responses={status.HTTP_404_NOT_FOUND: {}})
 async def delete_user_subscription(
-    channel_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Query(...)
 ):
     query = select(YoutubeSubscription).where(
         YoutubeSubscription.email == user.email,

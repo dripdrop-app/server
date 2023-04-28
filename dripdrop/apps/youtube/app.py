@@ -1,6 +1,6 @@
 from fastapi import Depends, FastAPI, status
 
-from dripdrop.dependencies import get_authenticated_user
+from dripdrop.apps.authentication.dependencies import get_authenticated_user
 
 from .channels import channels_api
 from .subscriptions import subscriptions_api

@@ -3,14 +3,10 @@ from fastapi.responses import PlainTextResponse
 from passlib.context import CryptContext
 from pydantic import EmailStr
 
-from dripdrop.dependencies import (
-    create_database_session,
-    get_authenticated_user,
-    COOKIE_NAME,
-)
-from dripdrop.services.database import AsyncSession
+from dripdrop.dependencies import DatabaseSession
 
 from . import utils
+from .dependencies import AuthenticatedUser, COOKIE_NAME, get_authenticated_user
 from .models import User
 from .responses import (
     AuthenticatedResponse,
@@ -29,7 +25,7 @@ app = FastAPI(openapi_tags=["Authentication"])
     response_model=UserResponse,
     responses={status.HTTP_401_UNAUTHORIZED: {}},
 )
-async def check_session(user: User = Depends(get_authenticated_user)):
+async def check_session(user: AuthenticatedUser):
     return UserResponse.from_orm(user)
 
 
@@ -45,9 +41,9 @@ async def check_session(user: User = Depends(get_authenticated_user)):
     },
 )
 async def login(
+    session: DatabaseSession,
     email: str = Body(...),
     password: str = Body(..., min_length=8),
-    session: AsyncSession = Depends(create_database_session),
 ):
     user = await utils.find_user_by_email(email=email, session=session)
     if not user:
@@ -86,9 +82,9 @@ async def logout():
     },
 )
 async def create_account(
+    session: DatabaseSession,
     email: EmailStr = Body(...),
     password: str = Body(..., min_length=8),
-    session: AsyncSession = Depends(create_database_session),
 ):
     user = await utils.find_user_by_email(email=email, session=session)
     if user:

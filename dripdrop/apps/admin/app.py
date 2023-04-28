@@ -3,16 +3,14 @@ from fastapi import FastAPI, Depends, Response, status, Query
 from pydantic import EmailStr
 from typing import Optional
 
+from dripdrop.apps.authentication.dependencies import get_admin_user
 from dripdrop.apps.music import tasks as music_tasks
 from dripdrop.apps.youtube import tasks as youtube_tasks
 from dripdrop.services import cron, rq_client
 
-from . import dependencies
-
-
 app = FastAPI(
     openapi_tags=["Admin"],
-    dependencies=[Depends(dependencies.get_admin_user)],
+    dependencies=[Depends(get_admin_user)],
     responses={status.HTTP_403_FORBIDDEN: {}},
 )
 

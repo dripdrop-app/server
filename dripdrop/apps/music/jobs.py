@@ -22,11 +22,13 @@ from sqlalchemy import select, func
 from typing import Optional
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.apps.authentication.models import User
-from dripdrop.dependencies import create_database_session, get_authenticated_user
+from dripdrop.apps.authentication.dependencies import (
+    AuthenticatedUser,
+    get_authenticated_user,
+)
+from dripdrop.dependencies import DatabaseSession, create_database_session
 from dripdrop.logger import logger
 from dripdrop.services import rq_client
-from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import (
     RedisChannels,
     WebsocketChannel,
@@ -52,10 +54,10 @@ jobs_api = APIRouter(
     },
 )
 async def get_jobs(
+    user: AuthenticatedUser,
+    session: DatabaseSession,
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
 ):
     query = (
         select(MusicJob)
@@ -75,9 +77,7 @@ async def get_jobs(
 
 
 @jobs_api.websocket("/listen")
-async def listen_jobs(
-    websocket: WebSocket, user: User = Depends(get_authenticated_user)
-):
+async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
     async def handler(msg):
         message = MusicJobUpdateResponse.parse_obj(msg)
         job_id = message.id
@@ -103,6 +103,8 @@ async def listen_jobs(
     responses={status.HTTP_500_INTERNAL_SERVER_ERROR: {}},
 )
 async def create_job(
+    user: AuthenticatedUser,
+    session: DatabaseSession,
     file: Optional[UploadFile] = File(None),
     video_url: Optional[HttpUrl] = Form(None),
     artwork_url: Optional[str] = Form(None),
@@ -110,8 +112,6 @@ async def create_job(
     artist: str = Form(...),
     album: str = Form(...),
     grouping: Optional[str] = Form(None),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
 ):
     if file and video_url:
         raise HTTPException(
@@ -179,10 +179,7 @@ async def create_job(
     "/delete",
     responses={status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.JOB_NOT_FOUND}},
 )
-async def delete_job(
-    job_id: str = Query(...),
-    session: AsyncSession = Depends(create_database_session),
-):
+async def delete_job(session: DatabaseSession, job_id: str = Query(...)):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
     music_job = results.first()

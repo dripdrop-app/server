@@ -2,10 +2,12 @@ import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
 from sqlalchemy import select
 
-from dripdrop.apps.authentication.models import User
-from dripdrop.dependencies import create_database_session, get_authenticated_user
+from dripdrop.apps.authentication.dependencies import (
+    get_authenticated_user,
+    AuthenticatedUser,
+)
+from dripdrop.dependencies import DatabaseSession
 from dripdrop.logger import logger
-from dripdrop.services.database import AsyncSession
 
 from .models import (
     YoutubeVideoCategory,
@@ -34,9 +36,7 @@ videos_api = APIRouter(
 
 @videos_api.get("/categories", response_model=YoutubeVideoCategoriesResponse)
 async def get_youtube_video_categories(
-    channel_id: str = Query(None),
-    session: AsyncSession = Depends(create_database_session),
-    user: User = Depends(get_authenticated_user),
+    session: DatabaseSession, user: AuthenticatedUser, channel_id: str = Query(None)
 ):
     query = (
         select(YoutubeVideoCategory.id, YoutubeVideoCategory.name)
@@ -70,10 +70,10 @@ async def get_youtube_video_categories(
     },
 )
 async def get_youtube_video(
+    user: AuthenticatedUser,
+    session: DatabaseSession,
     video_id: str = Query(...),
     related_videos_length: int = Query(5, ge=0),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
 ):
     (videos, *_) = await utils.execute_videos_query(
         session=session,
@@ -108,14 +108,14 @@ async def get_youtube_video(
     },
 )
 async def get_youtube_videos(
+    user: AuthenticatedUser,
+    session: DatabaseSession,
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
     video_categories: str = Query(""),
     channel_id: str | None = Query(None),
     liked_only: bool = Query(False),
     queued_only: bool = Query(False),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
 ):
     try:
         if video_categories:
@@ -151,9 +151,7 @@ async def get_youtube_videos(
     responses={status.HTTP_400_BAD_REQUEST: {}},
 )
 async def add_youtube_video_watch(
-    video_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, video_id: str = Query(...)
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
     results = await session.execute(query)
@@ -184,9 +182,7 @@ async def add_youtube_video_watch(
     responses={status.HTTP_400_BAD_REQUEST: {}},
 )
 async def add_youtube_video_like(
-    video_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, video_id: str = Query(...)
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
     results = await session.execute(query)
@@ -221,9 +217,7 @@ async def add_youtube_video_like(
     },
 )
 async def delete_youtube_video_like(
-    video_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, video_id: str = Query(...)
 ):
     query = select(YoutubeVideoLike).where(
         YoutubeVideoLike.email == user.email,
@@ -248,9 +242,7 @@ async def delete_youtube_video_like(
     },
 )
 async def add_youtube_video_queue(
-    video_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, video_id: str = Query(...)
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
     results = await session.scalars(query)
@@ -285,9 +277,7 @@ async def add_youtube_video_queue(
     },
 )
 async def delete_youtube_video_queue(
-    video_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, video_id: str = Query(...)
 ):
     query = select(YoutubeVideoQueue).where(
         YoutubeVideoQueue.email == user.email,
@@ -313,9 +303,7 @@ async def delete_youtube_video_queue(
     },
 )
 async def get_youtube_video_queue(
-    index: int = Query(..., ge=1),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, index: int = Query(..., ge=1)
 ):
     (videos, *_) = await utils.execute_videos_query(
         session=session,

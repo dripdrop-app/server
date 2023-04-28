@@ -36,16 +36,16 @@ async def get_proxy(session: AsyncSession):
                 "speed": "fast",
             },
         )
-    if response.status_code == 200:
-        json = response.json()
-        query = delete(Proxy)
-        await session.execute(query)
-        await session.commit()
-        for proxy in json["data"]:
-            query = select(Proxy).where(Proxy.ip_address == proxy["ip"])
-            results = await session.scalars(query)
-            existing_proxy = results.first()
-            if not existing_proxy:
-                session.add(Proxy(ip_address=proxy["ip"], port=int(proxy["port"])))
-                await session.commit()
+        if response.status_code == 200:
+            json = response.json()
+            query = delete(Proxy)
+            await session.execute(query)
+            await session.commit()
+            for proxy in json["data"]:
+                query = select(Proxy).where(Proxy.ip_address == proxy["ip"])
+                results = await session.scalars(query)
+                existing_proxy = results.first()
+                if not existing_proxy:
+                    session.add(Proxy(ip_address=proxy["ip"], port=int(proxy["port"])))
+                    await session.commit()
     return await _get_proxy(session=session)

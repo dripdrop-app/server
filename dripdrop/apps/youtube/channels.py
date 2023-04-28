@@ -13,10 +13,12 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, and_
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.apps.authentication.models import User
-from dripdrop.dependencies import create_database_session, get_authenticated_user
+from dripdrop.apps.authentication.dependencies import (
+    AuthenticatedUser,
+    get_authenticated_user,
+)
+from dripdrop.dependencies import DatabaseSession
 from dripdrop.services import rq_client, scraper
-from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
 from . import tasks
@@ -39,9 +41,7 @@ channels_api = APIRouter(
     "", response_model=YoutubeChannelResponse, responses={status.HTTP_404_NOT_FOUND: {}}
 )
 async def get_youtube_channel(
-    channel_id: str = Query(...),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
+    user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Query(...)
 ):
     query = (
         select(
@@ -95,10 +95,7 @@ async def listen_channels(websocket: WebSocket):
     response_model=YoutubeUserChannelResponse,
     responses={status.HTTP_404_NOT_FOUND: {}},
 )
-async def get_user_youtube_channel(
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
-):
+async def get_user_youtube_channel(user: AuthenticatedUser, session: DatabaseSession):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == user.email)
     results = await session.scalars(query)
     user_channel = results.first()
@@ -112,9 +109,9 @@ async def get_user_youtube_channel(
 
 @channels_api.post("/user", responses={status.HTTP_400_BAD_REQUEST: {}})
 async def update_user_youtube_channel(
+    user: AuthenticatedUser,
+    session: DatabaseSession,
     channel_id: str = Body(..., embed=True),
-    user: User = Depends(get_authenticated_user),
-    session: AsyncSession = Depends(create_database_session),
 ):
     channel_info = await scraper.get_channel_info(channel_id=channel_id)
     if not channel_info:
