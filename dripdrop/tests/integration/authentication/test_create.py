@@ -1,7 +1,7 @@
 from fastapi import status
 from httpx import AsyncClient
 
-from dripdrop.dependencies import COOKIE_NAME
+from dripdrop.apps.authentication.dependencies import COOKIE_NAME
 
 CREATE_URL = "/api/auth/create"
 
