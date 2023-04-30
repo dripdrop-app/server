@@ -4,15 +4,9 @@ from dateutil.tz import tzlocal
 from sqlalchemy import select, delete, false, and_
 
 import dripdrop.tasks as dripdrop_tasks
-import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
-from dripdrop.services import database, rq_client, scraper, ytdlp
-from dripdrop.services.database import AsyncSession
-from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
-from dripdrop.settings import settings
-
-from .models import (
+from dripdrop.apps.youtube.models import (
     YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
@@ -20,7 +14,12 @@ from .models import (
     YoutubeVideo,
     YoutubeVideoCategory,
 )
-from .responses import YoutubeChannelUpdateResponse
+from dripdrop.apps.youtube.responses import YoutubeChannelUpdateResponse
+from dripdrop.services import database, rq_client, scraper, ytdlp
+from dripdrop.services.database import AsyncSession
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
+from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
 
 
 def generate_channel_videos_url(channel_id: str = ...):
@@ -39,7 +38,7 @@ async def _delete_subscription(
     subscription = results.first()
     if not subscription:
         raise Exception(f"Subscription ({channel_id}, {email}) not found")
-    subscription.deleted_at = dripdrop_utils.get_current_time()
+    subscription.deleted_at = get_current_time()
     await session.commit()
 
 
@@ -54,7 +53,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     proxy = await admin_utils.get_proxy(session=session)
     if proxy:
         proxy_address = f"{proxy.ip_address}:{proxy.port}"
-        proxy.last_used = dripdrop_utils.get_current_time()
+        proxy.last_used = get_current_time()
         await session.commit()
 
     for subscribed_channel in await scraper.get_channel_subscriptions(
@@ -72,8 +71,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                     id=subscribed_channel.id,
                     title=subscribed_channel.title,
                     thumbnail=subscribed_channel.thumbnail,
-                    last_videos_updated=dripdrop_utils.get_current_time()
-                    - timedelta(days=365),
+                    last_videos_updated=get_current_time() - timedelta(days=365),
                 )
             )
             await session.commit()
@@ -176,7 +174,7 @@ async def add_channel_videos(
 
     async for video_info in videos_info:
         server_current_time = datetime.now(tz=tzlocal())
-        current_time = dripdrop_utils.get_current_time()
+        current_time = get_current_time()
 
         video_id = video_info["id"]
         video_title = video_info["title"]
@@ -253,7 +251,7 @@ async def add_channel_videos(
             message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
         )
         channel.updating = False
-        channel.last_videos_updated = dripdrop_utils.get_current_time()
+        channel.last_videos_updated = get_current_time()
         await session.commit()
 
 
@@ -277,7 +275,7 @@ async def update_channel_videos(
         channel = results.first()
         if channel:
             date_after_time = min(
-                dripdrop_utils.get_current_time() - timedelta(days=1),
+                get_current_time() - timedelta(days=1),
                 channel.last_videos_updated,
             )
             if date_after:

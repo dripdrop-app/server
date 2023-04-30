@@ -1,11 +1,10 @@
 from datetime import timedelta
 from sqlalchemy import select, delete, nulls_first
 
-import dripdrop.utils as dripdrop_utils
+from dripdrop.apps.admin.models import Proxy
 from dripdrop.services import http_client
 from dripdrop.services.database import AsyncSession
-
-from .models import Proxy
+from dripdrop.utils import get_current_time
 
 PROXY_LIST_URL = "https://proxylist.geonode.com/api/proxy-list"
 
@@ -19,7 +18,7 @@ async def _get_proxy(session: AsyncSession):
 async def get_proxy(session: AsyncSession):
     proxy = await _get_proxy(session=session)
     if proxy:
-        current_time = dripdrop_utils.get_current_time()
+        current_time = get_current_time()
         limit = current_time - timedelta(hours=1)
         if proxy.created_at > limit:
             return proxy

@@ -2,9 +2,7 @@ import math
 from sqlalchemy import select, func, and_
 
 from dripdrop.apps.authentication.models import User
-from dripdrop.services.database import AsyncSession
-
-from .models import (
+from dripdrop.apps.youtube.models import (
     YoutubeSubscription,
     YoutubeChannel,
     YoutubeVideo,
@@ -13,6 +11,7 @@ from .models import (
     YoutubeVideoQueue,
     YoutubeVideoWatch,
 )
+from dripdrop.services.database import AsyncSession
 
 
 async def execute_videos_query(

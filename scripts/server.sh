@@ -15,8 +15,8 @@ poetry run alembic upgrade head
 
 if [ "$ENV" == "production" ]
 then
-    trap "PYTHONPATH=. poetry run python ./dripdrop/tasker.py --clear-schedule" SIGTERM
-    PYTHONPATH=. poetry run python ./dripdrop/tasker.py --schedule
+    trap "poetry run python -m dripdrop.tasker --clear-schedule" SIGTERM
+    poetry run python -m dripdrop.tasker --schedule
 fi
 
 wait $SERVER_PID

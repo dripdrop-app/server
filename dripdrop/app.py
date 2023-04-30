@@ -4,13 +4,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from dripdrop.apps.admin.app import app as admin_app
+from dripdrop.apps.authentication.app import app as auth_app
+from dripdrop.apps.music.app import app as music_app
+from dripdrop.apps.youtube.app import app as youtube_app
 from dripdrop.services.websocket_channel import WebsocketChannel
 from dripdrop.settings import settings, ENV
-
-from .apps.admin.app import app as admin_app
-from .apps.authentication.app import app as auth_app
-from .apps.music.app import app as music_app
-from .apps.youtube.app import app as youtube_app
 
 
 api_router = APIRouter(prefix="/api")

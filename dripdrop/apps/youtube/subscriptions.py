@@ -3,26 +3,29 @@ import math
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy import select, func, and_
 
-import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.dependencies import (
     get_authenticated_user,
     AuthenticatedUser,
 )
+from dripdrop.apps.youtube import tasks
+from dripdrop.apps.youtube.models import YoutubeSubscription, YoutubeChannel
+from dripdrop.apps.youtube.responses import (
+    SubscriptionsResponse,
+    YoutubeSubscriptionResponse,
+    ErrorMessages,
+)
 from dripdrop.dependencies import DatabaseSession
 from dripdrop.services import rq_client, scraper
+from dripdrop.utils import get_current_time
 
-from . import tasks
-from .models import YoutubeSubscription, YoutubeChannel
-from .responses import SubscriptionsResponse, YoutubeSubscriptionResponse, ErrorMessages
-
-subscriptions_api = APIRouter(
+api = APIRouter(
     prefix="/subscriptions",
     tags=["YouTube Subscriptions"],
     dependencies=[Depends(get_authenticated_user)],
 )
 
 
-@subscriptions_api.get(
+@api.get(
     "/{page}/{per_page}",
     response_model=SubscriptionsResponse,
     responses={status.HTTP_404_NOT_FOUND: {}},
@@ -64,7 +67,7 @@ async def get_youtube_subscriptions(
     return SubscriptionsResponse(subscriptions=subscriptions, total_pages=total_pages)
 
 
-@subscriptions_api.put(
+@api.put(
     "/user",
     response_model=YoutubeSubscriptionResponse,
     responses={
@@ -97,7 +100,7 @@ async def add_user_subscription(
                 id=channel_info.id,
                 title=channel_info.title,
                 thumbnail=channel_info.thumbnail,
-                last_videos_updated=dripdrop_utils.get_current_time(),
+                last_videos_updated=get_current_time(),
             )
             session.add(channel)
             await session.commit()
@@ -127,7 +130,7 @@ async def add_user_subscription(
     )
 
 
-@subscriptions_api.delete("/user", responses={status.HTTP_404_NOT_FOUND: {}})
+@api.delete("/user", responses={status.HTTP_404_NOT_FOUND: {}})
 async def delete_user_subscription(
     user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Query(...)
 ):
@@ -142,6 +145,6 @@ async def delete_user_subscription(
             detail=ErrorMessages.SUBSCRIPTION_NOT_FOUND,
             status_code=status.HTTP_404_NOT_FOUND,
         )
-    subscription.deleted_at = dripdrop_utils.get_current_time()
+    subscription.deleted_at = get_current_time()
     await session.commit()
     return Response(None, status_code=status.HTTP_200_OK)

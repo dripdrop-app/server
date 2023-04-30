@@ -3,17 +3,15 @@ from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, st
 from pydantic import HttpUrl
 
 from dripdrop.apps.authentication.dependencies import get_authenticated_user
-from dripdrop.logger import logger
-from dripdrop.services import image_downloader, ytdlp
-
-from . import utils
-from .jobs import jobs_api
-from .responses import (
+from dripdrop.apps.music import jobs, utils
+from dripdrop.apps.music.responses import (
     GroupingResponse,
     ResolvedArtworkUrlResponse,
     TagsResponse,
     ErrorMessages,
 )
+from dripdrop.logger import logger
+from dripdrop.services import image_downloader, ytdlp
 
 
 app = FastAPI(
@@ -21,7 +19,7 @@ app = FastAPI(
     dependencies=[Depends(get_authenticated_user)],
     responses={status.HTTP_401_UNAUTHORIZED: {}},
 )
-app.include_router(router=jobs_api)
+app.include_router(router=jobs.api)
 
 
 @app.get(

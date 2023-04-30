@@ -4,7 +4,7 @@ set -e
 
 if [ "$ENV" == "development" ] 
 then
-    PYTHONPATH=. poetry run watchfiles 'python ./dripdrop/worker.py' ./dripdrop
+    poetry run watchfiles 'python -m dripdrop.worker' ./dripdrop
 else
-    PYTHONPATH=. poetry run python ./dripdrop/worker.py
+    poetry run python -m dripdrop.worker
 fi

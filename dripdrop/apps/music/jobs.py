@@ -21,10 +21,16 @@ from pydantic import HttpUrl
 from sqlalchemy import select, func
 from typing import Optional
 
-import dripdrop.utils as dripdrop_utils
 from dripdrop.apps.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
+)
+from dripdrop.apps.music import utils, tasks
+from dripdrop.apps.music.models import MusicJob
+from dripdrop.apps.music.responses import (
+    MusicJobUpdateResponse,
+    MusicJobsResponse,
+    ErrorMessages,
 )
 from dripdrop.dependencies import DatabaseSession, create_database_session
 from dripdrop.logger import logger
@@ -33,20 +39,17 @@ from dripdrop.services.websocket_channel import (
     RedisChannels,
     WebsocketChannel,
 )
-
-from . import utils, tasks
-from .models import MusicJob
-from .responses import MusicJobUpdateResponse, MusicJobsResponse, ErrorMessages
+from dripdrop.utils import get_current_time
 
 
-jobs_api = APIRouter(
+api = APIRouter(
     prefix="/jobs",
     tags=["Music Jobs"],
     dependencies=[Depends(get_authenticated_user)],
 )
 
 
-@jobs_api.get(
+@api.get(
     "/{page}/{per_page}",
     response_model=MusicJobsResponse,
     responses={
@@ -76,7 +79,7 @@ async def get_jobs(
     return MusicJobsResponse(music_jobs=music_jobs, total_pages=total_pages)
 
 
-@jobs_api.websocket("/listen")
+@api.websocket("/listen")
 async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
     async def handler(msg):
         message = MusicJobUpdateResponse.parse_obj(msg)
@@ -97,7 +100,7 @@ async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
     )
 
 
-@jobs_api.post(
+@api.post(
     "/create",
     status_code=status.HTTP_201_CREATED,
     responses={status.HTTP_500_INTERNAL_SERVER_ERROR: {}},
@@ -175,7 +178,7 @@ async def create_job(
     return Response(None, status_code=status.HTTP_201_CREATED)
 
 
-@jobs_api.delete(
+@api.delete(
     "/delete",
     responses={status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.JOB_NOT_FOUND}},
 )
@@ -189,6 +192,6 @@ async def delete_job(session: DatabaseSession, job_id: str = Query(...)):
         )
     await asyncio.to_thread(rq_client.stop_job, job_id=job_id)
     await utils.cleanup_music_job(music_job=music_job)
-    music_job.deleted_at = dripdrop_utils.get_current_time()
+    music_job.deleted_at = get_current_time()
     await session.commit()
     return Response(None)

@@ -17,27 +17,31 @@ from dripdrop.apps.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
 )
-from dripdrop.dependencies import DatabaseSession
-from dripdrop.services import rq_client, scraper
-from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
-
-from . import tasks
-from .models import YoutubeChannel, YoutubeUserChannel, YoutubeSubscription
-from .responses import (
+from dripdrop.apps.youtube import tasks
+from dripdrop.apps.youtube.models import (
+    YoutubeChannel,
+    YoutubeUserChannel,
+    YoutubeSubscription,
+)
+from dripdrop.apps.youtube.responses import (
     YoutubeChannelResponse,
     YoutubeChannelUpdateResponse,
     YoutubeUserChannelResponse,
     ErrorMessages,
 )
+from dripdrop.dependencies import DatabaseSession
+from dripdrop.services import rq_client, scraper
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
-channels_api = APIRouter(
+
+api = APIRouter(
     prefix="/channels",
     tags=["YouTube Channels"],
     dependencies=[Depends(get_authenticated_user)],
 )
 
 
-@channels_api.get(
+@api.get(
     "", response_model=YoutubeChannelResponse, responses={status.HTTP_404_NOT_FOUND: {}}
 )
 async def get_youtube_channel(
@@ -78,7 +82,7 @@ async def get_youtube_channel(
     )
 
 
-@channels_api.websocket("/listen")
+@api.websocket("/listen")
 async def listen_channels(websocket: WebSocket):
     async def handler(msg):
         await websocket.send_json(
@@ -90,7 +94,7 @@ async def listen_channels(websocket: WebSocket):
     )
 
 
-@channels_api.get(
+@api.get(
     "/user",
     response_model=YoutubeUserChannelResponse,
     responses={status.HTTP_404_NOT_FOUND: {}},
@@ -107,7 +111,7 @@ async def get_user_youtube_channel(user: AuthenticatedUser, session: DatabaseSes
     return YoutubeUserChannelResponse(id=user_channel.id)
 
 
-@channels_api.post("/user", responses={status.HTTP_400_BAD_REQUEST: {}})
+@api.post("/user", responses={status.HTTP_400_BAD_REQUEST: {}})
 async def update_user_youtube_channel(
     user: AuthenticatedUser,
     session: DatabaseSession,

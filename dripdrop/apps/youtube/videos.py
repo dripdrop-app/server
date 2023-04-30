@@ -6,10 +6,8 @@ from dripdrop.apps.authentication.dependencies import (
     get_authenticated_user,
     AuthenticatedUser,
 )
-from dripdrop.dependencies import DatabaseSession
-from dripdrop.logger import logger
-
-from .models import (
+from dripdrop.apps.youtube import utils
+from dripdrop.apps.youtube.models import (
     YoutubeVideoCategory,
     YoutubeChannel,
     YoutubeVideo,
@@ -18,23 +16,25 @@ from .models import (
     YoutubeVideoLike,
     YoutubeVideoWatch,
 )
-from .responses import (
+from dripdrop.apps.youtube.responses import (
     ErrorMessages,
     YoutubeVideoCategoriesResponse,
     VideosResponse,
     VideoQueueResponse,
     VideoResponse,
 )
-from . import utils
+from dripdrop.dependencies import DatabaseSession
+from dripdrop.logger import logger
 
-videos_api = APIRouter(
+
+api = APIRouter(
     prefix="/videos",
     tags=["YouTube Videos"],
     dependencies=[Depends(get_authenticated_user)],
 )
 
 
-@videos_api.get("/categories", response_model=YoutubeVideoCategoriesResponse)
+@api.get("/categories", response_model=YoutubeVideoCategoriesResponse)
 async def get_youtube_video_categories(
     session: DatabaseSession, user: AuthenticatedUser, channel_id: str = Query(None)
 ):
@@ -62,7 +62,7 @@ async def get_youtube_video_categories(
     return YoutubeVideoCategoriesResponse(categories=categories)
 
 
-@videos_api.get(
+@api.get(
     "",
     response_model=VideoResponse,
     responses={
@@ -97,7 +97,7 @@ async def get_youtube_video(
     return VideoResponse(video=video, related_videos=related_videos)
 
 
-@videos_api.get(
+@api.get(
     "/{page}/{per_page}",
     response_model=VideosResponse,
     responses={
@@ -146,7 +146,7 @@ async def get_youtube_videos(
     return VideosResponse(videos=videos, total_pages=total_pages)
 
 
-@videos_api.put(
+@api.put(
     "/watch",
     responses={status.HTTP_400_BAD_REQUEST: {}},
 )
@@ -177,7 +177,7 @@ async def add_youtube_video_watch(
     return Response(None, status_code=status.HTTP_200_OK)
 
 
-@videos_api.put(
+@api.put(
     "/like",
     responses={status.HTTP_400_BAD_REQUEST: {}},
 )
@@ -208,7 +208,7 @@ async def add_youtube_video_like(
     return Response(None, status_code=status.HTTP_200_OK)
 
 
-@videos_api.delete(
+@api.delete(
     "/like",
     responses={
         status.HTTP_404_NOT_FOUND: {
@@ -235,7 +235,7 @@ async def delete_youtube_video_like(
     return Response(None, status_code=status.HTTP_200_OK)
 
 
-@videos_api.put(
+@api.put(
     "/queue",
     responses={
         status.HTTP_400_BAD_REQUEST: {},
@@ -268,7 +268,7 @@ async def add_youtube_video_queue(
     return Response(None, status_code=status.HTTP_200_OK)
 
 
-@videos_api.delete(
+@api.delete(
     "/queue",
     responses={
         status.HTTP_404_NOT_FOUND: {
@@ -295,7 +295,7 @@ async def delete_youtube_video_queue(
     return Response(None, status_code=status.HTTP_200_OK)
 
 
-@videos_api.get(
+@api.get(
     "/queue",
     response_model=VideoQueueResponse,
     responses={

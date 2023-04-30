@@ -8,7 +8,9 @@ from typing import Union
 from yt_dlp.utils import sanitize_filename
 
 import dripdrop.tasks as dripdrop_tasks
-import dripdrop.utils as dripdrop_utils
+from dripdrop.apps.music import utils
+from dripdrop.apps.music.models import MusicJob
+from dripdrop.apps.music.responses import MusicJobUpdateResponse
 from dripdrop.services import (
     database,
     http_client,
@@ -21,10 +23,7 @@ from dripdrop.services import (
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
-
-from . import utils
-from .models import MusicJob
-from .responses import MusicJobUpdateResponse
+from dripdrop.utils import get_current_time
 
 
 async def _retrieve_audio_file(music_job_path: str, music_job: MusicJob):
@@ -144,13 +143,13 @@ async def _delete_music_job(music_job_id: str, session: AsyncSession):
     if not music_job:
         raise Exception(f"Music Job ({music_job_id}) could not be found")
     await utils.cleanup_music_job(music_job=music_job)
-    music_job.deleted_at = dripdrop_utils.get_current_time()
+    music_job.deleted_at = get_current_time()
     await session.commit()
 
 
 @dripdrop_tasks.worker_task
 async def delete_old_music_jobs(session: AsyncSession):
-    limit = dripdrop_utils.get_current_time() - timedelta(days=14)
+    limit = get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(
         MusicJob.created_at < limit,
         MusicJob.completed.is_(True),
