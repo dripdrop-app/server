@@ -38,10 +38,9 @@ class CustomJob(Job):
     async def _async_execute(self):
         func_signature = signature(self.func)
         parameters = func_signature.parameters
-        if "session" in parameters and "session" not in self.kwargs:
+        if "session" in parameters:
             async with database.create_session() as session:
-                self.kwargs["session"] = session
-                return await self.func(*self.args, **self.kwargs)
+                return await self.func(*self.args, session=session, **self.kwargs)
 
     def _execute(self):
         func_signature = signature(self.func)
@@ -60,7 +59,7 @@ queue_settings = {
     "job_class": CustomJob,
 }
 default = Queue(**queue_settings)
-high_queue = Queue(name="high", **queue_settings)
+high = Queue(name="high", **queue_settings)
 
 
 def stop_job(job_id: str):

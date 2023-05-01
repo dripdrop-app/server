@@ -170,7 +170,7 @@ async def create_job(
     )
     await session.commit()
     await asyncio.to_thread(
-        rq_client.high_queue.enqueue,
+        rq_client.high.enqueue,
         tasks.run_music_job,
         music_job_id=job_id,
         job_id=job_id,

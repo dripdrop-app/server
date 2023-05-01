@@ -31,16 +31,14 @@ async def create_cron_job(cron_string: str, function: Callable):
     est = timezone(timedelta(hours=-5))
     cron = croniter(cron_string, datetime.now(est).replace(second=0))
     next_run_time = cron.get_next(ret_type=datetime)
-    job = await asyncio.to_thread(
-        rq_client.high_queue.enqueue_at, next_run_time, function
-    )
+    job = await asyncio.to_thread(rq_client.high.enqueue_at, next_run_time, function)
     async with redis_client.create_client() as redis:
         await redis.rpush(CRON_JOBS_LIST, job.id)
     logger.info(
         f"Scheduling {job.get_call_string()} ({job.args}, {job.kwargs}) to run at {next_run_time}"
     )
     await asyncio.to_thread(
-        rq_client.high_queue.enqueue,
+        rq_client.high.enqueue,
         create_cron_job,
         cron_string=cron_string,
         function=function,
