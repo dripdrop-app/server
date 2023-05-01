@@ -139,6 +139,6 @@ async def update_user_youtube_channel(
         session.add(YoutubeUserChannel(id=channel_info.id, email=user.email))
     await session.commit()
     await asyncio.to_thread(
-        rq_client.queue.enqueue, tasks.update_user_subscriptions, email=user.email
+        rq_client.default.enqueue, tasks.update_user_subscriptions, email=user.email
     )
     return Response(None, status_code=status.HTTP_200_OK)

@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from sqlalchemy import select, delete, false, and_
 
-import dripdrop.tasks as dripdrop_tasks
 from dripdrop.apps.admin import utils as admin_utils
 from dripdrop.apps.authentication.models import User
 from dripdrop.apps.youtube.models import (
@@ -26,7 +25,6 @@ def generate_channel_videos_url(channel_id: str = ...):
     return f"https://youtube.com/channel/{channel_id}/videos"
 
 
-@dripdrop_tasks.worker_task
 async def _delete_subscription(
     channel_id: str = ..., email: str = ..., session: AsyncSession = ...
 ):
@@ -42,7 +40,6 @@ async def _delete_subscription(
     await session.commit()
 
 
-@dripdrop_tasks.worker_task
 async def update_user_subscriptions(email: str = ..., session: AsyncSession = ...):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
     results = await session.scalars(query)
@@ -76,7 +73,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             )
             await session.commit()
             await asyncio.to_thread(
-                rq_client.queue.enqueue,
+                rq_client.default.enqueue,
                 add_channel_videos,
                 channel_id=subscribed_channel.id,
             )
@@ -128,7 +125,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     stream = await session.stream(query)
     async for row in stream.mappings():
         await asyncio.to_thread(
-            rq_client.queue.enqueue,
+            rq_client.default.enqueue,
             _delete_subscription,
             channel_id=row.channel_id,
             email=email,
@@ -138,7 +135,6 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     await session.commit()
 
 
-@dripdrop_tasks.worker_task
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
@@ -237,7 +233,7 @@ async def add_channel_videos(
             playlist_end + playlist_chunk_size,
         )
         await asyncio.to_thread(
-            rq_client.queue.enqueue,
+            rq_client.default.enqueue,
             add_channel_videos,
             channel_id=channel_id,
             date_after=date_after,
@@ -255,7 +251,6 @@ async def add_channel_videos(
         await session.commit()
 
 
-@dripdrop_tasks.worker_task
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -281,14 +276,13 @@ async def update_channel_videos(
             if date_after:
                 date_after_time = datetime.strptime(date_after, "%Y%m%d")
             await asyncio.to_thread(
-                rq_client.queue.enqueue,
+                rq_client.default.enqueue,
                 add_channel_videos,
                 channel_id=subscription.channel_id,
                 date_after=date_after_time.strftime("%Y%m%d"),
             )
 
 
-@dripdrop_tasks.worker_task
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
     async for users in database.stream_scalars(
@@ -296,5 +290,5 @@ async def update_subscriptions(session: AsyncSession = ...):
     ):
         user = users[0]
         await asyncio.to_thread(
-            rq_client.queue.enqueue, update_user_subscriptions, email=user.email
+            rq_client.default.enqueue, update_user_subscriptions, email=user.email
         )

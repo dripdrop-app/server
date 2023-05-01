@@ -119,7 +119,7 @@ async def add_user_subscription(
         subscription.deleted_at = None
     await session.commit()
     await asyncio.to_thread(
-        rq_client.queue.enqueue,
+        rq_client.default.enqueue,
         tasks.add_channel_videos,
         channel_id=channel.id,
     )

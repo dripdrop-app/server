@@ -15,14 +15,16 @@ CRON_JOBS_LIST = "crons:jobs"
 
 async def run_cron_jobs():
     update_subscriptions_job = await asyncio.to_thread(
-        rq_client.queue.enqueue, youtube_tasks.update_subscriptions
+        rq_client.default.enqueue, youtube_tasks.update_subscriptions
     )
     await asyncio.to_thread(
-        rq_client.queue.enqueue,
+        rq_client.default.enqueue,
         youtube_tasks.update_channel_videos,
         depends_on=update_subscriptions_job,
     )
-    await asyncio.to_thread(rq_client.queue.enqueue, music_tasks.delete_old_music_jobs)
+    await asyncio.to_thread(
+        rq_client.default.enqueue, music_tasks.delete_old_music_jobs
+    )
 
 
 async def create_cron_job(cron_string: str, function: Callable):

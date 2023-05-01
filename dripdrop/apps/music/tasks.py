@@ -7,7 +7,6 @@ from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 
-import dripdrop.tasks as dripdrop_tasks
 from dripdrop.apps.music import utils
 from dripdrop.apps.music.models import MusicJob
 from dripdrop.apps.music.responses import MusicJobUpdateResponse
@@ -79,7 +78,6 @@ def _update_audio_tags(
         )
 
 
-@dripdrop_tasks.worker_task
 async def run_music_job(music_job_id: str, session: AsyncSession):
     JOB_DIR = "music_jobs"
 
@@ -135,7 +133,6 @@ async def run_music_job(music_job_id: str, session: AsyncSession):
             await asyncio.to_thread(shutil.rmtree, job_path)
 
 
-@dripdrop_tasks.worker_task
 async def _delete_music_job(music_job_id: str, session: AsyncSession):
     query = select(MusicJob).where(MusicJob.id == music_job_id)
     results = await session.scalars(query)
@@ -147,7 +144,6 @@ async def _delete_music_job(music_job_id: str, session: AsyncSession):
     await session.commit()
 
 
-@dripdrop_tasks.worker_task
 async def delete_old_music_jobs(session: AsyncSession):
     limit = get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(
@@ -160,5 +156,5 @@ async def delete_old_music_jobs(session: AsyncSession):
     ):
         music_job = music_jobs[0]
         await asyncio.to_thread(
-            rq_client.queue.enqueue, _delete_music_job, music_job_id=music_job.id
+            rq_client.default.enqueue, _delete_music_job, music_job_id=music_job.id
         )

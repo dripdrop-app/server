@@ -107,7 +107,7 @@ def mock_enqueue(monkeypatch: pytest.MonkeyPatch):
         def run_no_task(*args, **kwargs):
             return None
 
-        monkeypatch.setattr("dripdrop.services.rq_client.queue.enqueue", run_no_task)
+        monkeypatch.setattr("dripdrop.services.rq_client.default.enqueue", run_no_task)
         monkeypatch.setattr(
             "dripdrop.services.rq_client.high_queue.enqueue", run_no_task
         )
