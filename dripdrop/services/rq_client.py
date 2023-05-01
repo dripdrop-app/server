@@ -17,8 +17,8 @@ def report_job_time(job: Job, *_):
     if job.ended_at and job.started_at:
         job_duration = job.ended_at - job.started_at
         logger.info(
-            "Job ({id}) {status} in {seconds} seconds".format(
-                id=job.get_id(),
+            "Job ({description}) {status} in {seconds} seconds".format(
+                description=job.description,
                 status="failed" if job.is_failed else "completed",
                 seconds=job_duration.seconds,
             )
@@ -70,7 +70,7 @@ def stop_job(job_id: str):
             send_stop_job_command(connection, job_id)
         else:
             job.cancel()
-        logger.info(f"Stopped job {job.get_call_string()} ({job.args}, {job.kwargs})")
+        logger.info(f"Stopped job {job.description}")
         job.delete(delete_dependents=True)
     except NoSuchJobError:
         logger.info(f"Job not found ({job_id})")
