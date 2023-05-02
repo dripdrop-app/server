@@ -78,6 +78,7 @@ def _update_audio_tags(
         )
 
 
+@rq_client.worker_task
 async def run_music_job(music_job_id: str, session: AsyncSession):
     JOB_DIR = "music_jobs"
 
@@ -133,6 +134,7 @@ async def run_music_job(music_job_id: str, session: AsyncSession):
             await asyncio.to_thread(shutil.rmtree, job_path)
 
 
+@rq_client.worker_task
 async def delete_music_job(music_job_id: str, session: AsyncSession = ...):
     query = select(MusicJob).where(MusicJob.id == music_job_id)
     results = await session.scalars(query)
@@ -144,6 +146,7 @@ async def delete_music_job(music_job_id: str, session: AsyncSession = ...):
     await session.commit()
 
 
+@rq_client.worker_task
 async def delete_old_music_jobs(session: AsyncSession = ...):
     limit = get_current_time() - timedelta(days=14)
     query = select(MusicJob).where(

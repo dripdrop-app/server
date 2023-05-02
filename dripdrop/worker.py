@@ -6,7 +6,7 @@ from rq.timeouts import JobTimeoutException
 import dripdrop.apps.music.tasks  # noqa
 import dripdrop.apps.youtube.tasks  # noqa
 from dripdrop.logger import logger
-from dripdrop.services.rq_client import CustomJob
+from dripdrop.services.rq_client import CustomJob, default, high
 from dripdrop.settings import settings
 
 
@@ -21,5 +21,5 @@ def timeout_handler(job: Job, exc_type, exc_value, traceback):
 
 if __name__ == "__main__":
     with Connection(connection=Redis.from_url(settings.redis_url)):
-        worker = Worker(["high", "default"], job_class=CustomJob)
+        worker = Worker([high, default], job_class=CustomJob)
         worker.work(with_scheduler=True)

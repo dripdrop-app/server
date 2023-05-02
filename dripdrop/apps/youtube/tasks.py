@@ -25,7 +25,8 @@ def generate_channel_videos_url(channel_id: str = ...):
     return f"https://youtube.com/channel/{channel_id}/videos"
 
 
-async def _delete_subscription(
+@rq_client.worker_task
+async def delete_subscription(
     channel_id: str = ..., email: str = ..., session: AsyncSession = ...
 ):
     query = select(YoutubeSubscription).where(
@@ -40,6 +41,7 @@ async def _delete_subscription(
     await session.commit()
 
 
+@rq_client.worker_task
 async def update_user_subscriptions(email: str = ..., session: AsyncSession = ...):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
     results = await session.scalars(query)
@@ -126,7 +128,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     async for row in stream.mappings():
         await asyncio.to_thread(
             rq_client.default.enqueue,
-            _delete_subscription,
+            delete_subscription,
             channel_id=row.channel_id,
             email=email,
         )
@@ -135,6 +137,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     await session.commit()
 
 
+@rq_client.worker_task
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
@@ -251,6 +254,7 @@ async def add_channel_videos(
         await session.commit()
 
 
+@rq_client.worker_task
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
@@ -283,6 +287,7 @@ async def update_channel_videos(
             )
 
 
+@rq_client.worker_task
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
     async for users in database.stream_scalars(

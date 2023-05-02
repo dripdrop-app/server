@@ -1,4 +1,5 @@
 import asyncio
+import functools
 from inspect import signature
 from redis import Redis
 from rq import Queue, get_current_job
@@ -6,9 +7,9 @@ from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 
+from dripdrop.logger import logger
 from dripdrop.services import database
 from dripdrop.settings import settings, ENV
-from dripdrop.logger import logger
 
 connection = Redis.from_url(settings.redis_url)
 
@@ -25,6 +26,30 @@ def report_job_time(job: Job, *_):
         )
 
 
+def worker_task(function):
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        async def _async_task_runner():
+            func_signature = signature(function)
+            parameters = func_signature.parameters
+            if "session" in parameters and "session" not in kwargs:
+                async with database.create_session() as session:
+                    kwargs["session"] = session
+                    return await function(*args, **kwargs)
+
+        func_signature = signature(function)
+        parameters = func_signature.parameters
+        if "job" in parameters:
+            kwargs["job"] = get_current_job()
+
+        if asyncio.iscoroutinefunction(function):
+            return asyncio.run(_async_task_runner())
+        else:
+            return function(*args, **kwargs)
+
+    return wrapper
+
+
 class CustomJob(Job):
     @classmethod
     def create(cls, *args, on_success=None, on_failure=None, **kwargs):
@@ -34,22 +59,6 @@ class CustomJob(Job):
             on_success=on_success if on_success else report_job_time,
             on_failure=on_failure if on_failure else report_job_time,
         )
-
-    async def _async_execute(self):
-        func_signature = signature(self.func)
-        parameters = func_signature.parameters
-        if "session" in parameters:
-            async with database.create_session() as session:
-                return await self.func(*self.args, session=session, **self.kwargs)
-
-    def _execute(self):
-        func_signature = signature(self.func)
-        parameters = func_signature.parameters
-        if "job" in parameters:
-            self.kwargs["job"] = get_current_job()
-        if asyncio.iscoroutinefunction(self.func):
-            return asyncio.run(self._async_execute())
-        return self.func(*self.args, **self.kwargs)
 
 
 queue_settings = {

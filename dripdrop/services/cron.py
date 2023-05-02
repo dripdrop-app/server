@@ -10,7 +10,8 @@ from dripdrop.logger import logger
 from dripdrop.services import redis_client, rq_client
 
 
-CRON_JOBS_LIST = "crons:jobs"
+CRON_JOBS_KEY_PREFIX = "crons:jobs"
+EST = timezone(timedelta(hours=-5))
 
 
 async def run_cron_jobs():
@@ -27,20 +28,35 @@ async def run_cron_jobs():
     )
 
 
-async def create_cron_job(cron_string: str, function: Callable):
-    est = timezone(timedelta(hours=-5))
-    cron = croniter(cron_string, datetime.now(est).replace(second=0))
-    next_run_time = cron.get_next(ret_type=datetime)
-    job = await asyncio.to_thread(rq_client.high.enqueue_at, next_run_time, function)
+async def remove_cron_key(key: str):
     async with redis_client.create_client() as redis:
-        await redis.rpush(CRON_JOBS_LIST, job.id)
+        keys_deleted = await redis.delete(key)
+        if keys_deleted == 0:
+            raise Exception(f"Could not delete cron key {key}")
+
+
+async def create_cron_job(cron_string: str, function: Callable, args=(), kwargs={}):
+    cron = croniter(cron_string, datetime.now(tz=EST))
+    next_run_time = cron.get_next(ret_type=datetime)
+    job = await asyncio.to_thread(
+        rq_client.high.enqueue_at, next_run_time, function, args=args, kwargs=kwargs
+    )
+    cron_key = f"{CRON_JOBS_KEY_PREFIX}:{job.get_id()}"
+    async with redis_client.create_client() as redis:
+        await redis.set(cron_key, 1)
     logger.info(f"Scheduling {job.description} to run at {next_run_time}")
     await asyncio.to_thread(
         rq_client.high.enqueue,
         create_cron_job,
-        cron_string=cron_string,
-        function=function,
-        depends_on=Dependency(jobs=[job], allow_failure=True),
+        args=(cron_string, function),
+        kwargs={"args": args, "kwargs": kwargs},
+        depends_on=Dependency(jobs=[job], allow_failure=True, enqueue_at_front=True),
+    )
+    await asyncio.to_thread(
+        rq_client.high.enqueue,
+        remove_cron_key,
+        args=(cron_key,),
+        depends_on=Dependency(jobs=[job], allow_failure=True, enqueue_at_front=True),
     )
 
 
@@ -59,7 +75,8 @@ async def start_cron_jobs():
 
 async def clear_cron_jobs():
     async with redis_client.create_client() as redis:
-        while await redis.llen(CRON_JOBS_LIST) != 0:
-            job_id = await redis.rpop(CRON_JOBS_LIST)
-            job_id = job_id.decode()
+        async for key in redis.scan_iter(f"{CRON_JOBS_KEY_PREFIX}*"):
+            key = key.decode()
+            job_id = key.split(":")[-1]
             rq_client.stop_job(job_id=job_id)
+            await redis.delete(key)
