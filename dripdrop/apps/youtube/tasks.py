@@ -124,8 +124,8 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             YoutubeNewSubscription.channel_id.is_(None),
         )
     )
-    stream = await session.stream(query)
-    async for row in stream.mappings():
+    async for rows in database.stream_mappings(query=query, yield_per=1, session=session):
+        row = rows[0]
         await asyncio.to_thread(
             rq_client.default.enqueue,
             delete_subscription,

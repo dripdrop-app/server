@@ -28,6 +28,7 @@ async def run_cron_jobs():
     )
 
 
+@rq_client.worker_task
 async def remove_cron_key(key: str):
     async with redis_client.create_client() as redis:
         keys_deleted = await redis.delete(key)
@@ -35,6 +36,7 @@ async def remove_cron_key(key: str):
             raise Exception(f"Could not delete cron key {key}")
 
 
+@rq_client.worker_task
 async def create_cron_job(cron_string: str, function: Callable, args=(), kwargs={}):
     cron = croniter(cron_string, datetime.now(tz=EST))
     next_run_time = cron.get_next(ret_type=datetime)
