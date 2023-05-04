@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 from typing import TypeVar, Tuple, overload, AsyncGenerator, Sequence, Literal
 
-from dripdrop.settings import settings
+from dripdrop.settings import settings, ENV
 
 T = TypeVar("T")
 
@@ -17,7 +17,9 @@ class StreamType(Enum):
 
 
 engine = create_async_engine(
-    settings.async_database_url, poolclass=NullPool, echo=False
+    settings.async_database_url,
+    poolclass=NullPool,
+    echo=settings.env == ENV.DEVELOPMENT,
 )
 session_maker = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 

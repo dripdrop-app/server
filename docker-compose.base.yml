@@ -33,7 +33,7 @@ services:
     ports:
       - 5000:5000
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthcheck"]
       interval: 30s
     environment:
       ENV: ${ENV}
