@@ -1,10 +1,21 @@
+import importlib
 from logging.config import fileConfig
-from dripdrop.models.register import Base
+from dripdrop.base.models import Base
 from dripdrop.settings import settings
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+APPS = [
+    "dripdrop.admin",
+    "dripdrop.authentication",
+    "dripdrop.music",
+    "dripdrop.youtube",
+]
+
+for app in APPS:
+    importlib.import_module(app + ".models")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
