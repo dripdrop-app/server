@@ -3,7 +3,8 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from dripdrop.apps.youtube.models import (
+from dripdrop.settings import settings
+from dripdrop.youtube.models import (
     YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
@@ -13,7 +14,6 @@ from dripdrop.apps.youtube.models import (
     YoutubeVideoLike,
     YoutubeVideoWatch,
 )
-from dripdrop.settings import settings
 
 
 @pytest.fixture(autouse=True)

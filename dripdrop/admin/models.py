@@ -3,7 +3,7 @@ from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-from dripdrop.models.base import ModelBaseMixin, Base
+from dripdrop.base.models import ModelBaseMixin, Base
 
 
 class Proxy(ModelBaseMixin, Base):

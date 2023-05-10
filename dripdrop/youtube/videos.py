@@ -2,12 +2,14 @@ import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
 from sqlalchemy import select
 
-from dripdrop.apps.authentication.dependencies import (
+from dripdrop.authentication.dependencies import (
     get_authenticated_user,
     AuthenticatedUser,
 )
-from dripdrop.apps.youtube import utils
-from dripdrop.apps.youtube.models import (
+from dripdrop.base.dependencies import DatabaseSession
+from dripdrop.logger import logger
+from dripdrop.youtube import utils
+from dripdrop.youtube.models import (
     YoutubeVideoCategory,
     YoutubeChannel,
     YoutubeVideo,
@@ -16,15 +18,13 @@ from dripdrop.apps.youtube.models import (
     YoutubeVideoLike,
     YoutubeVideoWatch,
 )
-from dripdrop.apps.youtube.responses import (
+from dripdrop.youtube.responses import (
     ErrorMessages,
     YoutubeVideoCategoriesResponse,
     VideosResponse,
     VideoQueueResponse,
     VideoResponse,
 )
-from dripdrop.dependencies import DatabaseSession
-from dripdrop.logger import logger
 
 
 api = APIRouter(

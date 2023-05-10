@@ -4,10 +4,10 @@ from datetime import datetime, timezone, timedelta
 from rq.job import Dependency
 from typing import Callable
 
-from dripdrop.apps.music import tasks as music_tasks
-from dripdrop.apps.youtube import tasks as youtube_tasks
+from dripdrop.music import tasks as music_tasks
 from dripdrop.logger import logger
 from dripdrop.services import redis_client, rq_client
+from dripdrop.youtube import tasks as youtube_tasks
 
 
 CRON_JOBS_KEY_PREFIX = "crons:jobs"

@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import Field
 from typing import Optional, List
 
-from dripdrop.responses import ResponseBaseModel
+from dripdrop.base.responses import ResponseBaseModel
 
 
 class YoutubeUserChannelResponse(ResponseBaseModel):

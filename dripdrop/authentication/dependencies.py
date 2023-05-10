@@ -5,8 +5,8 @@ from sqlalchemy import select
 from typing import Union, Annotated
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.apps.authentication.models import User
-from dripdrop.dependencies import DatabaseSession, AsyncSession
+from dripdrop.authentication.models import User
+from dripdrop.base.dependencies import DatabaseSession, AsyncSession
 from dripdrop.logger import logger
 from dripdrop.settings import settings
 

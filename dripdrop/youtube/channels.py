@@ -13,25 +13,25 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, and_
 
 import dripdrop.utils as dripdrop_utils
-from dripdrop.apps.authentication.dependencies import (
+from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
 )
-from dripdrop.apps.youtube import tasks
-from dripdrop.apps.youtube.models import (
+from dripdrop.base.dependencies import DatabaseSession
+from dripdrop.services import rq_client, scraper
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
+from dripdrop.youtube import tasks
+from dripdrop.youtube.models import (
     YoutubeChannel,
     YoutubeUserChannel,
     YoutubeSubscription,
 )
-from dripdrop.apps.youtube.responses import (
+from dripdrop.youtube.responses import (
     YoutubeChannelResponse,
     YoutubeChannelUpdateResponse,
     YoutubeUserChannelResponse,
     ErrorMessages,
 )
-from dripdrop.dependencies import DatabaseSession
-from dripdrop.services import rq_client, scraper
-from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 
 
 api = APIRouter(

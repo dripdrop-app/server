@@ -7,9 +7,9 @@ from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
 
-from dripdrop.apps.music import utils
-from dripdrop.apps.music.models import MusicJob
-from dripdrop.apps.music.responses import MusicJobUpdateResponse
+from dripdrop.music import utils
+from dripdrop.music.models import MusicJob
+from dripdrop.music.responses import MusicJobUpdateResponse
 from dripdrop.services import (
     database,
     http_client,

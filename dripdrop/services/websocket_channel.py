@@ -7,8 +7,8 @@ from fastapi import WebSocket, WebSocketDisconnect
 from typing import Coroutine, Literal
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
+from dripdrop.base.responses import ResponseBaseModel
 from dripdrop.logger import logger
-from dripdrop.responses import ResponseBaseModel
 from dripdrop.services import redis_client
 
 

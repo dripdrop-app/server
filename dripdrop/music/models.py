@@ -2,8 +2,8 @@ from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from dripdrop.apps.authentication.models import User
-from dripdrop.models.base import Base, ModelBaseMixin
+from dripdrop.authentication.models import User
+from dripdrop.base.models import Base, ModelBaseMixin
 
 
 class MusicJob(ModelBaseMixin, Base):

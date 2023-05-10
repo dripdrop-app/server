@@ -2,7 +2,7 @@ import asyncio
 import functools
 from inspect import signature
 from redis import Redis
-from rq import Queue, get_current_job
+from rq import Queue, get_current_job, Callback
 from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
@@ -40,7 +40,7 @@ def worker_task(function):
         func_signature = signature(function)
         parameters = func_signature.parameters
         if "job" in parameters:
-            kwargs["job"] = get_current_job()
+            kwargs["job"] = get_current_job(connection=connection)
 
         if asyncio.iscoroutinefunction(function):
             return asyncio.run(_async_task_runner())
@@ -56,8 +56,8 @@ class CustomJob(Job):
         return super().create(
             *args,
             **kwargs,
-            on_success=on_success if on_success else report_job_time,
-            on_failure=on_failure if on_failure else report_job_time,
+            on_success=Callback(func=on_success if on_success else report_job_time),
+            on_failure=Callback(func=on_failure if on_failure else report_job_time),
         )
 
 

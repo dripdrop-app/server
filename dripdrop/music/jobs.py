@@ -21,19 +21,19 @@ from pydantic import HttpUrl
 from sqlalchemy import select, func
 from typing import Optional
 
-from dripdrop.apps.authentication.dependencies import (
+from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
 )
-from dripdrop.apps.music import utils, tasks
-from dripdrop.apps.music.models import MusicJob
-from dripdrop.apps.music.responses import (
+from dripdrop.base.dependencies import DatabaseSession, create_database_session
+from dripdrop.logger import logger
+from dripdrop.music import utils, tasks
+from dripdrop.music.models import MusicJob
+from dripdrop.music.responses import (
     MusicJobUpdateResponse,
     MusicJobsResponse,
     ErrorMessages,
 )
-from dripdrop.dependencies import DatabaseSession, create_database_session
-from dripdrop.logger import logger
 from dripdrop.services import rq_client
 from dripdrop.services.websocket_channel import (
     RedisChannels,

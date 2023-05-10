@@ -4,12 +4,12 @@ from fastapi import status
 from httpx import AsyncClient
 
 from dripdrop.app import app
-from dripdrop.apps.authentication.app import password_context
-from dripdrop.apps.authentication.dependencies import COOKIE_NAME
-from dripdrop.apps.authentication.models import User
+from dripdrop.authentication.app import password_context
+from dripdrop.authentication.dependencies import COOKIE_NAME
+from dripdrop.authentication.models import User
+from dripdrop.base.models import Base
 from dripdrop.services import database, s3, temp_files
 from dripdrop.services.database import AsyncSession
-from dripdrop.models.base import Base
 from dripdrop.settings import settings, ENV
 
 

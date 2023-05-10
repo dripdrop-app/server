@@ -8,9 +8,9 @@ import uuid
 from dataclasses import dataclass
 from fastapi import UploadFile
 
-from dripdrop.apps.music.models import MusicJob
-from dripdrop.apps.music.responses import TagsResponse
 from dripdrop.logger import logger
+from dripdrop.music.models import MusicJob
+from dripdrop.music.responses import TagsResponse
 from dripdrop.services import http_client, image_downloader, s3, temp_files
 from dripdrop.services.audio_tag import AudioTags
 

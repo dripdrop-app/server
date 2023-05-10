@@ -1,8 +1,8 @@
 from fastapi import status
 from fastapi.responses import JSONResponse
 
-from dripdrop.apps.authentication.dependencies import COOKIE_NAME
-from dripdrop.responses import ResponseBaseModel
+from dripdrop.authentication.dependencies import COOKIE_NAME
+from dripdrop.base.responses import ResponseBaseModel
 from dripdrop.settings import settings, ENV
 
 

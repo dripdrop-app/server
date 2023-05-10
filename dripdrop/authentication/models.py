@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 
-from dripdrop.models.base import Base, ModelBaseMixin
+from dripdrop.base.models import Base, ModelBaseMixin
 
 
 class User(ModelBaseMixin, Base):

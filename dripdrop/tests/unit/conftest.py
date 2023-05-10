@@ -1,7 +1,7 @@
 import pytest
 
+from dripdrop.base.models import Base
 from dripdrop.services import database
-from dripdrop.models.base import Base
 from dripdrop.settings import settings, ENV
 
 

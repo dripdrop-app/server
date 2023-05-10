@@ -1,7 +1,7 @@
 from fastapi import status
 from httpx import AsyncClient
 
-from dripdrop.apps.authentication.dependencies import COOKIE_NAME
+from dripdrop.authentication.dependencies import COOKIE_NAME
 
 LOGIN_URL = "/api/auth/login"
 

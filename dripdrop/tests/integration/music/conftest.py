@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from dripdrop.apps.music.models import MusicJob
+from dripdrop.music.models import MusicJob
 from dripdrop.services import temp_files
 from dripdrop.services.audio_tag import AudioTags
 

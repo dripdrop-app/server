@@ -1,8 +1,7 @@
 from fastapi import Depends, FastAPI, status
 
-from dripdrop.apps.authentication.dependencies import get_authenticated_user
-
-from dripdrop.apps.youtube import channels, subscriptions, videos
+from dripdrop.authentication.dependencies import get_authenticated_user
+from dripdrop.youtube import channels, subscriptions, videos
 
 app = FastAPI(
     openapi_tags=["YouTube"],

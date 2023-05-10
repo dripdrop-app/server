@@ -3,9 +3,14 @@ from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from sqlalchemy import select, delete, false, and_
 
-from dripdrop.apps.admin import utils as admin_utils
-from dripdrop.apps.authentication.models import User
-from dripdrop.apps.youtube.models import (
+from dripdrop.admin import utils as admin_utils
+from dripdrop.authentication.models import User
+from dripdrop.services import database, rq_client, scraper, ytdlp
+from dripdrop.services.database import AsyncSession
+from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
+from dripdrop.settings import settings
+from dripdrop.utils import get_current_time
+from dripdrop.youtube.models import (
     YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
@@ -13,12 +18,7 @@ from dripdrop.apps.youtube.models import (
     YoutubeVideo,
     YoutubeVideoCategory,
 )
-from dripdrop.apps.youtube.responses import YoutubeChannelUpdateResponse
-from dripdrop.services import database, rq_client, scraper, ytdlp
-from dripdrop.services.database import AsyncSession
-from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
-from dripdrop.settings import settings
-from dripdrop.utils import get_current_time
+from dripdrop.youtube.responses import YoutubeChannelUpdateResponse
 
 
 def generate_channel_videos_url(channel_id: str = ...):
@@ -49,11 +49,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     if not user_channel:
         return
 
-    proxy = await admin_utils.get_proxy(session=session)
-    if proxy:
-        proxy_address = f"{proxy.ip_address}:{proxy.port}"
-        proxy.last_used = get_current_time()
-        await session.commit()
+    proxy_address = await admin_utils.get_proxy_address(session=session)
 
     for subscribed_channel in await scraper.get_channel_subscriptions(
         channel_id=user_channel.id, proxy=proxy_address

@@ -96,25 +96,27 @@ async def get_channel_subscriptions(channel_id: str, proxy: str | None = None):
 
 
 async def get_channel_info(channel_id: str):
-    url = "https://youtube.com/"
+    url = "https://www.youtube.com/"
     if channel_id.startswith("@"):
         url += channel_id
     else:
         url += f"channel/{channel_id}"
     async with http_client.create_client() as client:
         response = await client.get(url=url)
-    if response.is_error:
-        return None
-    html = response.text
-    soup = BeautifulSoup(html, "html.parser")
-    channel_id_tag = soup.find("meta", itemprop="channelId")
-    name_tag = soup.find("meta", itemprop="name")
-    thumbnail_tag = soup.find("link", itemprop="thumbnailUrl")
-    try:
-        return YoutubeChannelInfo(
-            id=channel_id_tag["content"],
-            title=name_tag["content"],
-            thumbnail=thumbnail_tag["href"],
-        )
-    except TypeError:
-        return None
+        if response.is_error:
+            return None
+        html = response.text
+        soup = BeautifulSoup(html, "html.parser")
+        channel_id_tag = soup.find("meta", itemprop="identifier")
+        if not channel_id_tag:
+            channel_id_tag = soup.find("meta", itemprop="channelId")
+        name_tag = soup.find("meta", itemprop="name")
+        thumbnail_tag = soup.find("link", itemprop="thumbnailUrl")
+        try:
+            return YoutubeChannelInfo(
+                id=channel_id_tag["content"],
+                title=name_tag["content"],
+                thumbnail=thumbnail_tag["href"],
+            )
+        except TypeError:
+            return None

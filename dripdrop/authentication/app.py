@@ -3,20 +3,20 @@ from fastapi.responses import PlainTextResponse
 from passlib.context import CryptContext
 from pydantic import EmailStr
 
-from dripdrop.apps.authentication import utils
-from dripdrop.apps.authentication.dependencies import (
+from dripdrop.authentication import utils
+from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
     COOKIE_NAME,
     get_authenticated_user,
 )
-from dripdrop.apps.authentication.models import User
-from dripdrop.apps.authentication.responses import (
+from dripdrop.authentication.models import User
+from dripdrop.authentication.responses import (
     AuthenticatedResponse,
     AuthenticatedResponseModel,
     UserResponse,
     ErrorMessages,
 )
-from dripdrop.dependencies import DatabaseSession
+from dripdrop.base.dependencies import DatabaseSession
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

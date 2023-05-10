@@ -3,10 +3,10 @@ from fastapi import FastAPI, Depends, Response, status, Query
 from pydantic import EmailStr
 from typing import Optional
 
-from dripdrop.apps.authentication.dependencies import get_admin_user
-from dripdrop.apps.music import tasks as music_tasks
-from dripdrop.apps.youtube import tasks as youtube_tasks
+from dripdrop.authentication.dependencies import get_admin_user
+from dripdrop.music import tasks as music_tasks
 from dripdrop.services import cron, rq_client
+from dripdrop.youtube import tasks as youtube_tasks
 
 app = FastAPI(
     openapi_tags=["Admin"],

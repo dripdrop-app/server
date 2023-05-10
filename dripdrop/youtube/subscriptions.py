@@ -3,18 +3,18 @@ import math
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy import select, func, and_
 
-from dripdrop.apps.authentication.dependencies import (
+from dripdrop.authentication.dependencies import (
     get_authenticated_user,
     AuthenticatedUser,
 )
-from dripdrop.apps.youtube import tasks
-from dripdrop.apps.youtube.models import YoutubeSubscription, YoutubeChannel
-from dripdrop.apps.youtube.responses import (
+from dripdrop.base.dependencies import DatabaseSession
+from dripdrop.youtube import tasks
+from dripdrop.youtube.models import YoutubeSubscription, YoutubeChannel
+from dripdrop.youtube.responses import (
     SubscriptionsResponse,
     YoutubeSubscriptionResponse,
     ErrorMessages,
 )
-from dripdrop.dependencies import DatabaseSession
 from dripdrop.services import rq_client, scraper
 from dripdrop.utils import get_current_time
 
