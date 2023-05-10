@@ -26,6 +26,7 @@ class DockerInterface:
         self._env = env
         self._context = context
         self._project = project
+        self._image_tag = f"{project}/image"
         self._env_vars = None
 
     def remove_services(self):
@@ -44,7 +45,7 @@ class DockerInterface:
 
     def _load_environment_variables(self):
         if self._env_vars is None:
-            self._env_vars = {"ENV": self._env}
+            self._env_vars = {"ENV": self._env, "IMAGE": self._image_tag}
             lines = []
             with open(self._env_file) as f:
                 lines = f.readlines()
@@ -53,7 +54,22 @@ class DockerInterface:
                 self._env_vars[variable] = value.strip()
         return self._env_vars
 
+    def _build_image(self):
+        subprocess.run(
+            [
+                "docker",
+                "image",
+                "build",
+                "-f",
+                self._docker_file,
+                "-t",
+                self._image_tag,
+                self._context,
+            ]
+        ).check_returncode()
+
     def _build_services(self):
+        self._build_image()
         subprocess.run(
             [
                 "docker",
@@ -144,7 +160,7 @@ if __name__ == "__main__":
         **OPTIONS[args.env],
         env_file=env_file,
         context=context,
-        env=TESTING if args.action == TEST else args.env
+        env=TESTING if args.action == TEST else args.env,
     )
 
     if args.action == REMOVE:
