@@ -24,13 +24,13 @@ class YoutubeChannelInfo:
 
 async def get_channel_subscriptions(channel_id: str, proxy: str | None = None):
     def _get_channel_subscriptions():
-        webdriver_proxy = None
+        options = webdriver.ChromeOptions()
         if proxy:
             webdriver_proxy = Proxy()
             webdriver_proxy.proxy_type = ProxyType.MANUAL
             webdriver_proxy.http_proxy = proxy
             webdriver_proxy.socks_proxy = proxy
-        options = webdriver.ChromeOptions()
+            options.proxy = webdriver_proxy
         options.add_argument(f"user-agent={user_agent.random}")
         driver = webdriver.Remote(
             command_executor=settings.selenium_webdriver_url,
@@ -38,7 +38,7 @@ async def get_channel_subscriptions(channel_id: str, proxy: str | None = None):
             options=options,
         )
         try:
-            channel_url = f"https://youtube.com/channel/{channel_id}/channels"
+            channel_url = f"https://www.youtube.com/channel/{channel_id}/channels"
             driver.get(channel_url)
             time.sleep(5)
             subscription_header = next(
