@@ -33,7 +33,7 @@ jobs:
           sudo apt-get -y install rsync
       - name: Backup current repo on VM
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop_old && [[ -d ~/dripdrop ]] && cp -r ~/dripdrop ~/dripdrop_old"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop_old && [ -d ~/dripdrop ] && cp -r ~/dripdrop ~/dripdrop_old"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -59,7 +59,7 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
       - name: Rollback repo to previous version
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop && [[ -d ~/dripdrop ]] && cp -r ~/dripdrop ~/dripdrop_old"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop && [ -d ~/dripdrop ] && cp -r ~/dripdrop ~/dripdrop_old"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
