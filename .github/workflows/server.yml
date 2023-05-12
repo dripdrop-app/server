@@ -33,7 +33,7 @@ jobs:
           sudo apt-get -y install rsync
       - name: Backup current repo on VM
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop_old && [ -d ~/dripdrop ] && cp -r ~/dripdrop ~/dripdrop_old"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop_old; if [ -d ~/dripdrop ]; then cp -r ~/dripdrop ~/dripdrop_old; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -59,13 +59,13 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
       - name: Rollback repo to previous version
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop && [ -d ~/dripdrop ] && cp -r ~/dripdrop ~/dripdrop_old"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop && if [ -d ~/dripdrop ]; then cp -r ~/dripdrop ~/dripdrop_old; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Deploy over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "docker system prune -af && cd ~/dripdrop && python3 docker.py --env production --action deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
