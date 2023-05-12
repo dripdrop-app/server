@@ -50,7 +50,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
   rollback:
-    if: ${{ failure() }} && steps.deploy.outcome == 'failure'
+    if: ${{ failure() }}
     runs-on: ubuntu-latest
     needs: deploy
     steps:
@@ -59,7 +59,7 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
       - name: Rollback repo to previous version
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop && if [ -d ~/dripdrop ]; then cp -r ~/dripdrop ~/dripdrop_old; fi"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "if [ -d ~/dripdrop_old ]; then cp -r ~/dripdrop_old ~/dripdrop; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
