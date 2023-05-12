@@ -15,7 +15,7 @@ jobs:
         run: |
           python docker.py --env production --action test
   deploy:
-    if: ${{ github.ref == '/refs/heads/main' }}
+    if: ${{ github.ref }} == '/refs/heads/main'
     runs-on: ubuntu-latest
     needs: test
     steps:
@@ -50,7 +50,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
   rollback:
-    if: ${{ failure() }}
+    if: ${{ failure() }} && steps.deploy.outcome == 'failure'
     runs-on: ubuntu-latest
     needs: deploy
     steps:
