@@ -3,10 +3,10 @@ from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.authentication.models import User
-from dripdrop.base.models import Base, ModelBaseMixin
+from dripdrop.base.models import Base
 
 
-class YoutubeUserChannel(ModelBaseMixin, Base):
+class YoutubeUserChannel(Base):
     __tablename__ = "youtube_user_channels"
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -21,7 +21,7 @@ class YoutubeUserChannel(ModelBaseMixin, Base):
     )
 
 
-class YoutubeChannel(ModelBaseMixin, Base):
+class YoutubeChannel(Base):
     __tablename__ = "youtube_channels"
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -33,7 +33,7 @@ class YoutubeChannel(ModelBaseMixin, Base):
     updating: Mapped[bool] = mapped_column(nullable=False, default=False)
 
 
-class YoutubeSubscription(ModelBaseMixin, Base):
+class YoutubeSubscription(Base):
     __tablename__ = "youtube_subscriptions"
 
     channel_id: Mapped[str] = mapped_column(
@@ -62,7 +62,7 @@ class YoutubeSubscription(ModelBaseMixin, Base):
     )
 
 
-class YoutubeNewSubscription(ModelBaseMixin, Base):
+class YoutubeNewSubscription(Base):
     __tablename__ = "youtube_new_subscriptions"
 
     channel_id: Mapped[str] = mapped_column(primary_key=True)
@@ -78,14 +78,14 @@ class YoutubeNewSubscription(ModelBaseMixin, Base):
     )
 
 
-class YoutubeVideoCategory(ModelBaseMixin, Base):
+class YoutubeVideoCategory(Base):
     __tablename__ = "youtube_video_categories"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
 
 
-class YoutubeVideo(ModelBaseMixin, Base):
+class YoutubeVideo(Base):
     __tablename__ = "youtube_videos"
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -115,7 +115,7 @@ class YoutubeVideo(ModelBaseMixin, Base):
     )
 
 
-class YoutubeVideoLike(ModelBaseMixin, Base):
+class YoutubeVideoLike(Base):
     __tablename__ = "youtube_video_likes"
 
     email: Mapped[str] = mapped_column(
@@ -140,7 +140,7 @@ class YoutubeVideoLike(ModelBaseMixin, Base):
     )
 
 
-class YoutubeVideoQueue(ModelBaseMixin, Base):
+class YoutubeVideoQueue(Base):
     __tablename__ = "youtube_video_queues"
 
     email: Mapped[str] = mapped_column(
@@ -165,7 +165,7 @@ class YoutubeVideoQueue(ModelBaseMixin, Base):
     )
 
 
-class YoutubeVideoWatch(ModelBaseMixin, Base):
+class YoutubeVideoWatch(Base):
     __tablename__ = "youtube_video_watches"
 
     email: Mapped[str] = mapped_column(

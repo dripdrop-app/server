@@ -3,11 +3,11 @@ from fastapi import (
     APIRouter,
     HTTPException,
     Depends,
-    Query,
     status,
     Body,
     Response,
     WebSocket,
+    Path,
 )
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, and_
@@ -35,51 +35,10 @@ from dripdrop.youtube.responses import (
 
 
 api = APIRouter(
-    prefix="/channels",
-    tags=["YouTube Channels"],
+    prefix="/channel",
+    tags=["YouTube Channel"],
     dependencies=[Depends(get_authenticated_user)],
 )
-
-
-@api.get(
-    "", response_model=YoutubeChannelResponse, responses={status.HTTP_404_NOT_FOUND: {}}
-)
-async def get_youtube_channel(
-    user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Query(...)
-):
-    query = (
-        select(
-            YoutubeChannel.id,
-            YoutubeChannel.title,
-            YoutubeChannel.thumbnail,
-            YoutubeChannel.updating,
-            YoutubeSubscription.channel_id.label("subscribed"),
-        )
-        .join(
-            YoutubeSubscription,
-            and_(
-                YoutubeChannel.id == YoutubeSubscription.channel_id,
-                YoutubeSubscription.email == user.email,
-                YoutubeSubscription.deleted_at.is_(None),
-            ),
-            isouter=True,
-        )
-        .where(YoutubeChannel.id == channel_id)
-    )
-    results = await session.execute(query)
-    channel = results.mappings().first()
-    if not channel:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorMessages.CHANNEL_NOT_FOUND,
-        )
-    return YoutubeChannelResponse(
-        id=channel.id,
-        title=channel.title,
-        thumbnail=channel.thumbnail,
-        subscribed=bool(channel.subscribed),
-        updating=channel.updating,
-    )
 
 
 @api.websocket("/listen")
@@ -142,3 +101,46 @@ async def update_user_youtube_channel(
         rq_client.default.enqueue, tasks.update_user_subscriptions, email=user.email
     )
     return Response(None, status_code=status.HTTP_200_OK)
+
+
+@api.get(
+    "/{channel_id}",
+    response_model=YoutubeChannelResponse,
+    responses={status.HTTP_404_NOT_FOUND: {}},
+)
+async def get_youtube_channel(
+    user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Path(...)
+):
+    query = (
+        select(
+            YoutubeChannel.id,
+            YoutubeChannel.title,
+            YoutubeChannel.thumbnail,
+            YoutubeChannel.updating,
+            YoutubeSubscription.channel_id.label("subscribed"),
+        )
+        .join(
+            YoutubeSubscription,
+            and_(
+                YoutubeChannel.id == YoutubeSubscription.channel_id,
+                YoutubeSubscription.email == user.email,
+                YoutubeSubscription.deleted_at.is_(None),
+            ),
+            isouter=True,
+        )
+        .where(YoutubeChannel.id == channel_id)
+    )
+    results = await session.execute(query)
+    channel = results.mappings().first()
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorMessages.CHANNEL_NOT_FOUND,
+        )
+    return YoutubeChannelResponse(
+        id=channel.id,
+        title=channel.title,
+        thumbnail=channel.thumbnail,
+        subscribed=bool(channel.subscribed),
+        updating=channel.updating,
+    )

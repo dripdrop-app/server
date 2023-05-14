@@ -37,9 +37,10 @@ async def _retrieve_audio_file(music_job_path: str, music_job: MusicJob):
             f.write(res.content)
 
         filename = f"{os.path.splitext(audio_file_path)[0]}.mp3"
-        AudioSegment.from_file(file=audio_file_path).export(
+        exported_file = AudioSegment.from_file(file=audio_file_path).export(
             filename, format="mp3", bitrate="320k"
         )
+        exported_file.close()
     elif music_job.video_url:
         filename = os.path.join(music_job_path, "temp.mp3")
         await ytdlp.download_audio_from_video(

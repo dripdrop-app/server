@@ -33,9 +33,7 @@ async def get_channel_subscriptions(channel_id: str, proxy: str | None = None):
             options.proxy = webdriver_proxy
         options.add_argument(f"user-agent={user_agent.random}")
         driver = webdriver.Remote(
-            command_executor=settings.selenium_webdriver_url,
-            proxy=webdriver_proxy,
-            options=options,
+            command_executor=settings.selenium_webdriver_url, options=options
         )
         try:
             channel_url = f"https://www.youtube.com/channel/{channel_id}/channels"

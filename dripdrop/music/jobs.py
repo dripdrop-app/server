@@ -31,6 +31,7 @@ from dripdrop.music import utils, tasks
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import (
     MusicJobUpdateResponse,
+    MusicJobResponse,
     MusicJobsResponse,
     ErrorMessages,
 )
@@ -151,23 +152,22 @@ async def create_job(
             detail=ErrorMessages.FAILED_IMAGE_UPLOAD,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    session.add(
-        MusicJob(
-            id=job_id,
-            user_email=user.email,
-            artwork_url=artwork_info.url,
-            artwork_filename=artwork_info.filename,
-            original_filename=audiofile_info.filename,
-            filename_url=audiofile_info.url,
-            video_url=video_url,
-            title=title,
-            artist=artist,
-            album=album,
-            grouping=grouping,
-            completed=False,
-            failed=False,
-        )
+    job = MusicJob(
+        id=job_id,
+        user_email=user.email,
+        artwork_url=artwork_info.url,
+        artwork_filename=artwork_info.filename,
+        original_filename=audiofile_info.filename,
+        filename_url=audiofile_info.url,
+        video_url=video_url,
+        title=title,
+        artist=artist,
+        album=album,
+        grouping=grouping,
+        completed=False,
+        failed=False,
     )
+    session.add(job)
     await session.commit()
     await asyncio.to_thread(
         rq_client.high.enqueue,
@@ -175,7 +175,7 @@ async def create_job(
         music_job_id=job_id,
         job_id=job_id,
     )
-    return Response(None, status_code=status.HTTP_201_CREATED)
+    return MusicJobResponse.from_orm(job)
 
 
 @api.delete(

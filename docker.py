@@ -120,7 +120,10 @@ class DockerInterface:
                 "server",
                 "poetry",
                 "run",
-                "pytest",
+                "python",
+                "-m",
+                "unittest",
+                "discover",
             ],
             env=self._load_environment_variables(),
         ).check_returncode()

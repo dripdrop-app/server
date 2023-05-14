@@ -3,10 +3,10 @@ from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-from dripdrop.base.models import ModelBaseMixin, Base
+from dripdrop.base.models import Base
 
 
-class Proxy(ModelBaseMixin, Base):
+class Proxy(Base):
     __tablename__ = "proxies"
 
     ip_address: Mapped[str] = mapped_column(primary_key=True)

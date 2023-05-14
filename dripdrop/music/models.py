@@ -3,10 +3,10 @@ from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from dripdrop.authentication.models import User
-from dripdrop.base.models import Base, ModelBaseMixin
+from dripdrop.base.models import Base
 
 
-class MusicJob(ModelBaseMixin, Base):
+class MusicJob(Base):
     __tablename__ = "music_jobs"
 
     id: Mapped[str] = mapped_column(primary_key=True)

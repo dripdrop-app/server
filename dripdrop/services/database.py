@@ -19,7 +19,7 @@ class StreamType(Enum):
 engine = create_async_engine(
     settings.async_database_url,
     poolclass=NullPool,
-    echo=settings.env == ENV.DEVELOPMENT,
+    echo=settings.env != ENV.PRODUCTION,
 )
 session_maker = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 

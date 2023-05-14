@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Mapped, mapped_column
 
-from dripdrop.base.models import Base, ModelBaseMixin
+from dripdrop.base.models import Base
 
 
-class User(ModelBaseMixin, Base):
+class User(Base):
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(primary_key=True)
