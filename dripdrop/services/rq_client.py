@@ -2,10 +2,10 @@ import asyncio
 import functools
 from inspect import signature
 from redis import Redis
-from rq import Queue, get_current_job
+from rq import Queue, get_current_job, Callback
 from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
-from rq.job import Job, JobStatus, Callback
+from rq.job import Job, JobStatus
 
 from dripdrop.logger import logger
 from dripdrop.services import database
