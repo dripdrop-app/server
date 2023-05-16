@@ -20,7 +20,6 @@ class BaseTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.assertEqual(settings.env, ENV.TESTING)
         await self.delete_temp_directories()
-        await self.clean_test_s3_folders()
         async with database.engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
@@ -30,13 +29,12 @@ class BaseTest(IsolatedAsyncioTestCase):
         self.session = await self.enter_async_context(database.create_session())
         self.http_client = await self.enter_async_context(AsyncClient())
 
+    async def asyncTearDown(self):
+        await self.delete_temp_directories()
+
     async def enter_async_context(self, context_manager: AsyncContextManager[T]) -> T:
         self.addAsyncCleanup(context_manager.__aexit__, None, None, None)
         return await context_manager.__aenter__()
-
-    async def asyncTearDown(self):
-        await self.delete_temp_directories()
-        await self.clean_test_s3_folders()
 
     async def delete_temp_directories(self):
         try:

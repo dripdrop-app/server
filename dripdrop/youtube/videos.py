@@ -1,6 +1,7 @@
+import math
 import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func, and_
 
 from dripdrop.authentication.dependencies import (
     get_authenticated_user,
@@ -13,6 +14,8 @@ from dripdrop.youtube.models import (
     YoutubeVideoCategory,
     YoutubeChannel,
     YoutubeVideo,
+    YoutubeVideoLike,
+    YoutubeVideoQueue,
     YoutubeSubscription,
 )
 from dripdrop.youtube.responses import (
@@ -89,17 +92,59 @@ async def get_youtube_videos(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.VIDEO_CATEGORIES_INVALID,
         )
-    videos, total_pages = await utils.execute_videos_query(
-        session=session,
-        user=user,
-        channel_id=channel_id,
-        video_categories=video_categories,
-        liked_only=liked_only,
-        queued_only=queued_only,
-        offset=(page - 1) * per_page,
-        limit=per_page,
-        subscribed_only=channel_id is None and not liked_only and not queued_only,
+
+    offset = (page - 1) * page
+    query = select(YoutubeVideo)
+    if channel_id:
+        query = query.where(YoutubeVideo.channel_id == channel_id)
+    else:
+        if not queued_only and not liked_only:
+            query = query.where(
+                YoutubeVideo.channel_id.in_(
+                    select(YoutubeChannel.id)
+                    .join(
+                        YoutubeSubscription,
+                        YoutubeChannel.id == YoutubeSubscription.channel_id,
+                    )
+                    .where(
+                        YoutubeSubscription.email == user.email,
+                        YoutubeSubscription.deleted_at.is_(None),
+                    )
+                )
+            )
+    if video_categories:
+        query = query.where(YoutubeVideo.category_id.in_(video_categories))
+
+    if liked_only:
+        query = (
+            query.join(YoutubeVideoLike, YoutubeVideo.id == YoutubeVideoLike.video_id)
+            .where(YoutubeVideoLike.email == user.email)
+            .order_by(YoutubeVideoLike.created_at.desc())
+        )
+    elif queued_only:
+        query = (
+            query.join(
+                YoutubeVideoQueue,
+                YoutubeVideo.id == YoutubeVideoQueue.video_id,
+            )
+            .where(YoutubeVideoQueue.email == user.email)
+            .order_by(YoutubeVideoQueue.created_at.asc())
+        )
+    else:
+        query = query.order_by(YoutubeVideo.published_at.desc())
+
+    videos_query = query.offset(offset).limit(per_page)
+
+    results = await session.scalars(videos_query)
+    videos = await utils.get_videos_attributes(
+        session=session, user=user, videos=results.all()
     )
+
+    count = await session.scalar(select(func.count(query.subquery().columns.id)))
+    total_pages = 1
+    if count is not None and per_page is not None:
+        total_pages = math.ceil(count / per_page)
+
     if page > total_pages and page != 1:
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
@@ -117,14 +162,20 @@ async def get_youtube_videos(
 async def get_youtube_video_queue(
     user: AuthenticatedUser, session: DatabaseSession, index: int = Query(..., ge=1)
 ):
-    (videos, *_) = await utils.execute_videos_query(
-        session=session,
-        user=user,
-        queued_only=True,
-        offset=max(index - 2, 0),
-        limit=2 if index == 1 else 3,
-        subscribed_only=False,
+    query = (
+        select(YoutubeVideo)
+        .join(
+            YoutubeVideoQueue,
+            and_(
+                YoutubeVideo.id == YoutubeVideoQueue.video_id,
+                YoutubeVideoQueue.email == user.email,
+            ),
+        )
+        .offset(max(index - 2, 0))
+        .limit(2 if index == 1 else 3)
     )
+    results = await session.scalars(query)
+    videos = results.all()
 
     [prev_video, current_video, next_video] = [None] * 3
 
@@ -132,6 +183,10 @@ async def get_youtube_video_queue(
         prev_video = videos.pop(0)
     if videos:
         current_video = videos.pop(0)
+        current_videos = await utils.get_videos_attributes(
+            session=session, user=user, videos=[current_video]
+        )
+        current_video = current_videos[0]
     if videos:
         next_video = videos.pop(0)
     if not current_video:

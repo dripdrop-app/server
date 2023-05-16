@@ -35,27 +35,33 @@ async def get_youtube_video(
     video_id: str = Path(...),
     related_videos_length: int = Query(5, ge=0),
 ):
-    (videos, *_) = await utils.execute_videos_query(
-        session=session,
-        user=user,
-        video_ids=[video_id],
-        subscribed_only=False,
-    )
-    video = videos[0] if videos else None
+    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+    results = await session.scalars(query)
+    video = results.first()
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.VIDEO_NOT_FOUND,
         )
+    videos = await utils.get_videos_attributes(
+        session=session, user=user, videos=[video]
+    )
+    video = videos[0]
+
     related_videos = []
     if related_videos_length > 0:
-        (related_videos, *_) = await utils.execute_videos_query(
-            session=session,
-            user=user,
-            video_categories=[video.category_id],
-            limit=related_videos_length,
-            exclude_video_ids=[video.id],
-            subscribed_only=False,
+        query = (
+            select(YoutubeVideo)
+            .where(
+                YoutubeVideo.id != video.id,
+                YoutubeVideo.category_id == video.category_id,
+            )
+            .order_by(YoutubeVideo.published_at.desc())
+            .limit(related_videos_length)
+        )
+        results = await session.scalars(query)
+        related_videos = await utils.get_videos_attributes(
+            session=session, user=user, videos=results.all()
         )
     return VideoResponse(video=video, related_videos=related_videos)
 

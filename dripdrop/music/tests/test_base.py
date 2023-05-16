@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from dripdrop.base.test import BaseTest
 from dripdrop.music.models import MusicJob
-from dripdrop.services import temp_files
+from dripdrop.services import s3, temp_files
 from dripdrop.services.audio_tag import AudioTags
 
 
@@ -17,6 +17,8 @@ class MusicBaseTest(BaseTest):
 
     async def asyncSetUp(self):
         await super().asyncSetUp()
+        await self.clean_test_s3_folders()
+
         self.test_image_url = (
             "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
         )
@@ -40,6 +42,20 @@ class MusicBaseTest(BaseTest):
             buffer = io.BytesIO(MusicBaseTest.test_image_file)
             base64_string = base64.b64encode(buffer.getvalue()).decode()
             MusicBaseTest.test_base64_image = f"data:image/png;base64,{base64_string}"
+
+    async def asyncTearDown(self):
+        await super().asyncTearDown()
+        await self.clean_test_s3_folders()
+
+    async def clean_test_s3_folders(self):
+        try:
+            async for keys in s3.list_objects():
+                for key in keys:
+                    if key.startswith("test"):
+                        continue
+                    await s3.delete_file(filename=key)
+        except Exception:
+            pass
 
     async def create_music_job(
         self,
