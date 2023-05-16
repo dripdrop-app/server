@@ -93,7 +93,7 @@ async def get_youtube_videos(
             detail=ErrorMessages.VIDEO_CATEGORIES_INVALID,
         )
 
-    offset = (page - 1) * page
+    offset = (page - 1) * per_page
     query = select(YoutubeVideo)
     if channel_id:
         query = query.where(YoutubeVideo.channel_id == channel_id)
@@ -141,6 +141,7 @@ async def get_youtube_videos(
     )
 
     count = await session.scalar(select(func.count(query.subquery().columns.id)))
+    print(count)
     total_pages = 1
     if count is not None and per_page is not None:
         total_pages = math.ceil(count / per_page)
