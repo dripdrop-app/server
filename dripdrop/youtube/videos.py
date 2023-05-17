@@ -133,6 +133,8 @@ async def get_youtube_videos(
     else:
         query = query.order_by(YoutubeVideo.published_at.desc())
 
+    query = query.order_by(YoutubeVideo.title.desc())
+
     videos_query = query.offset(offset).limit(per_page)
 
     results = await session.scalars(videos_query)
@@ -141,7 +143,6 @@ async def get_youtube_videos(
     )
 
     count = await session.scalar(select(func.count(query.subquery().columns.id)))
-    print(count)
     total_pages = 1
     if count is not None and per_page is not None:
         total_pages = math.ceil(count / per_page)
