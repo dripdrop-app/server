@@ -69,7 +69,7 @@ async def start_cron_jobs():
         cron_string="0 0 * * *", function=music_tasks.delete_old_music_jobs
     )
     await create_cron_job(
-        cron_string="30 0 * * *", function=youtube_tasks.update_subscriptions
+        cron_string="30 12 * * *", function=youtube_tasks.update_subscriptions
     )
 
 

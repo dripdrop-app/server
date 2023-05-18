@@ -54,8 +54,8 @@ async def get_youtube_subscriptions(
         )
         .order_by(YoutubeChannel.title)
     )
-    results = await session.execute(query.offset((page - 1) * per_page))
-    subscriptions = results.mappings().fetchmany(per_page)
+    results = await session.execute(query.offset((page - 1) * per_page).limit(per_page))
+    subscriptions = results.mappings().all()
     count = await session.scalar(
         select(func.count(query.subquery().columns.channel_id))
     )
