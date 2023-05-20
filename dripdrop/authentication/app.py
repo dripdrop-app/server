@@ -12,7 +12,7 @@ from fastapi import (
 )
 from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
-from pydantic import EmailStr
+from pydantic import EmailStr, BaseModel
 
 from dripdrop.authentication import utils
 from dripdrop.authentication.dependencies import (
@@ -153,12 +153,17 @@ async def verify_email(
     return RedirectResponse("/account")
 
 
-@app.get("/sendreset")
+class ResetEmail(BaseModel):
+    email: EmailStr
+
+
+@app.post("/sendreset")
 async def send_reset_email(
     session: DatabaseSession,
     redis: RedisClient,
-    email: EmailStr = Query(...),
+    reset_email: ResetEmail = Body(...),
 ):
+    email = reset_email.email
     user = await utils.find_user_by_email(email=email, session=session)
     if not user:
         raise HTTPException(
