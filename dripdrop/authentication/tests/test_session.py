@@ -1,4 +1,5 @@
 from fastapi import status
+from unittest.mock import patch
 
 from dripdrop.base.test import BaseTest
 
@@ -12,16 +13,15 @@ class GetSessionTestCase(BaseTest):
         response = await self.client.get(SESSION_URL)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    async def test_session_after_creating_account(self):
+    @patch("dripdrop.services.sendgrid_client.send_verification_email")
+    async def test_session_after_creating_account(self, _):
         TEST_EMAIL = "user@gmail.com"
         response = await self.client.post(
             CREATE_URL, json={"email": TEST_EMAIL, "password": "password"}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         response = await self.client.get(SESSION_URL)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        json = response.json()
-        self.assertEqual(json, {"email": TEST_EMAIL, "admin": False})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_session_after_login(self):
         user = await self.create_and_login_user(

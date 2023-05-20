@@ -1,37 +1,24 @@
-import jwt
-import traceback
 from fastapi import HTTPException, status, Request, WebSocket, Depends
 from sqlalchemy import select
 from typing import Union, Annotated
 
-import dripdrop.utils as dripdrop_utils
+from dripdrop.authentication import utils
 from dripdrop.authentication.models import User
 from dripdrop.base.dependencies import DatabaseSession, AsyncSession
-from dripdrop.logger import logger
-from dripdrop.settings import settings
 
 
-ALGORITHM = "HS256"
 COOKIE_NAME = "token"
 
 
 async def get_user_from_token(token: str, session: AsyncSession):
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
-        expires = payload.get("exp", None)
-        if expires is None:
-            return None
-        if expires < dripdrop_utils.get_current_time().timestamp():
-            pass
-        email = payload.get("email", None)
-        if email:
-            query = select(User).where(User.email == email)
-            results = await session.scalars(query)
-            user: Union[User, None] = results.first()
-            return user
-    except jwt.PyJWTError:
-        logger.exception(traceback.format_exc())
+    payload = utils.decode_jwt(token=token)
+    email = payload.get("email", None)
+    if not email:
         return None
+    query = select(User).where(User.email == email)
+    results = await session.scalars(query)
+    user = results.first()
+    return user
 
 
 async def get_user(
@@ -52,8 +39,8 @@ async def get_user(
 SessionUser = Annotated[Union[None, User], Depends(get_user)]
 
 
-async def get_authenticated_user(user: Union[None, User] = Depends(get_user)):
-    if user:
+async def get_authenticated_user(user: SessionUser):
+    if user and user.verified:
         return user
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 

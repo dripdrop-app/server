@@ -99,11 +99,10 @@ class MusicBaseTest(BaseTest):
         return job
 
     async def get_music_job(self, email: str, music_job_id: str):
-        results = await self.session.scalars(
-            select(MusicJob).where(
-                MusicJob.user_email == email, MusicJob.id == music_job_id
-            )
+        query = select(MusicJob).where(
+            MusicJob.user_email == email, MusicJob.id == music_job_id
         )
+        results = await self.session.scalars(query)
         job = results.first()
         self.assertIsNotNone(job)
         return job

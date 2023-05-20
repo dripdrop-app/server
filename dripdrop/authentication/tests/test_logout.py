@@ -21,7 +21,7 @@ class LogoutTestCase(BaseTest):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = await self.client.get(LOGOUT_URL)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(response.cookies.get(COOKIE_NAME))
         response = await self.client.get(SESSION_URL)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

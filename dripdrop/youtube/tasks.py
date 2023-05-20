@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
+from rq.job import Retry
 from sqlalchemy import select, delete, false, and_
 
 from dripdrop.admin import utils as admin_utils
@@ -293,5 +294,8 @@ async def update_subscriptions(session: AsyncSession = ...):
     ):
         user = users[0]
         await asyncio.to_thread(
-            rq_client.default.enqueue, update_user_subscriptions, email=user.email
+            rq_client.default.enqueue,
+            update_user_subscriptions,
+            email=user.email,
+            retry=Retry(2, [10, 30]),
         )

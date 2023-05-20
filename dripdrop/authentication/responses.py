@@ -42,3 +42,9 @@ class AuthenticatedResponse(JSONResponse):
 class ErrorMessages:
     IncorrectCredentials = "Incorrect Credentials"
     AccountExists = "Account Exists"
+    AccountUnverified = "Account is not verified"
+    CodeMismatch = "Code does not match for email"
+    AccountDoesNotExist = "Account does not exist"
+    ResetEmailExists = "Reset password email already sent"
+    EmailSendFail = "Email failed to send"
+    TokenError = "Token is not valid"

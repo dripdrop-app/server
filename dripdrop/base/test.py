@@ -10,7 +10,7 @@ from dripdrop.authentication.app import password_context
 from dripdrop.authentication.dependencies import COOKIE_NAME
 from dripdrop.authentication.models import User
 from dripdrop.models import Base
-from dripdrop.services import database, s3, temp_files
+from dripdrop.services import database, s3, temp_files, redis_client
 from dripdrop.settings import settings, ENV
 
 T = TypeVar("T")
@@ -28,6 +28,8 @@ class BaseTest(IsolatedAsyncioTestCase):
         )
         self.session = await self.enter_async_context(database.create_session())
         self.http_client = await self.enter_async_context(AsyncClient())
+        self.redis = await self.enter_async_context(redis_client.create_client())
+        await self.redis.flushall()
 
     async def asyncTearDown(self):
         await self.delete_temp_directories()
@@ -52,8 +54,13 @@ class BaseTest(IsolatedAsyncioTestCase):
         except Exception:
             pass
 
-    async def create_user(self, email: str, password: str, admin=False):
-        user = User(email=email, password=password_context.hash(password), admin=admin)
+    async def create_user(self, email: str, password: str, admin=False, verified=True):
+        user = User(
+            email=email,
+            password=password_context.hash(password),
+            admin=admin,
+            verified=verified,
+        )
         self.session.add(user)
         await self.session.commit()
         return user

@@ -8,4 +8,5 @@ class User(Base):
 
     email: Mapped[str] = mapped_column(primary_key=True)
     password: Mapped[str] = mapped_column(nullable=False)
-    admin: Mapped[bool] = mapped_column(nullable=False)
+    admin: Mapped[bool] = mapped_column(nullable=False, default=False)
+    verified: Mapped[bool] = mapped_column(nullable=False, default=False)

@@ -1,4 +1,4 @@
-import redis.asyncio as Redis
+from redis.asyncio.client import Redis
 from contextlib import asynccontextmanager
 
 from dripdrop.settings import settings
@@ -13,3 +13,4 @@ async def create_client():
         raise e
     finally:
         await client.close()
+        await client.connection_pool.disconnect()
