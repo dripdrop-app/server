@@ -10,7 +10,7 @@ from dripdrop.authentication.app import password_context
 from dripdrop.authentication.dependencies import COOKIE_NAME
 from dripdrop.authentication.models import User
 from dripdrop.models import Base
-from dripdrop.services import database, s3, temp_files, redis_client
+from dripdrop.services import database, http_client, redis_client, s3, temp_files
 from dripdrop.settings import settings, ENV
 
 T = TypeVar("T")
@@ -27,7 +27,7 @@ class BaseTest(IsolatedAsyncioTestCase):
             AsyncClient(app=app, base_url="http://test")
         )
         self.session = await self.enter_async_context(database.create_session())
-        self.http_client = await self.enter_async_context(AsyncClient())
+        self.http_client = await self.enter_async_context(http_client.create_client())
         self.redis = await self.enter_async_context(redis_client.create_client())
         await self.redis.flushall()
 
