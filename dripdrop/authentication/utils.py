@@ -1,4 +1,6 @@
 import jwt
+import secrets
+import string
 import urllib.parse
 from datetime import timedelta
 from fastapi import Request
@@ -65,4 +67,10 @@ def generate_server_link(request: Request, path: str, query: dict[str, Any]):
             urllib.parse.urlencode(query),
             "",
         )
+    )
+
+
+def generate_random_string(length: int):
+    return "".join(
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(length)
     )

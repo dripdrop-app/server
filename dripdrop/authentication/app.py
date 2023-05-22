@@ -1,5 +1,4 @@
 import traceback
-import uuid
 from fastapi import (
     FastAPI,
     Body,
@@ -110,19 +109,20 @@ async def create_account(
         )
     hashed_pw = password_context.hash(password)
     user = User(email=email, password=hashed_pw)
-    verification_code = str(uuid.uuid4())
-    verification_token = utils.create_jwt_token(email=email, code=verification_code)
-    await redis.set(f"verify:{email}", verification_code, ex=3600)
+    verification_code = utils.generate_random_string(length=7)
+    await redis.set(f"verify:{verification_code}", email, ex=3600)
     verify_link = utils.generate_server_link(
         request=request,
         path="/api/auth/verify",
-        query={"token": verification_token},
+        query={"token": verification_code},
     )
     try:
         await sendgrid_client.send_verification_email(email=email, link=verify_link)
     except Exception:
         logger.exception(traceback.format_exc())
-        raise HTTPException(detail=ErrorMessages.EmailSendFail)
+        raise HTTPException(
+            detail=ErrorMessages.EmailSendFail, status_code=status.HTTP_400_BAD_REQUEST
+        )
     session.add(user)
     await session.commit()
     return Response(None, status_code=status.HTTP_204_NO_CONTENT)
@@ -134,22 +134,19 @@ async def verify_email(
     redis: RedisClient,
     token: str = Query(...),
 ):
-    payload = utils.decode_jwt(token=token)
-    if not payload:
-        raise HTTPException(
-            detail=ErrorMessages.TokenError, status_code=status.HTTP_400_BAD_REQUEST
-        )
-    email = payload.get("email", None)
-    code = payload.get("code", None)
-    user = await utils.find_user_by_email(email=email, session=session)
-    verification_code = await redis.get(f"verify:{email}")
-    if verification_code:
-        verification_code = verification_code.decode()
-    if str(code) != verification_code or not user:
+    email = await redis.get(f"verify:{token}")
+    if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    email = email.decode()
+    user = await utils.find_user_by_email(email=email, session=session)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.AccountDoesNotExist,
+        )
     user.verified = True
     await session.commit()
-    await redis.delete(f"verify:{email}")
+    await redis.delete(f"verify:{token}")
     return RedirectResponse("/account")
 
 
@@ -175,17 +172,10 @@ async def send_reset_email(
             detail=ErrorMessages.AccountUnverified,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    existing_code = await redis.get(f"reset:{email}")
-    if existing_code:
-        raise HTTPException(
-            detail=ErrorMessages.ResetEmailExists,
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-    reset_code = str(uuid.uuid4())
-    reset_token = utils.create_jwt_token(email=email, code=reset_code)
-    await redis.set(f"reset:{email}", reset_code, ex=3600)
+    reset_code = utils.generate_random_string(length=7)
+    await redis.set(f"reset:{reset_code}", email, ex=3600)
     try:
-        await sendgrid_client.send_password_reset_email(email=email, token=reset_token)
+        await sendgrid_client.send_password_reset_email(email=email, token=reset_code)
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
@@ -201,21 +191,18 @@ async def reset_password(
     token: str = Body(...),
     password: str = Body(..., min_length=8),
 ):
-    payload = utils.decode_jwt(token=token)
-    if not payload:
-        raise HTTPException(
-            detail=ErrorMessages.TokenError, status_code=status.HTTP_400_BAD_REQUEST
-        )
-    email = payload.get("email", None)
-    code = payload.get("code", None)
-    user = await utils.find_user_by_email(email=email, session=session)
-    reset_code = await redis.get(f"reset:{email}")
-    if reset_code:
-        reset_code = reset_code.decode()
-    if str(code) != reset_code or not user:
+    email = await redis.get(f"reset:{token}")
+    if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    email = email.decode()
+    user = await utils.find_user_by_email(email=email, session=session)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorMessages.AccountDoesNotExist,
+        )
     hashed_pw = password_context.hash(password)
     user.password = hashed_pw
     await session.commit()
-    await redis.delete(f"reset:{email}")
+    await redis.delete(f"reset:{token}")
     return Response(None, status_code=status.HTTP_204_NO_CONTENT)

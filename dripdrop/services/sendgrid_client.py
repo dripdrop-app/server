@@ -19,8 +19,8 @@ async def send_mail(to_email: str, subject: str, html_content: str):
         )
         if settings.env != ENV.PRODUCTION:
             response = client.send(message=mail)
-            if response.status_code != status.HTTP_200_OK:
-                raise Exception("Failed to send email")
+            if status.HTTP_400_BAD_REQUEST <= response.status_code:
+                raise Exception("Failed to send email", response.body)
 
     return await asyncio.to_thread(_send_mail)
 
