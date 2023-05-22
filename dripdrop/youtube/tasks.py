@@ -185,7 +185,7 @@ async def add_channel_videos(
 
         if current_time.day != video_upload_date.day:
             video_upload_date = video_upload_date.replace(
-                hour=server_current_time.hour,
+                hour=14,
                 minute=server_current_time.minute,
                 second=server_current_time.second,
             )
