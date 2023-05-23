@@ -10,5 +10,5 @@ EST = timezone(timedelta(hours=-5))
 scheduler = AsyncIOScheduler(
     jobstores={"default": RedisJobStore(**parse_url(settings.redis_url))},
     timezone=EST,
-    job_defaults={"misfire_grace_time": 120, "coalesce": True},
+    job_defaults={"misfire_grace_time": None, "coalesce": True},
 )
