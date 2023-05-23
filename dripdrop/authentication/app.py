@@ -136,7 +136,9 @@ async def verify_email(
 ):
     email = await redis.get(f"verify:{token}")
     if not email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.TokenError
+        )
     email = email.decode()
     user = await utils.find_user_by_email(email=email, session=session)
     if not user:
@@ -193,7 +195,9 @@ async def reset_password(
 ):
     email = await redis.get(f"reset:{token}")
     if not email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.TokenError
+        )
     email = email.decode()
     user = await utils.find_user_by_email(email=email, session=session)
     if not user:

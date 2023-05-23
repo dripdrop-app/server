@@ -1,4 +1,5 @@
 import asyncio
+from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from rq.job import Retry
@@ -8,6 +9,7 @@ from dripdrop.admin import utils as admin_utils
 from dripdrop.authentication.models import User
 from dripdrop.services import database, rq_client, scraper, ytdlp
 from dripdrop.services.database import AsyncSession
+from dripdrop.services.scheduler import scheduler
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
 from dripdrop.utils import get_current_time
@@ -253,6 +255,7 @@ async def add_channel_videos(
         await session.commit()
 
 
+@scheduler.scheduled_job(trigger=CronTrigger.from_crontab("0 * * * *"))
 @rq_client.worker_task
 async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
@@ -286,6 +289,7 @@ async def update_channel_videos(
             )
 
 
+@scheduler.scheduled_job(trigger=CronTrigger.from_crontab("30 12 * * *"))
 @rq_client.worker_task
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)

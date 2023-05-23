@@ -13,10 +13,4 @@ SERVER_PID=$!
 
 poetry run alembic upgrade head
 
-if [ "$ENV" == "production" ]
-then
-    trap "poetry run python -m dripdrop.tasker --clear-schedule" SIGTERM
-    poetry run python -m dripdrop.tasker --schedule
-fi
-
 wait $SERVER_PID

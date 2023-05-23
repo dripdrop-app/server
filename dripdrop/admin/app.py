@@ -5,7 +5,7 @@ from typing import Optional
 
 from dripdrop.authentication.dependencies import get_admin_user
 from dripdrop.music import tasks as music_tasks
-from dripdrop.services import cron, rq_client
+from dripdrop.services import rq_client
 from dripdrop.youtube import tasks as youtube_tasks
 
 app = FastAPI(
@@ -22,7 +22,17 @@ async def check_admin_session():
 
 @app.get("/cron/run")
 async def run_cron_jobs():
-    await cron.run_cron_jobs()
+    update_subscriptions_job = await asyncio.to_thread(
+        rq_client.default.enqueue, youtube_tasks.update_subscriptions
+    )
+    await asyncio.to_thread(
+        rq_client.default.enqueue,
+        youtube_tasks.update_channel_videos,
+        depends_on=update_subscriptions_job,
+    )
+    await asyncio.to_thread(
+        rq_client.default.enqueue, music_tasks.delete_old_music_jobs
+    )
     return Response(None, status_code=status.HTTP_200_OK)
 
 

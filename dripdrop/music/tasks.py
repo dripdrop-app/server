@@ -1,6 +1,7 @@
 import asyncio
 import os
 import shutil
+from apscheduler.triggers.cron import CronTrigger
 from datetime import timedelta
 from pydub import AudioSegment
 from sqlalchemy import select
@@ -19,8 +20,9 @@ from dripdrop.services import (
     temp_files,
     ytdlp,
 )
-from dripdrop.services.database import AsyncSession
 from dripdrop.services.audio_tag import AudioTags
+from dripdrop.services.database import AsyncSession
+from dripdrop.services.scheduler import scheduler
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.utils import get_current_time
 
@@ -147,6 +149,7 @@ async def delete_music_job(music_job_id: str, session: AsyncSession = ...):
     await session.commit()
 
 
+@scheduler.scheduled_job(trigger=CronTrigger.from_crontab("0 0 * * *"))
 @rq_client.worker_task
 async def delete_old_music_jobs(session: AsyncSession = ...):
     limit = get_current_time() - timedelta(days=14)

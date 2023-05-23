@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from dripdrop.admin.app import app as admin_app
 from dripdrop.authentication.app import app as auth_app
 from dripdrop.music.app import app as music_app
+from dripdrop.services.scheduler import scheduler
 from dripdrop.services.websocket_channel import WebsocketChannel
 from dripdrop.settings import settings, ENV
 from dripdrop.youtube.app import app as youtube_app
@@ -27,12 +28,17 @@ register_router(prefix="/youtube", app=youtube_app)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.env == ENV.PRODUCTION:
+        scheduler.start()
     yield
+    if settings.env == ENV.PRODUCTION:
+        scheduler.shutdown()
+        scheduler.remove_all_jobs()
     WebsocketChannel.close()
 
 
 app = FastAPI(
-    title="DripDrop",
+    title="dripdrop",
     lifespan=lifespan,
     routes=api_router.routes,
     docs_url="/api/docs",
