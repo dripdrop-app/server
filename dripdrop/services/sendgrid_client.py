@@ -17,7 +17,7 @@ async def send_mail(to_email: str, subject: str, html_content: str):
             subject=subject,
             html_content=html_content,
         )
-        if settings.env != ENV.PRODUCTION:
+        if settings.env != ENV.TESTING:
             response = client.send(message=mail)
             if status.HTTP_400_BAD_REQUEST <= response.status_code:
                 raise Exception("Failed to send email", response.body)
