@@ -40,8 +40,8 @@ class DockerInterface:
                 self._compose_file,
                 "down",
             ],
-            stdout=subprocess.STDOUT,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             env=self._load_environment_variables(),
         ).check_returncode()
 
@@ -68,8 +68,8 @@ class DockerInterface:
                 self._image_tag,
                 self._context,
             ],
-            stdout=subprocess.STDOUT,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         ).check_returncode()
 
     def _build_services(self):
@@ -84,8 +84,8 @@ class DockerInterface:
                 self._compose_file,
                 "build",
             ],
-            stdout=subprocess.STDOUT,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             env=self._load_environment_variables(),
         ).check_returncode()
 
@@ -102,8 +102,8 @@ class DockerInterface:
                 "--remove-orphans",
                 "--wait",
             ],
-            stdout=subprocess.STDOUT,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             env=self._load_environment_variables(),
         ).check_returncode()
 
