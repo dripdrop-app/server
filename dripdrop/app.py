@@ -37,17 +37,17 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             rq_client.high.enqueue,
             trigger=CronTrigger.from_crontab("0 * * * *"),
-            args=(youtube_tasks.update_channel_videos),
+            args=(youtube_tasks.update_channel_videos,),
         )
         scheduler.add_job(
             rq_client.high.enqueue,
             trigger=CronTrigger.from_crontab("0 0 * * *"),
-            args=(music_tasks.delete_old_music_jobs),
+            args=(music_tasks.delete_old_music_jobs,),
         )
         scheduler.add_job(
             rq_client.high.enqueue,
             trigger=CronTrigger.from_crontab("30 12 * * *"),
-            args=(youtube_tasks.update_subscriptions),
+            args=(youtube_tasks.update_subscriptions,),
         )
     yield
     if settings.env == ENV.PRODUCTION:
