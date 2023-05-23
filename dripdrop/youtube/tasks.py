@@ -286,6 +286,10 @@ async def update_channel_videos(
             )
 
 
+def update_channel_videos_cron():
+    rq_client.high.enqueue(update_channel_videos)
+
+
 @rq_client.worker_task
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
@@ -299,3 +303,7 @@ async def update_subscriptions(session: AsyncSession = ...):
             email=user.email,
             retry=Retry(2, [10, 30]),
         )
+
+
+def update_subscriptions_cron():
+    rq_client.high.enqueue(update_subscriptions)

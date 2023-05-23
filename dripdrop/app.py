@@ -9,7 +9,6 @@ from dripdrop.admin.app import app as admin_app
 from dripdrop.authentication.app import app as auth_app
 from dripdrop.music import tasks as music_tasks
 from dripdrop.music.app import app as music_app
-from dripdrop.services import rq_client
 from dripdrop.services.scheduler import scheduler
 from dripdrop.services.websocket_channel import WebsocketChannel
 from dripdrop.settings import settings, ENV
@@ -35,19 +34,16 @@ async def lifespan(app: FastAPI):
     if settings.env == ENV.PRODUCTION:
         scheduler.start()
         scheduler.add_job(
-            rq_client.high.enqueue,
+            youtube_tasks.update_channel_videos_cron,
             trigger=CronTrigger.from_crontab("0 * * * *"),
-            args=(youtube_tasks.update_channel_videos,),
         )
         scheduler.add_job(
-            rq_client.high.enqueue,
+            music_tasks.delete_old_music_jobs_cron,
             trigger=CronTrigger.from_crontab("0 0 * * *"),
-            args=(music_tasks.delete_old_music_jobs,),
         )
         scheduler.add_job(
-            rq_client.high.enqueue,
+            youtube_tasks.update_subscriptions_cron,
             trigger=CronTrigger.from_crontab("30 12 * * *"),
-            args=(youtube_tasks.update_subscriptions,),
         )
     yield
     if settings.env == ENV.PRODUCTION:

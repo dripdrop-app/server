@@ -163,3 +163,7 @@ async def delete_old_music_jobs(session: AsyncSession = ...):
         await asyncio.to_thread(
             rq_client.default.enqueue, delete_music_job, music_job_id=music_job.id
         )
+
+
+def delete_old_music_jobs_cron():
+    rq_client.high.enqueue(delete_old_music_jobs)
