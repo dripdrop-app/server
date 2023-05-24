@@ -36,16 +36,19 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             youtube_tasks.update_channel_videos_cron,
             trigger=CronTrigger.from_crontab("0 * * * *"),
+            id="update_channel_videos",
             replace_existing=True,
         )
         scheduler.add_job(
             music_tasks.delete_old_music_jobs_cron,
             trigger=CronTrigger.from_crontab("0 0 * * *"),
+            id="delete_old_music_jobs",
             replace_existing=True,
         )
         scheduler.add_job(
             youtube_tasks.update_subscriptions_cron,
             trigger=CronTrigger.from_crontab("30 12 * * *"),
+            id="update_subscriptions",
             replace_existing=True,
         )
     yield
