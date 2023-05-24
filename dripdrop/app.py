@@ -1,4 +1,3 @@
-from apscheduler.triggers.cron import CronTrigger
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Request, status, Response
 from fastapi.exceptions import RequestValidationError
@@ -7,12 +6,9 @@ from fastapi.responses import JSONResponse
 
 from dripdrop.admin.app import app as admin_app
 from dripdrop.authentication.app import app as auth_app
-from dripdrop.music import tasks as music_tasks
 from dripdrop.music.app import app as music_app
-from dripdrop.services.scheduler import scheduler
 from dripdrop.services.websocket_channel import WebsocketChannel
 from dripdrop.settings import settings, ENV
-from dripdrop.youtube import tasks as youtube_tasks
 from dripdrop.youtube.app import app as youtube_app
 
 
@@ -31,30 +27,7 @@ register_router(prefix="/youtube", app=youtube_app)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.env == ENV.PRODUCTION:
-        scheduler.start()
-        scheduler.add_job(
-            youtube_tasks.update_channel_videos_cron,
-            trigger=CronTrigger.from_crontab("0 * * * *"),
-            id="update_channel_videos",
-            replace_existing=True,
-        )
-        scheduler.add_job(
-            music_tasks.delete_old_music_jobs_cron,
-            trigger=CronTrigger.from_crontab("0 0 * * *"),
-            id="delete_old_music_jobs",
-            replace_existing=True,
-        )
-        scheduler.add_job(
-            youtube_tasks.update_subscriptions_cron,
-            trigger=CronTrigger.from_crontab("30 12 * * *"),
-            id="update_subscriptions",
-            replace_existing=True,
-        )
     yield
-    if settings.env == ENV.PRODUCTION:
-        scheduler.shutdown()
-        scheduler.remove_all_jobs()
     WebsocketChannel.close()
 
 

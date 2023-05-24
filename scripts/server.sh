@@ -13,4 +13,10 @@ SERVER_PID=$!
 
 poetry run alembic upgrade head
 
+
+if [ "$ENV" == "production" ]
+then
+    poetry run python -m dripdrop.services.scheduler &
+fi
+
 wait $SERVER_PID
