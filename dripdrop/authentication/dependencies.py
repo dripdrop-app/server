@@ -39,18 +39,24 @@ async def get_user(
 SessionUser = Annotated[Union[None, User], Depends(get_user)]
 
 
-async def get_authenticated_user(user: SessionUser):
+async def get_authenticated_user(user: SessionUser, websocket: WebSocket = None):
     if user and user.verified:
         return user
+    if websocket:
+        await websocket.close()
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 AuthenticatedUser = Annotated[User, Depends(get_authenticated_user)]
 
 
-async def get_admin_user(user: User = Depends(get_authenticated_user)):
+async def get_admin_user(
+    user: User = Depends(get_authenticated_user), websocket: WebSocket = None
+):
     if user.admin:
         return user
+    if websocket:
+        await websocket.close()
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
 
