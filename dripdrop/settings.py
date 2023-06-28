@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     aws_s3_music_folder: str
     database_url: str
     env: ENV = ENV.DEVELOPMENT
+    google_api_key: str
     redis_url: str
     secret_key: str
-    selenium_webdriver_url: str
     sendgrid_api_key: str
     test_async_database_url: str
     test_aws_access_key_id: str

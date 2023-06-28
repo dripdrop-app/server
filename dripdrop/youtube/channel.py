@@ -18,7 +18,7 @@ from dripdrop.authentication.dependencies import (
     get_authenticated_user,
 )
 from dripdrop.base.dependencies import DatabaseSession
-from dripdrop.services import rq_client, scraper
+from dripdrop.services import google_api, rq_client
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.youtube import tasks
 from dripdrop.youtube.models import (
@@ -76,7 +76,7 @@ async def update_user_youtube_channel(
     session: DatabaseSession,
     channel_id: str = Body(..., embed=True),
 ):
-    channel_info = await scraper.get_channel_info(channel_id=channel_id)
+    channel_info = await google_api.get_channel_info(channel_id=channel_id)
     if not channel_info:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

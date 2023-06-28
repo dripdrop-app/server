@@ -15,7 +15,7 @@ from dripdrop.youtube.responses import (
     YoutubeSubscriptionResponse,
     ErrorMessages,
 )
-from dripdrop.services import rq_client, scraper
+from dripdrop.services import google_api, rq_client
 from dripdrop.utils import get_current_time
 
 api = APIRouter(
@@ -79,7 +79,7 @@ async def get_youtube_subscriptions(
 async def add_user_subscription(
     user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Query(...)
 ):
-    channel_info = await scraper.get_channel_info(channel_id=channel_id)
+    channel_info = await google_api.get_channel_info(channel_id=channel_id)
     if not channel_info:
         raise HTTPException(
             detail=ErrorMessages.CHANNEL_NOT_FOUND,

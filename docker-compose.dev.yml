@@ -33,11 +33,6 @@ services:
       file: docker-compose.base.yml
       service: redis
 
-  selenium:
-    extends:
-      file: docker-compose.base.yml
-      service: selenium
-
 volumes:
   postgres_volume: {}
   redis_volume: {}

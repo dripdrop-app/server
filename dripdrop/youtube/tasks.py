@@ -4,9 +4,8 @@ from dateutil.tz import tzlocal
 from rq.job import Retry
 from sqlalchemy import select, delete, false, and_
 
-from dripdrop.admin import utils as admin_utils
 from dripdrop.authentication.models import User
-from dripdrop.services import database, rq_client, scraper, ytdlp
+from dripdrop.services import database, google_api, rq_client, ytdlp
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
@@ -50,10 +49,8 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     if not user_channel:
         return
 
-    proxy_address = await admin_utils.get_proxy_address(session=session)
-
-    for subscribed_channel in await scraper.get_channel_subscriptions(
-        channel_id=user_channel.id, proxy=proxy_address
+    for subscribed_channel in await google_api.get_channel_subscriptions(
+        channel_id=user_channel.id
     ):
         query = select(YoutubeChannel).where(YoutubeChannel.id == subscribed_channel.id)
         results = await session.scalars(query)
