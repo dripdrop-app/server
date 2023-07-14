@@ -44,26 +44,23 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Deploy over SSH
+        id: deploy
         run: |
           ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "docker system prune -af && cd ~/dripdrop && python3 docker.py --env production --action deploy"
+        continue-on-error: true
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
-  rollback:
-    if: ${{ failure() }}
-    runs-on: ubuntu-latest
-    needs: deploy
-    steps:
-      - name: Export ssh key
-        run: |
-          echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
-      - name: Rollback repo to previous version
+      - name: Rollback code to previous deployment
+        id: rollback
+        if: ${{ failure() && steps.deploy.conclusion == 'failure' }}
         run: |
           ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "if [ -d ~/dripdrop_old ]; then cp -r ~/dripdrop_old ~/dripdrop; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
-      - name: Deploy over SSH
+      - name: Deploy rollbacked code
+        if: ${{ failure() && steps.rollback.conclusion == 'success' }}
         run: |
           ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
         env:
