@@ -1,5 +1,6 @@
 import asyncio
 import shutil
+from datetime import datetime
 from fastapi import status
 from httpx import AsyncClient
 from unittest import IsolatedAsyncioTestCase
@@ -18,6 +19,7 @@ T = TypeVar("T")
 
 class BaseTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        self.maxDiff = None
         self.assertEqual(settings.env, ENV.TESTING)
         await self.delete_temp_directories()
         async with database.engine.begin() as conn:
@@ -73,3 +75,12 @@ class BaseTest(IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(response.cookies.get(COOKIE_NAME))
         return user
+
+    def convert_to_time_string(self, dt: datetime):
+        time_string = dt.replace(tzinfo=settings.timezone).isoformat()
+        end = len(time_string)
+        for i in range(len(time_string) - 1, -1, -1):
+            if time_string[i] != "0":
+                end = i + 1
+                break
+        return time_string[:end]

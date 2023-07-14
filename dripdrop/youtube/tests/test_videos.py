@@ -202,9 +202,7 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": video.description,
-                        "publishedAt": video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(video.published_at),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
@@ -252,9 +250,9 @@ class GetVideosTestCase(YoutubeBaseTest):
                             "categoryId": category.id,
                             "categoryName": category.name,
                             "description": video.description,
-                            "publishedAt": video.published_at.replace(
-                                tzinfo=settings.timezone
-                            ).isoformat(),
+                            "publishedAt": self.convert_to_time_string(
+                                video.published_at
+                            ),
                             "channelId": channel.id,
                             "channelTitle": channel.title,
                             "channelThumbnail": channel.thumbnail,
@@ -304,9 +302,9 @@ class GetVideosTestCase(YoutubeBaseTest):
                             "categoryId": category.id,
                             "categoryName": category.name,
                             "description": video.description,
-                            "publishedAt": video.published_at.replace(
-                                tzinfo=settings.timezone
-                            ).isoformat(),
+                            "publishedAt": self.convert_to_time_string(
+                                video.published_at
+                            ),
                             "channelId": channel.id,
                             "channelTitle": channel.title,
                             "channelThumbnail": channel.thumbnail,
@@ -356,9 +354,9 @@ class GetVideosTestCase(YoutubeBaseTest):
                             "categoryId": category.id,
                             "categoryName": category.name,
                             "description": video.description,
-                            "publishedAt": video.published_at.replace(
-                                tzinfo=settings.timezone
-                            ).isoformat(),
+                            "publishedAt": self.convert_to_time_string(
+                                video.published_at
+                            ),
                             "channelId": channel.id,
                             "channelTitle": channel.title,
                             "channelThumbnail": channel.thumbnail,
@@ -447,9 +445,9 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": other_video.description,
-                        "publishedAt": other_video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(
+                            other_video.published_at
+                        ),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
@@ -464,17 +462,15 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": watched_video.description,
-                        "publishedAt": watched_video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(
+                            watched_video.published_at
+                        ),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
                         "liked": None,
                         "queued": None,
-                        "watched": watch.created_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "watched": self.convert_to_time_string(watch.created_at),
                     },
                 ],
             },
@@ -521,9 +517,7 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": video.description,
-                        "publishedAt": video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(video.published_at),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
@@ -579,9 +573,9 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": video_in_category.description,
-                        "publishedAt": video_in_category.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(
+                            video_in_category.published_at
+                        ),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
@@ -636,16 +630,14 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": queued_video.description,
-                        "publishedAt": queued_video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(
+                            queued_video.published_at
+                        ),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
                         "liked": None,
-                        "queued": queue.created_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "queued": self.convert_to_time_string(queue.created_at),
                         "watched": None,
                     }
                 ],
@@ -701,16 +693,14 @@ class GetVideosTestCase(YoutubeBaseTest):
                             "categoryId": category.id,
                             "categoryName": category.name,
                             "description": videos[i].description,
-                            "publishedAt": videos[i]
-                            .published_at.replace(tzinfo=settings.timezone)
-                            .isoformat(),
+                            "publishedAt": self.convert_to_time_string(
+                                videos[i].published_at
+                            ),
                             "channelId": channel.id,
                             "channelTitle": channel.title,
                             "channelThumbnail": channel.thumbnail,
                             "liked": None,
-                            "queued": queues[i]
-                            .created_at.replace(tzinfo=settings.timezone)
-                            .isoformat(),
+                            "queued": self.convert_to_time_string(queues[i].created_at),
                             "watched": None,
                         },
                         range(len(videos)),
@@ -768,15 +758,13 @@ class GetVideosTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": liked_video.description,
-                        "publishedAt": liked_video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(
+                            liked_video.published_at
+                        ),
                         "channelId": channel.id,
                         "channelTitle": channel.title,
                         "channelThumbnail": channel.thumbnail,
-                        "liked": like.created_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "liked": self.convert_to_time_string(like.created_at),
                         "queued": None,
                         "watched": None,
                     }
@@ -833,15 +821,13 @@ class GetVideosTestCase(YoutubeBaseTest):
                             "categoryId": category.id,
                             "categoryName": category.name,
                             "description": videos[i].description,
-                            "publishedAt": videos[i]
-                            .published_at.replace(tzinfo=settings.timezone)
-                            .isoformat(),
+                            "publishedAt": self.convert_to_time_string(
+                                videos[i].published_at
+                            ),
                             "channelId": channel.id,
                             "channelTitle": channel.title,
                             "channelThumbnail": channel.thumbnail,
-                            "liked": likes[i]
-                            .created_at.replace(tzinfo=settings.timezone)
-                            .isoformat(),
+                            "liked": self.convert_to_time_string(likes[i].created_at),
                             "queued": None,
                             "watched": None,
                         },
@@ -889,16 +875,12 @@ class GetVideosQueueTestCase(YoutubeBaseTest):
                     "categoryId": category.id,
                     "categoryName": category.name,
                     "description": video.description,
-                    "publishedAt": video.published_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "publishedAt": self.convert_to_time_string(video.published_at),
                     "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
-                    "queued": video_queue.created_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "queued": self.convert_to_time_string(video_queue.created_at),
                     "watched": None,
                 },
                 "prev": False,
@@ -946,16 +928,12 @@ class GetVideosQueueTestCase(YoutubeBaseTest):
                     "categoryId": category.id,
                     "categoryName": category.name,
                     "description": video.description,
-                    "publishedAt": video.published_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "publishedAt": self.convert_to_time_string(video.published_at),
                     "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
-                    "queued": video_queue.created_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "queued": self.convert_to_time_string(video_queue.created_at),
                     "watched": None,
                 },
                 "prev": False,
@@ -1003,16 +981,12 @@ class GetVideosQueueTestCase(YoutubeBaseTest):
                     "categoryId": category.id,
                     "categoryName": category.name,
                     "description": video.description,
-                    "publishedAt": video.published_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "publishedAt": self.convert_to_time_string(video.published_at),
                     "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
-                    "queued": video_queue.created_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "queued": self.convert_to_time_string(video_queue.created_at),
                     "watched": None,
                 },
                 "prev": True,
@@ -1069,16 +1043,12 @@ class GetVideosQueueTestCase(YoutubeBaseTest):
                     "categoryId": category.id,
                     "categoryName": category.name,
                     "description": video.description,
-                    "publishedAt": video.published_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "publishedAt": self.convert_to_time_string(video.published_at),
                     "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
                     "liked": None,
-                    "queued": video_queue.created_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "queued": self.convert_to_time_string(video_queue.created_at),
                     "watched": None,
                 },
                 "prev": True,

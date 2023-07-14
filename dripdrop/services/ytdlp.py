@@ -2,11 +2,35 @@ import asyncio
 import orjson
 from contextlib import asynccontextmanager
 
+from dripdrop.services import redis_client
+
+UPDATING_YTDLP = "UPDATING_YTDLP"
+
+
+async def check_and_update_ytdlp():
+    async with redis_client.create_client() as redis:
+        if await redis.get(UPDATING_YTDLP):
+            return
+        await redis.set(UPDATING_YTDLP, "1")
+        process = await asyncio.subprocess.create_subprocess_exec(
+            "pip",
+            "install",
+            "-U",
+            "ytdlp",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        try:
+            await asyncio.wait_for(process.wait(), timeout=300)
+        finally:
+            await redis.delete(UPDATING_YTDLP)
+
 
 @asynccontextmanager
 async def _run(*args):
     process = None
     try:
+        await check_and_update_ytdlp()
         process = await asyncio.subprocess.create_subprocess_exec(
             "yt-dlp",
             *args,

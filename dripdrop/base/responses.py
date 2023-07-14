@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 def snake_to_camel(string: str):
@@ -13,7 +13,6 @@ def snake_to_camel(string: str):
 
 
 class ResponseBaseModel(BaseModel):
-    class Config:
-        alias_generator = snake_to_camel
-        allow_population_by_field_name = True
-        orm_mode = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel, populate_by_name=True, from_attributes=True
+    )

@@ -1,6 +1,5 @@
 from fastapi import status
 
-from dripdrop.settings import settings
 from dripdrop.youtube.tests.test_base import YoutubeBaseTest
 
 VIDEO_URL = "/api/youtube/video"
@@ -59,9 +58,7 @@ class GetVideoTestCase(YoutubeBaseTest):
                     "categoryId": category.id,
                     "categoryName": category.name,
                     "description": video.description,
-                    "publishedAt": video.published_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "publishedAt": self.convert_to_time_string(video.published_at),
                     "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
@@ -112,9 +109,7 @@ class GetVideoTestCase(YoutubeBaseTest):
                     "categoryId": category.id,
                     "categoryName": category.name,
                     "description": video.description,
-                    "publishedAt": video.published_at.replace(
-                        tzinfo=settings.timezone
-                    ).isoformat(),
+                    "publishedAt": self.convert_to_time_string(video.published_at),
                     "channelId": channel.id,
                     "channelTitle": channel.title,
                     "channelThumbnail": channel.thumbnail,
@@ -130,9 +125,9 @@ class GetVideoTestCase(YoutubeBaseTest):
                         "categoryId": category.id,
                         "categoryName": category.name,
                         "description": related_video.description,
-                        "publishedAt": related_video.published_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "publishedAt": self.convert_to_time_string(
+                            related_video.published_at
+                        ),
                         "channelId": other_channel.id,
                         "channelTitle": other_channel.title,
                         "channelThumbnail": other_channel.thumbnail,

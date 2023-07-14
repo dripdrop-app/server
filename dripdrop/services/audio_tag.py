@@ -76,7 +76,14 @@ class AudioTags:
         tag = self.artwork
         if tag:
             buffer = io.BytesIO(tag.data)
-            mime_type = tag.mime
             base64_string = base64.b64encode(buffer.getvalue()).decode()
+            mime_type = tag.mime
+            if not mime_type:
+                if base64_string.startswith("/9j"):
+                    mime_type = "image/jpg"
+                elif base64_string.startswith("iVBORw0KGgo"):
+                    mime_type = "image/png"
+                else:
+                    return None
             return f"data:{mime_type};base64,{base64_string}"
         return None

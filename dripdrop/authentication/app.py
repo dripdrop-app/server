@@ -41,7 +41,7 @@ app = FastAPI(openapi_tags=["Authentication"])
     responses={status.HTTP_401_UNAUTHORIZED: {}},
 )
 async def check_session(user: AuthenticatedUser):
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 
 @app.post(

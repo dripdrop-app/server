@@ -9,7 +9,6 @@ from fastapi import (
     WebSocket,
     Path,
 )
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, and_
 
 import dripdrop.utils as dripdrop_utils
@@ -45,7 +44,7 @@ api = APIRouter(
 async def listen_channels(websocket: WebSocket):
     async def handler(msg):
         await websocket.send_json(
-            jsonable_encoder(YoutubeChannelUpdateResponse.parse_obj(msg).dict())
+            YoutubeChannelUpdateResponse.model_validate_json(msg).model_dump()
         )
 
     await WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE).listen(

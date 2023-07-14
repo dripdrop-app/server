@@ -27,8 +27,9 @@ register_router(prefix="/youtube", app=youtube_app)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await WebsocketChannel.start()
     yield
-    WebsocketChannel.close()
+    await WebsocketChannel.close()
 
 
 app = FastAPI(

@@ -13,12 +13,10 @@ MUSIC_FOLDER = settings.aws_s3_music_folder
 
 
 def resolve_url(filename: str = ...):
-    url = f"{BUCKET}.{AWS_REGION_NAME}.digitaloceanspaces.com"
-    return f"https://{url}/{filename}"
+    return f"{AWS_ENDPOINT_URL}/19b52af42e554105863370e19f11eae4:{BUCKET}/{filename}"
 
 
-_session = boto3.Session()
-_client = _session.client(
+_client = boto3.client(
     "s3",
     endpoint_url=AWS_ENDPOINT_URL,
     region_name=AWS_REGION_NAME,

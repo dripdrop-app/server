@@ -16,7 +16,6 @@ from fastapi import (
     Form,
     File,
 )
-from fastapi.encoders import jsonable_encoder
 from pydantic import HttpUrl
 from sqlalchemy import select, func
 from typing import Optional
@@ -25,7 +24,7 @@ from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
 )
-from dripdrop.base.dependencies import DatabaseSession, create_database_session
+from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.logger import logger
 from dripdrop.music import utils, tasks
 from dripdrop.music.models import MusicJob
@@ -35,7 +34,7 @@ from dripdrop.music.responses import (
     MusicJobsResponse,
     ErrorMessages,
 )
-from dripdrop.services import rq_client
+from dripdrop.services import database, rq_client
 from dripdrop.services.websocket_channel import (
     RedisChannels,
     WebsocketChannel,
@@ -83,9 +82,9 @@ async def get_jobs(
 @api.websocket("/listen")
 async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
     async def handler(msg):
-        message = MusicJobUpdateResponse.parse_obj(msg)
+        message = MusicJobUpdateResponse.model_validate(msg)
         job_id = message.id
-        async with create_database_session() as session:
+        async with database.create_session() as session:
             query = select(MusicJob).where(
                 MusicJob.user_email == user.email,
                 MusicJob.id == job_id,
@@ -94,7 +93,7 @@ async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
             results = await session.scalars(query)
             music_job = results.first()
             if music_job:
-                await websocket.send_json(jsonable_encoder(message))
+                await websocket.send_json(message.model_dump())
 
     await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).listen(
         websocket=websocket, handler=handler
@@ -159,7 +158,7 @@ async def create_job(
         artwork_filename=artwork_info.filename,
         original_filename=audiofile_info.filename,
         filename_url=audiofile_info.url,
-        video_url=video_url,
+        video_url=video_url.unicode_string() if video_url else None,
         title=title,
         artist=artist,
         album=album,
@@ -175,7 +174,7 @@ async def create_job(
         music_job_id=job_id,
         job_id=job_id,
     )
-    return MusicJobResponse.from_orm(job)
+    return MusicJobResponse.model_validate(job)
 
 
 @api.delete(

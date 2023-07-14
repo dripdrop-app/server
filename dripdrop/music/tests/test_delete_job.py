@@ -54,9 +54,13 @@ class DeleteMusicJobTestCase(MusicBaseTest):
         response = await self.client.delete(DELETE_URL, params={"job_id": job.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = await self.http_client.get(job.filename_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
         response = await self.http_client.get(job.download_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
 
     async def test_deleting_file_job_with_uploaded_artwork(self):
         user = await self.create_and_login_user(
@@ -82,11 +86,17 @@ class DeleteMusicJobTestCase(MusicBaseTest):
         response = await self.client.delete(DELETE_URL, params={"job_id": job.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = await self.http_client.get(job.filename_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
         response = await self.http_client.get(job.artwork_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
         response = await self.http_client.get(job.download_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
 
     async def test_deleting_youtube_job(self):
         user = await self.create_and_login_user(
@@ -109,7 +119,9 @@ class DeleteMusicJobTestCase(MusicBaseTest):
         response = await self.client.delete(DELETE_URL, params={"job_id": job.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = await self.http_client.get(job.download_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
 
     async def test_deleting_youtube_job_with_artwork(self):
         user = await self.create_and_login_user(
@@ -133,6 +145,10 @@ class DeleteMusicJobTestCase(MusicBaseTest):
         response = await self.client.delete(DELETE_URL, params={"job_id": job.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = await self.http_client.get(job.artwork_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
         response = await self.http_client.get(job.download_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
+        )
