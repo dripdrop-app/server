@@ -3,8 +3,9 @@ import shutil
 from datetime import datetime
 from fastapi import status
 from httpx import AsyncClient
-from unittest import IsolatedAsyncioTestCase
+from pydantic import BaseModel
 from typing import TypeVar, AsyncContextManager
+from unittest import IsolatedAsyncioTestCase
 
 from dripdrop.app import app
 from dripdrop.authentication.app import password_context
@@ -77,10 +78,7 @@ class BaseTest(IsolatedAsyncioTestCase):
         return user
 
     def convert_to_time_string(self, dt: datetime):
-        time_string = dt.replace(tzinfo=settings.timezone).isoformat()
-        end = len(time_string)
-        for i in range(len(time_string) - 1, -1, -1):
-            if time_string[i] != "0":
-                end = i + 1
-                break
-        return time_string[:end]
+        class DatetimeModel(BaseModel):
+            dt: datetime
+
+        return DatetimeModel(dt=dt).model_dump(mode="json")["dt"]
