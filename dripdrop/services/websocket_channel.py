@@ -49,7 +49,6 @@ class WebsocketChannel:
             task = asyncio.create_task(self._subscribe(handler=handler))
             async with redis_client.create_client() as client:
                 while await client.get(WEBSOCKET_LISTEN):
-                    logger.info("GOING")
                     await websocket.send_json(PingResponse(status="PING").model_dump())
                     if task.done():
                         exception = task.exception()
@@ -57,7 +56,6 @@ class WebsocketChannel:
                             raise exception
                         break
                     await asyncio.sleep(1)
-            logger.info("trying to close")
             await websocket.close()
         except WebSocketDisconnect:
             await websocket.close()
@@ -71,7 +69,6 @@ class WebsocketChannel:
             if task and not task.done():
                 task.cancel()
                 try:
-                    logger.info("waiting on task")
                     await task
                 except asyncio.CancelledError:
                     pass

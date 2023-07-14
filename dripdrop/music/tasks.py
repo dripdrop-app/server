@@ -2,7 +2,6 @@ import asyncio
 import os
 import shutil
 from datetime import timedelta
-from pydub import AudioSegment
 from sqlalchemy import select
 from typing import Union
 from yt_dlp.utils import sanitize_filename
@@ -12,6 +11,7 @@ from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import MusicJobUpdateResponse
 from dripdrop.services import (
     database,
+    ffmpeg,
     http_client,
     image_downloader,
     rq_client,
@@ -36,11 +36,7 @@ async def _retrieve_audio_file(music_job_path: str, music_job: MusicJob):
         with open(audio_file_path, "wb") as f:
             f.write(res.content)
 
-        filename = f"{os.path.splitext(audio_file_path)[0]}.mp3"
-        exported_file = AudioSegment.from_file(file=audio_file_path).export(
-            filename, format="mp3", bitrate="320k"
-        )
-        exported_file.close()
+        filename = await ffmpeg.convert_audio_to_mp3(audio_file=audio_file_path)
     elif music_job.video_url:
         filename = os.path.join(music_job_path, "temp.mp3")
         await ytdlp.download_audio_from_video(

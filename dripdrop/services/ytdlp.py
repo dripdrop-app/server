@@ -16,7 +16,7 @@ async def check_and_update_ytdlp():
             "pip",
             "install",
             "-U",
-            "ytdlp",
+            "yt-dlp",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
