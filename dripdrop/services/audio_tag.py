@@ -83,7 +83,5 @@ class AudioTags:
                     mime_type = "image/jpg"
                 elif base64_string.startswith("iVBORw0KGgo"):
                     mime_type = "image/png"
-                else:
-                    return None
             return f"data:{mime_type};base64,{base64_string}"
         return None
