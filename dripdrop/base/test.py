@@ -51,8 +51,6 @@ class BaseTest(IsolatedAsyncioTestCase):
         try:
             async for keys in s3.list_objects():
                 for key in keys:
-                    if key.startswith("test"):
-                        continue
                     await s3.delete_file(filename=key)
         except Exception:
             pass
