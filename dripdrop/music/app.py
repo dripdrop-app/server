@@ -31,7 +31,7 @@ app.include_router(router=jobs.api)
 )
 async def get_grouping(video_url: HttpUrl = Query(...)):
     try:
-        video_info = await ytdlp.extract_video_info(url=video_url)
+        video_info = await ytdlp.extract_video_info(url=video_url.unicode_string())
         uploader = video_info.get("uploader")
         return GroupingResponse(grouping=uploader)
     except Exception:
@@ -51,7 +51,7 @@ async def get_grouping(video_url: HttpUrl = Query(...)):
 async def get_artwork(artwork_url: HttpUrl = Query(...)):
     try:
         resolved_artwork_url = await image_downloader.resolve_artwork(
-            artwork=artwork_url
+            artwork=artwork_url.unicode_string()
         )
         return ResolvedArtworkUrlResponse(resolved_artwork_url=resolved_artwork_url)
     except Exception:

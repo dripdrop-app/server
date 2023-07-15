@@ -66,9 +66,7 @@ class GetJobsTestCase(MusicBaseTest):
                         "grouping": music_job.grouping,
                         "completed": music_job.completed,
                         "failed": music_job.failed,
-                        "createdAt": music_job.created_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "createdAt": self.convert_to_time_string(music_job.created_at),
                     }
                 ],
             },
@@ -112,9 +110,9 @@ class GetJobsTestCase(MusicBaseTest):
                             "grouping": music_job.grouping,
                             "completed": music_job.completed,
                             "failed": music_job.failed,
-                            "createdAt": music_job.created_at.replace(
-                                tzinfo=settings.timezone
-                            ).isoformat(),
+                            "createdAt": self.convert_to_time_string(
+                                music_job.created_at
+                            ),
                         },
                         music_jobs[2:4],
                     )
@@ -164,9 +162,9 @@ class GetJobsTestCase(MusicBaseTest):
                             "grouping": music_job.grouping,
                             "completed": music_job.completed,
                             "failed": music_job.failed,
-                            "createdAt": music_job.created_at.replace(
-                                tzinfo=settings.timezone
-                            ).isoformat(),
+                            "createdAt": self.convert_to_time_string(
+                                music_job.created_at
+                            ),
                         },
                         music_jobs,
                     )
@@ -217,9 +215,7 @@ class GetJobsTestCase(MusicBaseTest):
                         "grouping": music_job.grouping,
                         "completed": music_job.completed,
                         "failed": music_job.failed,
-                        "createdAt": music_job.created_at.replace(
-                            tzinfo=settings.timezone
-                        ).isoformat(),
+                        "createdAt": self.convert_to_time_string(music_job.created_at),
                     }
                 ],
             },
@@ -263,9 +259,9 @@ class GetJobsTestCase(MusicBaseTest):
                             "grouping": music_job.grouping,
                             "completed": music_job.completed,
                             "failed": music_job.failed,
-                            "createdAt": music_job.created_at.replace(
-                                tzinfo=settings.timezone
-                            ).isoformat(),
+                            "createdAt": self.convert_to_time_string(
+                                music_job.created_at
+                            ),
                         },
                         music_jobs,
                     )

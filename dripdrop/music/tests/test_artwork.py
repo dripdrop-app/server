@@ -18,7 +18,7 @@ class GetArtworkTestCase(MusicBaseTest):
         response = await self.client.get(
             ARTWORK_URL, params={"artwork_url": "https://invalidurl"}
         )
-        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     async def test_artwork_with_valid_image_url(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")

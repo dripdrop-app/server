@@ -1,6 +1,6 @@
 from datetime import timezone as tz
 from enum import Enum
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ENV(Enum):
@@ -10,6 +10,8 @@ class ENV(Enum):
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(extra="ignore", env_file=".env")
+
     async_database_url: str
     aws_access_key_id: str
     aws_endpoint_url: str
@@ -25,23 +27,16 @@ class Settings(BaseSettings):
     secret_key: str
     sendgrid_api_key: str
     test_async_database_url: str
-    test_aws_access_key_id: str
     test_aws_s3_bucket: str
-    test_aws_secret_access_key: str
     test_redis_url: str
     timeout: int = 600
     timezone: tz | None = tz.utc
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()
 
 
 if settings.env == ENV.TESTING or settings.env == ENV.DEVELOPMENT:
-    settings.aws_access_key_id = settings.test_aws_access_key_id
-    settings.aws_secret_access_key = settings.test_aws_secret_access_key
     settings.aws_s3_bucket = settings.test_aws_s3_bucket
 
 if settings.env == ENV.TESTING:

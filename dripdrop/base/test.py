@@ -1,9 +1,11 @@
 import asyncio
 import shutil
+from datetime import datetime
 from fastapi import status
 from httpx import AsyncClient
-from unittest import IsolatedAsyncioTestCase
+from pydantic import BaseModel
 from typing import TypeVar, AsyncContextManager
+from unittest import IsolatedAsyncioTestCase
 
 from dripdrop.app import app
 from dripdrop.authentication.app import password_context
@@ -18,6 +20,7 @@ T = TypeVar("T")
 
 class BaseTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        self.maxDiff = None
         self.assertEqual(settings.env, ENV.TESTING)
         await self.delete_temp_directories()
         async with database.engine.begin() as conn:
@@ -48,8 +51,6 @@ class BaseTest(IsolatedAsyncioTestCase):
         try:
             async for keys in s3.list_objects():
                 for key in keys:
-                    if key.startswith("test"):
-                        continue
                     await s3.delete_file(filename=key)
         except Exception:
             pass
@@ -73,3 +74,9 @@ class BaseTest(IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(response.cookies.get(COOKIE_NAME))
         return user
+
+    def convert_to_time_string(self, dt: datetime):
+        class DatetimeModel(BaseModel):
+            dt: datetime
+
+        return DatetimeModel(dt=dt).model_dump(mode="json")["dt"]

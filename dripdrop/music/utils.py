@@ -1,17 +1,23 @@
 import asyncio
 import base64
 import os
-import re
 import shutil
 import traceback
 import uuid
 from dataclasses import dataclass
 from fastapi import UploadFile
+from sqlalchemy import select
 
 from dripdrop.logger import logger
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import TagsResponse
-from dripdrop.services import http_client, image_downloader, s3, temp_files
+from dripdrop.services import (
+    database,
+    http_client,
+    image_downloader,
+    s3,
+    temp_files,
+)
 from dripdrop.services.audio_tag import AudioTags
 
 
@@ -21,10 +27,42 @@ class UploadedFileInfo:
     filename: str | None
 
 
+async def handle_files(job_id: str, file: UploadFile, artwork_url: str | None = None):
+    async with database.create_session() as session:
+        query = select(MusicJob).where(MusicJob.id == job_id)
+        results = await session.scalars(query)
+        music_job = results.first()
+        if not music_job:
+            return
+        try:
+            audiofile_info = await handle_audio_file(job_id=job_id, file=file)
+            artwork_info = await handle_artwork_url(
+                job_id=job_id, artwork_url=artwork_url
+            )
+            music_job.artwork_url = artwork_info.url
+            music_job.artwork_filename = artwork_info.filename
+            music_job.original_filename = audiofile_info.filename
+            music_job.filename_url = audiofile_info.url
+        except Exception:
+            music_job.failed = True
+        finally:
+            await session.commit()
+
+
+def get_base64_data(base64_string: str):
+    if base64_string.startswith("/9j") or base64_string.startswith("iVBORw0KGgo"):
+        return base64_string
+    parts = base64_string.split("base64,")
+    if len(parts) == 2:
+        return parts[-1]
+    return None
+
+
 async def handle_artwork_url(job_id: str, artwork_url: str | None = None):
     uploaded_file_info = UploadedFileInfo(url=artwork_url, filename=None)
     if artwork_url:
-        if re.search("^data:image/", artwork_url):
+        base64_data = get_base64_data(base64_string=artwork_url)
+        if base64_data:
             extension = artwork_url.split(";")[0].split("/")[1]
             dataString = ",".join(artwork_url.split(",")[1:])
             data = dataString.encode()

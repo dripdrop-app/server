@@ -20,11 +20,12 @@ class MusicBaseTest(BaseTest):
         await self.clean_test_s3_folders()
 
         self.test_image_url = (
-            "https://dripdrop-space.nyc3.digitaloceanspaces.com/artwork/dripdrop.png"
+            "https://usc1.contabostorage.com/19b52af42e554105863370e19f11eae4"
+            + ":assets/dripdrop.png"
         )
         self.test_audio_file_url = (
-            "https://dripdrop-space-test.nyc3.digitaloceanspaces.com"
-            + "/test/07%20tun%20suh.mp3"
+            "https://usc1.contabostorage.com/19b52af42e554105863370e19f11eae4"
+            + ":assets/07 tun suh.mp3"
         )
         self.test_video_url = "https://vimeo.com/56282283"
 

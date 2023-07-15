@@ -1,7 +1,6 @@
 import asyncio
 import math
 import re
-import traceback
 import uuid
 from fastapi import (
     APIRouter,
@@ -15,8 +14,8 @@ from fastapi import (
     status,
     Form,
     File,
+    BackgroundTasks,
 )
-from fastapi.encoders import jsonable_encoder
 from pydantic import HttpUrl
 from sqlalchemy import select, func
 from typing import Optional
@@ -25,8 +24,7 @@ from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
 )
-from dripdrop.base.dependencies import DatabaseSession, create_database_session
-from dripdrop.logger import logger
+from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.music import utils, tasks
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import (
@@ -35,7 +33,7 @@ from dripdrop.music.responses import (
     MusicJobsResponse,
     ErrorMessages,
 )
-from dripdrop.services import rq_client
+from dripdrop.services import database, rq_client
 from dripdrop.services.websocket_channel import (
     RedisChannels,
     WebsocketChannel,
@@ -83,9 +81,9 @@ async def get_jobs(
 @api.websocket("/listen")
 async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
     async def handler(msg):
-        message = MusicJobUpdateResponse.parse_obj(msg)
+        message = MusicJobUpdateResponse.model_validate(msg)
         job_id = message.id
-        async with create_database_session() as session:
+        async with database.create_session() as session:
             query = select(MusicJob).where(
                 MusicJob.user_email == user.email,
                 MusicJob.id == job_id,
@@ -94,21 +92,18 @@ async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
             results = await session.scalars(query)
             music_job = results.first()
             if music_job:
-                await websocket.send_json(jsonable_encoder(message))
+                await websocket.send_json(message.model_dump())
 
     await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).listen(
         websocket=websocket, handler=handler
     )
 
 
-@api.post(
-    "/create",
-    status_code=status.HTTP_201_CREATED,
-    responses={status.HTTP_500_INTERNAL_SERVER_ERROR: {}},
-)
+@api.post("/create", status_code=status.HTTP_201_CREATED)
 async def create_job(
     user: AuthenticatedUser,
     session: DatabaseSession,
+    background_tasks: BackgroundTasks,
     file: Optional[UploadFile] = File(None),
     video_url: Optional[HttpUrl] = Form(None),
     artwork_url: Optional[str] = Form(None),
@@ -134,32 +129,10 @@ async def create_job(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
     job_id = str(uuid.uuid4())
-    try:
-        audiofile_info = await utils.handle_audio_file(job_id=job_id, file=file)
-    except Exception:
-        logger.exception(traceback.format_exc())
-        raise HTTPException(
-            detail=ErrorMessages.FAILED_AUDIO_FILE_UPLOAD,
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-    try:
-        artwork_info = await utils.handle_artwork_url(
-            job_id=job_id, artwork_url=artwork_url
-        )
-    except Exception:
-        logger.exception(traceback.format_exc())
-        raise HTTPException(
-            detail=ErrorMessages.FAILED_IMAGE_UPLOAD,
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-    job = MusicJob(
+    music_job = MusicJob(
         id=job_id,
         user_email=user.email,
-        artwork_url=artwork_info.url,
-        artwork_filename=artwork_info.filename,
-        original_filename=audiofile_info.filename,
-        filename_url=audiofile_info.url,
-        video_url=video_url,
+        video_url=video_url.unicode_string() if video_url else None,
         title=title,
         artist=artist,
         album=album,
@@ -167,15 +140,18 @@ async def create_job(
         completed=False,
         failed=False,
     )
-    session.add(job)
+    session.add(music_job)
     await session.commit()
-    await asyncio.to_thread(
-        rq_client.high.enqueue,
-        tasks.run_music_job,
-        music_job_id=job_id,
-        job_id=job_id,
+    await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).publish(
+        message=MusicJobUpdateResponse(id=job_id, status="STARTED")
     )
-    return MusicJobResponse.from_orm(job)
+    background_tasks.add_task(
+        utils.handle_files, job_id=job_id, file=file, artwork_url=artwork_url
+    )
+    background_tasks.add_task(
+        rq_client.high.enqueue, tasks.run_music_job, music_job_id=job_id
+    )
+    return MusicJobResponse.model_validate(music_job)
 
 
 @api.delete(
