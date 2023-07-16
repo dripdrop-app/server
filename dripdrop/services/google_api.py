@@ -20,8 +20,8 @@ YOUTUBE_API = "https://youtube.googleapis.com/youtube/v3"
 async def get_channel_subscriptions(channel_id: str):
     params = {"part": "snippet", "channelId": channel_id}
     async with http_client.create_client() as client:
-        params = {"part": "snippet", "channelId": channel_id, "pageToken": " "}
-        while params["pageToken"] is not None:
+        params = {"part": "snippet", "channelId": channel_id}
+        while True:
             response = await client.get(f"{YOUTUBE_API}/subscriptions", params=params)
             response.raise_for_status()
             json = response.json()
@@ -43,7 +43,9 @@ async def get_channel_subscriptions(channel_id: str):
                     )
                 except TypeError:
                     logger.exception(traceback.format_exc())
-                params["pageToken"] = json.get("nextPageToken")
+            params["pageToken"] = json.get("nextPageToken")
+            if params.get("pageToken", None) is None:
+                break
             await asyncio.sleep(1)
 
 
