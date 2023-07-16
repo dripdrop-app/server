@@ -78,9 +78,7 @@ class WebsocketChannel:
             pubsub = redis.pubsub()
             await pubsub.subscribe(self.channel.value)
             while True:
-                message = await pubsub.get_message(
-                    ignore_subscribe_messages=True,
-                    timeout=1.0,
-                )
+                message = await pubsub.get_message(ignore_subscribe_messages=True)
                 if message and message.get("type") == "message":
                     await handler(orjson.loads(message.get("data").decode()))
+                await asyncio.sleep(1)
