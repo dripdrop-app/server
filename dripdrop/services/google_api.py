@@ -21,12 +21,15 @@ YOUTUBE_API = "https://youtube.googleapis.com/youtube/v3"
 async def get_channel_subscriptions(channel_id: str):
     params = {"part": "snippet", "channelId": channel_id}
     async with http_client.create_client() as client:
-        params = {"part": "snippet", "channelId": channel_id}
+        params = {
+            "part": "snippet",
+            "channelId": channel_id,
+            "key": settings.google_api_key,
+        }
         while True:
             response = await client.get(
                 f"{YOUTUBE_API}/subscriptions",
                 params=params,
-                headers={"Authorization": f"Bearer {settings.google_api_key}"},
             )
             response.raise_for_status()
             json = response.json()
