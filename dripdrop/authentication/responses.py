@@ -27,7 +27,6 @@ class AuthenticatedResponse(JSONResponse):
                 access_token=access_token, user=user, token_type="Bearer"
             ).model_dump(by_alias=True),
             status_code=status.HTTP_200_OK,
-            headers={"Authorization": f"Bearer {access_token}"},
         )
         self.set_cookie(
             COOKIE_NAME,

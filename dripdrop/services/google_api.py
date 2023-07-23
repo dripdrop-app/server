@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from dripdrop.logger import logger
 from dripdrop.services import http_client
+from dripdrop.settings import settings
 
 
 @dataclass
@@ -22,7 +23,11 @@ async def get_channel_subscriptions(channel_id: str):
     async with http_client.create_client() as client:
         params = {"part": "snippet", "channelId": channel_id}
         while True:
-            response = await client.get(f"{YOUTUBE_API}/subscriptions", params=params)
+            response = await client.get(
+                f"{YOUTUBE_API}/subscriptions",
+                params=params,
+                headers={"Authorization": f"Bearer {settings.google_api_key}"},
+            )
             response.raise_for_status()
             json = response.json()
             channels = []
