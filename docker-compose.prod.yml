@@ -1,9 +1,21 @@
-version: '2.4'
+x-default-network: &default_network
+  networks:
+    - docker_net
+
+version: '3'
 services:
   server:
     extends:
       file: docker-compose.base.yml
       service: server
+    environment:
+      VIRTUAL_HOST: dripdrop.icu,www.dripdrop.icu
+      VIRTUAL_PATH: '/api'
+      LETSENCRYPT_HOST: dripdrop.icu,www.dripdrop.icu
+      HTTP_PORT: 5000
+    expose:
+      - 5000
+    <<: *default_network
 
   worker:
     extends:
@@ -11,39 +23,33 @@ services:
       service: worker
     deploy:
       replicas: 4
+    <<: *default_network
 
   postgres:
     extends:
       file: docker-compose.base.yml
       service: postgres
+    <<: *default_network
 
   pgadmin:
     extends:
       file: docker-compose.base.yml
       service: pgadmin
+    environment:
+      VIRTUAL_HOST: db.dripdrop.icu
+      LETSENCRYPT_HOST: db.dripdrop.icu
+    <<: *default_network
 
   redis:
     extends:
       file: docker-compose.base.yml
       service: redis
-
-  influxdb:
-    extends:
-      file: docker-compose.base.yml
-      service: influxdb
-
-  telegraf:
-    extends:
-      file: docker-compose.base.yml
-      service: telegraf
-
-  grafana:
-    extends:
-      file: docker-compose.base.yml
-      service: grafana
+    <<: *default_network
 
 volumes:
   postgres_volume: {}
   redis_volume: {}
-  influxdb_volume: {}
-  temp_volume: {}
+
+networks:
+  docker_net:
+    external: true
