@@ -10,7 +10,7 @@ services:
       service: server
     environment:
       VIRTUAL_HOST: dripdrop.icu,www.dripdrop.icu
-      VIRTUAL_PATH: '/api'
+      VIRTUAL_PATH: /api
       LETSENCRYPT_HOST: dripdrop.icu,www.dripdrop.icu
       HTTP_PORT: 5000
     expose:
@@ -22,7 +22,7 @@ services:
       file: docker-compose.base.yml
       service: worker
     deploy:
-      replicas: 4
+      replicas: 2
     <<: *default_network
 
   postgres:

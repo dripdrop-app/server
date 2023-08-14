@@ -25,7 +25,7 @@ x-depends-all: &depends-all
 version: '3'
 services:
   server:
-    image: ${IMAGE}
+    image: dripdrop/image
     command: [ "./scripts/server.sh" ]
     healthcheck:
       test:
@@ -44,7 +44,7 @@ services:
       - *restart_policy
 
   worker:
-    image: ${IMAGE}
+    image: dripdrop/image
     command: [ "./scripts/worker.sh" ]
     environment:
       ENV: ${ENV}

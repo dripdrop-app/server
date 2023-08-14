@@ -18,7 +18,7 @@ class DockerInterface:
         env_file: str = ...,
         env: str = ...,
         context: str = ...,
-        project: str = ...,
+        project: str = "dripdrop",
     ) -> None:
         self._docker_file = "./Dockerfile"
         self._compose_file = compose_file
@@ -149,11 +149,9 @@ if __name__ == "__main__":
 
     OPTIONS = {
         DEVELOPMENT: {
-            "project": "dripdrop-dev",
             "compose_file": os.path.join(current_path, "docker-compose.dev.yml"),
         },
         PRODUCTION: {
-            "project": "dripdrop",
             "compose_file": os.path.join(current_path, "docker-compose.prod.yml"),
         },
     }
