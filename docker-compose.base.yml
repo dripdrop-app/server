@@ -26,6 +26,7 @@ version: '3'
 services:
   server:
     image: dripdrop/image
+    container_name: server
     command: [ "./scripts/server.sh" ]
     healthcheck:
       test:

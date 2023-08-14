@@ -99,11 +99,13 @@ class DockerInterface:
             env=self._load_environment_variables(),
         ).check_returncode()
 
-    def deploy(self, env: str = ...):
-        if env == DEVELOPMENT:
+    def deploy(self):
+        if self._env == DEVELOPMENT:
             self.remove_services()
         self._build_services()
         self._deploy_services()
+        if self._env == PRODUCTION:
+            subprocess.run(["docker", "restart", "nginx-proxy"]).check_returncode()
 
     def test(self):
         self._build_services()
