@@ -36,7 +36,7 @@ services:
           "-f",
           "http://localhost:5000/healthcheck"
         ]
-      interval: 30s
+      interval: 10s
     environment:
       ENV: ${ENV}
     <<:
@@ -87,7 +87,7 @@ services:
           "-",
           "http://localhost/misc/ping"
         ]
-      interval: 30s
+      interval: 10s
     depends_on:
       <<: *depends-database
     <<:
