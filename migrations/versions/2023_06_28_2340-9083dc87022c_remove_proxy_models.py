@@ -29,13 +29,22 @@ def downgrade():
         sa.Column("ip_address", sa.VARCHAR(), autoincrement=False, nullable=False),
         sa.Column("port", sa.INTEGER(), autoincrement=False, nullable=False),
         sa.Column(
-            "last_used", postgresql.TIMESTAMP(timezone=True), autoincrement=False, nullable=True
+            "last_used",
+            postgresql.TIMESTAMP(timezone=True),
+            autoincrement=False,
+            nullable=True,
         ),
         sa.Column(
-            "created_at", postgresql.TIMESTAMP(timezone=True), autoincrement=False, nullable=False
+            "created_at",
+            postgresql.TIMESTAMP(timezone=True),
+            autoincrement=False,
+            nullable=False,
         ),
         sa.Column(
-            "modified_at", postgresql.TIMESTAMP(timezone=True), autoincrement=False, nullable=False
+            "modified_at",
+            postgresql.TIMESTAMP(timezone=True),
+            autoincrement=False,
+            nullable=False,
         ),
         sa.PrimaryKeyConstraint("ip_address", name="proxies_pkey"),
     )
