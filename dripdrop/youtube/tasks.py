@@ -1,11 +1,13 @@
 import asyncio
+import traceback
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from rq.job import Retry
 from sqlalchemy import select, delete, false, and_
 
 from dripdrop.authentication.models import User
-from dripdrop.services import database, google_api, rq_client, ytdlp
+from dripdrop.logger import logger
+from dripdrop.services import database, google_api, invidious, rq_client, ytdlp
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
@@ -133,24 +135,45 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     await session.commit()
 
 
+def resolve_video_upload_time(video_upload_date: datetime):
+    server_current_time = datetime.now(tz=tzlocal())
+    current_time = get_current_time()
+
+    if current_time.day != video_upload_date.day:
+        video_upload_date = video_upload_date.replace(
+            hour=14,
+            minute=server_current_time.minute,
+            second=server_current_time.second,
+        )
+    else:
+        video_upload_date = video_upload_date.replace(
+            hour=current_time.hour,
+            minute=current_time.minute,
+            second=current_time.second,
+        )
+    return video_upload_date
+
+
 @rq_client.worker_task
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
-    playlist_chunk: tuple[int, int] = (1, 100),
+    continuation_token: str | None = None,
     session: AsyncSession = ...,
 ):
+    date_limit = (
+        datetime.strptime(date_after, "%Y%m%d").replace(tzinfo=settings.timezone)
+        if date_after
+        else None
+    )
+
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
     results = await session.scalars(query)
     channel = results.first()
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
 
-    playlist_start, playlist_end = playlist_chunk
-    playlist_chunk_size = playlist_end - playlist_start + 1  # Inclusive
-    num_received_videos = 0
-
-    if playlist_start == 1:
+    if not continuation_token:
         channel.updating = True
         await session.commit()
 
@@ -161,84 +184,63 @@ async def add_channel_videos(
             message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
         )
 
-    videos_info = ytdlp.extract_videos_info(
-        url=generate_channel_videos_url(channel_id=channel_id),
-        date_after=date_after,
-        playlist_items=f"{playlist_start}:{playlist_end}",
-    )
+    response = await invidious.get_youtube_channel_videos(channel_id=channel_id)
 
-    async for video_info in videos_info:
-        server_current_time = datetime.now(tz=tzlocal())
-        current_time = get_current_time()
-
-        video_id = video_info["id"]
-        video_title = video_info["title"]
-        video_thumbnail = video_info["thumbnail"]
-        video_description = video_info["description"]
-        video_category_name = video_info["categories"][0]
-        video_upload_date = datetime.strptime(
-            video_info["upload_date"], "%Y%m%d"
-        ).replace(tzinfo=settings.timezone)
-
-        if current_time.day != video_upload_date.day:
-            video_upload_date = video_upload_date.replace(
-                hour=14,
-                minute=server_current_time.minute,
-                second=server_current_time.second,
-            )
-        else:
-            video_upload_date = video_upload_date.replace(
-                hour=current_time.hour,
-                minute=current_time.minute,
-                second=current_time.second,
+    for video_info in response.videos:
+        try:
+            video_id = video_info["videoId"]
+            video_title = video_info["title"]
+            extracted_video_info = await ytdlp.extract_video_info(
+                url=f"https://youtube.com/watch?v={video_id}"
             )
 
-        query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-        results = await session.scalars(query)
-        video = results.first()
-        if video:
-            video.title = video_title
-            video.thumbnail = video_thumbnail
-            video.description = video_description
-            if video.title != video_title or video.thumbnail != video_thumbnail:
-                video.published_at = video_upload_date
-        else:
-            query = select(YoutubeVideoCategory).where(
-                YoutubeVideoCategory.name == video_category_name
+            video_upload_date = resolve_video_upload_time(
+                datetime.strptime(
+                    extracted_video_info["upload_date"], "%Y%m%d"
+                ).replace(tzinfo=settings.timezone)
             )
+            video_thumbnail = extracted_video_info["thumbnail"]
+            video_description = extracted_video_info["description"]
+            video_category_name = extracted_video_info["categories"][0]
+
+            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
             results = await session.scalars(query)
-            video_category = results.first()
-            if not video_category:
-                video_category = YoutubeVideoCategory(name=video_category_name)
-                session.add(video_category)
-                await session.commit()
-            session.add(
-                YoutubeVideo(
-                    id=video_id,
-                    title=video_title,
-                    thumbnail=video_thumbnail,
-                    channel_id=channel_id,
-                    category_id=video_category.id,
-                    description=video_description,
-                    published_at=video_upload_date,
+            video = results.first()
+            if video:
+                if date_limit and video.published_at < date_limit:
+                    logger.info("ENDING")
+                    break
+                video.title = video_title
+                video.thumbnail = video_thumbnail
+                video.description = video_description
+                if video.title != video_title or video.thumbnail != video_thumbnail:
+                    video.published_at = video_upload_date
+            else:
+                query = select(YoutubeVideoCategory).where(
+                    YoutubeVideoCategory.name == video_category_name
                 )
-            )
-        await session.commit()
-        num_received_videos += 1
+                results = await session.scalars(query)
+                video_category = results.first()
+                if not video_category:
+                    video_category = YoutubeVideoCategory(name=video_category_name)
+                    session.add(video_category)
+                    await session.commit()
+                session.add(
+                    YoutubeVideo(
+                        id=video_id,
+                        title=video_title,
+                        thumbnail=video_thumbnail,
+                        channel_id=channel_id,
+                        category_id=video_category.id,
+                        description=video_description,
+                        published_at=video_upload_date,
+                    )
+                )
+                await session.commit()
+        except Exception:
+            logger.exception(traceback.format_exc())
 
-    if playlist_chunk_size == num_received_videos:
-        next_playlist_chunk = (
-            playlist_end + 1,
-            playlist_end + playlist_chunk_size,
-        )
-        await asyncio.to_thread(
-            rq_client.default.enqueue,
-            add_channel_videos,
-            channel_id=channel_id,
-            date_after=date_after,
-            playlist_chunk=next_playlist_chunk,
-        )
-    else:
+    if not response.continuation:
         websocket_channel = WebsocketChannel(
             channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE
         )
@@ -247,7 +249,16 @@ async def add_channel_videos(
         )
         channel.updating = False
         channel.last_videos_updated = get_current_time()
-        await session.commit()
+    else:
+        await asyncio.to_thread(
+            rq_client.default.enqueue,
+            add_channel_videos,
+            channel_id=channel_id,
+            date_after=date_after,
+            continuation_token=response.continuation,
+        )
+
+    await session.commit()
 
 
 @rq_client.worker_task
