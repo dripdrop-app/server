@@ -58,6 +58,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 origins = []
 if settings.env == ENV.DEVELOPMENT:
+    origins.append("http://localhost:8080")
     origins.append("http://localhost:3000")
 
 app.add_middleware(
