@@ -24,6 +24,8 @@ services:
     extends:
       file: docker-compose.base.yml
       service: postgres
+    ports:
+      - 5432:5432
 
   pgadmin:
     extends:
