@@ -39,6 +39,8 @@ services:
       interval: 10s
     environment:
       ENV: ${ENV}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     <<:
       - *depends-all
       - *logging
@@ -50,6 +52,8 @@ services:
     environment:
       ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     <<:
       - *depends-all
       - *logging
