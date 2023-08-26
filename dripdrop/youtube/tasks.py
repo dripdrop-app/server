@@ -208,7 +208,7 @@ async def add_channel_videos(
             video = results.first()
             if video:
                 if date_limit and video.published_at < date_limit:
-                    logger.info("ENDING")
+                    response.continuation = None
                     break
                 video.title = video_title
                 video.thumbnail = video_thumbnail
