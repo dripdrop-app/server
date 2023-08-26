@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.parse import urljoin
 
 from dripdrop.services import http_client
@@ -7,7 +7,7 @@ from dripdrop.services import http_client
 @dataclass
 class ChannelVideosResponse:
     videos: list[dict]
-    continuation: str | None
+    continuation: str | None = field(default=None)
 
 
 async def get_instance_url():
