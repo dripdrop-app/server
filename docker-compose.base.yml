@@ -80,7 +80,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${DATABASE_USER}@${DATABASE}.com
+      PGADMIN_DEFAULT_EMAIL: dripdrop@dripdrop.icu
       PGADMIN_DEFAULT_PASSWORD: ${DATABASE_PASSWORD}
     healthcheck:
       test:

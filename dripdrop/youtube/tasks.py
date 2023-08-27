@@ -185,6 +185,8 @@ async def add_channel_videos(
         )
 
     response = await invidious.get_youtube_channel_videos(channel_id=channel_id)
+    retrieve_fails = 0
+    end_update = False
 
     for video_info in response.videos:
         try:
@@ -208,7 +210,7 @@ async def add_channel_videos(
             video = results.first()
             if video:
                 if date_limit and video.published_at < date_limit:
-                    response.continuation = None
+                    end_update = True
                     break
                 video.title = video_title
                 video.thumbnail = video_thumbnail
@@ -239,8 +241,13 @@ async def add_channel_videos(
                 await session.commit()
         except Exception:
             logger.exception(traceback.format_exc())
+            retrieve_fails += 1
 
-    if not response.continuation:
+    if (
+        not response.continuation
+        or end_update
+        or retrieve_fails == len(response.videos)
+    ):
         websocket_channel = WebsocketChannel(
             channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE
         )
