@@ -51,57 +51,58 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     if not user_channel:
         return
 
-    for subscribed_channel in await google_api.get_channel_subscriptions(
+    async for subscribed_channels in google_api.get_channel_subscriptions(
         channel_id=user_channel.id
     ):
-        query = select(YoutubeChannel).where(YoutubeChannel.id == subscribed_channel.id)
-        results = await session.scalars(query)
-        channel = results.first()
-        if channel:
-            channel.title = subscribed_channel.title
-            channel.thumbnail = subscribed_channel.thumbnail
-        else:
-            session.add(
-                YoutubeChannel(
-                    id=subscribed_channel.id,
-                    title=subscribed_channel.title,
-                    thumbnail=subscribed_channel.thumbnail,
-                    last_videos_updated=get_current_time() - timedelta(days=365),
+        for subscribed_channel in subscribed_channels:
+            query = select(YoutubeChannel).where(YoutubeChannel.id == subscribed_channel.id)
+            results = await session.scalars(query)
+            channel = results.first()
+            if channel:
+                channel.title = subscribed_channel.title
+                channel.thumbnail = subscribed_channel.thumbnail
+            else:
+                session.add(
+                    YoutubeChannel(
+                        id=subscribed_channel.id,
+                        title=subscribed_channel.title,
+                        thumbnail=subscribed_channel.thumbnail,
+                        last_videos_updated=get_current_time() - timedelta(days=365),
+                    )
                 )
-            )
-            await session.commit()
-            await asyncio.to_thread(
-                rq_client.default.enqueue,
-                add_channel_videos,
-                channel_id=subscribed_channel.id,
-            )
-        query = select(YoutubeSubscription).where(
-            YoutubeSubscription.channel_id == subscribed_channel.id,
-            YoutubeSubscription.email == email,
-        )
-        results = await session.scalars(query)
-        subscription = results.first()
-        if not subscription:
-            session.add(
-                YoutubeSubscription(
-                    email=email,
+                await session.commit()
+                await asyncio.to_thread(
+                    rq_client.default.enqueue,
+                    add_channel_videos,
                     channel_id=subscribed_channel.id,
                 )
+            query = select(YoutubeSubscription).where(
+                YoutubeSubscription.channel_id == subscribed_channel.id,
+                YoutubeSubscription.email == email,
             )
-        else:
-            if not subscription.user_submitted:
-                subscription.deleted_at = None
+            results = await session.scalars(query)
+            subscription = results.first()
+            if not subscription:
+                session.add(
+                    YoutubeSubscription(
+                        email=email,
+                        channel_id=subscribed_channel.id,
+                    )
+                )
+            else:
+                if not subscription.user_submitted:
+                    subscription.deleted_at = None
 
-        query = select(YoutubeNewSubscription).where(
-            YoutubeNewSubscription.channel_id == subscribed_channel.id,
-            YoutubeNewSubscription.email == email,
-        )
-        results = await session.scalars(query)
-        if not results.first():
-            session.add(
-                YoutubeNewSubscription(channel_id=subscribed_channel.id, email=email)
+            query = select(YoutubeNewSubscription).where(
+                YoutubeNewSubscription.channel_id == subscribed_channel.id,
+                YoutubeNewSubscription.email == email,
             )
-        await session.commit()
+            results = await session.scalars(query)
+            if not results.first():
+                session.add(
+                    YoutubeNewSubscription(channel_id=subscribed_channel.id, email=email)
+                )
+            await session.commit()
 
     query = (
         select(YoutubeSubscription.channel_id.label("channel_id"))
