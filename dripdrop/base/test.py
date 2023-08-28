@@ -23,6 +23,7 @@ class BaseTest(IsolatedAsyncioTestCase):
         self.maxDiff = None
         self.assertEqual(settings.env, ENV.TESTING)
         await self.delete_temp_directories()
+        await temp_files._create_temp_directory()
         async with database.engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)

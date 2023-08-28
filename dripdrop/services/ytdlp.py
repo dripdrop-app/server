@@ -11,7 +11,7 @@ async def check_and_update_ytdlp():
     async with redis_client.create_client() as redis:
         if await redis.get(UPDATING_YTDLP):
             return
-        await redis.set(UPDATING_YTDLP, "1")
+        await redis.set(UPDATING_YTDLP, "1", ex=60 * 60 * 24)
         process = await asyncio.subprocess.create_subprocess_exec(
             "pip",
             "install",
@@ -21,9 +21,9 @@ async def check_and_update_ytdlp():
             stderr=asyncio.subprocess.PIPE,
         )
         try:
-            await asyncio.wait_for(process.wait(), timeout=300)
+            await asyncio.wait_for(process.wait(), timeout=60 * 5)
         finally:
-            await redis.delete(UPDATING_YTDLP)
+            pass
 
 
 @asynccontextmanager

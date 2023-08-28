@@ -7,7 +7,7 @@ formatters:
     class: "logging.Formatter"
 filters:
   info:
-    (): "config.logging.ErrorFilter"
+    (): "config.logging.Filter"
 handlers:
   console:
     level: "INFO"

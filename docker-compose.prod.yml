@@ -1,49 +1,65 @@
-version: '2.4'
+version: '3'
 services:
-  server:
+  dripdrop-server:
     extends:
       file: docker-compose.base.yml
-      service: server
+      service: dripdrop-server
+    environment:
+      VIRTUAL_HOST: dripdrop.icu,www.dripdrop.icu
+      VIRTUAL_PATH: /api
+      LETSENCRYPT_HOST: dripdrop.icu,www.dripdrop.icu
+      VIRTUAL_PORT: 5000
+    volumes:
+      - type: volume
+        source: nginx_vhost
+        target: /nginx/vhost.d
+    expose:
+      - 5000
+    networks:
+      - docker_net
+      - dripdrop-net
 
-  worker:
+  dripdrop-worker:
     extends:
       file: docker-compose.base.yml
-      service: worker
+      service: dripdrop-worker
     deploy:
-      replicas: 4
+      replicas: 2
+    networks:
+      - dripdrop-net
 
-  postgres:
+  dripdrop-postgres:
     extends:
       file: docker-compose.base.yml
-      service: postgres
+      service: dripdrop-postgres
+    networks:
+      - dripdrop-net
 
-  pgadmin:
+  dripdrop-pgadmin:
     extends:
       file: docker-compose.base.yml
-      service: pgadmin
+      service: dripdrop-pgadmin
+    environment:
+      VIRTUAL_HOST: db.dripdrop.icu
+      LETSENCRYPT_HOST: db.dripdrop.icu
+    networks:
+      - docker_net
+      - dripdrop-net
 
-  redis:
+  dripdrop-redis:
     extends:
       file: docker-compose.base.yml
-      service: redis
-
-  influxdb:
-    extends:
-      file: docker-compose.base.yml
-      service: influxdb
-
-  telegraf:
-    extends:
-      file: docker-compose.base.yml
-      service: telegraf
-
-  grafana:
-    extends:
-      file: docker-compose.base.yml
-      service: grafana
+      service: dripdrop-redis
+    networks:
+      - dripdrop-net
 
 volumes:
   postgres_volume: {}
   redis_volume: {}
-  influxdb_volume: {}
-  temp_volume: {}
+  nginx_vhost:
+    external: true
+
+networks:
+  docker_net:
+    external: true
+  dripdrop-net:

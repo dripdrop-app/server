@@ -1,2 +1,2 @@
-# Ignore postgres directory
 data/*
+temp/*

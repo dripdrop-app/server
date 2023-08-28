@@ -1,3 +1,6 @@
+x-restart_policy: &restart_policy
+  restart: unless-stopped
+
 x-logging: &logging
   logging:
     driver: 'local'
@@ -6,11 +9,11 @@ x-logging: &logging
       max-file: '5'
 
 x-depends-database: &depends-database
-  postgres:
+  dripdrop-postgres:
     condition: service_healthy
 
 x-depends-redis: &depends-redis
-  redis:
+  dripdrop-redis:
     condition: service_healthy
 
 x-depends-all: &depends-all
@@ -19,45 +22,46 @@ x-depends-all: &depends-all
       - *depends-database
       - *depends-redis
 
-version: '2.4'
+version: '3'
 services:
-  server:
-    image: ${IMAGE}
-    command: ["./scripts/server.sh"]
-    restart: on-failure:5
-    ports:
-      - 5000:5000
+  dripdrop-server:
+    image: dripdrop/image
+    container_name: dripdrop-server
+    command: [ "./scripts/server.sh" ]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/healthcheck"]
-      interval: 30s
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:5000/healthcheck"
+        ]
+      interval: 10s
     environment:
       ENV: ${ENV}
-    volumes: 
-      - type: volume
-        source: temp_volume
-        target: /src/temp
-    <<: 
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    <<:
       - *depends-all
       - *logging
+      - *restart_policy
 
-  worker:
-    image: ${IMAGE}
-    command: ["./scripts/worker.sh"]
-    restart: on-failure:5
+  dripdrop-worker:
+    image: dripdrop/image
+    command: [ "./scripts/worker.sh" ]
     environment:
       ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
-    volumes: 
-      - type: volume
-        source: temp_volume
-        target: /src/temp
-    <<: 
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    <<:
       - *depends-all
       - *logging
+      - *restart_policy
 
-  postgres:
+  dripdrop-postgres:
     image: postgres:14
-    restart: always
+    container_name: dripdrop-postgres
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -68,109 +72,44 @@ services:
         source: postgres_volume
         target: /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${DATABASE}"]
+      test: [ "CMD", "pg_isready", "-U", "${DATABASE}" ]
       interval: 10s
-    <<: *logging
+    <<:
+      - *logging
+      - *restart_policy
 
-  pgadmin:
+  dripdrop-pgadmin:
     image: dpage/pgadmin4
-    restart: always
+    container_name: dripdrop-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${DATABASE_USER}@${DATABASE}.com
+      PGADMIN_DEFAULT_EMAIL: dripdrop@dripdrop.icu
       PGADMIN_DEFAULT_PASSWORD: ${DATABASE_PASSWORD}
-    ports:
-      - 5050:80
     healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost/misc/ping"]
-      interval: 30s
+      test:
+        [
+          "CMD",
+          "wget",
+          "-O",
+          "-",
+          "http://localhost/misc/ping"
+        ]
+      interval: 10s
     depends_on:
       <<: *depends-database
-    <<: *logging
+    <<:
+      - *logging
+      - *restart_policy
 
-  redis:
+  dripdrop-redis:
     image: redis
+    container_name: dripdrop-redis
     volumes:
       - type: volume
         source: redis_volume
         target: /data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
-    <<: *logging
-
-  influxdb:
-    image: influxdb
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USERNAME}
-      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD}
-      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG}
-      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET}
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN}
-      DOCKER_INFLUXDB_INIT_RETENTION: 14d
-    volumes:
-      - type: volume
-        source: influxdb_volume
-        target: /var/lib/influxdb
-    ports:
-      - 8086:8086
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
-      interval: 10s
-    <<: *logging
-
-  telegraf:
-    image: telegraf
-    environment:
-      HOST_MOUNT_PREFIX: /hostfs
-      HOST_PROC: /hostfs/proc
-      INFLUXDB_USERNAME: ${INFLUXDB_USERNAME}
-      INFLUXDB_PASSWORD: ${INFLUXDB_PASSWORD}
-      INFLUXDB_ORG: ${INFLUXDB_ORG}
-      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
-      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
-      INFLUXDB_URL: ${INFLUXDB_URL}
-    volumes:
-      - type: bind
-        source: ./config/telegraf.conf
-        target: /etc/telegraf/telegraf.conf
-        read_only: true
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-        read_only: true
-      - type: bind
-        source: /proc
-        target: /hostfs/proc
-        read_only: true
-    ports:
-      - 6514:6514
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
-      interval: 10s
-    <<: *logging
-
-  grafana:
-    image: grafana/grafana-oss
-    environment:
-      GF_SECURITY_ADMIN_USER: ${INFLUXDB_USERNAME}
-      GF_SECURITY_ADMIN_PASSWORD: ${INFLUXDB_PASSWORD}
-      INFLUXDB_ORG: ${INFLUXDB_ORG}
-      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
-      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
-      INFLUXDB_URL: ${INFLUXDB_URL}
-    volumes:
-      - type: bind
-        source: ./config/provisioning
-        target: /etc/grafana/provisioning
-        read_only: true
-      - type: bind
-        source: ./config/dashboards
-        target: /var/lib/grafana/dashboards
-        read_only: true
-    ports:
-      - 8888:3000
-    healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:3000/api/health"]
-      interval: 10s
-    <<: *logging
+    <<:
+      - *logging
+      - *restart_policy

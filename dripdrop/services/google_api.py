@@ -33,7 +33,7 @@ async def get_channel_subscriptions(channel_id: str):
             )
             response.raise_for_status()
             json = response.json()
-            channels = []
+            channels: list[YoutubeChannelInfo] = []
             for item in json.get("items", []):
                 snippet = item.get("snippet")
                 resource_id = snippet.get("resourceId")
@@ -51,6 +51,7 @@ async def get_channel_subscriptions(channel_id: str):
                     )
                 except TypeError:
                     logger.exception(traceback.format_exc())
+            yield channels
             params["pageToken"] = json.get("nextPageToken")
             if params.get("pageToken", None) is None:
                 break

@@ -1,37 +1,43 @@
 version: '2.4'
 services:
-  server:
+  dripdrop-server:
     extends:
       file: docker-compose.base.yml
-      service: server
+      service: dripdrop-server
+    volumes:
+      - type: bind
+        source: ./
+        target: /src
+    ports:
+      - 5000:5000/tcp
+
+  dripdrop-worker:
+    extends:
+      file: docker-compose.base.yml
+      service: dripdrop-worker
     volumes:
       - type: bind
         source: ./
         target: /src
 
-  worker:
+  dripdrop-postgres:
     extends:
       file: docker-compose.base.yml
-      service: worker
-    volumes:
-      - type: bind
-        source: ./
-        target: /src
+      service: dripdrop-postgres
+    ports:
+      - 5432:5432
 
-  postgres:
+  dripdrop-pgadmin:
     extends:
       file: docker-compose.base.yml
-      service: postgres
+      service: dripdrop-pgadmin
+    ports:
+      - 5050:80
 
-  pgadmin:
+  dripdrop-redis:
     extends:
       file: docker-compose.base.yml
-      service: pgadmin
-
-  redis:
-    extends:
-      file: docker-compose.base.yml
-      service: redis
+      service: dripdrop-redis
 
 volumes:
   postgres_volume: {}
