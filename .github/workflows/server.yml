@@ -13,7 +13,7 @@ jobs:
           echo "${{ secrets.ENV }}" >> .env
       - name: Run tests
         run: |
-          ./scripts/docker.sh -e production -a test
+          python3 docker.py --env production --action test
   deploy:
     if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Deploy over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "docker system prune -af && cd ~/dripdrop && ./scripts/docker.sh -e production -a deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "docker system prune -af && cd ~/dripdrop && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -65,7 +65,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Deploy rollback over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && ./scripts/docker.sh -e production -a deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
