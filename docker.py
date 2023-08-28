@@ -137,7 +137,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    compose_file = "docker-compose.dev.yml" if args.env == DEVELOPMENT else "docker-compose.prod.yml"
+    compose_file = "docker-compose.dev.yml" if args.env == DEVELOPMENT or args.action == TEST else "docker-compose.prod.yml"
 
     docker_interface = DockerInterface(
        compose_file=compose_file,
