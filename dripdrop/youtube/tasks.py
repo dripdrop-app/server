@@ -193,15 +193,19 @@ async def add_channel_videos(
         try:
             video_id = video_info["videoId"]
             video_title = video_info["title"]
+            video_published = video_info["published"]
+
+            video_upload_date = datetime.fromtimestamp(video_published)
+
             extracted_video_info = await ytdlp.extract_video_info(
                 url=f"https://youtube.com/watch?v={video_id}"
             )
 
-            video_upload_date = resolve_video_upload_time(
-                datetime.strptime(
-                    extracted_video_info["upload_date"], "%Y%m%d"
-                ).replace(tzinfo=settings.timezone)
-            )
+            # video_upload_date = resolve_video_upload_time(
+            #     datetime.strptime(
+            #         extracted_video_info["upload_date"], "%Y%m%d"
+            #     ).replace(tzinfo=settings.timezone)
+            # )
             video_thumbnail = extracted_video_info["thumbnail"]
             video_description = extracted_video_info["description"]
             video_category_name = extracted_video_info["categories"][0]
