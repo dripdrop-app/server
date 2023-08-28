@@ -1,13 +1,9 @@
-x-default-network: &default_network
-  networks:
-    - docker_net
-
 version: '3'
 services:
-  server:
+  dripdrop-server:
     extends:
       file: docker-compose.base.yml
-      service: server
+      service: dripdrop-server
     environment:
       VIRTUAL_HOST: dripdrop.icu,www.dripdrop.icu
       VIRTUAL_PATH: /api
@@ -19,36 +15,43 @@ services:
         target: /nginx/vhost.d
     expose:
       - 5000
-    <<: *default_network
+    networks:
+      - docker_net
+      - dripdrop-net
 
-  worker:
+  dripdrop-worker:
     extends:
       file: docker-compose.base.yml
-      service: worker
+      service: dripdrop-worker
     deploy:
       replicas: 2
-    <<: *default_network
+    networks:
+      - dripdrop-net
 
-  postgres:
+  dripdrop-postgres:
     extends:
       file: docker-compose.base.yml
-      service: postgres
-    <<: *default_network
+      service: dripdrop-postgres
+    networks:
+      - dripdrop-net
 
-  pgadmin:
+  dripdrop-pgadmin:
     extends:
       file: docker-compose.base.yml
-      service: pgadmin
+      service: dripdrop-pgadmin
     environment:
       VIRTUAL_HOST: db.dripdrop.icu
       LETSENCRYPT_HOST: db.dripdrop.icu
-    <<: *default_network
+    networks:
+      - docker_net
+      - dripdrop-net
 
-  redis:
+  dripdrop-redis:
     extends:
       file: docker-compose.base.yml
-      service: redis
-    <<: *default_network
+      service: dripdrop-redis
+    networks:
+      - dripdrop-net
 
 volumes:
   postgres_volume: {}
@@ -59,3 +62,4 @@ volumes:
 networks:
   docker_net:
     external: true
+  dripdrop-net:

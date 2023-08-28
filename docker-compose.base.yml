@@ -9,11 +9,11 @@ x-logging: &logging
       max-file: '5'
 
 x-depends-database: &depends-database
-  postgres:
+  dripdrop-postgres:
     condition: service_healthy
 
 x-depends-redis: &depends-redis
-  redis:
+  dripdrop-redis:
     condition: service_healthy
 
 x-depends-all: &depends-all
@@ -24,9 +24,9 @@ x-depends-all: &depends-all
 
 version: '3'
 services:
-  server:
+  dripdrop-server:
     image: dripdrop/image
-    container_name: server
+    container_name: dripdrop-server
     command: [ "./scripts/server.sh" ]
     healthcheck:
       test:
@@ -46,7 +46,7 @@ services:
       - *logging
       - *restart_policy
 
-  worker:
+  dripdrop-worker:
     image: dripdrop/image
     command: [ "./scripts/worker.sh" ]
     environment:
@@ -59,8 +59,9 @@ services:
       - *logging
       - *restart_policy
 
-  postgres:
+  dripdrop-postgres:
     image: postgres:14
+    container_name: dripdrop-postgres
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -77,8 +78,9 @@ services:
       - *logging
       - *restart_policy
 
-  pgadmin:
+  dripdrop-pgadmin:
     image: dpage/pgadmin4
+    container_name: dripdrop-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: dripdrop@dripdrop.icu
       PGADMIN_DEFAULT_PASSWORD: ${DATABASE_PASSWORD}
@@ -98,8 +100,9 @@ services:
       - *logging
       - *restart_policy
 
-  redis:
+  dripdrop-redis:
     image: redis
+    container_name: dripdrop-redis
     volumes:
       - type: volume
         source: redis_volume
