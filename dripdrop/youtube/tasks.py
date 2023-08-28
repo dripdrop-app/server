@@ -190,13 +190,17 @@ async def add_channel_videos(
     end_update = False
 
     for video_info in response.videos:
+        video_id = video_info["videoId"]
+        video_title = video_info["title"]
+        video_published = video_info["published"]
+
+        query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+        results = await session.scalars(query)
+        video = results.first()
+
+        video_upload_date = datetime.fromtimestamp(video_published)
+
         try:
-            video_id = video_info["videoId"]
-            video_title = video_info["title"]
-            video_published = video_info["published"]
-
-            video_upload_date = datetime.fromtimestamp(video_published)
-
             extracted_video_info = await ytdlp.extract_video_info(
                 url=f"https://youtube.com/watch?v={video_id}"
             )
@@ -210,9 +214,6 @@ async def add_channel_videos(
             video_description = extracted_video_info["description"]
             video_category_name = extracted_video_info["categories"][0]
 
-            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-            results = await session.scalars(query)
-            video = results.first()
             if video:
                 if date_limit and video.published_at < date_limit:
                     end_update = True
@@ -243,10 +244,14 @@ async def add_channel_videos(
                         published_at=video_upload_date,
                     )
                 )
-                await session.commit()
-        except Exception:
-            logger.exception(traceback.format_exc())
+        except Exception as e:
             retrieve_fails += 1
+            if str(e).lower().find('Video unavailable.') != -1:
+                if video:
+                    await session.delete(video)
+            else:
+                logger.exception(traceback.format_exc())
+        await session.commit()
 
     if (
         not response.continuation

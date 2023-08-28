@@ -36,6 +36,4 @@ async def get_youtube_channel_videos(channel_id: str, continuation_token: str = 
         json = response.json()
         new_continuation_token = json.get('continuation')
         videos = json.get('videos')
-        if new_continuation_token == continuation_token:
-            new_continuation_token = None
         return ChannelVideosResponse(videos=videos, continuation=new_continuation_token)
