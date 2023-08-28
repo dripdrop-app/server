@@ -33,22 +33,25 @@ jobs:
           sudo apt-get -y install rsync
       - name: Backup current repo on VM
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop; rm -rf server_old; if [ -d ~/server ]; then cp -r ~/server ~/server_old; fi"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd ~/repos/dripdrop; rm -rf server_old; if [ -d ~/server ]; then cp -r ~/server ~/server_old; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
       - name: Sync repo to VM
         run: |
-          rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key' $(pwd)/ $SSH_USER@$SSH_HOST:~/repos/dripdrop/server
+          rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key -p $SSH_PORT' $(pwd)/ $SSH_USER@$SSH_HOST:~/repos/dripdrop/server
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
       - name: Deploy over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop/server && python3 docker.py --env production --action deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd ~/repos/dripdrop/server && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
   rollback:
     if: ${{ failure() && needs.deploy.result == 'failure' }}
     runs-on: ubuntu-latest
@@ -59,13 +62,15 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
       - name: Rollback repo to previous version
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop && if [ -d server_old ]; then cp -r server_old server; fi"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd ~/repos/dripdrop && if [ -d server_old ]; then cp -r server_old server; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
       - name: Deploy rollback over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop && python3 docker.py --env production --action deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd ~/repos/dripdrop && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
