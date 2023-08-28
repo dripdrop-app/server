@@ -111,7 +111,7 @@ class DockerInterface:
                 self._compose_file,
                 "run",
                 "--rm",
-                "server",
+                "dripdrop-server",
                 "poetry",
                 "run",
                 "python",

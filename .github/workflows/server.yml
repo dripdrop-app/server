@@ -33,19 +33,19 @@ jobs:
           sudo apt-get -y install rsync
       - name: Backup current repo on VM
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "rm -rf ~/dripdrop_old; if [ -d ~/dripdrop ]; then cp -r ~/dripdrop ~/dripdrop_old; fi"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop; rm -rf server_old; if [ -d ~/server ]; then cp -r ~/server ~/server_old; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Sync repo to VM
         run: |
-          rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key' $(pwd)/ $SSH_USER@$SSH_HOST:~/dripdrop
+          rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key' $(pwd)/ $SSH_USER@$SSH_HOST:~/repos/dripdrop/server
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Deploy over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "docker system prune -af && cd ~/dripdrop && python3 docker.py --env production --action deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop/server && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -59,13 +59,13 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
       - name: Rollback repo to previous version
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "if [ -d ~/dripdrop_old ]; then cp -r ~/dripdrop_old ~/dripdrop; fi"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop && if [ -d server_old ]; then cp -r server_old server; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
       - name: Deploy rollback over SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/dripdrop && python3 docker.py --env production --action deploy"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST "cd ~/repos/dripdrop && python3 docker.py --env production --action deploy"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
