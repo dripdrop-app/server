@@ -40,7 +40,8 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
       - name: Sync repo to VM
         run: |
-          rsync --verbose --recursive --delete -e 'ssh -o StrictHostKeyChecking=no -i ./ssh_key -p $SSH_PORT' $(pwd)/ $SSH_USER@$SSH_HOST:~/repos/dripdrop/server
+
+          rsync --verbose --recursive --delete -e "ssh -o StrictHostKeyChecking=no -i ./ssh_key -p $SSH_PORT" $(pwd)/ $SSH_USER@$SSH_HOST:~/repos/dripdrop/server
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
