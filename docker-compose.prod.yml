@@ -10,9 +10,9 @@ services:
       LETSENCRYPT_HOST: dripdrop.icu,www.dripdrop.icu
       VIRTUAL_PORT: 5000
     volumes:
-      - type: volume
-        source: nginx_vhost
-        target: /nginx/vhost.d
+      - type: bind
+        source: /etc/nginx/vhost.d
+        target: /etc/nginx/vhost.d
     expose:
       - 5000
     networks:
@@ -56,8 +56,6 @@ services:
 volumes:
   postgres_volume: {}
   redis_volume: {}
-  nginx_vhost:
-    external: true
 
 networks:
   docker_net:
