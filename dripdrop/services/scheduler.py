@@ -6,7 +6,7 @@ from datetime import timedelta, timezone
 from redis.connection import parse_url
 
 from dripdrop.logger import logger
-from dripdrop.music import tasks as music_tasks
+# from dripdrop.music import tasks as music_tasks
 from dripdrop.settings import settings
 from dripdrop.youtube import tasks as youtube_tasks
 
@@ -29,12 +29,12 @@ if __name__ == "__main__":
         id="update_channel_videos",
         replace_existing=True,
     )
-    scheduler.add_job(
-        music_tasks.delete_old_music_jobs_cron,
-        trigger=CronTrigger.from_crontab("0 0 * * *"),
-        id="delete_old_music_jobs",
-        replace_existing=True,
-    )
+    # scheduler.add_job(
+    #     music_tasks.delete_old_music_jobs_cron,
+    #     trigger=CronTrigger.from_crontab("0 0 * * *"),
+    #     id="delete_old_music_jobs",
+    #     replace_existing=True,
+    # )
     scheduler.add_job(
         youtube_tasks.update_subscriptions_cron,
         trigger=CronTrigger.from_crontab("30 12 * * *"),

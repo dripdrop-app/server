@@ -168,6 +168,9 @@ async def add_channel_videos(
         else None
     )
 
+    if channel_id == 'UCDVYQ4Zhbm3S2dlz7P1GBDg':
+        return
+
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
     results = await session.scalars(query)
     channel = results.first()
