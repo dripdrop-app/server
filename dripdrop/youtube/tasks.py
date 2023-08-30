@@ -55,7 +55,9 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
         channel_id=user_channel.id
     ):
         for subscribed_channel in subscribed_channels:
-            query = select(YoutubeChannel).where(YoutubeChannel.id == subscribed_channel.id)
+            query = select(YoutubeChannel).where(
+                YoutubeChannel.id == subscribed_channel.id
+            )
             results = await session.scalars(query)
             channel = results.first()
             if channel:
@@ -100,7 +102,9 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             results = await session.scalars(query)
             if not results.first():
                 session.add(
-                    YoutubeNewSubscription(channel_id=subscribed_channel.id, email=email)
+                    YoutubeNewSubscription(
+                        channel_id=subscribed_channel.id, email=email
+                    )
                 )
             await session.commit()
 
@@ -168,9 +172,6 @@ async def add_channel_videos(
         else None
     )
 
-    if channel_id == 'UCDVYQ4Zhbm3S2dlz7P1GBDg':
-        return
-
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
     results = await session.scalars(query)
     channel = results.first()
@@ -188,7 +189,9 @@ async def add_channel_videos(
             message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
         )
 
-    response = await invidious.get_youtube_channel_videos(channel_id=channel_id)
+    response = await invidious.get_youtube_channel_videos(
+        channel_id=channel_id, continuation_token=continuation_token
+    )
     retrieve_fails = 0
     end_update = False
 
@@ -249,7 +252,7 @@ async def add_channel_videos(
                 )
         except Exception as e:
             retrieve_fails += 1
-            if str(e).lower().find('Video unavailable.') != -1:
+            if str(e).lower().find("Video unavailable.") != -1:
                 if video:
                     await session.delete(video)
             else:
