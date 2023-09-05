@@ -17,7 +17,6 @@ poetry run alembic upgrade head
 if [ "$ENV" == "production" ]
 then
     poetry run python -m dripdrop.services.scheduler &
-    cp ./config/nginx/vhost.d/* /etc/nginx/vhost.d
 fi
 
 wait $SERVER_PID

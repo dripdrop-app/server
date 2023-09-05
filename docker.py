@@ -96,8 +96,6 @@ class DockerInterface:
             self.remove_services()
         self._build_services()
         self._deploy_services()
-        if self._env == PRODUCTION:
-            subprocess.run(["docker", "restart", "nginx-proxy"]).check_returncode()
 
     def test(self):
         self._build_services()

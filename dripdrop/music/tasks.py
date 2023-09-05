@@ -67,7 +67,8 @@ def _update_audio_tags(
     audio_tag_service.title = music_job.title
     audio_tag_service.artist = music_job.artist
     audio_tag_service.album = music_job.album
-    audio_tag_service.grouping = music_job.grouping
+    if music_job.grouping:
+        audio_tag_service.grouping = music_job.grouping
     if artwork_info:
         audio_tag_service.set_artwork(
             data=artwork_info["image"],
