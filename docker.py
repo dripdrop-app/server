@@ -98,7 +98,6 @@ class DockerInterface:
 
     def test(self):
         self._build_services()
-        subprocess.run(["docker", "network", "create", "docker_net"]).check_returncode()
         subprocess.run(
             [
                 "docker",
