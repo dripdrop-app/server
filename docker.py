@@ -1,5 +1,4 @@
 import argparse
-import os
 import subprocess
 
 DEVELOPMENT = "development"
@@ -21,14 +20,14 @@ class DockerInterface:
         self._compose_file = compose_file
         self._env = env
         self._project = project
-        self._image_tag = f'{self._project}/image'
+        self._image_tag = f"{self._project}/image"
         self._env_vars = None
 
     def _load_environment_variables(self):
         if self._env_vars is None:
             self._env_vars = {"ENV": self._env, "IMAGE": self._image_tag}
             lines = []
-            with open('.env') as f:
+            with open(".env") as f:
                 lines = f.readlines()
             for line in lines:
                 variable, value = line.split("=")
@@ -99,6 +98,7 @@ class DockerInterface:
 
     def test(self):
         self._build_services()
+        subprocess.run(["docker", "network", "create", "docker_net"]).check_returncode()
         subprocess.run(
             [
                 "docker",
@@ -135,11 +135,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    compose_file = "docker-compose.dev.yml" if args.env == DEVELOPMENT or args.action == TEST else "docker-compose.prod.yml"
+    compose_file = (
+        "docker-compose.dev.yml"
+        if args.env == DEVELOPMENT
+        else "docker-compose.prod.yml"
+    )
 
     docker_interface = DockerInterface(
-       compose_file=compose_file,
-       env=TESTING if args.action == TEST else args.env
+        compose_file=compose_file, env=TESTING if args.action == TEST else args.env
     )
 
     if args.action == REMOVE:
