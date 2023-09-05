@@ -4,15 +4,6 @@ services:
     extends:
       file: docker-compose.base.yml
       service: dripdrop-server
-    environment:
-      VIRTUAL_HOST: dripdrop.icu,www.dripdrop.icu
-      VIRTUAL_PATH: /api
-      LETSENCRYPT_HOST: dripdrop.icu,www.dripdrop.icu
-      VIRTUAL_PORT: 5000
-    volumes:
-      - type: bind
-        source: /etc/nginx/vhost.d
-        target: /etc/nginx/vhost.d
     expose:
       - 5000
     networks:
@@ -39,9 +30,6 @@ services:
     extends:
       file: docker-compose.base.yml
       service: dripdrop-pgadmin
-    environment:
-      VIRTUAL_HOST: db.dripdrop.icu
-      LETSENCRYPT_HOST: db.dripdrop.icu
     networks:
       - docker_net
       - dripdrop-net
