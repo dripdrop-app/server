@@ -25,6 +25,7 @@ services:
       service: dripdrop-postgres
     networks:
       - dripdrop-net
+      - backup-net
 
   dripdrop-pgadmin:
     extends:
@@ -46,6 +47,7 @@ volumes:
   redis_volume: {}
 
 networks:
+  backup-net:
   docker_net:
     external: true
   dripdrop-net:
