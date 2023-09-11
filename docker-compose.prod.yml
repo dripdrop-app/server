@@ -48,6 +48,7 @@ volumes:
 
 networks:
   backup-net:
+    external: true
   docker_net:
     external: true
   dripdrop-net:
