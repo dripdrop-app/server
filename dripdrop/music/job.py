@@ -133,7 +133,7 @@ async def download_job(session: DatabaseSession, job_id: str = Path(...)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.DOWNLOAD_NOT_FOUND,
         )
-    filename = music_job.download_filename.split("/")
+    filename = music_job.download_filename.split("/")[-1]
     async with http_client.create_client() as client:
         response = await client.get(music_job.download_url)
         return StreamingResponse(
