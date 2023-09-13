@@ -54,3 +54,4 @@ class DownloadMusicJobTestCase(MusicBaseTest):
         response = await self.client.get(DOWNLOAD_URL.format(job_id=job.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.headers.get("Content-Type"), "audio/mpeg")
+        self.assertIsNotNone(response.headers.get("Content-Disposition"))

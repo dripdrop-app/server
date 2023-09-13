@@ -1,6 +1,5 @@
 import asyncio
 import re
-import shutil
 import uuid
 from fastapi import (
     APIRouter,
@@ -14,7 +13,7 @@ from fastapi import (
     File,
     BackgroundTasks,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from pydantic import HttpUrl
 from sqlalchemy import select
 from typing import Optional
@@ -31,7 +30,7 @@ from dripdrop.music.responses import (
     MusicJobResponse,
     ErrorMessages,
 )
-from dripdrop.services import rq_client
+from dripdrop.services import http_client, rq_client
 from dripdrop.services.websocket_channel import (
     RedisChannels,
     WebsocketChannel,
@@ -121,9 +120,7 @@ async def delete_job(session: DatabaseSession, job_id: str = Path(...)):
 
 
 @api.get("/{job_id}/download", responses={status.HTTP_404_NOT_FOUND: {}})
-async def download_job(
-    session: DatabaseSession, background_tasks: BackgroundTasks, job_id: str = Path(...)
-):
+async def download_job(session: DatabaseSession, job_id: str = Path(...)):
     query = select(MusicJob).where(MusicJob.id == job_id)
     results = await session.scalars(query)
     music_job = results.first()
@@ -136,9 +133,11 @@ async def download_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.DOWNLOAD_NOT_FOUND,
         )
-    filename = music_job.download_filename.split("/")[-1]
-    file_path, directory_path = await utils.download_job(
-        url=music_job.download_url, filename=filename
-    )
-    background_tasks.add_task(shutil.rmtree, directory_path)
-    return FileResponse(file_path, filename=filename)
+    filename = music_job.download_filename.split("/")
+    async with http_client.create_client() as client:
+        response = await client.get(music_job.download_url)
+        return StreamingResponse(
+            content=response.aiter_bytes(chunk_size=500),
+            media_type=response.headers.get("content-type"),
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
