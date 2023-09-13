@@ -2,20 +2,22 @@ from fastapi import status
 
 from dripdrop.youtube.tests.test_base import YoutubeBaseTest
 
-VIDEO_URL = "/api/youtube/video"
+VIDEO_URL = "/api/youtube/video/{video_id}"
+VIDEO_QUEUE_URL = "/api/youtube/video/{video_id}/queue"
+VIDEO_LIKE_URL = "/api/youtube/video/{video_id}/like"
 
 
 class GetVideoTestCase(YoutubeBaseTest):
     async def test_get_video_when_not_logged_in(self):
         response = await self.client.get(
-            f"{VIDEO_URL}/1", params={"related_videos_length": 1}
+            VIDEO_URL.format(video_id=1), params={"related_videos_length": 1}
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_get_video_with_nonexistent_video(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
         response = await self.client.get(
-            f"{VIDEO_URL}/1", params={"related_videos_length": 1}
+            VIDEO_URL.format(video_id=1), params={"related_videos_length": 1}
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -45,7 +47,7 @@ class GetVideoTestCase(YoutubeBaseTest):
             description="2",
         )
         response = await self.client.get(
-            f"{VIDEO_URL}/1", params={"related_videos_length": 1}
+            VIDEO_URL.format(video_id=1), params={"related_videos_length": 1}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -96,7 +98,7 @@ class GetVideoTestCase(YoutubeBaseTest):
             description="2",
         )
         response = await self.client.get(
-            f"{VIDEO_URL}/1", params={"related_videos_length": 1}
+            VIDEO_URL.format(video_id=1), params={"related_videos_length": 1}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -142,12 +144,12 @@ class GetVideoTestCase(YoutubeBaseTest):
 
 class AddVideoLikeTestCase(YoutubeBaseTest):
     async def test_add_video_like_when_not_logged_in(self):
-        response = await self.client.put(f"{VIDEO_URL}/1/like")
+        response = await self.client.put(VIDEO_LIKE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_add_video_like_with_nonexistent_video(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
-        response = await self.client.put(f"{VIDEO_URL}/1/like")
+        response = await self.client.put(VIDEO_LIKE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     async def test_add_video_like(self):
@@ -166,7 +168,7 @@ class AddVideoLikeTestCase(YoutubeBaseTest):
             channel_id=channel.id,
             category_id=category.id,
         )
-        response = await self.client.put(f"{VIDEO_URL}/{video.id}/like")
+        response = await self.client.put(VIDEO_LIKE_URL.format(video_id=video.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(
             await self.get_youtube_video_like(email=user.email, video_id=video.id)
@@ -189,18 +191,18 @@ class AddVideoLikeTestCase(YoutubeBaseTest):
             category_id=category.id,
         )
         await self.create_youtube_video_like(email=user.email, video_id=video.id)
-        response = await self.client.put(f"{VIDEO_URL}/{video.id}/like")
+        response = await self.client.put(VIDEO_LIKE_URL.format(video_id=video.id))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class DeleteVideoLikeTestCase(YoutubeBaseTest):
     async def test_delete_video_like_when_not_logged_in(self):
-        response = await self.client.delete(f"{VIDEO_URL}/1/like")
+        response = await self.client.delete(VIDEO_LIKE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_delete_video_like_with_nonexistent_video_like(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
-        response = await self.client.delete(f"{VIDEO_URL}/1/like")
+        response = await self.client.delete(VIDEO_LIKE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     async def test_delete_video_like(self):
@@ -219,7 +221,7 @@ class DeleteVideoLikeTestCase(YoutubeBaseTest):
             category_id=category.id,
         )
         await self.create_youtube_video_like(email=user.email, video_id=video.id)
-        response = await self.client.delete(f"{VIDEO_URL}/{video.id}/like")
+        response = await self.client.delete(VIDEO_LIKE_URL.format(video_id=video.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNone(
             await self.get_youtube_video_like(email=user.email, video_id=video.id)
@@ -228,12 +230,12 @@ class DeleteVideoLikeTestCase(YoutubeBaseTest):
 
 class AddVideoQueueTestCase(YoutubeBaseTest):
     async def test_add_video_queue_when_not_logged_in(self):
-        response = await self.client.put(f"{VIDEO_URL}/1/queue")
+        response = await self.client.put(VIDEO_QUEUE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_add_video_queue_with_nonexistent_video(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
-        response = await self.client.put(f"{VIDEO_URL}/1/queue")
+        response = await self.client.put(VIDEO_QUEUE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     async def test_add_video_queue(self):
@@ -253,7 +255,7 @@ class AddVideoQueueTestCase(YoutubeBaseTest):
             category_id=category.id,
             description="1",
         )
-        response = await self.client.put(f"{VIDEO_URL}/1/queue")
+        response = await self.client.put(VIDEO_QUEUE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(
             await self.get_youtube_video_queue(email=user.email, video_id=video.id)
@@ -277,18 +279,18 @@ class AddVideoQueueTestCase(YoutubeBaseTest):
             description="1",
         )
         await self.create_youtube_video_queue(email=user.email, video_id=video.id)
-        response = await self.client.put(f"{VIDEO_URL}/{video.id}/queue")
+        response = await self.client.put(VIDEO_QUEUE_URL.format(video_id=video.id))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class DeleteVideoQueueTestCase(YoutubeBaseTest):
     async def test_delete_video_queue_when_not_logged_in(self):
-        response = await self.client.delete(f"{VIDEO_URL}/1/queue")
+        response = await self.client.delete(VIDEO_QUEUE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_delete_video_queue_with_nonexistent_video_queue(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
-        response = await self.client.delete(f"{VIDEO_URL}/1/queue")
+        response = await self.client.delete(VIDEO_QUEUE_URL.format(video_id=1))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     async def test_delete_video_queue(self):
@@ -308,7 +310,7 @@ class DeleteVideoQueueTestCase(YoutubeBaseTest):
             description="1",
         )
         await self.create_youtube_video_queue(email=user.email, video_id=video.id)
-        response = await self.client.delete(f"{VIDEO_URL}/{video.id}/queue")
+        response = await self.client.delete(VIDEO_QUEUE_URL.format(video_id=video.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNone(
             await self.get_youtube_video_queue(email=user.email, video_id=video.id)
