@@ -3,20 +3,20 @@ from fastapi import status
 from dripdrop.music.tests.test_base import MusicBaseTest
 
 CREATE_URL = "/api/music/job/create"
-DELETE_URL = "/api/music/job/{job_id}/delete"
+DOWNLOAD_URL = "/api/music/job/{job_id}/download"
 
 
-class DeleteMusicJobTestCase(MusicBaseTest):
-    async def test_deleting_job_when_not_logged_in(self):
-        response = await self.client.delete(DELETE_URL.format(job_id=1))
+class DownloadMusicJobTestCase(MusicBaseTest):
+    async def test_downloading_job_when_not_logged_in(self):
+        response = await self.client.get(DOWNLOAD_URL.format(job_id=1))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    async def test_deleting_nonexistent_job(self):
+    async def test_downloading_nonexistent_job(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
-        response = await self.client.delete(DELETE_URL.format(job_id=1))
+        response = await self.client.get(DOWNLOAD_URL.format(job_id=1))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    async def test_deleting_failed_job(self):
+    async def test_downloading_failed_job(self):
         user = await self.create_and_login_user(
             email="user@gmail.com", password="password"
         )
@@ -28,10 +28,10 @@ class DeleteMusicJobTestCase(MusicBaseTest):
             album="album",
             failed=True,
         )
-        response = await self.client.delete(DELETE_URL.format(job_id=job.id))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = await self.client.get(DOWNLOAD_URL.format(job_id=job.id))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    async def test_deleting_job(self):
+    async def test_downloading_job(self):
         user = await self.create_and_login_user(
             email="user@gmail.com", password="password"
         )
@@ -51,13 +51,6 @@ class DeleteMusicJobTestCase(MusicBaseTest):
         json = response.json()
         job = await self.get_music_job(email=user.email, music_job_id=json.get("id"))
         self.assertTrue(job.completed)
-        response = await self.client.delete(DELETE_URL.format(job_id=job.id))
+        response = await self.client.get(DOWNLOAD_URL.format(job_id=job.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = await self.http_client.get(job.filename_url)
-        self.assertIn(
-            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
-        )
-        response = await self.http_client.get(job.download_url)
-        self.assertIn(
-            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
-        )
+        self.assertEqual(response.headers.get("Content-Type"), "audio/mpeg")

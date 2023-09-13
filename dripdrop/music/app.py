@@ -4,7 +4,7 @@ from pydantic import HttpUrl
 
 from dripdrop.authentication.dependencies import get_authenticated_user
 from dripdrop.logger import logger
-from dripdrop.music import jobs, utils
+from dripdrop.music import job, jobs, utils
 from dripdrop.music.responses import (
     GroupingResponse,
     ResolvedArtworkUrlResponse,
@@ -20,6 +20,7 @@ app = FastAPI(
     responses={status.HTTP_401_UNAUTHORIZED: {}},
 )
 app.include_router(router=jobs.api)
+app.include_router(router=job.api)
 
 
 @app.get(

@@ -2,7 +2,7 @@ from fastapi import status
 
 from dripdrop.music.tests.test_base import MusicBaseTest
 
-CREATE_URL = "/api/music/jobs/create"
+CREATE_URL = "/api/music/job/create"
 
 
 class CreateMusicJobTestCase(MusicBaseTest):

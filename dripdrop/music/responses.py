@@ -57,6 +57,7 @@ class MusicJobsResponse(ResponseBaseModel):
 
 class ErrorMessages:
     JOB_NOT_FOUND = "Job not found"
+    DOWNLOAD_NOT_FOUND = "Download not found"
     GROUPING_ERROR = "Unable to get grouping"
     ARTWORK_ERROR = "Unable to get artwork"
     PAGE_NOT_FOUND = "Page not found"

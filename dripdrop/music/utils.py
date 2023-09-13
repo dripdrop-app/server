@@ -153,3 +153,20 @@ async def read_tags(file: bytes, filename: str):
         await asyncio.to_thread(shutil.rmtree, directory_path)
 
     return tags
+
+
+async def download_job(url: str, filename: str):
+    DOWNLOADS_DIRECTORY = "downloads"
+
+    downloads_directory_path = await temp_files.create_new_directory(
+        directory=DOWNLOADS_DIRECTORY, raise_on_exists=False
+    )
+    directory_id = str(uuid.uuid4())
+    directory_path = os.path.join(downloads_directory_path, directory_id)
+    await asyncio.to_thread(os.mkdir, directory_path)
+    file_path = os.path.join(directory_path, filename)
+    with open(file_path, "wb") as f:
+        async with http_client.create_client() as client:
+            response = await client.get(url)
+            f.write(response.content)
+    return file_path, directory_path
