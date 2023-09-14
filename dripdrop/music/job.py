@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import HttpUrl
 from sqlalchemy import select
 from typing import Optional
+from urllib.parse import quote
 
 from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
@@ -139,5 +140,7 @@ async def download_job(session: DatabaseSession, job_id: str = Path(...)):
         return StreamingResponse(
             content=response.aiter_bytes(chunk_size=500),
             media_type=response.headers.get("content-type"),
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
+            },
         )
