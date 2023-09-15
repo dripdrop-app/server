@@ -108,7 +108,7 @@ async def run_music_job(music_job_id: str, session: AsyncSession):
             artwork_info=artwork_info,
         )
         new_filename = (
-            sanitize_filename(f"{music_job.title} {music_job.artist}") + ".mp3"
+            sanitize_filename(f"{music_job.title} {music_job.artist}").lower() + ".mp3"
         )
         new_filename = f"{s3.MUSIC_FOLDER}/{music_job.id}/{new_filename}"
         with open(filename, "rb") as file:
