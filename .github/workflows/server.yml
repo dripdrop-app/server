@@ -33,7 +33,7 @@ jobs:
           sudo apt-get -y install rsync
       - name: Backup current repo on VM
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "if [ -d $ROOT_FOLDER ]; then mkdir -p $ROOT_FOLDER; fi; cd $ROOT_FOLDER; rm -rf server_old; if [ -d server ]; then cp -r server server_old; fi"
+          ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "if [ ! -d $ROOT_FOLDER ]; then mkdir -p $ROOT_FOLDER; fi; cd $ROOT_FOLDER; rm -rf server_old; if [ -d server ]; then cp -r server server_old; fi"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
