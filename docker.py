@@ -48,7 +48,7 @@ class DockerInterface:
             env=self._load_environment_variables(),
         ).check_returncode()
 
-    def _build_services(self):
+    def _build_services(self, no_cache=False):
         subprocess.run(
             [
                 "docker",
@@ -61,18 +61,33 @@ class DockerInterface:
                 ".",
             ],
         ).check_returncode()
-        subprocess.run(
-            [
-                "docker",
-                "compose",
-                "-p",
-                self._project,
-                "-f",
-                self._compose_file,
-                "build",
-            ],
-            env=self._load_environment_variables(),
-        ).check_returncode()
+        if no_cache:
+            subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "--no-cache",
+                    "-p",
+                    self._project,
+                    "-f",
+                    self._compose_file,
+                    "build",
+                ],
+                env=self._load_environment_variables(),
+            ).check_returncode()
+        else:
+            subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "-p",
+                    self._project,
+                    "-f",
+                    self._compose_file,
+                    "build",
+                ],
+                env=self._load_environment_variables(),
+            ).check_returncode()
 
     def _deploy_services(self):
         subprocess.run(
