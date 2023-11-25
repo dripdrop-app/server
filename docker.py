@@ -112,7 +112,7 @@ class DockerInterface:
         self._deploy_services()
 
     def test(self):
-        self._build_services()
+        self._build_services(no_cache=True)
         subprocess.run(
             [
                 "docker",
