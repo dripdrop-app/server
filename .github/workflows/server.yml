@@ -13,7 +13,7 @@ jobs:
           echo "${{ secrets.ENV }}" >> .env
       - name: Run tests
         run: |
-          docker network create docker_net && docker network create backup-net && python3 docker.py --env production --action test
+          docker network create docker_net && docker network create backup-net && HOME=. python3 docker.py --env production --action test
   deploy:
     if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
