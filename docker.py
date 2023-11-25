@@ -66,12 +66,12 @@ class DockerInterface:
                 [
                     "docker",
                     "compose",
-                    "--no-cache",
                     "-p",
                     self._project,
                     "-f",
                     self._compose_file,
                     "build",
+                    "--no-cache",
                 ],
                 env=self._load_environment_variables(),
             ).check_returncode()
