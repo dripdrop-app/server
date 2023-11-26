@@ -7,7 +7,7 @@ services:
     expose:
       - 5000
     networks:
-      - docker_net
+      - docker-net
       - dripdrop-net
 
   dripdrop-worker:
@@ -32,7 +32,7 @@ services:
       file: docker-compose.base.yml
       service: dripdrop-pgadmin
     networks:
-      - docker_net
+      - docker-net
       - dripdrop-net
 
   dripdrop-redis:
@@ -49,6 +49,6 @@ volumes:
 networks:
   backup-net:
     external: true
-  docker_net:
+  docker-net:
     external: true
   dripdrop-net:
