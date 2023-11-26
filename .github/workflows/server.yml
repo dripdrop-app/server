@@ -38,7 +38,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          ROOT_FOLDER: ${{ env.ROOT_FOLDER }}
+          ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
       - name: Sync repo to VM
         run: |
           rsync --verbose --recursive --delete -e "ssh -o StrictHostKeyChecking=no -i ./ssh_key -p $SSH_PORT" $(pwd)/ $SSH_USER@$SSH_HOST:$ROOT_FOLDER/server
@@ -46,7 +46,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          ROOT_FOLDER: ${{ env.ROOT_FOLDER }}
+          ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
       - name: Deploy over SSH
         run: |
           ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd $ROOT_FOLDER/server && python3 docker.py --env production --action deploy"
@@ -54,7 +54,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          ROOT_FOLDER: ${{ env.ROOT_FOLDER }}
+          ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
   rollback:
     if: ${{ failure() && needs.deploy.result == 'failure' }}
     runs-on: ubuntu-latest
@@ -70,7 +70,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          ROOT_FOLDER: ${{ env.ROOT_FOLDER }}
+          ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
       - name: Deploy rollback over SSH
         run: |
           ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd $ROOT_FOLDER/server && python3 docker.py --env production --action deploy"
@@ -78,4 +78,4 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          ROOT_FOLDER: ${{ env.ROOT_FOLDER }}
+          ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
