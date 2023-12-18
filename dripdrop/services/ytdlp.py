@@ -62,7 +62,7 @@ async def extract_video_info(url: str):
     async with _run("--no-playlist", "--dump-json", "--skip-download", url) as process:
         output = await process.stdout.read()
         error = await process.stderr.read()
-        if error:
+        if process.returncode != 0:
             raise Exception(error.decode())
         return await asyncio.to_thread(orjson.loads, output)
 

@@ -19,6 +19,6 @@ async def convert_audio_to_mp3(audio_file: str):
     )
     error = await process.stderr.read()
     await process.wait()
-    if error:
+    if process.returncode != 0:
         raise Exception(error.decode())
     return output_filename
