@@ -2,7 +2,6 @@ from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from dripdrop.authentication.models import User
 from dripdrop.base.models import Base
 
 
@@ -12,7 +11,7 @@ class MusicJob(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     user_email: Mapped[str] = mapped_column(
         ForeignKey(
-            User.email,
+            "users.email",
             onupdate="CASCADE",
             ondelete="CASCADE",
             name="music_jobs_user_email_fkey",
