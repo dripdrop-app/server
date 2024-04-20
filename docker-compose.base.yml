@@ -78,28 +78,6 @@ services:
       - *logging
       - *restart_policy
 
-  dripdrop-pgadmin:
-    image: dpage/pgadmin4
-    container_name: dripdrop-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: dripdrop@dripdrop.icu
-      PGADMIN_DEFAULT_PASSWORD: ${DATABASE_PASSWORD}
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "-O",
-          "-",
-          "http://localhost/misc/ping"
-        ]
-      interval: 10s
-    depends_on:
-      <<: *depends-database
-    <<:
-      - *logging
-      - *restart_policy
-
   dripdrop-redis:
     image: redis
     container_name: dripdrop-redis

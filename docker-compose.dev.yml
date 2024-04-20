@@ -27,13 +27,6 @@ services:
     ports:
       - 5432:5432
 
-  dripdrop-pgadmin:
-    extends:
-      file: docker-compose.base.yml
-      service: dripdrop-pgadmin
-    ports:
-      - 5050:80
-
   dripdrop-redis:
     extends:
       file: docker-compose.base.yml

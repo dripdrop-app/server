@@ -51,19 +51,30 @@ async def download_audio_from_video(download_path: str, url: str):
         "--extract-audio",
         *["--audio-format", "mp3"],
         *["--audio-quality", "0"],
+        *["--fixup", "never"],
         *["--output", download_path],
         url,
     ]
     async with _run(*args) as process:
-        await process.wait()
+        return_code = await process.wait()
+        if return_code != 0:
+            output = f'Error downloading audio from video ({url})'
+            if process.stderr:
+                output = (await process.stderr.read()).decode()
+            raise Exception(output)
 
 
 async def extract_video_info(url: str):
     async with _run("--no-playlist", "--dump-json", "--skip-download", url) as process:
-        output = await process.stdout.read()
-        error = await process.stderr.read()
-        if process.returncode != 0:
-            raise Exception(error.decode())
+        return_code = await process.wait()
+        output = ''
+        error = 'Error extracting video info'
+        if process.stdout:
+            output = (await process.stdout.read()).decode()
+        if process.stderr:
+            error = (await process.stderr.read()).decode()
+        if return_code != 0:
+            raise Exception(error)
         return await asyncio.to_thread(orjson.loads, output)
 
 

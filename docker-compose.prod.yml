@@ -27,14 +27,6 @@ services:
       - dripdrop-net
       - backup-net
 
-  dripdrop-pgadmin:
-    extends:
-      file: docker-compose.base.yml
-      service: dripdrop-pgadmin
-    networks:
-      - docker-net
-      - dripdrop-net
-
   dripdrop-redis:
     extends:
       file: docker-compose.base.yml
