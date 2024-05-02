@@ -1,6 +1,6 @@
 name: Server
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
     test:
@@ -13,7 +13,7 @@ jobs:
                   echo "${{ secrets.ENV }}" >> .env
             - name: Run tests
               run: |
-                  docker network create docker-net && docker network create backup-net && sudo python3 docker.py --env production --action test
+                  docker network create docker-net && sudo python3 docker.py --env production --action test
     deploy:
         if: ${{ github.ref_name == 'main' }}
         runs-on: ubuntu-latest
