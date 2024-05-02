@@ -36,7 +36,7 @@ services:
           "-f",
           "http://localhost:5000/healthcheck"
         ]
-      interval: 10s
+      interval: 30s
     environment:
       ENV: ${ENV}
     labels:
@@ -73,7 +73,7 @@ services:
         target: /var/lib/postgresql/data
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${DATABASE}" ]
-      interval: 10s
+      interval: 30s
     <<:
       - *logging
       - *restart_policy
@@ -87,7 +87,7 @@ services:
         target: /data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
+      interval: 30s
     <<:
       - *logging
       - *restart_policy

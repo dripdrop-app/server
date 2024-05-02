@@ -30,7 +30,7 @@ async def check_and_update_ytdlp():
 async def _run(*args):
     process = None
     try:
-        await check_and_update_ytdlp()
+        # await check_and_update_ytdlp()
         process = await asyncio.subprocess.create_subprocess_exec(
             "yt-dlp",
             *args,
