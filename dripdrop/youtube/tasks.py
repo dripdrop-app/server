@@ -1,7 +1,6 @@
 import asyncio
 import traceback
 from datetime import datetime, timedelta
-from dateutil.tz import tzlocal
 from rq.job import Retry
 from sqlalchemy import select, delete, false, and_
 
@@ -140,25 +139,6 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
     await session.commit()
 
 
-def resolve_video_upload_time(video_upload_date: datetime):
-    server_current_time = datetime.now(tz=tzlocal())
-    current_time = get_current_time()
-
-    if current_time.day != video_upload_date.day:
-        video_upload_date = video_upload_date.replace(
-            hour=14,
-            minute=server_current_time.minute,
-            second=server_current_time.second,
-        )
-    else:
-        video_upload_date = video_upload_date.replace(
-            hour=current_time.hour,
-            minute=current_time.minute,
-            second=current_time.second,
-        )
-    return video_upload_date
-
-
 @rq_client.worker_task
 async def add_channel_videos(
     channel_id: str = ...,
@@ -211,11 +191,6 @@ async def add_channel_videos(
                 url=f"https://youtube.com/watch?v={video_id}"
             )
 
-            # video_upload_date = resolve_video_upload_time(
-            #     datetime.strptime(
-            #         extracted_video_info["upload_date"], "%Y%m%d"
-            #     ).replace(tzinfo=settings.timezone)
-            # )
             video_thumbnail = extracted_video_info["thumbnail"]
             video_description = extracted_video_info["description"]
             video_category_name = extracted_video_info["categories"][0]
