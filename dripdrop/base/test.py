@@ -1,5 +1,6 @@
 import asyncio
 import shutil
+import traceback
 from datetime import datetime
 from fastapi import status
 from httpx import AsyncClient
@@ -52,9 +53,11 @@ class BaseTest(IsolatedAsyncioTestCase):
         try:
             async for keys in s3.list_objects():
                 for key in keys:
+                    if key.startswith("assets/"):
+                        continue
                     await s3.delete_file(filename=key)
         except Exception:
-            pass
+            print(traceback.format_exc())
 
     async def create_user(self, email: str, password: str, admin=False, verified=True):
         user = User(

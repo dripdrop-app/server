@@ -20,12 +20,10 @@ class MusicBaseTest(BaseTest):
         await self.clean_test_s3_folders()
 
         self.test_image_url = (
-            "https://usc1.contabostorage.com/19b52af42e554105863370e19f11eae4"
-            + ":assets/dripdrop.png"
+            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/dripdrop.png"
         )
         self.test_audio_file_url = (
-            "https://usc1.contabostorage.com/19b52af42e554105863370e19f11eae4"
-            + ":assets/07 tun suh.mp3"
+            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/07+tun+suh.mp3"
         )
         self.test_video_url = "https://vimeo.com/56282283"
 
@@ -47,16 +45,6 @@ class MusicBaseTest(BaseTest):
     async def asyncTearDown(self):
         await super().asyncTearDown()
         await self.clean_test_s3_folders()
-
-    async def clean_test_s3_folders(self):
-        try:
-            async for keys in s3.list_objects():
-                for key in keys:
-                    if key.startswith("test"):
-                        continue
-                    await s3.delete_file(filename=key)
-        except Exception:
-            pass
 
     async def create_music_job(
         self,

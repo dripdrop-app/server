@@ -13,7 +13,7 @@ MUSIC_FOLDER = settings.aws_s3_music_folder
 
 
 def resolve_url(filename: str = ...):
-    return f"{AWS_ENDPOINT_URL}/19b52af42e554105863370e19f11eae4:{BUCKET}/{filename}"
+    return f"{AWS_ENDPOINT_URL}/{BUCKET}/{filename}"
 
 
 _client = boto3.client(
@@ -52,7 +52,7 @@ async def list_objects():
         if continuation_token:
             params["ContinuationToken"] = continuation_token
         response = await asyncio.to_thread(_client.list_objects_v2, **params)
-        objects = map(lambda object: object["Key"], response["Contents"])
+        objects = map(lambda object: object["Key"], response.get("Contents", []))
         yield objects
         if not response.get("IsTruncated"):
             break
