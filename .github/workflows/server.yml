@@ -11,6 +11,10 @@ jobs:
             - name: Export environment
               run: |
                   echo "${{ secrets.ENV }}" >> .env
+            - name: Install dotenv
+              run: |
+                  sudo apt-get -y update
+                  sudo apt-get -y install python3-dotenv
             - name: Run tests
               run: |
                   docker network create docker-net && sudo python3 docker.py --env production --action test
@@ -27,7 +31,7 @@ jobs:
             - name: Export ssh key
               run: |
                   echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
-            - name: Install rsync
+            - name: Install rsync and dotenv
               run: |
                   sudo apt-get -y update
                   sudo apt-get -y install rsync
