@@ -13,16 +13,19 @@ TEST = "test"
 
 
 class DockerInterface:
-    def __init__(self, compose_file: str = ..., project: str = "dripdrop"):
+    def __init__(
+        self, compose_file: str = ..., env: str = ..., project: str = "dripdrop"
+    ):
         self._compose_file = compose_file
-        self._env = dotenv.dotenv_values()
+        self._env = env
         self._project = project
         self._image_tag = f"{self._project}/image"
-        self._env_vars = None
+        self._env_vars = dotenv.dotenv_values()
+        self._env_vars.update({"ENV": self._env, "IMAGE": self._image_tag})
 
     def remove_services(self):
         subprocess.run(
-            ["docker", "stack", "rm", self._project], env=self._env
+            ["docker", "stack", "rm", self._project], env=self._env_vars
         ).check_returncode()
 
     def _build_services(self):
@@ -42,7 +45,7 @@ class DockerInterface:
     def _deploy_services(self):
         subprocess.run(
             ["docker", "stack", "deploy", "-c", self._compose_file, self._project],
-            env=self._env,
+            env=self._env_vars,
         ).check_returncode()
 
     def deploy(self):
@@ -71,7 +74,7 @@ class DockerInterface:
                 "unittest",
                 "discover",
             ],
-            env=self._env,
+            env=self._env_vars,
         ).check_returncode()
 
 
