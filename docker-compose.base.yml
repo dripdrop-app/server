@@ -14,6 +14,7 @@ version: '3'
 services:
   dripdrop-server:
     image: dripdrop/image
+    container_name: dripdrop-server
     <<: *deploy
     command: [ "./scripts/server.sh" ]
     healthcheck:
@@ -38,6 +39,7 @@ services:
 
   dripdrop-postgres:
     image: postgres:14
+    container_name: dripdrop-postgres
     <<: *deploy
     environment:
       POSTGRES_USER: ${DATABASE_USER}
@@ -54,6 +56,7 @@ services:
 
   dripdrop-redis:
     image: redis
+    container_name: dripdrop-redis
     <<: *deploy
     volumes:
       - type: volume
