@@ -27,6 +27,7 @@ services:
       ENV: ${ENV}
     networks:
       - docker-net-overlay
+      - dripdrop-net
 
   dripdrop-worker:
     image: dripdrop/image
@@ -37,6 +38,8 @@ services:
     environment:
       ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
+    networks:
+      - dripdrop-net
 
   dripdrop-postgres:
     image: postgres:14
@@ -53,6 +56,8 @@ services:
       - type: volume
         source: postgres_volume
         target: /var/lib/postgresql/data
+    networks:
+      - dripdrop-net
 
   dripdrop-redis:
     image: redis
@@ -64,6 +69,8 @@ services:
       - type: volume
         source: redis_volume
         target: /data
+    networks:
+      - dripdrop-net
 
 volumes:
   postgres_volume: {}
