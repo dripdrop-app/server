@@ -1,4 +1,6 @@
 import argparse
+import dotenv
+import os
 import subprocess
 
 
@@ -22,18 +24,11 @@ class DockerInterface:
         self._env = env
         self._project = project
         self._image_tag = f"{self._project}/image"
-        self._env_vars = None
-
-    def _load_environment_variables(self):
-        if self._env_vars is None:
-            self._env_vars = {"ENV": self._env, "IMAGE": self._image_tag}
-            lines = []
-            with open(".env") as f:
-                lines = f.readlines()
-            for line in lines:
-                variable, value = line.split("=")
-                self._env_vars[variable] = value.strip()
-        return self._env_vars
+        self._env_vars = {
+            **dotenv.dotenv_values(".env"),
+            "ENV": self._env,
+            "IMAGE": self._image_tag,
+        }
 
     def remove_services(self):
         subprocess.run(
@@ -46,7 +41,7 @@ class DockerInterface:
                 self._compose_file,
                 "down",
             ],
-            env=self._load_environment_variables(),
+            env=self._env_vars,
         ).check_returncode()
 
     def _build_services(self):
@@ -72,24 +67,37 @@ class DockerInterface:
                 self._compose_file,
                 "build",
             ],
-            env=self._load_environment_variables(),
+            env=self._env_vars,
         ).check_returncode()
 
     def _deploy_services(self):
-        subprocess.run(
-            [
-                "docker",
-                "compose",
-                "-p",
-                self._project,
-                "-f",
-                self._compose_file,
-                "up",
-                "--remove-orphans",
-                "--wait",
-            ],
-            env=self._load_environment_variables(),
-        ).check_returncode()
+        if self._env == PRODUCTION:
+            subprocess.run(
+                [
+                    "docker",
+                    "stack",
+                    "deploy",
+                    "-c",
+                    self._compose_file,
+                    self._project,
+                ],
+                env=self._env_vars,
+            ).check_returncode()
+        else:
+            subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "-p",
+                    self._project,
+                    "-f",
+                    self._compose_file,
+                    "up",
+                    "--remove-orphans",
+                    "--wait",
+                ],
+                env=self._env_vars,
+            ).check_returncode()
 
     def deploy(self):
         if self._env == DEVELOPMENT:
@@ -117,7 +125,7 @@ class DockerInterface:
                 "unittest",
                 "discover",
             ],
-            env=self._load_environment_variables(),
+            env=self._env_vars,
         ).check_returncode()
         self.remove_services()
 
@@ -136,9 +144,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     compose_file = (
-        "docker-compose.dev.yml"
-        if args.env == DEVELOPMENT
-        else "docker-compose.prod.yml"
+        "docker-compose.service.yml"
+        if args.action == DEPLOY and args.env == PRODUCTION
+        else "docker-compose.yml"
     )
 
     docker_interface = DockerInterface(
