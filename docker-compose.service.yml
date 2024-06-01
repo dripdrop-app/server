@@ -1,0 +1,81 @@
+x-deploy: &deploy
+  placement:
+    constraints: [ node.hostname == minipc ]
+  endpoint_mode: dnsrr
+  restart_policy:
+    condition: on-failure
+    delay: 10s
+    max_attempts: 5
+    window: 60s
+
+version: '3'
+services:
+  dripdrop-server:
+    image: dripdrop/image
+    deploy: *deploy
+    command: [ "./scripts/server.sh" ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:5000/healthcheck"
+        ]
+      interval: 30s
+    environment:
+      ENV: ${ENV}
+    networks:
+      - docker-net-overlay
+
+  dripdrop-worker:
+    image: dripdrop/image
+    deploy: 
+      replicas: 2
+      <<: *deploy
+    command: [ "./scripts/worker.sh" ]
+    environment:
+      ENV: ${ENV}
+      REDIS_URL: ${REDIS_URL}
+
+  dripdrop-postgres:
+    image: postgres:14
+    deploy: *deploy
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${DATABASE}" ]
+      interval: 30s
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - type: volume
+        source: postgres_volume
+        target: /var/lib/postgresql/data
+
+  dripdrop-redis:
+    image: redis
+    deploy: *deploy
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+    volumes:
+      - type: volume
+        source: redis_volume
+        target: /data
+
+volumes:
+  postgres_volume: {}
+  redis_volume: {}
+
+networks:
+  docker-net-overlay:
+    external: true
+  dripdrop-net:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.105.0.0/24
+    driver_opts:
+      com.docker.network.driver.mtu: "1280"
