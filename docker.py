@@ -71,33 +71,20 @@ class DockerInterface:
         ).check_returncode()
 
     def _deploy_services(self):
-        if self._env == PRODUCTION:
-            subprocess.run(
-                [
-                    "docker",
-                    "stack",
-                    "deploy",
-                    "-c",
-                    self._compose_file,
-                    self._project,
-                ],
-                env=self._env_vars,
-            ).check_returncode()
-        else:
-            subprocess.run(
-                [
-                    "docker",
-                    "compose",
-                    "-p",
-                    self._project,
-                    "-f",
-                    self._compose_file,
-                    "up",
-                    "--remove-orphans",
-                    "--wait",
-                ],
-                env=self._env_vars,
-            ).check_returncode()
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-p",
+                self._project,
+                "-f",
+                self._compose_file,
+                "up",
+                "--remove-orphans",
+                "--wait",
+            ],
+            env=self._env_vars,
+        ).check_returncode()
 
     def deploy(self):
         if self._env == DEVELOPMENT:
@@ -144,7 +131,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     compose_file = (
-        "docker-compose.service.yml"
+        "docker-compose.prod.yml"
         if args.action == DEPLOY and args.env == PRODUCTION
         else "docker-compose.yml"
     )

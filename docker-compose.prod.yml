@@ -1,18 +1,36 @@
-x-deploy: &deploy
-  placement:
-    constraints: [ node.hostname == minipc ]
-  endpoint_mode: dnsrr
-  restart_policy:
-    condition: on-failure
-    delay: 10s
-    max_attempts: 5
-    window: 60s
+x-restart_policy: &restart_policy
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: 'local'
+    options:
+      max-size: '10m'
+      max-file: '5'
+
+x-network: &network
+  networks:
+    - docker-net
+
+x-depends-database: &depends-database
+  dripdrop-postgres:
+    condition: service_healthy
+
+x-depends-redis: &depends-redis
+  dripdrop-redis:
+    condition: service_healthy
+
+x-depends-all: &depends-all
+  depends_on:
+    <<:
+      - *depends-database
+      - *depends-redis
 
 version: '3'
 services:
   dripdrop-server:
     image: dripdrop/image
-    deploy: *deploy
+    container_name: dripdrop-server
     command: [ "./scripts/server.sh" ]
     healthcheck:
       test:
@@ -25,25 +43,27 @@ services:
       interval: 30s
     environment:
       ENV: ${ENV}
-    networks:
-      - docker-net-overlay
-      - dripdrop-net
+    <<:
+      - *depends-all
+      - *logging
+      - *restart_policy
+      - *network
 
   dripdrop-worker:
     image: dripdrop/image
-    deploy: 
-      replicas: 2
-      <<: *deploy
     command: [ "./scripts/worker.sh" ]
     environment:
       ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
-    networks:
-      - dripdrop-net
+    <<:
+      - *depends-all
+      - *logging
+      - *restart_policy
+      - *network
 
   dripdrop-postgres:
     image: postgres:14
-    deploy: *deploy
+    container_name: dripdrop-postgres
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${DATABASE}" ]
       interval: 30s
@@ -56,12 +76,14 @@ services:
       - type: volume
         source: postgres_volume
         target: /var/lib/postgresql/data
-    networks:
-      - dripdrop-net
+    <<:
+      - *logging
+      - *restart_policy
+      - *network
 
   dripdrop-redis:
     image: redis
-    deploy: *deploy
+    container_name: dripdrop-redis
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
@@ -69,20 +91,16 @@ services:
       - type: volume
         source: redis_volume
         target: /data
-    networks:
-      - dripdrop-net
+    <<:
+      - *logging
+      - *restart_policy
+      - *network
+
+networks:
+  docker-net:
+    external: true
 
 volumes:
   postgres_volume: {}
   redis_volume: {}
-
-networks:
-  docker-net-overlay:
-    external: true
-  dripdrop-net:
-    driver: overlay
-    ipam:
-      config:
-        - subnet: 172.105.0.0/24
-    driver_opts:
-      com.docker.network.driver.mtu: "1280"
+  temp_volume: {}
