@@ -1,7 +1,8 @@
 import asyncio
 import math
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
+from sqlalchemy.orm import joinedload
 
 from dripdrop.authentication.dependencies import (
     get_authenticated_user,
@@ -37,25 +38,17 @@ async def get_youtube_subscriptions(
     per_page: int = Path(..., le=50),
 ):
     query = (
-        select(
-            YoutubeSubscription.channel_id,
-            YoutubeChannel.title.label("channel_title"),
-            YoutubeChannel.thumbnail.label("channel_thumbnail"),
-        )
-        .join(
-            YoutubeChannel,
-            and_(
-                YoutubeSubscription.channel_id == YoutubeChannel.id,
-                YoutubeSubscription.email == user.email,
-            ),
-        )
+        select(YoutubeSubscription)
+        .join(YoutubeChannel)
         .where(
+            YoutubeSubscription.email == user.email,
             YoutubeSubscription.deleted_at.is_(None),
         )
         .order_by(YoutubeChannel.title)
+        .options(joinedload(YoutubeSubscription.channel))
     )
     results = await session.execute(query.offset((page - 1) * per_page).limit(per_page))
-    subscriptions = results.mappings().all()
+    results = results.scalars().all()
     count = await session.scalar(
         select(func.count(query.subquery().columns.channel_id))
     )
@@ -64,6 +57,14 @@ async def get_youtube_subscriptions(
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
         )
+    subscriptions = [
+        YoutubeSubscriptionResponse(
+            channel_id=subscription.channel_id,
+            channel_title=subscription.channel.title,
+            channel_thumbnail=subscription.channel.thumbnail,
+        )
+        for subscription in results
+    ]
     return SubscriptionsResponse(subscriptions=subscriptions, total_pages=total_pages)
 
 

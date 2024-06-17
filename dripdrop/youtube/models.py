@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dripdrop.authentication.models import User
 from dripdrop.base.models import Base
@@ -19,6 +19,9 @@ class YoutubeUserChannel(Base):
         ),
         unique=True,
     )
+    user: Mapped[User] = relationship(
+        User, back_populates="youtube_channels", uselist=True
+    )
 
 
 class YoutubeChannel(Base):
@@ -31,6 +34,12 @@ class YoutubeChannel(Base):
         TIMESTAMP(timezone=True), nullable=False
     )
     updating: Mapped[bool] = mapped_column(nullable=False, default=False)
+    subscriptions: Mapped[list["YoutubeSubscription"]] = relationship(
+        "YoutubeSubscription", back_populates="channel"
+    )
+    videos: Mapped[list["YoutubeVideo"]] = relationship(
+        "YoutubeVideo", back_populates="channel"
+    )
 
 
 class YoutubeSubscription(Base):
@@ -60,6 +69,10 @@ class YoutubeSubscription(Base):
     deleted_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    user: Mapped[User] = relationship(User, back_populates="youtube_subscriptions")
+    channel: Mapped[YoutubeChannel] = relationship(
+        YoutubeChannel, back_populates="subscriptions"
+    )
 
 
 class YoutubeNewSubscription(Base):
@@ -83,6 +96,9 @@ class YoutubeVideoCategory(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
+    videos: Mapped[list["YoutubeVideo"]] = relationship(
+        "YoutubeVideo", back_populates="category"
+    )
 
 
 class YoutubeVideo(Base):
@@ -113,6 +129,21 @@ class YoutubeVideo(Base):
     published_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
+    category: Mapped[YoutubeVideoCategory] = relationship(
+        YoutubeVideoCategory, back_populates="videos"
+    )
+    channel: Mapped[YoutubeChannel] = relationship(
+        YoutubeChannel, back_populates="videos"
+    )
+    likes: Mapped[list["YoutubeVideoLike"]] = relationship(
+        "YoutubeVideoLike", back_populates="video"
+    )
+    queues: Mapped[list["YoutubeVideoQueue"]] = relationship(
+        "YoutubeVideoQueue", back_populates="video"
+    )
+    watches: Mapped[list["YoutubeVideoWatch"]] = relationship(
+        "YoutubeVideoWatch", back_populates="video"
+    )
 
 
 class YoutubeVideoLike(Base):
@@ -138,6 +169,8 @@ class YoutubeVideoLike(Base):
         primary_key=True,
         nullable=False,
     )
+    user: Mapped[User] = relationship(User, back_populates="youtube_video_likes")
+    video: Mapped[YoutubeVideo] = relationship(YoutubeVideo, back_populates="likes")
 
 
 class YoutubeVideoQueue(Base):
@@ -163,6 +196,8 @@ class YoutubeVideoQueue(Base):
         primary_key=True,
         nullable=False,
     )
+    user: Mapped[User] = relationship(User, back_populates="youtube_video_queues")
+    video: Mapped[YoutubeVideo] = relationship(YoutubeVideo, back_populates="queues")
 
 
 class YoutubeVideoWatch(Base):
@@ -188,3 +223,5 @@ class YoutubeVideoWatch(Base):
         primary_key=True,
         nullable=False,
     )
+    user: Mapped[User] = relationship(User, back_populates="youtube_video_watches")
+    video: Mapped[YoutubeVideo] = relationship(YoutubeVideo, back_populates="watches")

@@ -105,8 +105,12 @@ async def create_job(
     "/{job_id}/delete",
     responses={status.HTTP_404_NOT_FOUND: {"description": ErrorMessages.JOB_NOT_FOUND}},
 )
-async def delete_job(session: DatabaseSession, job_id: str = Path(...)):
-    query = select(MusicJob).where(MusicJob.id == job_id)
+async def delete_job(
+    user: AuthenticatedUser, session: DatabaseSession, job_id: str = Path(...)
+):
+    query = select(MusicJob).where(
+        MusicJob.id == job_id, MusicJob.user_email == user.email
+    )
     results = await session.scalars(query)
     music_job = results.first()
     if not music_job:

@@ -1,6 +1,17 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 
 from dripdrop.base.models import Base
+
+if TYPE_CHECKING:
+    from dripdrop.music.models import MusicJob
+    from dripdrop.youtube.models import (
+        YoutubeUserChannel,
+        YoutubeSubscription,
+        YoutubeVideoLike,
+        YoutubeVideoQueue,
+        YoutubeVideoWatch,
+    )
 
 
 class User(Base):
@@ -10,3 +21,19 @@ class User(Base):
     password: Mapped[str] = mapped_column(nullable=False)
     admin: Mapped[bool] = mapped_column(nullable=False, default=False)
     verified: Mapped[bool] = mapped_column(nullable=False, default=False)
+    jobs: Mapped[list["MusicJob"]] = relationship("MusicJob", back_populates="user")
+    youtube_channels: Mapped[list["YoutubeUserChannel"]] = relationship(
+        "YoutubeUserChannel", back_populates="user"
+    )
+    youtube_subscriptions: Mapped[list["YoutubeSubscription"]] = relationship(
+        "YoutubeSubscription", back_populates="user"
+    )
+    youtube_video_queues: Mapped[list["YoutubeVideoQueue"]] = relationship(
+        "YoutubeVideoQueue", back_populates="user"
+    )
+    youtube_video_likes: Mapped[list["YoutubeVideoLike"]] = relationship(
+        "YoutubeVideoLike", back_populates="user"
+    )
+    youtube_video_watches: Mapped[list["YoutubeVideoWatch"]] = relationship(
+        "YoutubeVideoWatch", back_populates="user"
+    )

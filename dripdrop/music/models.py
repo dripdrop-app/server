@@ -1,7 +1,8 @@
 from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from dripdrop.authentication.models import User
 from dripdrop.base.models import Base
 
 
@@ -34,3 +35,4 @@ class MusicJob(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    user: Mapped[User] = relationship(back_populates="jobs", uselist=True)

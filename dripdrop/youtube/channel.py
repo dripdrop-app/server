@@ -9,7 +9,8 @@ from fastapi import (
     WebSocket,
     Path,
 )
-from sqlalchemy import select, and_
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 import dripdrop.utils as dripdrop_utils
 from dripdrop.authentication.dependencies import (
@@ -111,26 +112,19 @@ async def get_youtube_channel(
     user: AuthenticatedUser, session: DatabaseSession, channel_id: str = Path(...)
 ):
     query = (
-        select(
-            YoutubeChannel.id,
-            YoutubeChannel.title,
-            YoutubeChannel.thumbnail,
-            YoutubeChannel.updating,
-            YoutubeSubscription.channel_id.label("subscribed"),
-        )
-        .join(
-            YoutubeSubscription,
-            and_(
-                YoutubeChannel.id == YoutubeSubscription.channel_id,
-                YoutubeSubscription.email == user.email,
-                YoutubeSubscription.deleted_at.is_(None),
-            ),
-            isouter=True,
-        )
+        select(YoutubeChannel)
         .where(YoutubeChannel.id == channel_id)
+        .options(
+            joinedload(
+                YoutubeChannel.subscriptions.and_(
+                    YoutubeSubscription.email == user.email,
+                    YoutubeSubscription.deleted_at.is_(None),
+                )
+            )
+        )
     )
     results = await session.execute(query)
-    channel = results.mappings().first()
+    channel = results.scalars().first()
     if not channel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -140,6 +134,6 @@ async def get_youtube_channel(
         id=channel.id,
         title=channel.title,
         thumbnail=channel.thumbnail,
-        subscribed=bool(channel.subscribed),
+        subscribed=bool(channel.subscriptions[0] if channel.subscriptions else False),
         updating=channel.updating,
     )

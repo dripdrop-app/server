@@ -108,7 +108,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             await session.commit()
 
     query = (
-        select(YoutubeSubscription.channel_id.label("channel_id"))
+        select(YoutubeSubscription.channel_id)
         .join(
             YoutubeNewSubscription,
             and_(
@@ -124,14 +124,14 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             YoutubeNewSubscription.channel_id.is_(None),
         )
     )
-    async for rows in database.stream_mappings(
+    async for rows in database.stream_scalars(
         query=query, yield_per=1, session=session
     ):
         row = rows[0]
         await asyncio.to_thread(
             rq_client.default.enqueue,
             delete_subscription,
-            channel_id=row.channel_id,
+            channel_id=row,
             email=email,
         )
     query = delete(YoutubeNewSubscription).where(YoutubeNewSubscription.email == email)

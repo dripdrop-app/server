@@ -2,6 +2,7 @@ import math
 import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
 from sqlalchemy import select, func, and_
+from sqlalchemy.orm import joinedload, selectinload
 
 from dripdrop.authentication.dependencies import (
     get_authenticated_user,
@@ -17,12 +18,14 @@ from dripdrop.youtube.models import (
     YoutubeVideoLike,
     YoutubeVideoQueue,
     YoutubeSubscription,
+    YoutubeVideoWatch,
 )
 from dripdrop.youtube.responses import (
     ErrorMessages,
     YoutubeVideoCategoriesResponse,
     VideosResponse,
     VideoQueueResponse,
+    YoutubeVideoResponse,
 )
 
 
@@ -38,14 +41,10 @@ async def get_youtube_video_categories(
     session: DatabaseSession, user: AuthenticatedUser, channel_id: str = Query(None)
 ):
     query = (
-        select(YoutubeVideoCategory.id, YoutubeVideoCategory.name)
-        .join(YoutubeVideo, YoutubeVideo.category_id == YoutubeVideoCategory.id)
-        .join(YoutubeChannel, YoutubeChannel.id == YoutubeVideo.channel_id)
-        .join(
-            YoutubeSubscription,
-            YoutubeSubscription.channel_id == YoutubeChannel.id,
-            isouter=True,
-        )
+        select(YoutubeVideoCategory)
+        .join(YoutubeVideo)
+        .join(YoutubeChannel)
+        .join(YoutubeSubscription, isouter=True)
         .order_by(YoutubeVideoCategory.name.asc())
         .distinct()
     )
@@ -57,7 +56,7 @@ async def get_youtube_video_categories(
     else:
         query = query.where(YoutubeChannel.id == channel_id)
     results = await session.execute(query)
-    categories = results.mappings().all()
+    categories = results.scalars().all()
     return YoutubeVideoCategoriesResponse(categories=categories)
 
 
@@ -102,10 +101,7 @@ async def get_youtube_videos(
             query = query.where(
                 YoutubeVideo.channel_id.in_(
                     select(YoutubeChannel.id)
-                    .join(
-                        YoutubeSubscription,
-                        YoutubeChannel.id == YoutubeSubscription.channel_id,
-                    )
+                    .join(YoutubeSubscription)
                     .where(
                         YoutubeSubscription.email == user.email,
                         YoutubeSubscription.deleted_at.is_(None),
@@ -117,16 +113,13 @@ async def get_youtube_videos(
 
     if liked_only:
         query = (
-            query.join(YoutubeVideoLike, YoutubeVideo.id == YoutubeVideoLike.video_id)
+            query.join(YoutubeVideoLike)
             .where(YoutubeVideoLike.email == user.email)
             .order_by(YoutubeVideoLike.created_at.desc())
         )
     elif queued_only:
         query = (
-            query.join(
-                YoutubeVideoQueue,
-                YoutubeVideo.id == YoutubeVideoQueue.video_id,
-            )
+            query.join(YoutubeVideoQueue)
             .where(YoutubeVideoQueue.email == user.email)
             .order_by(YoutubeVideoQueue.created_at.asc())
         )
@@ -135,12 +128,35 @@ async def get_youtube_videos(
 
     query = query.order_by(YoutubeVideo.title.desc())
 
-    videos_query = query.offset(offset).limit(per_page)
+    videos_query = (
+        query.offset(offset)
+        .limit(per_page)
+        .options(
+            joinedload(YoutubeVideo.channel),
+            joinedload(YoutubeVideo.category),
+            selectinload(YoutubeVideo.likes.and_(YoutubeVideoLike.email == user.email)),
+            selectinload(
+                YoutubeVideo.queues.and_(YoutubeVideoQueue.email == user.email)
+            ),
+            selectinload(
+                YoutubeVideo.watches.and_(YoutubeVideoWatch.email == user.email)
+            ),
+        )
+    )
 
     results = await session.scalars(videos_query)
-    videos = await utils.get_videos_attributes(
-        session=session, user=user, videos=results.all()
-    )
+    videos = [
+        YoutubeVideoResponse(
+            **video.__dict__,
+            channel_title=video.channel.title,
+            channel_thumbnail=video.channel.thumbnail,
+            category_name=video.category.name,
+            watched=video.watches[0].created_at if video.watches else None,
+            liked=video.likes[0].created_at if video.likes else None,
+            queued=video.queues[0].created_at if video.queues else None
+        )
+        for video in results.all()
+    ]
 
     count = await session.scalar(select(func.count(query.subquery().columns.id)))
     total_pages = 1
