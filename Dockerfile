@@ -1,7 +1,5 @@
-FROM python:3.10
-RUN apt-get -y update && \
-    apt-get -y upgrade && \
-    apt-get -y install ffmpeg
+FROM python:3.10-alpine
+RUN apk update && apk upgrade && apk add ffmpeg && apk add curl
 RUN pip install -U pip
 RUN pip install poetry
 RUN mkdir -p /src

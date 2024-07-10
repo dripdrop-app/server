@@ -100,10 +100,6 @@ services:
       - *restart_policy
       - *network
 
-networks:
-  docker-net:
-    external: true
-
 volumes:
   postgres_volume: {}
   redis_volume: {}
