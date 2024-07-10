@@ -43,6 +43,10 @@ services:
       interval: 30s
     environment:
       ENV: ${ENV}
+    ports:
+      - target: 5000
+        published: 5000
+        mode: host
     <<:
       - *depends-all
       - *logging
