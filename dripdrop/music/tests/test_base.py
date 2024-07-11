@@ -25,7 +25,7 @@ class MusicBaseTest(BaseTest):
         self.test_audio_file_url = (
             "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/07+tun+suh.mp3"
         )
-        self.test_video_url = "https://vimeo.com/56282283"
+        self.test_video_url = "https://www.youtube.com/watch?v=C0DPdy98e4c"
 
         if not MusicBaseTest.test_image_file:
             response = await self.http_client.get(self.test_image_url)
