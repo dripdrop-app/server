@@ -8,10 +8,6 @@ x-logging: &logging
       max-size: '10m'
       max-file: '5'
 
-x-network: &network
-  networks:
-    - docker-net
-
 x-depends-database: &depends-database
   dripdrop-postgres:
     condition: service_healthy
@@ -50,7 +46,6 @@ services:
       - *depends-all
       - *logging
       - *restart_policy
-      - *network
 
   dripdrop-worker:
     image: dripdrop/image
@@ -62,7 +57,6 @@ services:
       - *depends-all
       - *logging
       - *restart_policy
-      - *network
 
   dripdrop-postgres:
     image: postgres:14
@@ -82,7 +76,6 @@ services:
     <<:
       - *logging
       - *restart_policy
-      - *network
 
   dripdrop-redis:
     image: redis
@@ -97,7 +90,6 @@ services:
     <<:
       - *logging
       - *restart_policy
-      - *network
 
 volumes:
   postgres_volume: {}
