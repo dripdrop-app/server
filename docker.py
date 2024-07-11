@@ -1,5 +1,4 @@
 import argparse
-import dotenv
 import os
 import subprocess
 
@@ -24,24 +23,28 @@ class DockerInterface:
         self._env = env
         self._project = project
         self._image_tag = f"{self._project}/image"
-        self._env_vars = {
-            **dotenv.dotenv_values(".env"),
-            "ENV": self._env,
-            "IMAGE": self._image_tag,
-        }
+        with open(".temp.env", 'w') as f:
+            f.write(f"ENV={self._env}\n")
+            f.write(f"IMAGE={self._image_tag}\n")
+        self._env_args = [
+            "--env-file",
+            ".env",
+            "--env-file",
+            ".temp.env",
+        ]
 
     def remove_services(self):
         subprocess.run(
             [
                 "docker",
                 "compose",
-                "-p",
+                *self._env_args,
+                "-p",  
                 self._project,
                 "-f",
                 self._compose_file,
                 "down",
             ],
-            env=self._env_vars,
         ).check_returncode()
 
     def _build_services(self):
@@ -61,13 +64,13 @@ class DockerInterface:
             [
                 "docker",
                 "compose",
+                *self._env_args,
                 "-p",
                 self._project,
                 "-f",
                 self._compose_file,
                 "build",
             ],
-            env=self._env_vars,
         ).check_returncode()
 
     def _deploy_services(self):
@@ -75,6 +78,7 @@ class DockerInterface:
             [
                 "docker",
                 "compose",
+                *self._env_args,
                 "-p",
                 self._project,
                 "-f",
@@ -83,7 +87,6 @@ class DockerInterface:
                 "--remove-orphans",
                 "--wait",
             ],
-            env=self._env_vars,
         ).check_returncode()
 
     def deploy(self):
@@ -98,6 +101,7 @@ class DockerInterface:
             [
                 "docker",
                 "compose",
+                *self._env_args,
                 "-p",
                 self._project,
                 "-f",
@@ -112,7 +116,6 @@ class DockerInterface:
                 "unittest",
                 "discover",
             ],
-            env=self._env_vars,
         ).check_returncode()
         self.remove_services()
 

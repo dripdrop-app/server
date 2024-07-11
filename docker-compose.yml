@@ -22,7 +22,6 @@ x-depends-all: &depends-all
       - *depends-database
       - *depends-redis
 
-version: '3'
 services:
   dripdrop-server:
     image: dripdrop/image
