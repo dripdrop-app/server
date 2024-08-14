@@ -11,10 +11,6 @@ jobs:
             - name: Export environment
               run: |
                   echo "${{ secrets.ENV }}" >> .env
-            - name: Install dotenv
-              run: |
-                  sudo apt-get -y update
-                  sudo apt-get -y install python3-dotenv
             - name: Run tests
               run: |
                   sudo python3 docker.py --env production --action test
@@ -22,65 +18,26 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         runs-on: ubuntu-latest
         needs: test
+        permissions:
+          contents: read
+          packages: write
+          attestations: write
+          id-token: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
             - name: Export environment
               run: |
                   echo "${{ secrets.ENV }}" >> .env
-            - name: Export ssh key
-              run: |
-                  echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
-            - name: Install rsync and dotenv
-              run: |
-                  sudo apt-get -y update
-                  sudo apt-get -y install rsync
-                  sudo apt-get -y install python3-dotenv
-            - name: Backup current repo on VM
-              run: |
-                  ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "if [ ! -d $ROOT_FOLDER ]; then mkdir -p $ROOT_FOLDER; fi; cd $ROOT_FOLDER; rm -rf server_old; if [ -d server ]; then cp -r server server_old; fi"
-              env:
-                  SSH_USER: ${{ secrets.SSH_USER }}
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_PORT: ${{ secrets.SSH_PORT }}
-                  ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
-            - name: Sync repo to VM
-              run: |
-                  rsync --verbose --recursive --delete -e "ssh -o StrictHostKeyChecking=no -i ./ssh_key -p $SSH_PORT" $(pwd)/ $SSH_USER@$SSH_HOST:$ROOT_FOLDER/server
-              env:
-                  SSH_USER: ${{ secrets.SSH_USER }}
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_PORT: ${{ secrets.SSH_PORT }}
-                  ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
-            - name: Deploy over SSH
-              run: |
-                  ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd $ROOT_FOLDER/server && python3 docker.py --env production --action deploy"
-              env:
-                  SSH_USER: ${{ secrets.SSH_USER }}
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_PORT: ${{ secrets.SSH_PORT }}
-                  ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
-    rollback:
-        if: ${{ failure() && needs.deploy.result == 'failure' }}
-        runs-on: ubuntu-latest
-        needs: deploy
-        steps:
-            - name: Export ssh key
-              run: |
-                  echo "${{ secrets.SSH_KEY }}" >> ssh_key && sudo chmod 400 ssh_key
-            - name: Rollback repo to previous version
-              run: |
-                  ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd $ROOT_FOLDER && if [ -d server_old ]; then cp -r server_old server; fi"
-              env:
-                  SSH_USER: ${{ secrets.SSH_USER }}
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_PORT: ${{ secrets.SSH_PORT }}
-                  ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
-            - name: Deploy rollback over SSH
-              run: |
-                  ssh -o StrictHostKeyChecking=no -i ./ssh_key -v $SSH_USER@$SSH_HOST -p $SSH_PORT "cd $ROOT_FOLDER/server && python3 docker.py --env production --action deploy"
-              env:
-                  SSH_USER: ${{ secrets.SSH_USER }}
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_PORT: ${{ secrets.SSH_PORT }}
-                  ROOT_FOLDER: ${{ vars.ROOT_FOLDER }}
+            - name: Log in to the Container registry
+              uses: docker/login-action@v3
+              with:
+                registry: ghcr.io
+                username: ${{ github.actor }}
+                password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                context: .
+                push: true
+                tags: dripdrop/server:latest
