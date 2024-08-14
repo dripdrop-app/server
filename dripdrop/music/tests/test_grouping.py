@@ -29,5 +29,5 @@ class GetGroupingTestCase(MusicBaseTest):
         try:
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.json(), {"grouping": "Food Dip"})
-        except Exception as e:
+        except AssertionError as e:
             print(e)

@@ -237,7 +237,7 @@ class CreateMusicVideoJobTestCase(MusicBaseTest):
             self.assertIsNotNone(job.download_url)
             response = await self.http_client.get(job.download_url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-        except Exception as e:
+        except AssertionError as e:
             print(e)
 
     async def test_creating_music_video_job_with_valid_video_url_and_artwork_url(self):
@@ -271,7 +271,7 @@ class CreateMusicVideoJobTestCase(MusicBaseTest):
             self.assertIsNotNone(job.download_url)
             response = await self.http_client.get(job.download_url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-        except Exception as e:
+        except AssertionError as e:
             print(e)
 
     async def test_creating_music_video_job_with_valid_video_url_and_base64_artwork(
@@ -307,5 +307,5 @@ class CreateMusicVideoJobTestCase(MusicBaseTest):
             self.assertIsNotNone(job.download_url)
             response = await self.http_client.get(job.download_url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-        except Exception as e:
+        except AssertionError as e:
             print(e)
