@@ -14,6 +14,7 @@ from dripdrop.services import (
     ffmpeg,
     http_client,
     image_downloader,
+    invidious,
     rq_client,
     s3,
     temp_files,
@@ -22,7 +23,7 @@ from dripdrop.services import (
 from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
-from dripdrop.utils import get_current_time
+from dripdrop.utils import get_current_time, parse_youtube_video_id
 
 
 async def _retrieve_audio_file(music_job_path: str, music_job: MusicJob):
@@ -35,13 +36,21 @@ async def _retrieve_audio_file(music_job_path: str, music_job: MusicJob):
         )
         with open(audio_file_path, "wb") as f:
             f.write(res.content)
-
         filename = await ffmpeg.convert_audio_to_mp3(audio_file=audio_file_path)
     elif music_job.video_url:
-        filename = os.path.join(music_job_path, "temp.mp3")
-        await ytdlp.download_audio_from_video(
-            url=music_job.video_url, download_path=f"{os.path.splitext(filename)[0]}"
-        )
+        if "youtube.com" in music_job.video_url:
+            video_id = parse_youtube_video_id(music_job.video_url)
+            audio_file_path = os.path.join(music_job_path, "temp.audio")
+            await invidious.download_audio_from_youtube_video(
+                video_id=video_id, download_path=audio_file_path
+            )
+            filename = await ffmpeg.convert_audio_to_mp3(audio_file=audio_file_path)
+        else:
+            filename = os.path.join(music_job_path, "temp.mp3")
+            await ytdlp.download_audio_from_video(
+                url=music_job.video_url,
+                download_path=f"{os.path.splitext(filename)[0]}",
+            )
     return filename
 
 

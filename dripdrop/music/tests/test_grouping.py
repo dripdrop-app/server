@@ -26,8 +26,5 @@ class GetGroupingTestCase(MusicBaseTest):
             GROUPING_URL,
             params={"video_url": "https://www.youtube.com/watch?v=FCrJNvJ-NIU"},
         )
-        try:
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json(), {"grouping": "Food Dip"})
-        except AssertionError as e:
-            print(e)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"grouping": "Food Dip"})

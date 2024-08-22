@@ -6,7 +6,7 @@ from sqlalchemy import select, delete, false, and_
 
 from dripdrop.authentication.models import User
 from dripdrop.logger import logger
-from dripdrop.services import database, google_api, invidious, rq_client, ytdlp
+from dripdrop.services import database, google_api, invidious, rq_client
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
@@ -180,20 +180,19 @@ async def add_channel_videos(
         video_title = video_info["title"]
         video_published = video_info["published"]
 
-        query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-        results = await session.scalars(query)
-        video = results.first()
-
-        video_upload_date = datetime.fromtimestamp(video_published)
-
         try:
-            extracted_video_info = await ytdlp.extract_video_info(
-                url=f"https://youtube.com/watch?v={video_id}"
+            detailed_video_info = await invidious.get_youtube_video_info(
+                video_id=video_id
             )
+            video_thumbnail = detailed_video_info["videoThumbnails"][0]["url"]
+            video_description = detailed_video_info["description"]
+            video_category_name = detailed_video_info["genre"]
 
-            video_thumbnail = extracted_video_info["thumbnail"]
-            video_description = extracted_video_info["description"]
-            video_category_name = extracted_video_info["categories"][0]
+            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+            results = await session.scalars(query)
+            video = results.first()
+
+            video_upload_date = datetime.fromtimestamp(video_published)
 
             if video:
                 if date_limit and video.published_at < date_limit:
@@ -225,13 +224,9 @@ async def add_channel_videos(
                         published_at=video_upload_date,
                     )
                 )
-        except Exception as e:
+        except Exception:
             retrieve_fails += 1
-            if str(e).lower().find("Video unavailable.") != -1:
-                if video:
-                    await session.delete(video)
-            else:
-                logger.exception(traceback.format_exc())
+            logger.exception(traceback.format_exc())
         await session.commit()
 
     if (
