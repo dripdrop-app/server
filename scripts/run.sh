@@ -28,13 +28,13 @@ test () {
   docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server poetry run python -m unittest discover tests
 }
 
-if [[ $ACTION != "deploy" || $ACTION != "test" || $ACTION != "remove" ]];
+if [[ $ACTION != "deploy" ]] || [[ $ACTION != "test" ]] || [[ $ACTION != "remove" ]];
 then
   echo "Invalid action. Please use 'deploy', 'test' or 'remove'."
   exit 1
 fi
 
-if [[ $ENV != "development" || $ENV != "production" ]];
+if [[ $ENV != "development" ]] || [[ $ENV != "production" ]];
 then
   echo "Invalid environment. Please use 'development' or 'production'."
   exit 1
