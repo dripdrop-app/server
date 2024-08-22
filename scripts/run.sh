@@ -1,5 +1,5 @@
 ACTION=$1
-ENV=$2
+ENV=$ENV
 PROJECT="dripdrop"
 COMPOSE_FILE="docker-compose.yml"
 
@@ -25,16 +25,16 @@ deploy() {
 test () {
   echo "Testing $ENV environment..."
   build
-  docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server poetry run python -m unittest discover tests
+  docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server poetry run python -m unittest discover
 }
 
-if [[ $ACTION != "deploy" ]] || [[ $ACTION != "test" ]] || [[ $ACTION != "remove" ]];
+if [[ $ACTION != "deploy" ]] && [[ $ACTION != "test" ]] && [[ $ACTION != "remove" ]];
 then
   echo "Invalid action. Please use 'deploy', 'test' or 'remove'."
   exit 1
 fi
 
-if [[ $ENV != "development" ]] || [[ $ENV != "production" ]];
+if [[ $ENV != "development" ]] && [[ $ENV != "production" ]] && [[ $ENV != "test" ]];
 then
   echo "Invalid environment. Please use 'development' or 'production'."
   exit 1

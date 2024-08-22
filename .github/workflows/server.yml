@@ -36,7 +36,7 @@ jobs:
                   b41d7b66-0520-429f-9af8-b1d4005bb9f7 > TEST_REDIS_URL
             - name: Run tests
               run: |
-                  ./scripts/run.sh test production
+                  ENV=test ./scripts/run.sh test
               env:
                 ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
                 AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
