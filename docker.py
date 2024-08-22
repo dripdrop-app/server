@@ -23,15 +23,15 @@ class DockerInterface:
         self._env = env
         self._project = project
         self._image_tag = f"{self._project}/image"
-        with open(".temp.env", 'w') as f:
+        with open(".temp.env", "w") as f:
             f.write(f"ENV={self._env}\n")
             f.write(f"IMAGE={self._image_tag}\n")
         self._env_args = [
             "--env-file",
-            ".env",
-            "--env-file",
             ".temp.env",
         ]
+        if self._env == DEVELOPMENT:
+            self._env_args.extend(["--env-file", ".env"])
 
     def remove_services(self):
         subprocess.run(
@@ -39,7 +39,7 @@ class DockerInterface:
                 "docker",
                 "compose",
                 *self._env_args,
-                "-p",  
+                "-p",
                 self._project,
                 "-f",
                 self._compose_file,
