@@ -34,7 +34,7 @@ then
   exit 1
 fi
 
-if [[ $ENV != "development" ]] && [[ $ENV != "production" ]] && [[ $ENV != "test" ]];
+if [[ $ENV != "development" ]] && [[ $ENV != "production" ]] && [[ $ENV != "testing" ]];
 then
   echo "Invalid environment. Please use 'development' or 'production'."
   exit 1

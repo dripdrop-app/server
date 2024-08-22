@@ -71,7 +71,7 @@ jobs:
                 DATABASE_PASSWORD: ${{ env.DATABASE_PASSWORD }}
                 DATABASE_URL: ${{ env.DATABASE_URL }}
                 DATABASE_USER: ${{ env.DATABASE_USER }}
-                ENV: test
+                ENV: testing
                 GOOGLE_API_KEY: ${{ env.GOOGLE_API_KEY }}
                 INVIDIOUS_API_URL: ${{ env.INVIDIOUS_API_URL }}
                 REDIS_URL: ${{ env.REDIS_URL }}
