@@ -36,27 +36,28 @@ jobs:
                   b41d7b66-0520-429f-9af8-b1d4005bb9f7 > TEST_REDIS_URL
             - name: Run tests
               run: |
-                echo $ASYNC_DATABASE_URL >> .env
-                echo $AWS_ACCESS_KEY_ID >> .env
-                echo $AWS_ENDPOINT_URL >> .env
-                echo $AWS_REGION_NAME >> .env
-                echo $AWS_S3_ARTWORK_FOLDER >> .env
-                echo $AWS_S3_BUCKET >> .env
-                echo $AWS_S3_MUSIC_FOLDER >> .env
-                echo $AWS_SECRET_ACCESS_KEY >> .env
-                echo $DATABASE >> .env
-                echo $DATABASE_PASSWORD >> .env
-                echo $DATABASE_URL >> .env
-                echo $DATABASE_USER >> .env
-                echo $GOOGLE_API_KEY >> .env
-                echo $INVIDIOUS_API_URL >> .env
-                echo $REDIS_URL >> .env
-                echo $SECRET_KEY >> .env
-                echo $SENDGRID_API_KEY >> .env
-                echo $TEST_ASYNC_DATABASE_URL >> .env
-                echo $TEST_AWS_S3_BUCKET >> .env
-                echo $TEST_REDIS_URL >> .env
-                ENV=test ./scripts/run.sh test
+                echo "ASYNC_DATABASE_URL=$ASYNC_DATABASE_URL" >> .env
+                echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+                echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
+                echo "AWS_REGION_NAME=$AWS_REGION_NAME" >> .env
+                echo "AWS_S3_ARTWORK_FOLDER=$AWS_S3_ARTWORK_FOLDER" >> .env
+                echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
+                echo "AWS_S3_MUSIC_FOLDER=$AWS_S3_MUSIC_FOLDER" >> .env
+                echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+                echo "DATABASE=$DATABASE" >> .env
+                echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
+                echo "DATABASE_URL=$DATABASE_URL" >> .env
+                echo "DATABASE_USER=$DATABASE_USER" >> .env
+                echo "ENV=$ENV" >> .env
+                echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
+                echo "INVIDIOUS_API_URL=$INVIDIOUS_API_URL" >> .env
+                echo "REDIS_URL=$REDIS_URL" >> .env
+                echo "SECRET_KEY=$SECRET_KEY" >> .env
+                echo "SENDGRID_API_KEY=$SENDGRID_API_KEY" >> .env
+                echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
+                echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
+                echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
+                ./scripts/run.sh test
               env:
                 ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
                 AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -70,7 +71,7 @@ jobs:
                 DATABASE_PASSWORD: ${{ env.DATABASE_PASSWORD }}
                 DATABASE_URL: ${{ env.DATABASE_URL }}
                 DATABASE_USER: ${{ env.DATABASE_USER }}
-                ENV: production
+                ENV: test
                 GOOGLE_API_KEY: ${{ env.GOOGLE_API_KEY }}
                 INVIDIOUS_API_URL: ${{ env.INVIDIOUS_API_URL }}
                 REDIS_URL: ${{ env.REDIS_URL }}
