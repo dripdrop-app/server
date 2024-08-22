@@ -36,7 +36,7 @@ jobs:
                   b41d7b66-0520-429f-9af8-b1d4005bb9f7 > TEST_REDIS_URL
             - name: Run tests
               run: |
-                  sudo python3 docker.py --env production --action test
+                  ./scripts/run.sh test production
               env:
                 ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
                 AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -50,6 +50,7 @@ jobs:
                 DATABASE_PASSWORD: ${{ env.DATABASE_PASSWORD }}
                 DATABASE_URL: ${{ env.DATABASE_URL }}
                 DATABASE_USER: ${{ env.DATABASE_USER }}
+                ENV: production
                 GOOGLE_API_KEY: ${{ env.GOOGLE_API_KEY }}
                 INVIDIOUS_API_URL: ${{ env.INVIDIOUS_API_URL }}
                 REDIS_URL: ${{ env.REDIS_URL }}
@@ -62,7 +63,11 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         runs-on: ubuntu-latest
         needs: test
-        permissions: write-all
+        permissions:
+          contents: read
+          packages: write
+          attestations: write
+          id-token: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -72,9 +77,15 @@ jobs:
                 registry: ghcr.io
                 username: ${{ github.actor }}
                 password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Extract metadata (tags, labels) for Docker
+              id: meta
+              uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+              with:
+                images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
             - name: Build and push
               uses: docker/build-push-action@v6
               with:
                 context: .
                 push: true
-                tags: dripdrop/server:latest
+                tags: ${{ steps.meta.outputs.tags }}
+                labels: ${{ steps.meta.outputs.labels }}
