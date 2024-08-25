@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ACTION=$1
 ENV=$ENV
 PROJECT="dripdrop"
