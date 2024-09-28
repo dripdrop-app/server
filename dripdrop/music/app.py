@@ -11,7 +11,7 @@ from dripdrop.music.responses import (
     TagsResponse,
     ErrorMessages,
 )
-from dripdrop.services import image_downloader, invidious, ytdlp
+from dripdrop.services import google_api, image_downloader, ytdlp
 from dripdrop.utils import parse_youtube_video_id
 
 
@@ -36,8 +36,7 @@ async def get_grouping(video_url: HttpUrl = Query(...)):
         actual_video_url = video_url.unicode_string()
         if "youtube.com" in actual_video_url:
             video_id = parse_youtube_video_id(actual_video_url)
-            video_info = await invidious.get_youtube_video_info(video_id=video_id)
-            uploader = video_info.get("author")
+            uploader = await google_api.get_video_uploader(video_id=video_id)
         else:
             video_info = await ytdlp.extract_video_info(url=actual_video_url)
             uploader = video_info.get("uploader")
