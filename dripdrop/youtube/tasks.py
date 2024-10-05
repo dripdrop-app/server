@@ -109,14 +109,11 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             YoutubeNewSubscription.channel_id.is_(None),
         )
     )
-    async for rows in database.stream_scalars(
-        query=query, yield_per=1, session=session
-    ):
-        row = rows[0]
+    async for channel_id in database.stream_scalar(query=query, session=session):
         await asyncio.to_thread(
             rq_client.default.enqueue,
             delete_subscription,
-            channel_id=row,
+            channel_id=channel_id,
             email=email,
         )
     query = delete(YoutubeNewSubscription).where(YoutubeNewSubscription.email == email)
@@ -199,17 +196,12 @@ async def update_channel_videos(
     date_after: str | None = None, session: AsyncSession = ...
 ):
     query = (
-        select(YoutubeSubscription.channel_id.label("channel_id"))
+        select(YoutubeSubscription.channel_id)
         .where(YoutubeSubscription.deleted_at.is_(None))
         .distinct()
     )
-    async for subscriptions in database.stream_mappings(
-        query=query, yield_per=1, session=session
-    ):
-        subscription = subscriptions[0]
-        query = select(YoutubeChannel).where(
-            YoutubeChannel.id == subscription.channel_id
-        )
+    async for channel_id in database.stream_scalar(query=query, session=session):
+        query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
         channel = await session.scalar(query)
         if channel:
             date_after_time = min(
@@ -221,7 +213,7 @@ async def update_channel_videos(
             await asyncio.to_thread(
                 rq_client.default.enqueue,
                 add_channel_videos,
-                channel_id=subscription.channel_id,
+                channel_id=channel_id,
                 date_after=date_after_time.strftime("%Y%m%d"),
             )
 
@@ -233,10 +225,7 @@ def update_channel_videos_cron():
 @rq_client.worker_task
 async def update_subscriptions(session: AsyncSession = ...):
     query = select(User)
-    async for users in database.stream_scalars(
-        query=query, yield_per=1, session=session
-    ):
-        user = users[0]
+    async for user in database.stream_scalar(query=query, session=session):
         await asyncio.to_thread(
             rq_client.default.enqueue,
             update_user_subscriptions,

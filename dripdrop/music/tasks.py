@@ -159,11 +159,7 @@ async def delete_old_music_jobs(session: AsyncSession = ...):
         MusicJob.completed.is_(True),
         MusicJob.deleted_at.is_(None),
     )
-    async for music_jobs in database.stream_scalars(
-        query=query, yield_per=1, session=session
-    ):
-        music_job = music_jobs[0]
-
+    async for music_job in database.stream_scalar(query=query, session=session):
         await asyncio.to_thread(
             rq_client.default.enqueue, delete_music_job, music_job_id=music_job.id
         )
