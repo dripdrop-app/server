@@ -28,8 +28,7 @@ class YoutubeBaseTest(BaseTest):
 
     async def get_user_youtube_channel(self, email: str):
         query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
-        results = await self.session.scalars(query)
-        user_youtube_channel = results.first()
+        user_youtube_channel = await self.session.scalar(query)
         return user_youtube_channel
 
     async def create_youtube_channel(
@@ -115,8 +114,7 @@ class YoutubeBaseTest(BaseTest):
         query = select(YoutubeVideoQueue).where(
             YoutubeVideoQueue.email == email, YoutubeVideoQueue.video_id == video_id
         )
-        results = await self.session.scalars(query)
-        youtube_video_queue = results.first()
+        youtube_video_queue = await self.session.scalar(query)
         return youtube_video_queue
 
     async def create_youtube_video_like(self, email: str, video_id: str):
@@ -129,8 +127,7 @@ class YoutubeBaseTest(BaseTest):
         query = select(YoutubeVideoLike).where(
             YoutubeVideoLike.email == email, YoutubeVideoLike.video_id == video_id
         )
-        results = await self.session.scalars(query)
-        youtube_video_queue = results.first()
+        youtube_video_queue = await self.session.scalar(query)
         return youtube_video_queue
 
     async def create_youtube_video_watch(self, email: str, video_id: str):
@@ -143,8 +140,7 @@ class YoutubeBaseTest(BaseTest):
         query = select(YoutubeVideoWatch).where(
             YoutubeVideoWatch.email == email, YoutubeVideoWatch.video_id == video_id
         )
-        results = await self.session.scalars(query)
-        youtube_video_queue = results.first()
+        youtube_video_queue = await self.session.scalar(query)
         return youtube_video_queue
 
     async def create_user_youtube_channel(self, email: str, channel_id: str):

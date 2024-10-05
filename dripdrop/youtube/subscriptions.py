@@ -1,7 +1,8 @@
 import asyncio
 import math
 from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
+from sqlalchemy.orm import joinedload
 
 from dripdrop.authentication.dependencies import (
     get_authenticated_user,
@@ -37,33 +38,33 @@ async def get_youtube_subscriptions(
     per_page: int = Path(..., le=50),
 ):
     query = (
-        select(
-            YoutubeSubscription.channel_id,
-            YoutubeChannel.title.label("channel_title"),
-            YoutubeChannel.thumbnail.label("channel_thumbnail"),
-        )
-        .join(
-            YoutubeChannel,
-            and_(
-                YoutubeSubscription.channel_id == YoutubeChannel.id,
-                YoutubeSubscription.email == user.email,
-            ),
-        )
+        select(YoutubeSubscription)
+        .join(YoutubeChannel)
         .where(
+            YoutubeSubscription.email == user.email,
             YoutubeSubscription.deleted_at.is_(None),
         )
         .order_by(YoutubeChannel.title)
+        .options(joinedload(YoutubeSubscription.channel))
     )
-    results = await session.execute(query.offset((page - 1) * per_page).limit(per_page))
-    subscriptions = results.mappings().all()
-    count = await session.scalar(
-        select(func.count(query.subquery().columns.channel_id))
-    )
+    subscriptions_query = query.offset((page - 1) * per_page).limit(per_page)
+    results = await session.scalars(subscriptions_query)
+    subscriptions = results.all()
+    count_query = select(func.count(query.subquery().columns.channel_id))
+    count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
     if page > total_pages and page != 1:
         raise HTTPException(
             detail=ErrorMessages.PAGE_NOT_FOUND, status_code=status.HTTP_404_NOT_FOUND
         )
+    subscriptions = [
+        YoutubeSubscriptionResponse(
+            channel_id=subscription.channel_id,
+            channel_title=subscription.channel.title,
+            channel_thumbnail=subscription.channel.thumbnail,
+        )
+        for subscription in subscriptions
+    ]
     return SubscriptionsResponse(subscriptions=subscriptions, total_pages=total_pages)
 
 
@@ -89,11 +90,9 @@ async def add_user_subscription(
         YoutubeSubscription.email == user.email,
         YoutubeSubscription.channel_id == channel_info.id,
     )
-    results = await session.scalars(query)
-    subscription = results.first()
+    subscription = await session.scalar(query)
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_info.id)
-    results = await session.scalars(query)
-    channel = results.first()
+    channel = await session.scalar(query)
     if not subscription:
         if not channel:
             channel = YoutubeChannel(
@@ -138,8 +137,7 @@ async def delete_user_subscription(
         YoutubeSubscription.email == user.email,
         YoutubeSubscription.channel_id == channel_id,
     )
-    results = await session.scalars(query)
-    subscription = results.first()
+    subscription = await session.scalar(query)
     if not subscription:
         raise HTTPException(
             detail=ErrorMessages.SUBSCRIPTION_NOT_FOUND,

@@ -29,8 +29,7 @@ class UploadedFileInfo(BaseModel):
 async def handle_files(job_id: str, file: UploadFile, artwork_url: str | None = None):
     async with database.create_session() as session:
         query = select(MusicJob).where(MusicJob.id == job_id)
-        results = await session.scalars(query)
-        music_job = results.first()
+        music_job = await session.scalar(query)
         if not music_job:
             return
         try:
@@ -100,37 +99,6 @@ async def handle_audio_file(job_id: str, file: UploadFile):
     return uploaded_file_info
 
 
-async def cleanup_music_job(music_job: MusicJob):
-    if music_job.artwork_filename:
-        await s3.delete_file(
-            filename=music_job.artwork_filename,
-        )
-    if music_job.download_filename:
-        await s3.delete_file(
-            filename=music_job.download_filename,
-        )
-    if music_job.original_filename:
-        await s3.delete_file(
-            filename=music_job.original_filename,
-        )
-
-
-def _read_tags(file_path: str):
-    audio_tags = AudioTags(file_path=file_path)
-    title = audio_tags.title
-    artist = audio_tags.artist
-    album = audio_tags.album
-    grouping = audio_tags.grouping
-    artwork_url = audio_tags.get_artwork_as_base64()
-    return TagsResponse(
-        title=title,
-        artist=artist,
-        album=album,
-        grouping=grouping,
-        artwork_url=artwork_url,
-    )
-
-
 async def read_tags(file: bytes, filename: str):
     TAGS_DIRECTORY = "tags"
 
@@ -145,7 +113,14 @@ async def read_tags(file: bytes, filename: str):
     try:
         with open(file_path, "wb") as f:
             await asyncio.to_thread(f.write, file)
-        tags = await asyncio.to_thread(_read_tags, file_path)
+        audio_tags = await asyncio.to_thread(AudioTags.read_tags, file_path)
+        tags = TagsResponse(
+            title=audio_tags.title,
+            artist=audio_tags.artist,
+            album=audio_tags.album,
+            grouping=audio_tags.grouping,
+            artwork_url=audio_tags.get_artwork_as_base64(),
+        )
     except Exception:
         logger.exception(traceback.format_exc())
     finally:

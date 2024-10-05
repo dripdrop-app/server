@@ -2,6 +2,7 @@ import math
 import traceback
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
 from sqlalchemy import select, func, and_
+from sqlalchemy.orm import joinedload, selectinload
 
 from dripdrop.authentication.dependencies import (
     get_authenticated_user,
@@ -9,7 +10,6 @@ from dripdrop.authentication.dependencies import (
 )
 from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.logger import logger
-from dripdrop.youtube import utils
 from dripdrop.youtube.models import (
     YoutubeVideoCategory,
     YoutubeChannel,
@@ -17,12 +17,14 @@ from dripdrop.youtube.models import (
     YoutubeVideoLike,
     YoutubeVideoQueue,
     YoutubeSubscription,
+    YoutubeVideoWatch,
 )
 from dripdrop.youtube.responses import (
     ErrorMessages,
     YoutubeVideoCategoriesResponse,
     VideosResponse,
     VideoQueueResponse,
+    YoutubeVideoResponse,
 )
 
 
@@ -38,14 +40,10 @@ async def get_youtube_video_categories(
     session: DatabaseSession, user: AuthenticatedUser, channel_id: str = Query(None)
 ):
     query = (
-        select(YoutubeVideoCategory.id, YoutubeVideoCategory.name)
-        .join(YoutubeVideo, YoutubeVideo.category_id == YoutubeVideoCategory.id)
-        .join(YoutubeChannel, YoutubeChannel.id == YoutubeVideo.channel_id)
-        .join(
-            YoutubeSubscription,
-            YoutubeSubscription.channel_id == YoutubeChannel.id,
-            isouter=True,
-        )
+        select(YoutubeVideoCategory)
+        .join(YoutubeVideo)
+        .join(YoutubeChannel)
+        .join(YoutubeSubscription, isouter=True)
         .order_by(YoutubeVideoCategory.name.asc())
         .distinct()
     )
@@ -57,7 +55,7 @@ async def get_youtube_video_categories(
     else:
         query = query.where(YoutubeChannel.id == channel_id)
     results = await session.execute(query)
-    categories = results.mappings().all()
+    categories = results.scalars().all()
     return YoutubeVideoCategoriesResponse(categories=categories)
 
 
@@ -102,10 +100,7 @@ async def get_youtube_videos(
             query = query.where(
                 YoutubeVideo.channel_id.in_(
                     select(YoutubeChannel.id)
-                    .join(
-                        YoutubeSubscription,
-                        YoutubeChannel.id == YoutubeSubscription.channel_id,
-                    )
+                    .join(YoutubeSubscription)
                     .where(
                         YoutubeSubscription.email == user.email,
                         YoutubeSubscription.deleted_at.is_(None),
@@ -117,16 +112,13 @@ async def get_youtube_videos(
 
     if liked_only:
         query = (
-            query.join(YoutubeVideoLike, YoutubeVideo.id == YoutubeVideoLike.video_id)
+            query.join(YoutubeVideoLike)
             .where(YoutubeVideoLike.email == user.email)
             .order_by(YoutubeVideoLike.created_at.desc())
         )
     elif queued_only:
         query = (
-            query.join(
-                YoutubeVideoQueue,
-                YoutubeVideo.id == YoutubeVideoQueue.video_id,
-            )
+            query.join(YoutubeVideoQueue)
             .where(YoutubeVideoQueue.email == user.email)
             .order_by(YoutubeVideoQueue.created_at.asc())
         )
@@ -135,14 +127,39 @@ async def get_youtube_videos(
 
     query = query.order_by(YoutubeVideo.title.desc())
 
-    videos_query = query.offset(offset).limit(per_page)
-
-    results = await session.scalars(videos_query)
-    videos = await utils.get_videos_attributes(
-        session=session, user=user, videos=results.all()
+    videos_query = (
+        query.offset(offset)
+        .limit(per_page)
+        .options(
+            joinedload(YoutubeVideo.channel),
+            joinedload(YoutubeVideo.category),
+            selectinload(YoutubeVideo.likes.and_(YoutubeVideoLike.email == user.email)),
+            selectinload(
+                YoutubeVideo.queues.and_(YoutubeVideoQueue.email == user.email)
+            ),
+            selectinload(
+                YoutubeVideo.watches.and_(YoutubeVideoWatch.email == user.email)
+            ),
+        )
     )
 
-    count = await session.scalar(select(func.count(query.subquery().columns.id)))
+    results = await session.scalars(videos_query)
+    videos = results.all()
+    videos = [
+        YoutubeVideoResponse(
+            **video.__dict__,
+            channel_title=video.channel.title,
+            channel_thumbnail=video.channel.thumbnail,
+            category_name=video.category.name,
+            watched=video.watches[0].created_at if video.watches else None,
+            liked=video.likes[0].created_at if video.likes else None,
+            queued=video.queues[0].created_at if video.queues else None,
+        )
+        for video in videos
+    ]
+
+    count_query = select(func.count(query.subquery().columns.id))
+    count = await session.scalar(count_query)
     total_pages = 1
     if count is not None and per_page is not None:
         total_pages = math.ceil(count / per_page)
@@ -175,9 +192,20 @@ async def get_youtube_video_queue(
         )
         .offset(max(index - 2, 0))
         .limit(2 if index == 1 else 3)
+        .options(
+            joinedload(YoutubeVideo.channel),
+            joinedload(YoutubeVideo.category),
+            selectinload(YoutubeVideo.likes.and_(YoutubeVideoLike.email == user.email)),
+            selectinload(
+                YoutubeVideo.queues.and_(YoutubeVideoQueue.email == user.email)
+            ),
+            selectinload(
+                YoutubeVideo.watches.and_(YoutubeVideoWatch.email == user.email)
+            ),
+        )
     )
     results = await session.scalars(query)
-    videos = results.all()
+    videos = [result for result in results.all()]
 
     [prev_video, current_video, next_video] = [None] * 3
 
@@ -185,10 +213,17 @@ async def get_youtube_video_queue(
         prev_video = videos.pop(0)
     if videos:
         current_video = videos.pop(0)
-        current_videos = await utils.get_videos_attributes(
-            session=session, user=user, videos=[current_video]
+        current_video = YoutubeVideoResponse(
+            **current_video.__dict__,
+            channel_title=current_video.channel.title,
+            channel_thumbnail=current_video.channel.thumbnail,
+            category_name=current_video.category.name,
+            watched=(
+                current_video.watches[0].created_at if current_video.watches else None
+            ),
+            liked=current_video.likes[0].created_at if current_video.likes else None,
+            queued=current_video.queues[0].created_at if current_video.queues else None,
         )
-        current_video = current_videos[0]
     if videos:
         next_video = videos.pop(0)
     if not current_video:

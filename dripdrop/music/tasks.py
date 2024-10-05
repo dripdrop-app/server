@@ -94,8 +94,7 @@ async def run_music_job(music_job_id: str, session: AsyncSession):
         directory=JOB_DIR, raise_on_exists=False
     )
     query = select(MusicJob).where(MusicJob.id == job_id)
-    results = await session.scalars(query)
-    music_job = results.first()
+    music_job = await session.scalar(query)
     if not music_job:
         raise Exception(f"Job with id ({job_id}) not found")
     websocket_channel = WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE)
@@ -144,11 +143,10 @@ async def run_music_job(music_job_id: str, session: AsyncSession):
 @rq_client.worker_task
 async def delete_music_job(music_job_id: str, session: AsyncSession = ...):
     query = select(MusicJob).where(MusicJob.id == music_job_id)
-    results = await session.scalars(query)
-    music_job = results.first()
+    music_job = await session.scalar(query)
     if not music_job:
         raise Exception(f"Music Job ({music_job_id}) could not be found")
-    await utils.cleanup_music_job(music_job=music_job)
+    await music_job.cleanup()
     music_job.deleted_at = get_current_time()
     await session.commit()
 
@@ -161,11 +159,7 @@ async def delete_old_music_jobs(session: AsyncSession = ...):
         MusicJob.completed.is_(True),
         MusicJob.deleted_at.is_(None),
     )
-    async for music_jobs in database.stream_scalars(
-        query=query, yield_per=1, session=session
-    ):
-        music_job = music_jobs[0]
-
+    async for music_job in database.stream_scalar(query=query, session=session):
         await asyncio.to_thread(
             rq_client.default.enqueue, delete_music_job, music_job_id=music_job.id
         )

@@ -52,8 +52,9 @@ async def get_jobs(
         .where(MusicJob.user_email == user.email, MusicJob.deleted_at.is_(None))
         .order_by(MusicJob.created_at.desc())
     )
-    results = await session.scalars(query.offset((page - 1) * per_page).limit(per_page))
-    music_jobs = list(map(lambda job: job, results.all()))
+    jobs_query = query.offset((page - 1) * per_page).limit(per_page)
+    results = await session.scalars(jobs_query)
+    music_jobs = results.all()
     count_query = select(func.count(query.subquery().columns.id))
     count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
@@ -75,8 +76,7 @@ async def listen_jobs(user: AuthenticatedUser, websocket: WebSocket):
                 MusicJob.id == job_id,
                 MusicJob.deleted_at.is_(None),
             )
-            results = await session.scalars(query)
-            music_job = results.first()
+            music_job = await session.scalar(query)
             if music_job:
                 await websocket.send_json(message.model_dump())
 

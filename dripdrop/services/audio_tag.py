@@ -85,3 +85,7 @@ class AudioTags:
                     mime_type = "image/png"
             return f"data:{mime_type};base64,{base64_string}"
         return None
+
+    @classmethod
+    def read_tags(cls, file_path: str):
+        return AudioTags(file_path=file_path)

@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 from passlib.context import CryptContext
 from sqlalchemy import select, event
 from sqlalchemy.orm import Mapped, mapped_column
@@ -8,6 +10,16 @@ from dripdrop.services.database import AsyncSession
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+if TYPE_CHECKING:
+    from dripdrop.music.models import MusicJob
+    from dripdrop.youtube.models import (
+        YoutubeUserChannel,
+        YoutubeSubscription,
+        YoutubeVideoLike,
+        YoutubeVideoQueue,
+        YoutubeVideoWatch,
+    )
+
 
 class User(Base):
     __tablename__ = "users"
@@ -16,12 +28,27 @@ class User(Base):
     password: Mapped[str] = mapped_column(nullable=False)
     admin: Mapped[bool] = mapped_column(nullable=False, default=False)
     verified: Mapped[bool] = mapped_column(nullable=False, default=False)
+    jobs: Mapped[list["MusicJob"]] = relationship("MusicJob", back_populates="user")
+    youtube_channels: Mapped[list["YoutubeUserChannel"]] = relationship(
+        "YoutubeUserChannel", back_populates="user"
+    )
+    youtube_subscriptions: Mapped[list["YoutubeSubscription"]] = relationship(
+        "YoutubeSubscription", back_populates="user"
+    )
+    youtube_video_queues: Mapped[list["YoutubeVideoQueue"]] = relationship(
+        "YoutubeVideoQueue", back_populates="user"
+    )
+    youtube_video_likes: Mapped[list["YoutubeVideoLike"]] = relationship(
+        "YoutubeVideoLike", back_populates="user"
+    )
+    youtube_video_watches: Mapped[list["YoutubeVideoWatch"]] = relationship(
+        "YoutubeVideoWatch", back_populates="user"
+    )
 
     @classmethod
     async def find_by_email(cls, email: str, session: AsyncSession):
         query = select(User).where(User.email == email)
-        results = await session.scalars(query)
-        user = results.first()
+        user = await session.scalar(query)
         return user
 
 
