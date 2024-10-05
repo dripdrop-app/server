@@ -18,7 +18,7 @@ class User(Base):
     verified: Mapped[bool] = mapped_column(nullable=False, default=False)
 
     @classmethod
-    async def find_by_email(self, email: str, session: AsyncSession):
+    async def find_by_email(cls, email: str, session: AsyncSession):
         query = select(User).where(User.email == email)
         results = await session.scalars(query)
         user = results.first()

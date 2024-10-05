@@ -52,7 +52,7 @@ async def login(
     email: str = Body(...),
     password: str = Body(..., min_length=8),
 ):
-    user = await User.get_by_email(email=email, session=session)
+    user = await User.find_by_email(email=email, session=session)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     verified, new_hashed_pw = password_context.verify_and_update(
