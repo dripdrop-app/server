@@ -22,10 +22,11 @@ x-depends-all: &depends-all
       - *depends-database
       - *depends-redis
 
-version: '3'
 services:
   dripdrop-server:
-    image: dripdrop/image
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: dripdrop-server
     command: [ "./scripts/server.sh" ]
     healthcheck:
@@ -51,7 +52,9 @@ services:
       - *restart_policy
 
   dripdrop-worker:
-    image: dripdrop/image
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: [ "./scripts/worker.sh" ]
     environment:
       ENV: ${ENV}

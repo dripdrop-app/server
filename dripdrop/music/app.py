@@ -11,7 +11,8 @@ from dripdrop.music.responses import (
     TagsResponse,
     ErrorMessages,
 )
-from dripdrop.services import image_downloader, ytdlp
+from dripdrop.services import image_downloader, invidious, ytdlp
+from dripdrop.utils import parse_youtube_video_id
 
 
 app = FastAPI(
@@ -32,8 +33,14 @@ app.include_router(router=job.api)
 )
 async def get_grouping(video_url: HttpUrl = Query(...)):
     try:
-        video_info = await ytdlp.extract_video_info(url=video_url.unicode_string())
-        uploader = video_info.get("uploader")
+        actual_video_url = video_url.unicode_string()
+        if "youtube.com" in actual_video_url:
+            video_id = parse_youtube_video_id(actual_video_url)
+            video_info = await invidious.get_youtube_video_info(video_id=video_id)
+            uploader = video_info.get("author")
+        else:
+            video_info = await ytdlp.extract_video_info(url=actual_video_url)
+            uploader = video_info.get("uploader")
         return GroupingResponse(grouping=uploader)
     except Exception:
         logger.exception(traceback.format_exc())

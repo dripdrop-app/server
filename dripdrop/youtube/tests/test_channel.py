@@ -106,14 +106,14 @@ class GetUserChannelTestCase(YoutubeBaseTest):
 class UpdateUserChannelTestCase(YoutubeBaseTest):
     async def test_update_user_channel_when_not_logged_in(self):
         response = await self.client.post(
-            f"{CHANNEL_URL}/user", json={"channel_id": "2"}
+            f"{CHANNEL_URL}/user", json={"channel_id": "None"}
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     async def test_update_user_channel_with_nonexistent_channel_on_youtube(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
         response = await self.client.post(
-            f"{CHANNEL_URL}/user", json={"channel_id": "2"}
+            f"{CHANNEL_URL}/user", json={"channel_id": "None"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -130,7 +130,7 @@ class UpdateUserChannelTestCase(YoutubeBaseTest):
     async def test_update_user_channel_with_nonexistent_channel_handle_on_youtube(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
         response = await self.client.post(
-            f"{CHANNEL_URL}/user", json={"channel_id": "@2"}
+            f"{CHANNEL_URL}/user", json={"channel_id": "None"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -150,7 +150,7 @@ class UpdateUserChannelTestCase(YoutubeBaseTest):
         )
         await self.update_user_youtube_channel(id="1", email=user.email)
         response = await self.client.post(
-            f"{CHANNEL_URL}/user", json={"channel_id": "2"}
+            f"{CHANNEL_URL}/user", json={"channel_id": "None"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

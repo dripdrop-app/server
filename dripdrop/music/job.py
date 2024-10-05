@@ -15,6 +15,7 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 from pydantic import HttpUrl
+from rq.job import Retry
 from sqlalchemy import select
 from typing import Optional
 from urllib.parse import quote
@@ -96,7 +97,10 @@ async def create_job(
         utils.handle_files, job_id=job_id, file=file, artwork_url=artwork_url
     )
     background_tasks.add_task(
-        rq_client.high.enqueue, tasks.run_music_job, music_job_id=job_id
+        rq_client.high.enqueue,
+        tasks.run_music_job,
+        music_job_id=job_id,
+        retry=Retry(2, [10, 30]),
     )
     return MusicJobResponse.model_validate(music_job)
 

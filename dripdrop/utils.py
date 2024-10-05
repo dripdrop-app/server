@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 from typing import Coroutine, TypeVar, Any
+from urllib.parse import urlparse, parse_qs
 
 from dripdrop.settings import settings
 
@@ -26,3 +27,12 @@ async def gather_with_limit(
 
 def get_current_time():
     return datetime.now(tz=settings.timezone)
+
+
+def parse_youtube_video_id(url: str) -> str:
+    parsed_url = urlparse(url)
+    search_params = parse_qs(parsed_url.query)
+    video_ids = search_params.get("v")
+    if not video_ids:
+        raise Exception("No video id found")
+    return video_ids[0]

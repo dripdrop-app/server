@@ -1,7 +1,5 @@
 FROM python:3.10
-RUN apt-get -y update && \
-    apt-get -y upgrade && \
-    apt-get -y install ffmpeg
+RUN apt-get update && apt-get upgrade -y && apt install ffmpeg -y
 RUN pip install -U pip
 RUN pip install poetry
 RUN mkdir -p /src

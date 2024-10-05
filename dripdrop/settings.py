@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     database_url: str
     env: ENV = ENV.DEVELOPMENT
     google_api_key: str
+    invidious_api_url: str
     redis_url: str
     secret_key: str
     sendgrid_api_key: str
