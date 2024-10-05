@@ -4,8 +4,8 @@ import os
 import shutil
 import traceback
 import uuid
-from dataclasses import dataclass
 from fastapi import UploadFile
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from dripdrop.logger import logger
@@ -21,8 +21,7 @@ from dripdrop.services import (
 from dripdrop.services.audio_tag import AudioTags
 
 
-@dataclass
-class UploadedFileInfo:
+class UploadedFileInfo(BaseModel):
     url: str | None
     filename: str | None
 

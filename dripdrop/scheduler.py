@@ -35,6 +35,12 @@ if __name__ == "__main__":
         id="update_subscriptions",
         replace_existing=True,
     )
+    scheduler.add_job(
+        youtube_tasks.update_video_categories,
+        trigger=CronTrigger.from_crontab("0 0 * * *"),
+        id="update_channel_videos",
+        replace_existing=True,
+    )
     try:
         while True:
             time.sleep(1)

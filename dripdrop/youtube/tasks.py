@@ -1,12 +1,11 @@
 import asyncio
-import traceback
+import dateutil.parser
 from datetime import datetime, timedelta
 from rq.job import Retry
 from sqlalchemy import select, delete, false, and_
 
 from dripdrop.authentication.models import User
-from dripdrop.logger import logger
-from dripdrop.services import database, google_api, invidious, rq_client
+from dripdrop.services import database, google_api, rq_client
 from dripdrop.services.database import AsyncSession
 from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
 from dripdrop.settings import settings
@@ -20,10 +19,6 @@ from dripdrop.youtube.models import (
     YoutubeVideoCategory,
 )
 from dripdrop.youtube.responses import YoutubeChannelUpdateResponse
-
-
-def generate_channel_videos_url(channel_id: str = ...):
-    return f"https://youtube.com/channel/{channel_id}/videos"
 
 
 @rq_client.worker_task
@@ -63,33 +58,27 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                 channel.title = subscribed_channel.title
                 channel.thumbnail = subscribed_channel.thumbnail
             else:
-                session.add(
-                    YoutubeChannel(
-                        id=subscribed_channel.id,
-                        title=subscribed_channel.title,
-                        thumbnail=subscribed_channel.thumbnail,
-                        last_videos_updated=get_current_time() - timedelta(days=365),
-                    )
+                channel = YoutubeChannel(
+                    id=subscribed_channel.id,
+                    title=subscribed_channel.title,
+                    thumbnail=subscribed_channel.thumbnail,
+                    last_videos_updated=get_current_time() - timedelta(days=365),
                 )
+                session.add(channel)
                 await session.commit()
                 await asyncio.to_thread(
                     rq_client.default.enqueue,
                     add_channel_videos,
-                    channel_id=subscribed_channel.id,
+                    channel_id=channel.id,
                 )
             query = select(YoutubeSubscription).where(
-                YoutubeSubscription.channel_id == subscribed_channel.id,
+                YoutubeSubscription.channel_id == channel.id,
                 YoutubeSubscription.email == email,
             )
             results = await session.scalars(query)
             subscription = results.first()
             if not subscription:
-                session.add(
-                    YoutubeSubscription(
-                        email=email,
-                        channel_id=subscribed_channel.id,
-                    )
-                )
+                session.add(YoutubeSubscription(email=email, channel_id=channel.id))
             else:
                 if not subscription.user_submitted:
                     subscription.deleted_at = None
@@ -143,7 +132,6 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
 async def add_channel_videos(
     channel_id: str = ...,
     date_after: str | None = None,
-    continuation_token: str | None = None,
     session: AsyncSession = ...,
 ):
     date_limit = (
@@ -158,98 +146,56 @@ async def add_channel_videos(
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
 
-    if not continuation_token:
-        channel.updating = True
-        await session.commit()
+    channel.updating = True
+    await session.commit()
 
-        websocket_channel = WebsocketChannel(
-            channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE
-        )
-        await websocket_channel.publish(
-            message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
-        )
-
-    response = await invidious.get_youtube_channel_videos(
-        channel_id=channel_id, continuation_token=continuation_token
+    websocket_channel = WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE)
+    await websocket_channel.publish(
+        message=YoutubeChannelUpdateResponse(id=channel.id, updating=True)
     )
-    retrieve_fails = 0
-    end_update = False
 
-    for video_info in response.videos:
-        video_id = video_info["videoId"]
-        video_title = video_info["title"]
-        video_published = video_info["published"]
+    async for videos in google_api.get_channel_latest_videos(channel_id=channel_id):
+        end_update = False
+        for video in videos:
+            video_upload_date = dateutil.parser.parse(video.published)
+            if date_limit and video_upload_date < date_limit:
+                end_update = True
+                break
 
-        try:
-            detailed_video_info = await invidious.get_youtube_video_info(
-                video_id=video_id
-            )
-            video_thumbnail = detailed_video_info["videoThumbnails"][0]["url"]
-            video_description = detailed_video_info["description"]
-            video_category_name = detailed_video_info["genre"]
-
-            query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
+            query = select(YoutubeVideo).where(YoutubeVideo.id == video.id)
             results = await session.scalars(query)
-            video = results.first()
+            existing_video = results.first()
 
-            video_upload_date = datetime.fromtimestamp(video_published)
-
-            if video:
-                if date_limit and video.published_at < date_limit:
-                    end_update = True
-                    break
-                video.title = video_title
-                video.thumbnail = video_thumbnail
-                video.description = video_description
-                if video.title != video_title or video.thumbnail != video_thumbnail:
-                    video.published_at = video_upload_date
+            if existing_video:
+                existing_video.title = video.title
+                existing_video.thumbnail = video.thumbnail
+                existing_video.description = video.description
+                if (
+                    existing_video.title != video.title
+                    or existing_video.thumbnail != video.thumbnail
+                ):
+                    existing_video.published_at = video_upload_date
             else:
-                query = select(YoutubeVideoCategory).where(
-                    YoutubeVideoCategory.name == video_category_name
-                )
-                results = await session.scalars(query)
-                video_category = results.first()
-                if not video_category:
-                    video_category = YoutubeVideoCategory(name=video_category_name)
-                    session.add(video_category)
-                    await session.commit()
                 session.add(
                     YoutubeVideo(
-                        id=video_id,
-                        title=video_title,
-                        thumbnail=video_thumbnail,
+                        id=video.id,
+                        title=video.title,
+                        thumbnail=video.thumbnail,
                         channel_id=channel_id,
-                        category_id=video_category.id,
-                        description=video_description,
+                        category_id=video.category_id,
+                        description=video.description,
                         published_at=video_upload_date,
                     )
                 )
-        except Exception:
-            retrieve_fails += 1
-            logger.exception(traceback.format_exc())
-        await session.commit()
+        if end_update:
+            break
 
-    if (
-        not response.continuation
-        or end_update
-        or retrieve_fails == len(response.videos)
-    ):
-        websocket_channel = WebsocketChannel(
-            channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE
-        )
-        await websocket_channel.publish(
-            message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
-        )
-        channel.updating = False
-        channel.last_videos_updated = get_current_time()
-    else:
-        await asyncio.to_thread(
-            rq_client.default.enqueue,
-            add_channel_videos,
-            channel_id=channel_id,
-            date_after=date_after,
-            continuation_token=response.continuation,
-        )
+    websocket_channel = WebsocketChannel(channel=RedisChannels.YOUTUBE_CHANNEL_UPDATE)
+    await websocket_channel.publish(
+        message=YoutubeChannelUpdateResponse(id=channel.id, updating=False)
+    )
+    channel.updating = False
+    channel.last_videos_updated = get_current_time()
 
     await session.commit()
 
@@ -308,3 +254,28 @@ async def update_subscriptions(session: AsyncSession = ...):
 
 def update_subscriptions_cron():
     rq_client.high.enqueue(update_subscriptions)
+
+
+@rq_client.worker_task
+async def update_video_categories(session: AsyncSession = ...):
+    async for video_categories in google_api.get_video_categories():
+        for video_category in video_categories:
+            query = select(YoutubeVideoCategory).where(
+                YoutubeVideoCategory.id == video_category.id
+            )
+            results = await session.scalars(query)
+            existing_video_category = results.first()
+            if existing_video_category:
+                existing_video_category.name = video_category.name
+            else:
+                session.add(
+                    YoutubeVideoCategory(
+                        id=video_category.id,
+                        name=video_category.name,
+                    )
+                )
+        await session.commit()
+
+
+def update_video_categories_cron():
+    rq_client.high.enqueue(update_video_categories)

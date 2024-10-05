@@ -9,7 +9,6 @@ from typing import TypeVar, AsyncContextManager
 from unittest import IsolatedAsyncioTestCase
 
 from dripdrop.app import app
-from dripdrop.authentication.app import password_context
 from dripdrop.authentication.dependencies import COOKIE_NAME
 from dripdrop.authentication.models import User
 from dripdrop.models import Base
@@ -62,7 +61,7 @@ class BaseTest(IsolatedAsyncioTestCase):
     async def create_user(self, email: str, password: str, admin=False, verified=True):
         user = User(
             email=email,
-            password=password_context.hash(password),
+            password=password,
             admin=admin,
             verified=verified,
         )
@@ -84,3 +83,18 @@ class BaseTest(IsolatedAsyncioTestCase):
             dt: datetime
 
         return DatetimeModel(dt=dt).model_dump(mode="json")["dt"]
+
+    def create_mock_async_generator(self, items):
+        class MockAsyncGenerator:
+            def __init__(self, items):
+                self.items = items
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if not self.items:
+                    raise StopAsyncIteration
+                return self.items.pop(0)
+
+        return MockAsyncGenerator(items)

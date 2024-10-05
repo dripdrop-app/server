@@ -44,12 +44,14 @@ class YoutubeBaseTest(BaseTest):
             id=id,
             title=title,
             thumbnail=thumbnail,
-            last_videos_updated=last_videos_updated
-            if last_videos_updated
-            else datetime.now(tz=settings.timezone),
-            modified_at=modified_at
-            if modified_at
-            else datetime.now(tz=settings.timezone),
+            last_videos_updated=(
+                last_videos_updated
+                if last_videos_updated
+                else datetime.now(tz=settings.timezone)
+            ),
+            modified_at=(
+                modified_at if modified_at else datetime.now(tz=settings.timezone)
+            ),
         )
         self.session.add(youtube_channel)
         await self.session.commit()
@@ -95,9 +97,9 @@ class YoutubeBaseTest(BaseTest):
             channel_id=channel_id,
             category_id=category_id,
             description=description,
-            published_at=published_at
-            if published_at
-            else datetime.now(settings.timezone),
+            published_at=(
+                published_at if published_at else datetime.now(settings.timezone)
+            ),
         )
         self.session.add(youtube_video)
         await self.session.commit()
@@ -144,3 +146,9 @@ class YoutubeBaseTest(BaseTest):
         results = await self.session.scalars(query)
         youtube_video_queue = results.first()
         return youtube_video_queue
+
+    async def create_user_youtube_channel(self, email: str, channel_id: str):
+        user_youtube_channel = YoutubeUserChannel(email=email, id=channel_id)
+        self.session.add(user_youtube_channel)
+        await self.session.commit()
+        return user_youtube_channel
