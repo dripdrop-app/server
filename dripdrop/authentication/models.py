@@ -48,8 +48,7 @@ class User(Base):
     @classmethod
     async def find_by_email(cls, email: str, session: AsyncSession):
         query = select(User).where(User.email == email)
-        results = await session.scalars(query)
-        user = results.first()
+        user = await session.scalar(query)
         return user
 
 

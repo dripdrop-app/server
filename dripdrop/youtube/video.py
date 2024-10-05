@@ -1,19 +1,23 @@
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload
 
 from dripdrop.authentication.dependencies import (
     get_authenticated_user,
     AuthenticatedUser,
 )
 from dripdrop.base.dependencies import DatabaseSession
-from dripdrop.youtube import utils
 from dripdrop.youtube.models import (
     YoutubeVideo,
     YoutubeVideoQueue,
     YoutubeVideoLike,
     YoutubeVideoWatch,
 )
-from dripdrop.youtube.responses import ErrorMessages, VideoResponse
+from dripdrop.youtube.responses import (
+    ErrorMessages,
+    VideoResponse,
+    YoutubeVideoResponse,
+)
 
 api = APIRouter(
     prefix="/video/{video_id}",
@@ -35,19 +39,36 @@ async def get_youtube_video(
     video_id: str = Path(...),
     related_videos_length: int = Query(5, ge=0),
 ):
-    query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-    results = await session.scalars(query)
-    video = results.first()
+    query = (
+        select(YoutubeVideo)
+        .where(YoutubeVideo.id == video_id)
+        .options(
+            joinedload(YoutubeVideo.channel),
+            joinedload(YoutubeVideo.category),
+            selectinload(YoutubeVideo.likes.and_(YoutubeVideoLike.email == user.email)),
+            selectinload(
+                YoutubeVideo.watches.and_(YoutubeVideoWatch.email == user.email)
+            ),
+            selectinload(
+                YoutubeVideo.queues.and_(YoutubeVideoQueue.email == user.email)
+            ),
+        )
+    )
+    video = await session.scalar(query)
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorMessages.VIDEO_NOT_FOUND,
         )
-    videos = await utils.get_videos_attributes(
-        session=session, user=user, videos=[video]
+    video = YoutubeVideoResponse(
+        **video.__dict__,
+        channel_title=video.channel.title,
+        channel_thumbnail=video.channel.thumbnail,
+        category_name=video.category.name,
+        watched=video.watches[0].created_at if video.watches else None,
+        liked=video.likes[0].created_at if video.likes else None,
+        queued=video.queues[0].created_at if video.queues else None,
     )
-    video = videos[0]
-
     related_videos = []
     if related_videos_length > 0:
         query = (
@@ -58,11 +79,34 @@ async def get_youtube_video(
             )
             .order_by(YoutubeVideo.published_at.desc())
             .limit(related_videos_length)
+            .options(
+                joinedload(YoutubeVideo.channel),
+                joinedload(YoutubeVideo.category),
+                selectinload(
+                    YoutubeVideo.likes.and_(YoutubeVideoLike.email == user.email)
+                ),
+                selectinload(
+                    YoutubeVideo.watches.and_(YoutubeVideoWatch.email == user.email)
+                ),
+                selectinload(
+                    YoutubeVideo.queues.and_(YoutubeVideoQueue.email == user.email)
+                ),
+            )
         )
         results = await session.scalars(query)
-        related_videos = await utils.get_videos_attributes(
-            session=session, user=user, videos=results.all()
-        )
+        related_videos = results.all()
+        related_videos = [
+            YoutubeVideoResponse(
+                **video.__dict__,
+                channel_title=video.channel.title,
+                channel_thumbnail=video.channel.thumbnail,
+                category_name=video.category.name,
+                watched=video.watches[0].created_at if video.watches else None,
+                liked=video.likes[0].created_at if video.likes else None,
+                queued=video.queues[0].created_at if video.queues else None,
+            )
+            for video in related_videos
+        ]
     return VideoResponse(video=video, related_videos=related_videos)
 
 
@@ -79,8 +123,7 @@ async def add_youtube_video_watch(
     user: AuthenticatedUser, session: DatabaseSession, video_id: str = Path(...)
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-    results = await session.execute(query)
-    video = results.first()
+    video = await session.scalar(query)
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -90,8 +133,7 @@ async def add_youtube_video_watch(
         YoutubeVideoWatch.email == user.email,
         YoutubeVideoWatch.video_id == video_id,
     )
-    results = await session.scalars(query)
-    watch = results.first()
+    watch = await session.scalar(query)
     if watch:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -115,8 +157,7 @@ async def add_youtube_video_like(
     user: AuthenticatedUser, session: DatabaseSession, video_id: str = Path(...)
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-    results = await session.execute(query)
-    video = results.first()
+    video = await session.scalar(query)
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -126,8 +167,7 @@ async def add_youtube_video_like(
         YoutubeVideoLike.email == user.email,
         YoutubeVideoLike.video_id == video_id,
     )
-    results = await session.scalars(query)
-    like = results.first()
+    like = await session.scalar(query)
     if like:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -153,8 +193,7 @@ async def delete_youtube_video_like(
         YoutubeVideoLike.email == user.email,
         YoutubeVideoLike.video_id == video_id,
     )
-    results = await session.scalars(query)
-    like = results.first()
+    like = await session.scalar(query)
     if not like:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -178,8 +217,7 @@ async def add_youtube_video_queue(
     user: AuthenticatedUser, session: DatabaseSession, video_id: str = Path(...)
 ):
     query = select(YoutubeVideo).where(YoutubeVideo.id == video_id)
-    results = await session.scalars(query)
-    video = results.first()
+    video = await session.scalar(query)
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -189,8 +227,7 @@ async def add_youtube_video_queue(
         YoutubeVideoQueue.video_id == video_id,
         YoutubeVideoQueue.email == user.email,
     )
-    results = await session.scalars(query)
-    video_queue = results.first()
+    video_queue = await session.scalar(query)
     if video_queue:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -216,8 +253,7 @@ async def delete_youtube_video_queue(
         YoutubeVideoQueue.email == user.email,
         YoutubeVideoQueue.video_id == video_id,
     )
-    results = await session.scalars(query)
-    queue = results.first()
+    queue = await session.scalar(query)
     if not queue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

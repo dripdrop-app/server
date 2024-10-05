@@ -29,8 +29,7 @@ async def delete_subscription(
         YoutubeSubscription.channel_id == channel_id,
         YoutubeSubscription.email == email,
     )
-    results = await session.scalars(query)
-    subscription = results.first()
+    subscription = await session.scalar(query)
     if not subscription:
         raise Exception(f"Subscription ({channel_id}, {email}) not found")
     subscription.deleted_at = get_current_time()
@@ -40,8 +39,7 @@ async def delete_subscription(
 @rq_client.worker_task
 async def update_user_subscriptions(email: str = ..., session: AsyncSession = ...):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == email)
-    results = await session.scalars(query)
-    user_channel = results.first()
+    user_channel = await session.scalar(query)
     if not user_channel:
         return
 
@@ -52,8 +50,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
             query = select(YoutubeChannel).where(
                 YoutubeChannel.id == subscribed_channel.id
             )
-            results = await session.scalars(query)
-            channel = results.first()
+            channel = await session.scalar(query)
             if channel:
                 channel.title = subscribed_channel.title
                 channel.thumbnail = subscribed_channel.thumbnail
@@ -75,8 +72,7 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                 YoutubeSubscription.channel_id == channel.id,
                 YoutubeSubscription.email == email,
             )
-            results = await session.scalars(query)
-            subscription = results.first()
+            subscription = await session.scalar(query)
             if not subscription:
                 session.add(YoutubeSubscription(email=email, channel_id=channel.id))
             else:
@@ -87,8 +83,8 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                 YoutubeNewSubscription.channel_id == subscribed_channel.id,
                 YoutubeNewSubscription.email == email,
             )
-            results = await session.scalars(query)
-            if not results.first():
+            new_subscription = await session.scalar(query)
+            if not new_subscription:
                 session.add(
                     YoutubeNewSubscription(
                         channel_id=subscribed_channel.id, email=email
@@ -141,8 +137,7 @@ async def add_channel_videos(
     )
 
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_id)
-    results = await session.scalars(query)
-    channel = results.first()
+    channel = await session.scalar(query)
     if not channel:
         raise Exception(f"Channel ({channel_id}) not found")
 
@@ -163,8 +158,7 @@ async def add_channel_videos(
                 break
 
             query = select(YoutubeVideo).where(YoutubeVideo.id == video.id)
-            results = await session.scalars(query)
-            existing_video = results.first()
+            existing_video = await session.scalar(query)
 
             if existing_video:
                 existing_video.title = video.title
@@ -216,8 +210,7 @@ async def update_channel_videos(
         query = select(YoutubeChannel).where(
             YoutubeChannel.id == subscription.channel_id
         )
-        results = await session.scalars(query)
-        channel = results.first()
+        channel = await session.scalar(query)
         if channel:
             date_after_time = min(
                 get_current_time() - timedelta(days=1),
@@ -263,8 +256,7 @@ async def update_video_categories(session: AsyncSession = ...):
             query = select(YoutubeVideoCategory).where(
                 YoutubeVideoCategory.id == video_category.id
             )
-            results = await session.scalars(query)
-            existing_video_category = results.first()
+            existing_video_category = await session.scalar(query)
             if existing_video_category:
                 existing_video_category.name = video_category.name
             else:

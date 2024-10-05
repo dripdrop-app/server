@@ -91,8 +91,7 @@ class MusicBaseTest(BaseTest):
         query = select(MusicJob).where(
             MusicJob.user_email == email, MusicJob.id == music_job_id
         )
-        results = await self.session.scalars(query)
-        job = results.first()
+        job = await self.session.scalar(query)
         self.assertIsNotNone(job)
         return job
 

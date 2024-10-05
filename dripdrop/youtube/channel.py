@@ -60,8 +60,7 @@ async def listen_channels(websocket: WebSocket):
 )
 async def get_user_youtube_channel(user: AuthenticatedUser, session: DatabaseSession):
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == user.email)
-    results = await session.scalars(query)
-    user_channel = results.first()
+    user_channel = await session.scalar(query)
     if not user_channel:
         raise HTTPException(
             detail=ErrorMessages.CHANNEL_NOT_FOUND,
@@ -83,8 +82,7 @@ async def update_user_youtube_channel(
             detail=ErrorMessages.CHANNEL_NOT_FOUND,
         )
     query = select(YoutubeUserChannel).where(YoutubeUserChannel.email == user.email)
-    results = await session.scalars(query)
-    user_channel = results.first()
+    user_channel = await session.scalar(query)
     if user_channel:
         current_time = dripdrop_utils.get_current_time()
         time_elasped = current_time - user_channel.modified_at
@@ -124,7 +122,7 @@ async def get_youtube_channel(
         )
     )
     results = await session.execute(query)
-    channel = results.scalars().first()
+    channel = results.scalar()
     if not channel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

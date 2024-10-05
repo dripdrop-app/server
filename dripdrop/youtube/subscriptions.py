@@ -47,11 +47,11 @@ async def get_youtube_subscriptions(
         .order_by(YoutubeChannel.title)
         .options(joinedload(YoutubeSubscription.channel))
     )
-    results = await session.execute(query.offset((page - 1) * per_page).limit(per_page))
-    results = results.scalars().all()
-    count = await session.scalar(
-        select(func.count(query.subquery().columns.channel_id))
-    )
+    subscriptions_query = query.offset((page - 1) * per_page).limit(per_page)
+    results = await session.scalars(subscriptions_query)
+    subscriptions = results.all()
+    count_query = select(func.count(query.subquery().columns.channel_id))
+    count = await session.scalar(count_query)
     total_pages = math.ceil(count / per_page)
     if page > total_pages and page != 1:
         raise HTTPException(
@@ -63,7 +63,7 @@ async def get_youtube_subscriptions(
             channel_title=subscription.channel.title,
             channel_thumbnail=subscription.channel.thumbnail,
         )
-        for subscription in results
+        for subscription in subscriptions
     ]
     return SubscriptionsResponse(subscriptions=subscriptions, total_pages=total_pages)
 
@@ -90,11 +90,9 @@ async def add_user_subscription(
         YoutubeSubscription.email == user.email,
         YoutubeSubscription.channel_id == channel_info.id,
     )
-    results = await session.scalars(query)
-    subscription = results.first()
+    subscription = await session.scalar(query)
     query = select(YoutubeChannel).where(YoutubeChannel.id == channel_info.id)
-    results = await session.scalars(query)
-    channel = results.first()
+    channel = await session.scalar(query)
     if not subscription:
         if not channel:
             channel = YoutubeChannel(
@@ -139,8 +137,7 @@ async def delete_user_subscription(
         YoutubeSubscription.email == user.email,
         YoutubeSubscription.channel_id == channel_id,
     )
-    results = await session.scalars(query)
-    subscription = results.first()
+    subscription = await session.scalar(query)
     if not subscription:
         raise HTTPException(
             detail=ErrorMessages.SUBSCRIPTION_NOT_FOUND,

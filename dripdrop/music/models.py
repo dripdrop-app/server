@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dripdrop.authentication.models import User
 from dripdrop.base.models import Base
+from dripdrop.services import s3
 
 
 class MusicJob(Base):
@@ -36,3 +37,11 @@ class MusicJob(Base):
         TIMESTAMP(timezone=True), nullable=True
     )
     user: Mapped[User] = relationship(back_populates="jobs", uselist=True)
+
+    async def cleanup(self):
+        if self.artwork_filename:
+            await s3.delete_file(filename=self.artwork_filename)
+        if self.download_filename:
+            await s3.delete_file(filename=self.download_filename)
+        if self.original_filename:
+            await s3.delete_file(filename=self.original_filename)

@@ -16,8 +16,7 @@ async def get_user_from_token(token: str, session: AsyncSession):
     if not email:
         return None
     query = select(User).where(User.email == email)
-    results = await session.scalars(query)
-    user = results.first()
+    user = await session.scalar(query)
     return user
 
 

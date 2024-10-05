@@ -115,14 +115,13 @@ async def delete_job(
     query = select(MusicJob).where(
         MusicJob.id == job_id, MusicJob.user_email == user.email
     )
-    results = await session.scalars(query)
-    music_job = results.first()
+    music_job = await session.scalar(query)
     if not music_job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
         )
     await asyncio.to_thread(rq_client.stop_job, job_id=job_id)
-    await utils.cleanup_music_job(music_job=music_job)
+    await music_job.cleanup()
     music_job.deleted_at = get_current_time()
     await session.commit()
     return Response(None)
@@ -131,8 +130,7 @@ async def delete_job(
 @api.get("/{job_id}/download", responses={status.HTTP_404_NOT_FOUND: {}})
 async def download_job(session: DatabaseSession, job_id: str = Path(...)):
     query = select(MusicJob).where(MusicJob.id == job_id)
-    results = await session.scalars(query)
-    music_job = results.first()
+    music_job = await session.scalar(query)
     if not music_job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ErrorMessages.JOB_NOT_FOUND
