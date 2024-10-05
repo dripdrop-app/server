@@ -36,9 +36,9 @@ if __name__ == "__main__":
         replace_existing=True,
     )
     scheduler.add_job(
-        youtube_tasks.update_video_categories,
+        youtube_tasks.update_video_categories_cron,
         trigger=CronTrigger.from_crontab("0 0 * * *"),
-        id="update_channel_videos",
+        id="update_video_categories",
         replace_existing=True,
     )
     try:
