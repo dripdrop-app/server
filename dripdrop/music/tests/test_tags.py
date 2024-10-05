@@ -13,7 +13,7 @@ class GetTagsTestCase(MusicBaseTest):
     async def test_tags_with_an_invalid_file(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
         response = await self.http_client.get(
-            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/dripdrop.png"
+            "https://ewr1.vultrobjects.com/dripdrop-prod/assets/dripdrop.png"
         )
         file = response.content
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -33,7 +33,7 @@ class GetTagsTestCase(MusicBaseTest):
     async def test_tags_with_a_mp3_without_tags(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
         response = await self.http_client.get(
-            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/sample4.mp3"
+            "https://ewr1.vultrobjects.com/dripdrop-prod/assets/sample4.mp3"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         file = response.content
@@ -53,8 +53,7 @@ class GetTagsTestCase(MusicBaseTest):
     async def test_tags_with_a_valid_mp3_file(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")
         response = await self.http_client.get(
-            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/"
-            + "Criminal+Sinny+%26+Fako.mp3"
+            "https://ewr1.vultrobjects.com/dripdrop-prod/assets/Criminal%20Sinny%20&%20Fako.mp3"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         file = response.content

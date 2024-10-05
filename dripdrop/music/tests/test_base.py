@@ -20,10 +20,10 @@ class MusicBaseTest(BaseTest):
         await self.clean_test_s3_folders()
 
         self.test_image_url = (
-            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/dripdrop.png"
+            "https://ewr1.vultrobjects.com/dripdrop-prod/assets/dripdrop.png"
         )
         self.test_audio_file_url = (
-            "https://dripdrop-prod.s3.us-east-005.backblazeb2.com/assets/07+tun+suh.mp3"
+            "https://ewr1.vultrobjects.com/dripdrop-prod/assets/07%20tun%20suh.mp3"
         )
         self.test_video_url = "https://www.youtube.com/watch?v=C0DPdy98e4c"
 
