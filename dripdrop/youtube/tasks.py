@@ -58,33 +58,27 @@ async def update_user_subscriptions(email: str = ..., session: AsyncSession = ..
                 channel.title = subscribed_channel.title
                 channel.thumbnail = subscribed_channel.thumbnail
             else:
-                session.add(
-                    YoutubeChannel(
-                        id=subscribed_channel.id,
-                        title=subscribed_channel.title,
-                        thumbnail=subscribed_channel.thumbnail,
-                        last_videos_updated=get_current_time() - timedelta(days=365),
-                    )
+                channel = YoutubeChannel(
+                    id=subscribed_channel.id,
+                    title=subscribed_channel.title,
+                    thumbnail=subscribed_channel.thumbnail,
+                    last_videos_updated=get_current_time() - timedelta(days=365),
                 )
+                session.add(channel)
                 await session.commit()
                 await asyncio.to_thread(
                     rq_client.default.enqueue,
                     add_channel_videos,
-                    channel_id=subscribed_channel.id,
+                    channel_id=channel.id,
                 )
             query = select(YoutubeSubscription).where(
-                YoutubeSubscription.channel_id == subscribed_channel.id,
+                YoutubeSubscription.channel_id == channel.id,
                 YoutubeSubscription.email == email,
             )
             results = await session.scalars(query)
             subscription = results.first()
             if not subscription:
-                session.add(
-                    YoutubeSubscription(
-                        email=email,
-                        channel_id=subscribed_channel.id,
-                    )
-                )
+                session.add(YoutubeSubscription(email=email, channel_id=channel.id))
             else:
                 if not subscription.user_submitted:
                     subscription.deleted_at = None

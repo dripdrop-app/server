@@ -10,7 +10,6 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import RedirectResponse
-from passlib.context import CryptContext
 from pydantic import EmailStr, BaseModel
 
 from dripdrop.authentication import utils
@@ -19,7 +18,7 @@ from dripdrop.authentication.dependencies import (
     COOKIE_NAME,
     get_authenticated_user,
 )
-from dripdrop.authentication.models import User
+from dripdrop.authentication.models import User, password_context
 from dripdrop.authentication.responses import (
     AuthenticatedResponse,
     AuthenticatedResponseModel,
@@ -30,7 +29,6 @@ from dripdrop.base.dependencies import DatabaseSession, RedisClient
 from dripdrop.logger import logger
 from dripdrop.services import sendgrid_client
 
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI(openapi_tags=["Authentication"])
 
@@ -54,7 +52,7 @@ async def login(
     email: str = Body(...),
     password: str = Body(..., min_length=8),
 ):
-    user = await utils.find_user_by_email(email=email, session=session)
+    user = await User.get_by_email(email=email, session=session)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     verified, new_hashed_pw = password_context.verify_and_update(
@@ -102,13 +100,12 @@ async def create_account(
     email: EmailStr = Body(...),
     password: str = Body(..., min_length=8),
 ):
-    user = await utils.find_user_by_email(email=email, session=session)
+    user = await User.find_by_email(email=email, session=session)
     if user:
         raise HTTPException(
             detail=ErrorMessages.AccountExists, status_code=status.HTTP_400_BAD_REQUEST
         )
-    hashed_pw = password_context.hash(password)
-    user = User(email=email, password=hashed_pw)
+    user = User(email=email, password=password)
     verification_code = utils.generate_random_string(length=7)
     await redis.set(f"verify:{verification_code}", email, ex=3600)
     verify_link = utils.generate_server_link(
@@ -140,7 +137,7 @@ async def verify_email(
             status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.TokenError
         )
     email = email.decode()
-    user = await utils.find_user_by_email(email=email, session=session)
+    user = await User.find_by_email(email=email, session=session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -163,7 +160,7 @@ async def send_reset_email(
     reset_email: ResetEmail = Body(...),
 ):
     email = reset_email.email
-    user = await utils.find_user_by_email(email=email, session=session)
+    user = await User.find_by_email(email=email, session=session)
     if not user:
         raise HTTPException(
             detail=ErrorMessages.AccountDoesNotExist,
@@ -199,14 +196,13 @@ async def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.TokenError
         )
     email = email.decode()
-    user = await utils.find_user_by_email(email=email, session=session)
+    user = await User.find_by_email(email=email, session=session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorMessages.AccountDoesNotExist,
         )
-    hashed_pw = password_context.hash(password)
-    user.password = hashed_pw
+    user.password = password_context.hash(password)
     await session.commit()
     await redis.delete(f"reset:{token}")
     return Response(None, status_code=status.HTTP_204_NO_CONTENT)
