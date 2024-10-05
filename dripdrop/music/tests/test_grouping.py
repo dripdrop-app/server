@@ -1,10 +1,12 @@
 from fastapi import status
+from unittest import skip
 
 from dripdrop.music.tests.test_base import MusicBaseTest
 
 GROUPING_URL = "/api/music/grouping"
 
 
+@skip("Invidious can no longer retrieve youtube video info")
 class GetGroupingTestCase(MusicBaseTest):
     async def test_grouping_when_not_logged_in(self):
         response = await self.client.get(

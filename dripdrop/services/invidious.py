@@ -1,14 +1,13 @@
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 from urllib.parse import urljoin
 
 from dripdrop.services import http_client
 from dripdrop.settings import settings
 
 
-@dataclass
-class ChannelVideosResponse:
+class ChannelVideosResponse(BaseModel):
     videos: list[dict]
-    continuation: str | None = field(default=None)
+    continuation: str | None = Field(None)
 
 
 async def get_youtube_video_info(video_id: str):

@@ -22,8 +22,13 @@ async def check_admin_session():
 
 @app.get("/cron/run")
 async def run_cron_jobs():
+    update_video_categories_job = await asyncio.to_thread(
+        rq_client.default.enqueue, youtube_tasks.update_video_categories
+    )
     update_subscriptions_job = await asyncio.to_thread(
-        rq_client.default.enqueue, youtube_tasks.update_subscriptions
+        rq_client.default.enqueue,
+        youtube_tasks.update_subscriptions,
+        depends_on=update_video_categories_job,
     )
     await asyncio.to_thread(
         rq_client.default.enqueue,
@@ -79,4 +84,12 @@ async def run_update_channel_videos(
             channel_id=channel_id,
             date_after=date_after,
         )
+    return Response(None, status_code=status.HTTP_200_OK)
+
+
+@app.get("/update_video_categories")
+async def run_update_video_categories():
+    await asyncio.to_thread(
+        rq_client.default.enqueue, youtube_tasks.update_video_categories
+    )
     return Response(None, status_code=status.HTTP_200_OK)

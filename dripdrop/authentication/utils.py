@@ -4,22 +4,12 @@ import string
 import urllib.parse
 from datetime import timedelta
 from fastapi import Request
-from sqlalchemy import select
 from typing import Any
 
-from dripdrop.authentication.models import User
-from dripdrop.services.database import AsyncSession
 from dripdrop.settings import settings, ENV
 from dripdrop.utils import get_current_time
 
 ALGORITHM = "HS256"
-
-
-async def find_user_by_email(email: str, session: AsyncSession):
-    query = select(User).where(User.email == email)
-    results = await session.scalars(query)
-    user = results.first()
-    return user
 
 
 def create_jwt(email: str):
