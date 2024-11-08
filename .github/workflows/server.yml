@@ -7,113 +7,113 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-            - name: Get Secrets
-              uses: bitwarden/sm-action@v2
-              with:
-                access_token: ${{ secrets.BITWARDEN_TOKEN }}
-                base_url: https://vault.bitwarden.com
-                secrets: |
-                  aef0ac30-01e8-4399-8942-b174001ea684 > ASYNC_DATABASE_URL
-                  8e44c921-abbf-4a65-b0b3-b174001ebb56 > AWS_ACCESS_KEY_ID
-                  350b44ef-bfaf-4554-84c2-b174001ecc80 > AWS_ENDPOINT_URL
-                  fee5c49b-0b3e-4af6-9349-b1d4005ac72c > AWS_REGION_NAME
-                  5bb9cef5-1d99-4b23-9910-b1d4005ae3ec > AWS_S3_ARTWORK_FOLDER
-                  0f607147-ddaa-4b41-9c98-b1d4005b01d6 > AWS_S3_BUCKET
-                  7238e469-4545-4fd3-9e3e-b1d4005b1980 > AWS_S3_MUSIC_FOLDER
-                  1d271bde-b4ce-4f9a-9824-b1d4005b2ab1 > AWS_SECRET_ACCESS_KEY
-                  11f896f0-e09c-4647-a409-b1d4005b345b > DATABASE
-                  d7703d5c-ba36-4d31-be44-b1d4005b41e2 > DATABASE_PASSWORD
-                  9cb8ab24-4091-466c-8a6b-b1d4005b4fcc > DATABASE_URL
-                  146e3080-94fc-43e6-b08d-b1d4005b601f > DATABASE_USER
-                  e7ccc525-4150-4ced-a70c-b1d4005b6bcd > GOOGLE_API_KEY
-                  b499c24b-4b70-4abc-915b-b1d4005e49b4 > INVIDIOUS_API_URL
-                  76a7a42b-fc61-42fd-b3ef-b1d4005b7866 > REDIS_URL
-                  2a6f1909-0d06-4328-b159-b1d4005b8464 > SECRET_KEY
-                  1284e4c2-5adb-4c52-9adb-b1d4005b913c > SENDGRID_API_KEY
-                  1e1ca9a3-8059-45d6-a91f-b1d4005ba0ba > TEST_ASYNC_DATABASE_URL
-                  49b38dfc-ba83-427d-a3ff-b1d4005bae63 > TEST_AWS_S3_BUCKET
-                  b41d7b66-0520-429f-9af8-b1d4005bb9f7 > TEST_REDIS_URL
-            - name: Run tests
-              run: |
-                echo "ASYNC_DATABASE_URL=$ASYNC_DATABASE_URL" >> .env
-                echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
-                echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
-                echo "AWS_REGION_NAME=$AWS_REGION_NAME" >> .env
-                echo "AWS_S3_ARTWORK_FOLDER=$AWS_S3_ARTWORK_FOLDER" >> .env
-                echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
-                echo "AWS_S3_MUSIC_FOLDER=$AWS_S3_MUSIC_FOLDER" >> .env
-                echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
-                echo "DATABASE=$DATABASE" >> .env
-                echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
-                echo "DATABASE_URL=$DATABASE_URL" >> .env
-                echo "DATABASE_USER=$DATABASE_USER" >> .env
-                echo "ENV=$ENV" >> .env
-                echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
-                echo "INVIDIOUS_API_URL=$INVIDIOUS_API_URL" >> .env
-                echo "REDIS_URL=$REDIS_URL" >> .env
-                echo "SECRET_KEY=$SECRET_KEY" >> .env
-                echo "SENDGRID_API_KEY=$SENDGRID_API_KEY" >> .env
-                echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
-                echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
-                echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
-                ./scripts/run.sh test
-              env:
-                ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
-                AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-                AWS_ENDPOINT_URL: ${{ env.AWS_ENDPOINT_URL }}
-                AWS_REGION_NAME: ${{ env.AWS_REGION_NAME }}
-                AWS_S3_ARTWORK_FOLDER: ${{ env.AWS_S3_ARTWORK_FOLDER }}
-                AWS_S3_BUCKET: ${{ env.AWS_S3_BUCKET }}
-                AWS_S3_MUSIC_FOLDER: ${{ env.AWS_S3_MUSIC_FOLDER }}
-                AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-                DATABASE: ${{ env.DATABASE }}
-                DATABASE_PASSWORD: ${{ env.DATABASE_PASSWORD }}
-                DATABASE_URL: ${{ env.DATABASE_URL }}
-                DATABASE_USER: ${{ env.DATABASE_USER }}
-                ENV: testing
-                GOOGLE_API_KEY: ${{ env.GOOGLE_API_KEY }}
-                INVIDIOUS_API_URL: ${{ env.INVIDIOUS_API_URL }}
-                REDIS_URL: ${{ env.REDIS_URL }}
-                SECRET_KEY: ${{ env.SECRET_KEY }}
-                SENDGRID_API_KEY: ${{ env.SENDGRID_API_KEY }}
-                TEST_ASYNC_DATABASE_URL: ${{ env.TEST_ASYNC_DATABASE_URL }}
-                TEST_AWS_S3_BUCKET: ${{ env.TEST_AWS_S3_BUCKET }}
-                TEST_REDIS_URL: ${{ env.TEST_REDIS_URL }}
-    deploy:
-        if: ${{ github.ref_name == 'main' }}
-        runs-on: ubuntu-latest
-        needs: test
-        permissions:
-          contents: read
-          packages: write
-          attestations: write
-          id-token: write
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-            - name: Log in to the Container registry
-              uses: docker/login-action@v3
-              with:
-                registry: ${{ env.REGISTRY }}
-                username: ${{ github.actor }}
-                password: ${{ secrets.GITHUB_TOKEN }}
-            - name: Extract metadata (tags, labels) for Docker
-              id: meta
-              uses: docker/metadata-action@v5
-              with:
-                images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-                tags: |
-                  type=raw,value=latest,enable={{is_default_branch}}
-            - name: Build and push Docker image
-              id: push
-              uses: docker/build-push-action@v6
-              with:
-                context: .
-                push: true
-                tags: ${{ steps.meta.outputs.tags }}
-                labels: ${{ steps.meta.outputs.labels }}
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Get Secrets
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BITWARDEN_TOKEN }}
+          base_url: https://vault.bitwarden.com
+          secrets: |
+            aef0ac30-01e8-4399-8942-b174001ea684 > ASYNC_DATABASE_URL
+            8e44c921-abbf-4a65-b0b3-b174001ebb56 > AWS_ACCESS_KEY_ID
+            350b44ef-bfaf-4554-84c2-b174001ecc80 > AWS_ENDPOINT_URL
+            fee5c49b-0b3e-4af6-9349-b1d4005ac72c > AWS_REGION_NAME
+            5bb9cef5-1d99-4b23-9910-b1d4005ae3ec > AWS_S3_ARTWORK_FOLDER
+            0f607147-ddaa-4b41-9c98-b1d4005b01d6 > AWS_S3_BUCKET
+            7238e469-4545-4fd3-9e3e-b1d4005b1980 > AWS_S3_MUSIC_FOLDER
+            1d271bde-b4ce-4f9a-9824-b1d4005b2ab1 > AWS_SECRET_ACCESS_KEY
+            11f896f0-e09c-4647-a409-b1d4005b345b > DATABASE
+            d7703d5c-ba36-4d31-be44-b1d4005b41e2 > DATABASE_PASSWORD
+            9cb8ab24-4091-466c-8a6b-b1d4005b4fcc > DATABASE_URL
+            146e3080-94fc-43e6-b08d-b1d4005b601f > DATABASE_USER
+            e7ccc525-4150-4ced-a70c-b1d4005b6bcd > GOOGLE_API_KEY
+            b499c24b-4b70-4abc-915b-b1d4005e49b4 > INVIDIOUS_API_URL
+            76a7a42b-fc61-42fd-b3ef-b1d4005b7866 > REDIS_URL
+            2a6f1909-0d06-4328-b159-b1d4005b8464 > SECRET_KEY
+            1284e4c2-5adb-4c52-9adb-b1d4005b913c > SENDGRID_API_KEY
+            1e1ca9a3-8059-45d6-a91f-b1d4005ba0ba > TEST_ASYNC_DATABASE_URL
+            49b38dfc-ba83-427d-a3ff-b1d4005bae63 > TEST_AWS_S3_BUCKET
+            b41d7b66-0520-429f-9af8-b1d4005bb9f7 > TEST_REDIS_URL
+      - name: Run tests
+        run: |
+          echo "ASYNC_DATABASE_URL=$ASYNC_DATABASE_URL" >> .env
+          echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+          echo "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL" >> .env
+          echo "AWS_REGION_NAME=$AWS_REGION_NAME" >> .env
+          echo "AWS_S3_ARTWORK_FOLDER=$AWS_S3_ARTWORK_FOLDER" >> .env
+          echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
+          echo "AWS_S3_MUSIC_FOLDER=$AWS_S3_MUSIC_FOLDER" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+          echo "DATABASE=$DATABASE" >> .env
+          echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env
+          echo "DATABASE_URL=$DATABASE_URL" >> .env
+          echo "DATABASE_USER=$DATABASE_USER" >> .env
+          echo "ENV=$ENV" >> .env
+          echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
+          echo "INVIDIOUS_API_URL=$INVIDIOUS_API_URL" >> .env
+          echo "REDIS_URL=$REDIS_URL" >> .env
+          echo "SECRET_KEY=$SECRET_KEY" >> .env
+          echo "SENDGRID_API_KEY=$SENDGRID_API_KEY" >> .env
+          echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
+          echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
+          echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
+          ./scripts/run.sh test
+        env:
+          ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_ENDPOINT_URL: ${{ env.AWS_ENDPOINT_URL }}
+          AWS_REGION_NAME: ${{ env.AWS_REGION_NAME }}
+          AWS_S3_ARTWORK_FOLDER: ${{ env.AWS_S3_ARTWORK_FOLDER }}
+          AWS_S3_BUCKET: ${{ env.AWS_S3_BUCKET }}
+          AWS_S3_MUSIC_FOLDER: ${{ env.AWS_S3_MUSIC_FOLDER }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          DATABASE: ${{ env.DATABASE }}
+          DATABASE_PASSWORD: ${{ env.DATABASE_PASSWORD }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_USER: ${{ env.DATABASE_USER }}
+          ENV: testing
+          GOOGLE_API_KEY: ${{ env.GOOGLE_API_KEY }}
+          INVIDIOUS_API_URL: ${{ env.INVIDIOUS_API_URL }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          SECRET_KEY: ${{ env.SECRET_KEY }}
+          SENDGRID_API_KEY: ${{ env.SENDGRID_API_KEY }}
+          TEST_ASYNC_DATABASE_URL: ${{ env.TEST_ASYNC_DATABASE_URL }}
+          TEST_AWS_S3_BUCKET: ${{ env.TEST_AWS_S3_BUCKET }}
+          TEST_REDIS_URL: ${{ env.TEST_REDIS_URL }}
+  deploy:
+    if: ${{ github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
