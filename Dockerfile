@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.13
 RUN apt-get update && apt-get upgrade -y && apt install ffmpeg -y
 RUN pip install -U pip
 RUN pip install poetry
