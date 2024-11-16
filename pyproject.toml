@@ -2,22 +2,21 @@
 authors = [
     {name = "Mohamed Raffik"},
 ]
-requires-python = "<4.0,>=3.10"
+requires-python = "<4.0,>=3.12"
 dependencies = [
     "black<25.0.0,>=24.0.0",
     "alembic<2.0.0,>=1.8.1",
     "fastapi[all]==0.100.0",
-    "croniter<2.0.0,>=1.3.7",
+    "croniter>=5.0.0",
     "boto3<2.0.0,>=1.24.73",
     "redis<5.0.0,>=4.3.4",
     "rq<2.0.0,>=1.11.0",
     "yt-dlp[curl-cffi,default]<2025.0.0,>=2024.7.9",
     "mutagen<2.0.0,>=1.45.1",
-    "asgiref<4.0.0,>=3.5.2",
-    "flake8<6.0.0,>=5.0.4",
+    "flake8>=7.0.0",
     "psycopg2-binary<3.0.0,>=2.9.3",
     "beautifulsoup4<5.0.0,>=4.11.1",
-    "watchfiles<1.0.0,>=0.17.0",
+    "watchfiles>=0.24.0",
     "sqlalchemy<3.0.0,>=2.0.2",
     "asyncpg<1.0.0,>=0.30.0",
     "pyjwt[crypto]<3.0.0,>=2.6.0",
