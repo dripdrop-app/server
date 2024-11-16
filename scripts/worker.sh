@@ -3,7 +3,7 @@
 set -e
 
 if [[ "$ENV" == "development" ]]; then
-    poetry run watchfiles 'python -m dripdrop.worker' ./dripdrop
+    uv run watchfiles 'python -m dripdrop.worker' ./dripdrop
 else
-    poetry run python -m dripdrop.worker
+    uv run python -m dripdrop.worker
 fi
