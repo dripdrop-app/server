@@ -483,7 +483,7 @@ requires-dist = [
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4,<2.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.3,<3.0.0" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.6.0,<3.0.0" },
-    { name = "redis", specifier = ">=4.3.4,<5.0.0" },
+    { name = "redis", specifier = ">=5.2.0,<5.3.0" },
     { name = "rq", specifier = ">=1.11.0,<2.0.0" },
     { name = "sendgrid", specifier = ">=6.10.0,<7.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.2,<3.0.0" },
@@ -1073,11 +1073,11 @@ wheels = [
 
 [[package]]
 name = "redis"
-version = "4.6.0"
+version = "5.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/73/88/63d802c2b18dd9eaa5b846cbf18917c6b2882f20efda398cc16a7500b02c/redis-4.6.0.tar.gz", hash = "sha256:585dc516b9eb042a619ef0a39c3d7d55fe81bdb4df09a52c9cdde0d07bf1aa7d", size = 4561721 }
+sdist = { url = "https://files.pythonhosted.org/packages/53/17/2f4a87ffa4cd93714cf52edfa3ea94589e9de65f71e9f99cbcfa84347a53/redis-5.2.0.tar.gz", hash = "sha256:0b1087665a771b1ff2e003aa5bdd354f15a70c9e25d5a7dbf9c722c16528a7b0", size = 4607878 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/2e/409703d645363352a20c944f5d119bdae3eb3034051a53724a7c5fee12b8/redis-4.6.0-py3-none-any.whl", hash = "sha256:e2b03db868160ee4591de3cb90d40ebb50a90dd302138775937f6a42b7ed183c", size = 241149 },
+    { url = "https://files.pythonhosted.org/packages/12/f5/ffa560ecc4bafbf25f7961c3d6f50d627a90186352e27e7d0ba5b1f6d87d/redis-5.2.0-py3-none-any.whl", hash = "sha256:ae174f2bb3b1bf2b09d54bf3e51fbc1469cf6c10aa03e21141f51969801a7897", size = 261428 },
 ]
 
 [[package]]
