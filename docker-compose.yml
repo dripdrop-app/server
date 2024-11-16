@@ -3,10 +3,10 @@ x-restart_policy: &restart_policy
 
 x-logging: &logging
   logging:
-    driver: 'local'
+    driver: "local"
     options:
-      max-size: '10m'
-      max-file: '5'
+      max-size: "10m"
+      max-file: "5"
 
 x-depends-database: &depends-database
   dripdrop-postgres:
@@ -28,15 +28,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: dripdrop-server
-    command: [ "./scripts/server.sh" ]
+    command: ["./scripts/server.sh"]
     healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "-f",
-          "http://localhost:5000/healthcheck"
-        ]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthcheck"]
       interval: 30s
     environment:
       ENV: ${ENV}
@@ -55,7 +49,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: [ "./scripts/worker.sh" ]
+    command: ["./scripts/worker.sh"]
     environment:
       ENV: ${ENV}
       REDIS_URL: ${REDIS_URL}
@@ -72,7 +66,7 @@ services:
     image: postgres:14
     container_name: dripdrop-postgres
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "${DATABASE}" ]
+      test: ["CMD", "pg_isready", "-U", "${DATABASE}"]
       interval: 30s
     environment:
       POSTGRES_USER: ${DATABASE_USER}
@@ -93,7 +87,7 @@ services:
     image: redis
     container_name: dripdrop-redis
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
     volumes:
       - type: volume
