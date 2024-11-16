@@ -1,5 +1,5 @@
 FROM python:3.12-alpine
-RUN apk add ffmpeg --no-cache
+RUN apk add ffmpeg bash curl --no-cache
 RUN pip install -U pip
 RUN pip install uv
 RUN mkdir -p /src
