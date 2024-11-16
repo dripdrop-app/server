@@ -21,7 +21,7 @@ asgiref = "^3.5.2"
 flake8 = "^5.0.4"
 psycopg2-binary = "^2.9.3"
 beautifulsoup4 = "^4.11.1"
-watchfiles = "^0.17.0"
+watchfiles = "^0.24.0"
 sqlalchemy = "^2.0.2"
 asyncpg = "^0.30.0"
 pyjwt = {extras = ["crypto"], version = "^2.6.0"}
