@@ -3,7 +3,9 @@ from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import timedelta, timezone
+from redis.backoff import ExponentialBackoff
 from redis.connection import parse_url
+from redis.retry import Retry
 
 from dripdrop.logger import logger
 
@@ -14,7 +16,7 @@ from dripdrop.youtube import tasks as youtube_tasks
 EST = timezone(timedelta(hours=-5))
 
 scheduler = BackgroundScheduler(
-    jobstores={"default": RedisJobStore(**parse_url(settings.redis_url))},
+    jobstores={"default": RedisJobStore(**parse_url(settings.redis_url), retry=Retry(backoff=ExponentialBackoff(), retries=3))},
     timezone=EST,
     job_defaults={"misfire_grace_time": None, "coalesce": True},
     logger=logger,
