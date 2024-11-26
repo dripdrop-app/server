@@ -1,4 +1,4 @@
-FROM python:3.12-alpine
+FROM python:3.13-alpine
 RUN apk add ffmpeg bash curl --no-cache
 RUN pip install -U pip
 RUN pip install uv
