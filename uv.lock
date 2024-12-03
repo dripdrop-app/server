@@ -484,7 +484,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.3,<3.0.0" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.6.0,<3.0.0" },
     { name = "redis", specifier = ">=4.3.4,<5.0.0" },
-    { name = "rq", specifier = ">=1.11.0,<2.0.0" },
+    { name = "rq", specifier = ">=2.0.0,<2.1.0" },
     { name = "sendgrid", specifier = ">=6.10.0,<7.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.2,<3.0.0" },
     { name = "watchfiles", specifier = ">=0.24.0" },
@@ -1097,15 +1097,15 @@ wheels = [
 
 [[package]]
 name = "rq"
-version = "1.16.2"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "redis" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/1d/a020e8f3559293635dd6283d037bfc15f866136498da3db1e5416c65773d/rq-1.16.2.tar.gz", hash = "sha256:5c5b9ad5fbaf792b8fada25cc7627f4d206a9a4455aced371d4f501cc3f13b34", size = 629881 }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/29/ce60c4571d51d2b5507961646088999dd0fa63f84c020d61fe6472aa480c/rq-2.0.0.tar.gz", hash = "sha256:76d2a4a27f8fd5c4cfa200cd442efe3c1fd73525c676af06f07fcc0b81bdb70d", size = 639193 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/35/db396caf7cfe71a9e661cea520b276f1472df25015e7cb9143c65a1dca6d/rq-1.16.2-py3-none-any.whl", hash = "sha256:52e619f6cb469b00e04da74305045d244b75fecb2ecaa4f26422add57d3c5f09", size = 90911 },
+    { url = "https://files.pythonhosted.org/packages/77/0a/09ce745d9639e883888ddae0f71b23a20c59d072eb17b80b8ea8638b16ac/rq-2.0.0-py3-none-any.whl", hash = "sha256:a3a767876675dcc42683bac1869494c5020ba7fcf5c026d1f6d36a8ab98573a6", size = 95483 },
 ]
 
 [[package]]
