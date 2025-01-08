@@ -1,5 +1,6 @@
 import logging.config
 import os
+
 import yaml
 
 with open(os.path.join(os.path.dirname(__file__), "../config/logging.yml")) as file:

@@ -1,5 +1,6 @@
-from fastapi import Depends
 from typing import Annotated
+
+from fastapi import Depends
 
 from dripdrop.services import database, redis_client
 from dripdrop.services.database import AsyncSession

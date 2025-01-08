@@ -1,5 +1,6 @@
-from fastapi import status
 from unittest import skip
+
+from fastapi import status
 
 from dripdrop.music.tests.test_base import MusicBaseTest
 

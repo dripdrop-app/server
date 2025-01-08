@@ -4,6 +4,7 @@ import os
 import shutil
 import traceback
 import uuid
+
 from fastapi import UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -11,13 +12,7 @@ from sqlalchemy import select
 from dripdrop.logger import logger
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import TagsResponse
-from dripdrop.services import (
-    database,
-    http_client,
-    image_downloader,
-    s3,
-    temp_files,
-)
+from dripdrop.services import database, http_client, image_downloader, s3, temp_files
 from dripdrop.services.audio_tag import AudioTags
 
 

@@ -1,12 +1,13 @@
 from datetime import datetime
+
 from sqlalchemy import select
 
 from dripdrop.base.test import BaseTest
 from dripdrop.settings import settings
 from dripdrop.youtube.models import (
-    YoutubeUserChannel,
     YoutubeChannel,
     YoutubeSubscription,
+    YoutubeUserChannel,
     YoutubeVideo,
     YoutubeVideoCategory,
     YoutubeVideoLike,

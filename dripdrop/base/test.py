@@ -2,18 +2,19 @@ import asyncio
 import shutil
 import traceback
 from datetime import datetime
-from fastapi import status
-from httpx import AsyncClient
-from pydantic import BaseModel
-from typing import TypeVar, AsyncContextManager
+from typing import AsyncContextManager, TypeVar
 from unittest import IsolatedAsyncioTestCase
+
+from fastapi import status
+from httpx import ASGITransport, AsyncClient
+from pydantic import BaseModel
 
 from dripdrop.app import app
 from dripdrop.authentication.dependencies import COOKIE_NAME
 from dripdrop.authentication.models import User
 from dripdrop.models import Base
 from dripdrop.services import database, http_client, redis_client, s3, temp_files
-from dripdrop.settings import settings, ENV
+from dripdrop.settings import ENV, settings
 
 T = TypeVar("T")
 
@@ -28,7 +29,7 @@ class BaseTest(IsolatedAsyncioTestCase):
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
         self.client = await self.enter_async_context(
-            AsyncClient(app=app, base_url="http://test")
+            AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
         )
         self.session = await self.enter_async_context(database.create_session())
         self.http_client = await self.enter_async_context(http_client.create_client())

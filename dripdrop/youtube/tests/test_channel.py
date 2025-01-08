@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-from fastapi import status
 from unittest.mock import patch
+
+from fastapi import status
 
 from dripdrop.settings import settings
 from dripdrop.youtube.tests.test_base import YoutubeBaseTest

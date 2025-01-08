@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import APIRouter, FastAPI, Request, status, Response
+
+from fastapi import APIRouter, FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,9 +9,8 @@ from dripdrop.admin.app import app as admin_app
 from dripdrop.authentication.app import app as auth_app
 from dripdrop.music.app import app as music_app
 from dripdrop.services.websocket_channel import WebsocketChannel
-from dripdrop.settings import settings, ENV
+from dripdrop.settings import ENV, settings
 from dripdrop.youtube.app import app as youtube_app
-
 
 api_router = APIRouter(prefix="/api")
 

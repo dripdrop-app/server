@@ -3,8 +3,7 @@ from fastapi.responses import JSONResponse
 
 from dripdrop.authentication.dependencies import COOKIE_NAME
 from dripdrop.base.responses import ResponseBaseModel
-from dripdrop.settings import settings, ENV
-
+from dripdrop.settings import ENV, settings
 
 TWO_WEEKS_EXPIRATION = 14 * 24 * 60 * 60
 

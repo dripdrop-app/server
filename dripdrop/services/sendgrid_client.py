@@ -1,10 +1,11 @@
 import asyncio
+
 import sendgrid
 from fastapi import status
-from sendgrid.helpers.mail import Mail, To, Email
+from sendgrid.helpers.mail import Email, Mail, To
 
 from dripdrop.services import templates
-from dripdrop.settings import settings, ENV
+from dripdrop.settings import ENV, settings
 
 client = sendgrid.SendGridAPIClient(api_key=settings.sendgrid_api_key)
 

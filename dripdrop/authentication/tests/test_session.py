@@ -1,5 +1,6 @@
-from fastapi import status
 from unittest.mock import patch
+
+from fastapi import status
 
 from dripdrop.base.test import BaseTest
 

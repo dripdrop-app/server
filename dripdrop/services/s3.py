@@ -1,8 +1,8 @@
 import asyncio
+
 import boto3
 
 from dripdrop.settings import settings
-
 
 AWS_ENDPOINT_URL = settings.aws_endpoint_url
 AWS_REGION_NAME = settings.aws_region_name

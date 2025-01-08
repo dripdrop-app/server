@@ -1,32 +1,32 @@
 import math
 import traceback
-from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
-from sqlalchemy import select, func, and_
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from dripdrop.authentication.dependencies import (
-    get_authenticated_user,
     AuthenticatedUser,
+    get_authenticated_user,
 )
 from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.logger import logger
 from dripdrop.youtube.models import (
-    YoutubeVideoCategory,
     YoutubeChannel,
+    YoutubeSubscription,
     YoutubeVideo,
+    YoutubeVideoCategory,
     YoutubeVideoLike,
     YoutubeVideoQueue,
-    YoutubeSubscription,
     YoutubeVideoWatch,
 )
 from dripdrop.youtube.responses import (
     ErrorMessages,
-    YoutubeVideoCategoriesResponse,
-    VideosResponse,
     VideoQueueResponse,
+    VideosResponse,
+    YoutubeVideoCategoriesResponse,
     YoutubeVideoResponse,
 )
-
 
 api = APIRouter(
     prefix="/videos",

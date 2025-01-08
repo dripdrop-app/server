@@ -1,11 +1,11 @@
-from fastapi import HTTPException, status, Request, WebSocket, Depends
+from typing import Annotated, Union
+
+from fastapi import Depends, HTTPException, Request, WebSocket, status
 from sqlalchemy import select
-from typing import Union, Annotated
 
 from dripdrop.authentication import utils
 from dripdrop.authentication.models import User
-from dripdrop.base.dependencies import DatabaseSession, AsyncSession
-
+from dripdrop.base.dependencies import AsyncSession, DatabaseSession
 
 COOKIE_NAME = "token"
 

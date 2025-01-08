@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ACTION=$1
+PROFILE=$2
 ENV=$ENV
 PROJECT="dripdrop"
 COMPOSE_FILE="docker-compose.yml"
@@ -21,7 +22,11 @@ deploy() {
     remove
   fi
   build
-  docker compose -p $PROJECT -f $COMPOSE_FILE up --remove-orphans --wait
+  SERVICES=""
+  if [[ $PROFILE == 'local' ]]; then
+    SERVICES="dripdrop-postgres dripdrop-redis"
+  fi
+  docker compose -p $PROJECT -f $COMPOSE_FILE up $SERVICES --remove-orphans --wait
 }
 
 test () {

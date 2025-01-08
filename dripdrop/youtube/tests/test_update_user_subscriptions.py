@@ -1,7 +1,7 @@
 import asyncio
+from unittest.mock import AsyncMock, patch
 
 from sqlalchemy import select
-from unittest.mock import AsyncMock, patch
 
 from dripdrop.services import google_api
 from dripdrop.youtube.models import YoutubeChannel, YoutubeSubscription

@@ -1,7 +1,8 @@
 import asyncio
-from fastapi import FastAPI, Depends, Response, status, Query
-from pydantic import EmailStr
 from typing import Optional
+
+from fastapi import Depends, FastAPI, Query, Response, status
+from pydantic import EmailStr
 
 from dripdrop.authentication.dependencies import get_admin_user
 from dripdrop.music import tasks as music_tasks

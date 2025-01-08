@@ -2,8 +2,9 @@ import asyncio
 import os
 import shutil
 from datetime import timedelta
-from sqlalchemy import select
 from typing import Union
+
+from sqlalchemy import select
 from yt_dlp.utils import sanitize_filename
 
 from dripdrop.music import utils
@@ -22,7 +23,7 @@ from dripdrop.services import (
 )
 from dripdrop.services.audio_tag import AudioTags
 from dripdrop.services.database import AsyncSession
-from dripdrop.services.websocket_channel import WebsocketChannel, RedisChannels
+from dripdrop.services.websocket_channel import RedisChannels, WebsocketChannel
 from dripdrop.utils import get_current_time, parse_youtube_video_id
 
 

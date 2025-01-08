@@ -1,7 +1,8 @@
 import base64
 import io
-import mutagen.id3
 import re
+
+import mutagen.id3
 
 
 class AudioTags:

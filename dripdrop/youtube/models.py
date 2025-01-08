@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

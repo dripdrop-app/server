@@ -1,23 +1,24 @@
 import asyncio
 import math
-from fastapi import Path, APIRouter, Depends, HTTPException, status, Query, Response
-from sqlalchemy import select, func
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from dripdrop.authentication.dependencies import (
-    get_authenticated_user,
     AuthenticatedUser,
+    get_authenticated_user,
 )
 from dripdrop.base.dependencies import DatabaseSession
-from dripdrop.youtube import tasks
-from dripdrop.youtube.models import YoutubeSubscription, YoutubeChannel
-from dripdrop.youtube.responses import (
-    SubscriptionsResponse,
-    YoutubeSubscriptionResponse,
-    ErrorMessages,
-)
 from dripdrop.services import google_api, rq_client
 from dripdrop.utils import get_current_time
+from dripdrop.youtube import tasks
+from dripdrop.youtube.models import YoutubeChannel, YoutubeSubscription
+from dripdrop.youtube.responses import (
+    ErrorMessages,
+    SubscriptionsResponse,
+    YoutubeSubscriptionResponse,
+)
 
 api = APIRouter(
     prefix="/subscriptions",

@@ -1,6 +1,7 @@
 from datetime import datetime
-from pydantic import Field, validator
-from typing import Optional, List, Literal
+from typing import List, Literal, Optional
+
+from pydantic import Field, field_validator
 
 from dripdrop.base.responses import ResponseBaseModel
 
@@ -22,7 +23,7 @@ class MusicJobResponse(ResponseBaseModel):
     failed: bool
     created_at: datetime
 
-    @validator("artwork_filename", "original_filename", "download_filename")
+    @field_validator("artwork_filename", "original_filename", "download_filename")
     def fix_filename(cls, value):
         if value:
             return value.split("/")[-1]

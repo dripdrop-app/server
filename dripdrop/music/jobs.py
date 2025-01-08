@@ -1,13 +1,7 @@
 import math
-from fastapi import (
-    APIRouter,
-    Depends,
-    Path,
-    WebSocket,
-    HTTPException,
-    status,
-)
-from sqlalchemy import select, func
+
+from fastapi import APIRouter, Depends, HTTPException, Path, WebSocket, status
+from sqlalchemy import func, select
 
 from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
@@ -16,16 +10,12 @@ from dripdrop.authentication.dependencies import (
 from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import (
-    MusicJobUpdateResponse,
-    MusicJobsResponse,
     ErrorMessages,
+    MusicJobsResponse,
+    MusicJobUpdateResponse,
 )
 from dripdrop.services import database
-from dripdrop.services.websocket_channel import (
-    RedisChannels,
-    WebsocketChannel,
-)
-
+from dripdrop.services.websocket_channel import RedisChannels, WebsocketChannel
 
 api = APIRouter(
     prefix="/jobs",

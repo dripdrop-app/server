@@ -1,16 +1,16 @@
-from fastapi import APIRouter, Depends, Query, Path, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 from dripdrop.authentication.dependencies import (
-    get_authenticated_user,
     AuthenticatedUser,
+    get_authenticated_user,
 )
 from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.youtube.models import (
     YoutubeVideo,
-    YoutubeVideoQueue,
     YoutubeVideoLike,
+    YoutubeVideoQueue,
     YoutubeVideoWatch,
 )
 from dripdrop.youtube.responses import (
