@@ -48,7 +48,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
     { name = "sniffio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a3/73/199a98fc2dae33535d6b8e8e6ec01f8c1d76c9adb096c6b7d64823038cde/anyio-4.8.0.tar.gz", hash = "sha256:1d9fe889df5212298c0c0723fa20479d1b94883a2df44bd3897aa91083316f7a", size = 181126 }
 wheels = [
@@ -178,7 +178,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
-    { name = "urllib3", marker = "python_full_version >= '3.12' and python_full_version < '4.0'" },
+    { name = "urllib3" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7b/ea/2eb76e0b7d961fec47e60ace1e3f6c84462f448e10576ee807133294e60f/botocore-1.35.94.tar.gz", hash = "sha256:2b3309b356541faa4d88bb957dcac1d8004aa44953c0b7d4521a6cc5d3d5d6ba", size = 13487825 }
 wheels = [
@@ -322,7 +322,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -467,7 +467,7 @@ requires-dist = [
     { name = "black", specifier = ">=24.0.0,<25.0.0" },
     { name = "boto3", specifier = ">=1.24.73,<2.0.0" },
     { name = "croniter", specifier = ">=5.0.0" },
-    { name = "fake-useragent", specifier = ">=1.1.3,<2.0.0" },
+    { name = "fake-useragent", specifier = ">=2.0.3,<2.1.0" },
     { name = "fastapi", extras = ["all"], specifier = ">=0.100.0" },
     { name = "flake8", specifier = ">=7.0.0" },
     { name = "httpx", specifier = ">=0.27.0,<1.0.0" },
@@ -498,11 +498,11 @@ wheels = [
 
 [[package]]
 name = "fake-useragent"
-version = "1.5.1"
+version = "2.0.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/24/a1/1f662631ab153975fa8dbf09296324ecbaf53370dce922054e8de6b57370/fake-useragent-1.5.1.tar.gz", hash = "sha256:6387269f5a2196b5ba7ed8935852f75486845a1c95c50e72460e6a8e762f5c49", size = 22631 }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/a4/f8d204c20e7879c2c1fd1719095673f447a3111282bfe09c0a74a5ed5000/fake_useragent-2.0.3.tar.gz", hash = "sha256:af86a26ef8229efece8fed529b4aeb5b73747d889b60f01cd477b6f301df46e6", size = 194741 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/99/60d8cf1b26938c2e0a57e232f7f15641dfcd6f8deda454d73e4145910ff6/fake_useragent-1.5.1-py3-none-any.whl", hash = "sha256:57415096557c8a4e23b62a375c21c55af5fd4ba30549227f562d2c4f5b60e3b3", size = 17190 },
+    { url = "https://files.pythonhosted.org/packages/11/4f/a639b1dbdc557241e702eefb931ba24ba235c84f8fffdca3e272f096c6af/fake_useragent-2.0.3-py3-none-any.whl", hash = "sha256:8bae50abb72c309a5b3ae2f01a0b82426613fd5c4e2a04dca9332399ec44daa1", size = 201110 },
 ]
 
 [[package]]
@@ -1252,7 +1252,7 @@ name = "sqlalchemy"
 version = "2.0.36"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "greenlet", marker = "(python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'AMD64') or (python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'WIN32') or (python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'aarch64') or (python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'amd64') or (python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'win32') or (python_full_version < '3.13' and python_full_version >= '3.12' and python_full_version < '4.0' and platform_machine == 'x86_64')" },
+    { name = "greenlet", marker = "(python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'WIN32') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and platform_machine == 'win32') or (python_full_version < '3.13' and platform_machine == 'x86_64')" },
     { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/65/9cbc9c4c3287bed2499e05033e207473504dc4df999ce49385fb1f8b058a/sqlalchemy-2.0.36.tar.gz", hash = "sha256:7f2767680b6d2398aea7082e45a774b2b0767b5c8d8ffb9c8b683088ea9b29c5", size = 9574485 }
@@ -1337,7 +1337,7 @@ name = "tzlocal"
 version = "5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "tzdata", marker = "platform_system == 'Windows'" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/04/d3/c19d65ae67636fe63953b20c2e4a8ced4497ea232c43ff8d01db16de8dc0/tzlocal-5.2.tar.gz", hash = "sha256:8d399205578f1a9342816409cc1e46a93ebd5755e39ea2d85334bea911bf0e6e", size = 30201 }
 wheels = [
