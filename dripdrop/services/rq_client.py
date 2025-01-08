@@ -1,15 +1,16 @@
 import asyncio
 import functools
 from inspect import signature
+
 from redis import Redis
-from rq import Queue, get_current_job, Callback
+from rq import Callback, Queue, get_current_job
 from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 
 from dripdrop.logger import logger
 from dripdrop.services import database
-from dripdrop.settings import settings, ENV
+from dripdrop.settings import ENV, settings
 
 connection = Redis.from_url(settings.redis_url)
 

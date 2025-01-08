@@ -1,5 +1,6 @@
 from datetime import timezone as tz
 from enum import Enum
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,7 +43,7 @@ if settings.env == ENV.TESTING or settings.env == ENV.DEVELOPMENT:
 
 if settings.env == ENV.TESTING:
     settings.async_database_url = settings.test_async_database_url
-    settings.redis_url = settings.test_redis_url
+    # settings.redis_url = settings.test_redis_url
 
 if settings.async_database_url.find("sqlite") != -1:
     settings.timezone = None

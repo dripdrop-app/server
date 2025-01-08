@@ -1,32 +1,34 @@
 import math
 import traceback
-from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
-from sqlalchemy import select, func, and_
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from dripdrop.authentication.dependencies import (
-    get_authenticated_user,
     AuthenticatedUser,
+    get_authenticated_user,
 )
 from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.logger import logger
 from dripdrop.youtube.models import (
-    YoutubeVideoCategory,
     YoutubeChannel,
+    YoutubeSubscription,
     YoutubeVideo,
+    YoutubeVideoCategory,
     YoutubeVideoLike,
     YoutubeVideoQueue,
-    YoutubeSubscription,
     YoutubeVideoWatch,
 )
+from dripdrop.youtube.requests import VideosQueryParams
 from dripdrop.youtube.responses import (
     ErrorMessages,
-    YoutubeVideoCategoriesResponse,
-    VideosResponse,
     VideoQueueResponse,
+    VideosResponse,
+    YoutubeVideoCategoriesResponse,
     YoutubeVideoResponse,
 )
-
 
 api = APIRouter(
     prefix="/videos",
@@ -72,18 +74,16 @@ async def get_youtube_video_categories(
 async def get_youtube_videos(
     user: AuthenticatedUser,
     session: DatabaseSession,
+    query_params: Annotated[VideosQueryParams, Query()],
     page: int = Path(..., ge=1),
     per_page: int = Path(..., le=50, gt=0),
-    video_categories: str = Query(""),
-    channel_id: str | None = Query(None),
-    liked_only: bool = Query(False),
-    queued_only: bool = Query(False),
 ):
+    video_categories = []
     try:
-        if video_categories:
-            video_categories = list(
-                map(lambda category: int(category), video_categories.split(","))
-            )
+        if query_params.video_categories:
+            video_categories = [
+                int(category) for category in query_params.video_categories.split(",")
+            ]
     except Exception:
         logger.exception(traceback.format_exc())
         raise HTTPException(
@@ -93,10 +93,10 @@ async def get_youtube_videos(
 
     offset = (page - 1) * per_page
     query = select(YoutubeVideo)
-    if channel_id:
-        query = query.where(YoutubeVideo.channel_id == channel_id)
+    if query_params.channel_id:
+        query = query.where(YoutubeVideo.channel_id == query_params.channel_id)
     else:
-        if not queued_only and not liked_only:
+        if not query_params.queued_only and not query_params.liked_only:
             query = query.where(
                 YoutubeVideo.channel_id.in_(
                     select(YoutubeChannel.id)
@@ -110,13 +110,13 @@ async def get_youtube_videos(
     if video_categories:
         query = query.where(YoutubeVideo.category_id.in_(video_categories))
 
-    if liked_only:
+    if query_params.liked_only:
         query = (
             query.join(YoutubeVideoLike)
             .where(YoutubeVideoLike.email == user.email)
             .order_by(YoutubeVideoLike.created_at.desc())
         )
-    elif queued_only:
+    elif query_params.queued_only:
         query = (
             query.join(YoutubeVideoQueue)
             .where(YoutubeVideoQueue.email == user.email)

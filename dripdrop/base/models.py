@@ -1,5 +1,6 @@
 from datetime import datetime
-from sqlalchemy import MetaData, TIMESTAMP
+
+from sqlalchemy import TIMESTAMP, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 import dripdrop.utils as dripdrop_utils

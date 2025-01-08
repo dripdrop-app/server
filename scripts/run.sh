@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ACTION=$1
+PROFILE=$2
 ENV=$ENV
 PROJECT="dripdrop"
 COMPOSE_FILE="docker-compose.yml"
@@ -21,13 +22,17 @@ deploy() {
     remove
   fi
   build
-  docker compose -p $PROJECT -f $COMPOSE_FILE up --remove-orphans --wait
+  SERVICES=""
+  if [[ $PROFILE == 'local' ]]; then
+    SERVICES="dripdrop-postgres dripdrop-redis"
+  fi
+  docker compose -p $PROJECT -f $COMPOSE_FILE up $SERVICES --remove-orphans --wait
 }
 
 test () {
   echo "Testing $ENV environment..."
   build
-  docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server uv run python -m unittest discover
+  docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server uv run python -m unittest discover -vv
 }
 
 if [[ $ACTION != "deploy" ]] && [[ $ACTION != "test" ]] && [[ $ACTION != "remove" ]];

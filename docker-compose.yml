@@ -93,6 +93,8 @@ services:
       - type: volume
         source: redis_volume
         target: /data
+    ports:
+      - 6379:6379
     <<:
       - *logging
       - *restart_policy

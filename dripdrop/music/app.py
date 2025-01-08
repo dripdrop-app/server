@@ -1,19 +1,19 @@
 import traceback
-from fastapi import FastAPI, Query, UploadFile, Depends, File, HTTPException, status
+
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
 from pydantic import HttpUrl
 
 from dripdrop.authentication.dependencies import get_authenticated_user
 from dripdrop.logger import logger
 from dripdrop.music import job, jobs, utils
 from dripdrop.music.responses import (
+    ErrorMessages,
     GroupingResponse,
     ResolvedArtworkUrlResponse,
     TagsResponse,
-    ErrorMessages,
 )
 from dripdrop.services import google_api, image_downloader, ytdlp
 from dripdrop.utils import parse_youtube_video_id
-
 
 app = FastAPI(
     openapi_tags=["Music"],

@@ -1,13 +1,22 @@
-from fastapi import HTTPException, status, Request, WebSocket, Depends
+from typing import Annotated, Optional, Union
+
+from fastapi import Cookie, Depends, Header, HTTPException, WebSocket, status
+from pydantic import BaseModel
 from sqlalchemy import select
-from typing import Union, Annotated
 
 from dripdrop.authentication import utils
 from dripdrop.authentication.models import User
-from dripdrop.base.dependencies import DatabaseSession, AsyncSession
-
+from dripdrop.base.dependencies import AsyncSession, DatabaseSession
 
 COOKIE_NAME = "token"
+
+
+class Cookies(BaseModel):
+    token: Optional[str] = None
+
+
+class Headers(BaseModel):
+    authorization: Optional[str] = None
 
 
 async def get_user_from_token(token: str, session: AsyncSession):
@@ -22,16 +31,12 @@ async def get_user_from_token(token: str, session: AsyncSession):
 
 async def get_user(
     session: DatabaseSession,
-    request: Request = None,
-    websocket: WebSocket = None,
+    cookies: Annotated[Cookies, Cookie()],
+    headers: Annotated[Headers, Header()],
 ):
-    connection = request if request else websocket
-    if connection:
-        cookies = connection.cookies
-        headers = connection.headers
-        token = cookies.get(COOKIE_NAME, headers.get("Authorization", None))
-        if token:
-            return await get_user_from_token(token=token, session=session)
+    token = cookies.token if cookies.token else headers.authorization
+    if token:
+        return await get_user_from_token(token=token, session=session)
     return None
 
 

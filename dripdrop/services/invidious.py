@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from urllib.parse import urljoin
+
+from pydantic import BaseModel, Field
 
 from dripdrop.services import http_client
 from dripdrop.settings import settings

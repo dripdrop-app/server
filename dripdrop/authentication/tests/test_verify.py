@@ -1,7 +1,8 @@
 import urllib.parse
 import uuid
+from unittest.mock import AsyncMock, patch
+
 from fastapi import status
-from unittest.mock import patch, AsyncMock
 
 from dripdrop.authentication.tests.test_base import AuthenticationBaseTest
 

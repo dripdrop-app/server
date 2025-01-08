@@ -1,12 +1,13 @@
-import jwt
 import secrets
 import string
 import urllib.parse
 from datetime import timedelta
-from fastapi import Request
 from typing import Any
 
-from dripdrop.settings import settings, ENV
+import jwt
+from fastapi import Request
+
+from dripdrop.settings import ENV, settings
 from dripdrop.utils import get_current_time
 
 ALGORITHM = "HS256"

@@ -1,7 +1,8 @@
 import traceback
+from urllib.parse import urljoin
+
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
-from urllib.parse import urljoin
 
 from dripdrop.logger import logger
 from dripdrop.services import http_client

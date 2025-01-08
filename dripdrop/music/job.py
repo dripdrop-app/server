@@ -1,44 +1,41 @@
 import asyncio
 import re
 import uuid
+from typing import Optional
+from urllib.parse import quote
+
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
+    File,
+    Form,
+    HTTPException,
     Path,
     Response,
     UploadFile,
-    HTTPException,
     status,
-    Form,
-    File,
-    BackgroundTasks,
 )
 from fastapi.responses import StreamingResponse
 from pydantic import HttpUrl
 from rq.job import Retry
 from sqlalchemy import select
-from typing import Optional
-from urllib.parse import quote
 
 from dripdrop.authentication.dependencies import (
     AuthenticatedUser,
     get_authenticated_user,
 )
 from dripdrop.base.dependencies import DatabaseSession
-from dripdrop.music import utils, tasks
+from dripdrop.music import tasks, utils
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import (
-    MusicJobUpdateResponse,
-    MusicJobResponse,
     ErrorMessages,
+    MusicJobResponse,
+    MusicJobUpdateResponse,
 )
 from dripdrop.services import http_client, rq_client
-from dripdrop.services.websocket_channel import (
-    RedisChannels,
-    WebsocketChannel,
-)
+from dripdrop.services.websocket_channel import RedisChannels, WebsocketChannel
 from dripdrop.utils import get_current_time
-
 
 api = APIRouter(
     prefix="/job",
@@ -93,9 +90,7 @@ async def create_job(
     await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).publish(
         message=MusicJobUpdateResponse(id=job_id, status="STARTED")
     )
-    background_tasks.add_task(
-        utils.handle_files, job_id=job_id, file=file, artwork_url=artwork_url
-    )
+    await utils.handle_files(job_id=job_id, file=file, artwork_url=artwork_url)
     background_tasks.add_task(
         rq_client.high.enqueue,
         tasks.run_music_job,

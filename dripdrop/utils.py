@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
-from typing import Coroutine, TypeVar, Any
-from urllib.parse import urlparse, parse_qs
+from typing import Any, Coroutine, TypeVar
+from urllib.parse import parse_qs, urlparse
 
 from dripdrop.settings import settings
 

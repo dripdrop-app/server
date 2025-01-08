@@ -1,20 +1,19 @@
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
+
 from passlib.context import CryptContext
-from sqlalchemy import select, event
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import event, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dripdrop.base.models import Base
 from dripdrop.services.database import AsyncSession
-
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 if TYPE_CHECKING:
     from dripdrop.music.models import MusicJob
     from dripdrop.youtube.models import (
-        YoutubeUserChannel,
         YoutubeSubscription,
+        YoutubeUserChannel,
         YoutubeVideoLike,
         YoutubeVideoQueue,
         YoutubeVideoWatch,

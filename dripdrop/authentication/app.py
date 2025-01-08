@@ -1,34 +1,34 @@
 import traceback
+
 from fastapi import (
-    FastAPI,
     Body,
     Depends,
+    FastAPI,
     HTTPException,
-    status,
     Query,
     Request,
     Response,
+    status,
 )
 from fastapi.responses import RedirectResponse
-from pydantic import EmailStr, BaseModel
+from pydantic import BaseModel, EmailStr
 
 from dripdrop.authentication import utils
 from dripdrop.authentication.dependencies import (
-    AuthenticatedUser,
     COOKIE_NAME,
+    AuthenticatedUser,
     get_authenticated_user,
 )
 from dripdrop.authentication.models import User, password_context
 from dripdrop.authentication.responses import (
     AuthenticatedResponse,
     AuthenticatedResponseModel,
-    UserResponse,
     ErrorMessages,
+    UserResponse,
 )
 from dripdrop.base.dependencies import DatabaseSession, RedisClient
 from dripdrop.logger import logger
 from dripdrop.services import sendgrid_client
-
 
 app = FastAPI(openapi_tags=["Authentication"])
 
