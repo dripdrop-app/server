@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from dripdrop.base.test import BaseTest
 from dripdrop.music.models import MusicJob
-from dripdrop.services import s3, temp_files
+from dripdrop.services import temp_files
 from dripdrop.services.audio_tag import AudioTags
 
 

@@ -1,7 +1,7 @@
 import asyncio
 import re
 import uuid
-from typing import Annotated, Optional
+from typing import Optional
 from urllib.parse import quote
 
 from fastapi import (
@@ -17,6 +17,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
+from pydantic import HttpUrl
 from rq.job import Retry
 from sqlalchemy import select
 
@@ -27,7 +28,6 @@ from dripdrop.authentication.dependencies import (
 from dripdrop.base.dependencies import DatabaseSession
 from dripdrop.music import tasks, utils
 from dripdrop.music.models import MusicJob
-from dripdrop.music.requests import CreateJobFormData
 from dripdrop.music.responses import (
     ErrorMessages,
     MusicJobResponse,
@@ -49,15 +49,20 @@ async def create_job(
     user: AuthenticatedUser,
     session: DatabaseSession,
     background_tasks: BackgroundTasks,
-    data: Annotated[CreateJobFormData, Form()],
     file: Optional[UploadFile] = File(None),
+    video_url: Optional[HttpUrl] = Form(None),
+    artwork_url: Optional[str] = Form(None),
+    title: str = Form(...),
+    artist: str = Form(...),
+    album: str = Form(...),
+    grouping: Optional[str] = Form(None),
 ):
-    if file and data.video_url:
+    if file and video_url:
         raise HTTPException(
             detail=ErrorMessages.CREATE_JOB_BOTH_DEFINED,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
-    elif file is None and data.video_url is None:
+    elif file is None and video_url is None:
         raise HTTPException(
             detail=ErrorMessages.CREATE_JOB_NOT_DEFINED,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -72,11 +77,11 @@ async def create_job(
     music_job = MusicJob(
         id=job_id,
         user_email=user.email,
-        video_url=data.video_url.unicode_string() if data.video_url else None,
-        title=data.title,
-        artist=data.artist,
-        album=data.album,
-        grouping=data.grouping,
+        video_url=video_url.unicode_string() if video_url else None,
+        title=title,
+        artist=artist,
+        album=album,
+        grouping=grouping,
         completed=False,
         failed=False,
     )
@@ -85,9 +90,7 @@ async def create_job(
     await WebsocketChannel(channel=RedisChannels.MUSIC_JOB_UPDATE).publish(
         message=MusicJobUpdateResponse(id=job_id, status="STARTED")
     )
-    background_tasks.add_task(
-        utils.handle_files, job_id=job_id, file=file, artwork_url=data.artwork_url
-    )
+    await utils.handle_files(job_id=job_id, file=file, artwork_url=artwork_url)
     background_tasks.add_task(
         rq_client.high.enqueue,
         tasks.run_music_job,

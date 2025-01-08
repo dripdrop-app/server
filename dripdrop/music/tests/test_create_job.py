@@ -53,7 +53,6 @@ class CreateMusicJobTestCase(MusicBaseTest):
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
-@skip("Invidious can no longer download youtube videos")
 class CreateMusicFileJobTestCase(MusicBaseTest):
     async def test_creating_music_file_job_with_invalid_content_type(self):
         await self.create_and_login_user(email="user@gmail.com", password="password")

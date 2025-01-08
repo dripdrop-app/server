@@ -32,7 +32,7 @@ deploy() {
 test () {
   echo "Testing $ENV environment..."
   build
-  docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server uv run python -m unittest discover
+  docker compose -p $PROJECT -f $COMPOSE_FILE run --rm dripdrop-server uv run python -m unittest discover -vv
 }
 
 if [[ $ACTION != "deploy" ]] && [[ $ACTION != "test" ]] && [[ $ACTION != "remove" ]];

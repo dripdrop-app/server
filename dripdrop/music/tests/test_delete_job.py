@@ -31,7 +31,7 @@ class DeleteMusicJobTestCase(MusicBaseTest):
         response = await self.client.delete(DELETE_URL.format(job_id=job.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    async def test_deleting_job(self):
+    async def test_deleting_job_with_cleanup(self):
         user = await self.create_and_login_user(
             email="user@gmail.com", password="password"
         )
