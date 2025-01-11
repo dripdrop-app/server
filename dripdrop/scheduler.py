@@ -18,7 +18,7 @@ scheduler = BackgroundScheduler(
     jobstores={
         "default": RedisJobStore(
             **parse_url(settings.redis_url),
-            retry=Retry(backoff=ExponentialBackoff(), retries=3),
+            retry=Retry(backoff=ExponentialBackoff(cap=10.0, base=1.0), retries=3),
         )
     },
     timezone=EST,
