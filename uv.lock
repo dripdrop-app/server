@@ -467,7 +467,7 @@ requires-dist = [
     { name = "black", specifier = ">=24.0.0,<25.0.0" },
     { name = "boto3", specifier = ">=1.24.73,<2.0.0" },
     { name = "croniter", specifier = ">=5.0.0" },
-    { name = "fake-useragent", specifier = ">=1.1.3,<2.0.0" },
+    { name = "fake-useragent", specifier = ">=2.0.3,<2.1.0" },
     { name = "fastapi", extras = ["all"], specifier = ">=0.100.0" },
     { name = "flake8", specifier = ">=7.0.0" },
     { name = "httpx", specifier = ">=0.27.0,<1.0.0" },
@@ -498,11 +498,11 @@ wheels = [
 
 [[package]]
 name = "fake-useragent"
-version = "1.5.1"
+version = "2.0.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/24/a1/1f662631ab153975fa8dbf09296324ecbaf53370dce922054e8de6b57370/fake-useragent-1.5.1.tar.gz", hash = "sha256:6387269f5a2196b5ba7ed8935852f75486845a1c95c50e72460e6a8e762f5c49", size = 22631 }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/a4/f8d204c20e7879c2c1fd1719095673f447a3111282bfe09c0a74a5ed5000/fake_useragent-2.0.3.tar.gz", hash = "sha256:af86a26ef8229efece8fed529b4aeb5b73747d889b60f01cd477b6f301df46e6", size = 194741 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/99/60d8cf1b26938c2e0a57e232f7f15641dfcd6f8deda454d73e4145910ff6/fake_useragent-1.5.1-py3-none-any.whl", hash = "sha256:57415096557c8a4e23b62a375c21c55af5fd4ba30549227f562d2c4f5b60e3b3", size = 17190 },
+    { url = "https://files.pythonhosted.org/packages/11/4f/a639b1dbdc557241e702eefb931ba24ba235c84f8fffdca3e272f096c6af/fake_useragent-2.0.3-py3-none-any.whl", hash = "sha256:8bae50abb72c309a5b3ae2f01a0b82426613fd5c4e2a04dca9332399ec44daa1", size = 201110 },
 ]
 
 [[package]]
