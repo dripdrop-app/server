@@ -4,7 +4,7 @@ authors = [
 ]
 requires-python = "<4.0,>=3.12"
 dependencies = [
-    "black<25.0.0,>=24.0.0",
+    "black<25.1.1,>=25.1.0",
     "alembic<2.0.0,>=1.8.1",
     "fastapi[all]>=0.100.0",
     "croniter>=5.0.0",
