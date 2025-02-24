@@ -7,6 +7,21 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+      - name: Install the project
+        run: uv sync --all-extras --dev
+      - name: Run linter
+        run: make lint
   test:
     runs-on: ubuntu-latest
     steps:
@@ -61,7 +76,7 @@ jobs:
           echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
           echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
           echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
-          ./scripts/run.sh test
+          make test
         env:
           ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -87,7 +102,7 @@ jobs:
   deploy:
     if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
-    needs: test
+    needs: [lint, test]
     permissions:
       contents: read
       packages: write

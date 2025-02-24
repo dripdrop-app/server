@@ -1,7 +1,7 @@
 """create jobs table
 
 Revision ID: e83f5707bf96
-Revises: 
+Revises:
 Create Date: 2021-10-19 20:47:02.384032
 
 """

@@ -4,7 +4,6 @@ authors = [
 ]
 requires-python = "<4.0,>=3.12"
 dependencies = [
-    "black<25.0.0,>=24.0.0",
     "alembic<2.0.0,>=1.8.1",
     "fastapi[all]>=0.100.0",
     "croniter>=5.0.0",
@@ -26,6 +25,8 @@ dependencies = [
     "fake-useragent<2.1.0,>=2.0.3",
     "sendgrid<7.0.0,>=6.10.0",
     "apscheduler<4.0.0,>=3.10.1",
+    "ruff>=0.9.7",
+    "pre-commit>=4.1.0",
 ]
 name = "dripdrop"
 version = "0.1.0"

@@ -7,7 +7,6 @@ from typing import Union
 from sqlalchemy import select
 from yt_dlp.utils import sanitize_filename
 
-from dripdrop.music import utils
 from dripdrop.music.models import MusicJob
 from dripdrop.music.responses import MusicJobUpdateResponse
 from dripdrop.services import (
@@ -82,7 +81,7 @@ def _update_audio_tags(
     if artwork_info:
         audio_tag_service.set_artwork(
             data=artwork_info["image"],
-            mime_type=f'image/{artwork_info["extension"]}',
+            mime_type=f"image/{artwork_info['extension']}",
         )
 
 
