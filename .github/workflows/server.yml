@@ -61,7 +61,7 @@ jobs:
           echo "TEST_ASYNC_DATABASE_URL=$TEST_ASYNC_DATABASE_URL" >> .env
           echo "TEST_AWS_S3_BUCKET=$TEST_AWS_S3_BUCKET" >> .env
           echo "TEST_REDIS_URL=$TEST_REDIS_URL" >> .env
-          ./scripts/run.sh test
+          make test
         env:
           ASYNC_DATABASE_URL: ${{ env.ASYNC_DATABASE_URL }}
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}

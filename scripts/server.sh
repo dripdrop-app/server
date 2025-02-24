@@ -2,6 +2,8 @@
 
 set -e
 
+uv run alembic upgrade head
+
 if [[ "$ENV" == "development" ]]; then
     uv run uvicorn dripdrop.app:app --reload --reload-dir dripdrop --host 0.0.0.0 --port 5000 --log-config ./config/logging.yml &
 else
