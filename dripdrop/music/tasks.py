@@ -81,7 +81,7 @@ def _update_audio_tags(
     if artwork_info:
         audio_tag_service.set_artwork(
             data=artwork_info["image"],
-            mime_type=f'image/{artwork_info["extension"]}',
+            mime_type=f"image/{artwork_info['extension']}",
         )
 
 
