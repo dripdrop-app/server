@@ -7,6 +7,8 @@ bws-gen-env:
 	env | sort > .env.all
 	comm -13 .env.all .env.bws > .env
 	rm .env.all .env.bws
+lint:
+	ENV=development docker compose -p $(PROJECT) -f $(COMPOSE_FILE) run --rm dripdrop-server uv run ruff check
 build-dev:
 	ENV=development docker compose -p $(PROJECT) -f $(COMPOSE_FILE) build
 build-test:
