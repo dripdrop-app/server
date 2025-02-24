@@ -7,15 +7,17 @@ bws-gen-env:
 	env | sort > .env.all
 	comm -13 .env.all .env.bws > .env
 	rm .env.all .env.bws
-build:
-	docker compose -p $(PROJECT) -f $(COMPOSE_FILE) build
+build-dev:
+	ENV=development docker compose -p $(PROJECT) -f $(COMPOSE_FILE) build
+build-test:
+	ENV=testing docker compose -p $(PROJECT) -f $(COMPOSE_FILE) build
 remove:
 	docker compose -p $(PROJECT) -f $(COMPOSE_FILE) down
-test: build
-	docker compose -p $(PROJECT) -f $(COMPOSE_FILE) run --rm dripdrop-server uv run python -m unittest discover -vv
-deploy-dev: remove bws-gen-env build
+test: build-test
+	ENV=testing docker compose -p $(PROJECT) -f $(COMPOSE_FILE) run --rm dripdrop-server uv run python -m unittest discover -vv
+deploy-dev: remove bws-gen-env build-dev
 	ENV=development docker compose -p $(PROJECT) -f $(COMPOSE_FILE) up --remove-orphans --wait
-deploy-local: remove bws-gen-env build
+deploy-local: remove bws-gen-env build-dev
 	ENV=development docker compose -p $(PROJECT) -f $(COMPOSE_FILE) up $(SERVICES) --remove-orphans --wait
 
 	
