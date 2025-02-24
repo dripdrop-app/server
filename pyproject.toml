@@ -26,6 +26,7 @@ dependencies = [
     "sendgrid<7.0.0,>=6.10.0",
     "apscheduler<4.0.0,>=3.10.1",
     "ruff>=0.9.7",
+    "pre-commit>=4.1.0",
 ]
 name = "dripdrop"
 version = "0.1.0"
