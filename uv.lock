@@ -472,12 +472,12 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.3,<3.0.0" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.6.0,<3.0.0" },
     { name = "redis", specifier = ">=5.2.1,<5.3.0" },
-    { name = "rq", specifier = ">=1.11.0,<2.0.0" },
+    { name = "rq", specifier = ">=2.1.0,<2.2.0" },
     { name = "ruff", specifier = ">=0.9.7" },
     { name = "sendgrid", specifier = ">=6.10.0,<7.0.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.2,<3.0.0" },
     { name = "watchfiles", specifier = ">=0.24.0" },
-    { name = "yt-dlp", extras = ["curl-cffi", "default"], specifier = ">=2025.1.12,<2025.2.0" },
+    { name = "yt-dlp", extras = ["curl-cffi", "default"], specifier = ">=2025.2.19,<2025.2.20" },
 ]
 
 [[package]]
@@ -1186,15 +1186,15 @@ wheels = [
 
 [[package]]
 name = "rq"
-version = "1.16.2"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "redis" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/1d/a020e8f3559293635dd6283d037bfc15f866136498da3db1e5416c65773d/rq-1.16.2.tar.gz", hash = "sha256:5c5b9ad5fbaf792b8fada25cc7627f4d206a9a4455aced371d4f501cc3f13b34", size = 629881 }
+sdist = { url = "https://files.pythonhosted.org/packages/17/89/fa86f10a3fe450309125d157f99bb2587fde496fe13fdef51c034970ab3a/rq-2.1.0.tar.gz", hash = "sha256:764585b6cab69ef1412f4aee523347e5aa7ece3ca175c118b1d92223dd8c2826", size = 640535 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/35/db396caf7cfe71a9e661cea520b276f1472df25015e7cb9143c65a1dca6d/rq-1.16.2-py3-none-any.whl", hash = "sha256:52e619f6cb469b00e04da74305045d244b75fecb2ecaa4f26422add57d3c5f09", size = 90911 },
+    { url = "https://files.pythonhosted.org/packages/3f/b3/e691454a551366c71248197f9050e4564f85d15c5d8a5c167ecac4411c40/rq-2.1.0-py3-none-any.whl", hash = "sha256:3c6892c6ca848e5fb47c1875399a66f13656bf0e123bf725d9aa9a12718e2fdf", size = 96482 },
 ]
 
 [[package]]
@@ -1544,11 +1544,11 @@ wheels = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.1.12"
+version = "2025.2.19"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8c/16/69ca019a8346313ea141c24429322d479b28b15e8d7a23af03b0065767f1/yt_dlp-2025.1.12.tar.gz", hash = "sha256:8e7e246e2a5a2cff0a9c13db46844a37a547680702012058c94ec18fce0ca25a", size = 2916928 }
+sdist = { url = "https://files.pythonhosted.org/packages/53/36/ef300ba4a228b74612d4013b43ed303a0d6d2de17a71fc37e0b821577e0a/yt_dlp-2025.2.19.tar.gz", hash = "sha256:f33ca76df2e4db31880f2fe408d44f5058d9f135015b13e50610dfbe78245bea", size = 2929199 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/9d/782c67465798478b3f8cf8c72da771e1eb0956e13b820f862b35de66d4a7/yt_dlp-2025.1.12-py3-none-any.whl", hash = "sha256:f7ea19afb64f8e457a1b9598ddb67f8deaa313bf1d57abd5612db9272ab10795", size = 3178322 },
+    { url = "https://files.pythonhosted.org/packages/9e/45/6d1b759e68f5363b919828fb0e0c167a1cd5003b5b7c74cc0f0c2096be4f/yt_dlp-2025.2.19-py3-none-any.whl", hash = "sha256:3ed218eaeece55e9d715afd41abc450dc406ee63bf79355169dfde312d38fdb8", size = 3186543 },
 ]
 
 [package.optional-dependencies]
