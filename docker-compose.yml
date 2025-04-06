@@ -63,7 +63,7 @@ services:
       - *restart_policy
 
   dripdrop-postgres:
-    image: postgres:14
+    image: postgres:17
     container_name: dripdrop-postgres
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DATABASE}"]
