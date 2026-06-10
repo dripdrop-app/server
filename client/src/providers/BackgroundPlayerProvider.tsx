@@ -22,6 +22,8 @@ interface BackgroundPlayerContextType {
   canAdvanceQueue: boolean;
   canRecedeQueue: boolean;
   currentVideo?: YoutubeVideo;
+  currentVideoIndex: number;
+  goToVideoIndex: (index: number) => void;
   params?: YoutubeVideosParams;
   playing: boolean;
   recedeQueue: () => void;
@@ -48,6 +50,10 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
     setCurrentVideoIndex(index);
     setParams(params);
     setPlaying(true);
+  }, []);
+
+  const goToVideoIndex = useCallback((index: number) => {
+    setCurrentVideoIndex(index);
   }, []);
 
   const currentVideo = useMemo(
@@ -81,14 +87,14 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
 
   const canRecedeQueue = useMemo(() => {
     if (params) {
-      return currentVideoIndex - 1 > 0 || params.page > 1;
+      return currentVideoIndex > 0 || params.page > 1;
     }
     return false;
   }, [currentVideoIndex, params]);
 
   const recedeQueue = useCallback(() => {
     if (canRecedeQueue && videosStatus.currentData && params) {
-      if (currentVideoIndex - 1 > 0) {
+      if (currentVideoIndex > 0) {
         setCurrentVideoIndex(currentVideoIndex - 1);
       } else if (params.page > 1) {
         setParams({ ...params, page: params.page - 1 });
@@ -109,6 +115,8 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
         canAdvanceQueue,
         canRecedeQueue,
         currentVideo,
+        currentVideoIndex,
+        goToVideoIndex,
         params,
         playing,
         playerRef,
