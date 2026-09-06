@@ -1,9 +1,9 @@
-import React, { forwardRef, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { forwardRef, useMemo } from "react";
 import ReactPlayer from "react-player";
 
 import { YoutubeVideoResponse as YoutubeVideo } from "../../api/generated/youtubeApi";
 import { useAddYoutubeVideoWatchMutation } from "../../api/youtube";
-import { buildYoutubePlaylistConfig, buildYoutubeWatchUrl, getYoutubePlayerApi } from "../../utils/youtubePlayer";
+import usePlaylistSync from "../../utils/usePlaylistSync";
 
 export interface ProgressState {
   playedSeconds: number;
@@ -47,98 +47,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     ref
   ) => {
     const [watchVideo] = useAddYoutubeVideoWatchMutation();
-    const lastPlaylistIndexRef = useRef(playlistIndex);
 
-    const playlistVideos = useMemo(() => playlist ?? (video ? [video] : []), [playlist, video]);
-    const playlistIds = useMemo(() => playlistVideos.map((playlistVideo) => playlistVideo.id), [playlistVideos]);
-    const usePlaylist = playlistIds.length > 1;
-
-    const src = useMemo(() => {
-      if (!playlistIds.length) {
-        return undefined;
-      }
-
-      const startIndex = usePlaylist ? 0 : Math.min(playlistIndex, playlistIds.length - 1);
-      return buildYoutubeWatchUrl(playlistIds[startIndex]);
-    }, [playlistIds, playlistIndex, usePlaylist]);
-
-    const config = useMemo(() => buildYoutubePlaylistConfig(playlistIds), [playlistIds]);
-
-    // Reads the player's own playlist position fresh on every call (rather than caching
-    // it in a ref that's read elsewhere) because a ref mutation alone doesn't trigger a
-    // re-render, so a cached value read from render-time state could go stale between
-    // ticks of onTimeUpdate, which fires many times per second.
-    const resolveActiveVideo = useCallback(
-      (player: HTMLVideoElement | null) => {
-        if (!playlistVideos.length) {
-          return video;
-        }
-
-        const index = getYoutubePlayerApi(player)?.getPlaylistIndex();
-        return (index != null && playlistVideos[index]) || video;
-      },
-      [playlistVideos, video]
-    );
-
-    const syncPlaylistIndex = useCallback(
-      (player: HTMLVideoElement | null) => {
-        const api = getYoutubePlayerApi(player);
-        if (!api || !usePlaylist) {
-          return;
-        }
-
-        const index = api.getPlaylistIndex();
-        if (index === lastPlaylistIndexRef.current) {
-          return;
-        }
-
-        lastPlaylistIndexRef.current = index;
-        onActiveVideoChange?.(index);
-      },
-      [onActiveVideoChange, usePlaylist]
-    );
-
-    const seekToPlaylistIndex = useCallback(
-      (player: HTMLVideoElement | null, index: number) => {
-        const api = getYoutubePlayerApi(player);
-        if (!api || !usePlaylist || index === api.getPlaylistIndex()) {
-          return;
-        }
-
-        api.playVideoAt(index);
-        lastPlaylistIndexRef.current = index;
-      },
-      [usePlaylist]
-    );
-
-    useEffect(() => {
-      lastPlaylistIndexRef.current = playlistIndex;
-    }, [video?.id, playlistIndex]);
-
-    useEffect(() => {
-      const player = typeof ref === "function" ? null : ref?.current;
-      if (!player || !usePlaylist) {
-        return;
-      }
-
-      seekToPlaylistIndex(player, playlistIndex);
-    }, [playlistIndex, ref, seekToPlaylistIndex, usePlaylist]);
-
-    const handleReady = useCallback(() => {
-      const player = typeof ref === "function" ? null : ref?.current;
-      if (player) {
-        seekToPlaylistIndex(player, playlistIndex);
-      }
-
-      onReady?.();
-    }, [onReady, playlistIndex, ref, seekToPlaylistIndex]);
-
-    const handlePlaying = useCallback(() => {
-      const player = typeof ref === "function" ? null : ref?.current;
-      if (player) {
-        syncPlaylistIndex(player);
-      }
-    }, [ref, syncPlaylistIndex]);
+    const { playlistIds, src, config, resolveActiveVideo, handleReady, handlePlaying, isPlaylistFinished } =
+      usePlaylistSync({ ref, video, playlist, playlistIndex, onActiveVideoChange });
 
     return useMemo(
       () => (
@@ -159,7 +70,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onPause={() => {
             onPause?.();
           }}
-          onReady={handleReady}
+          onReady={() => {
+            handleReady();
+            onReady?.();
+          }}
           onPlaying={handlePlaying}
           onDurationChange={(event) => {
             const duration = event.currentTarget.duration;
@@ -180,10 +94,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             }
           }}
           onEnded={(event) => {
-            const api = getYoutubePlayerApi(event.currentTarget);
-            const index = api?.getPlaylistIndex() ?? playlistIndex;
-
-            if (!usePlaylist || index >= playlistIds.length - 1) {
+            if (isPlaylistFinished(event.currentTarget)) {
               onEnd?.();
             }
           }}
@@ -194,19 +105,19 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         handlePlaying,
         handleReady,
         height,
+        isPlaylistFinished,
         onDuration,
         onEnd,
         onPause,
         onPlay,
         onProgress,
+        onReady,
         playlistIds,
-        playlistIndex,
         playing,
         ref,
         resolveActiveVideo,
         src,
         style,
-        usePlaylist,
         watchVideo,
         width,
       ]
