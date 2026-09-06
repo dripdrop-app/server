@@ -39,8 +39,11 @@ const getMediaSession = (): MediaSession | undefined =>
 const BackgroundPlayer = () => {
   const {
     addVideoToQueue,
+    currentPageVideos,
     currentVideo,
+    currentVideoIndex,
     advanceQueue,
+    goToVideoIndex,
     params,
     playing,
     playerRef,
@@ -247,11 +250,14 @@ const BackgroundPlayer = () => {
               <VideoPlayer
                 ref={playerRef}
                 video={currentVideo}
+                playlist={currentPageVideos}
+                playlistIndex={currentVideoIndex}
                 playing={playing}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
                 onDuration={handleDuration}
                 onProgress={(state) => handleProgress(state.playedSeconds)}
+                onActiveVideoChange={goToVideoIndex}
                 onEnd={() => advanceQueue()}
               />
             </Grid.Col>
@@ -366,8 +372,9 @@ const BackgroundPlayer = () => {
               if (playedSeconds < 5) {
                 recedeQueue();
               } else {
-                if (playerRef.current) {
-                  playerRef.current.currentTime = 0;
+                const player = playerRef.current;
+                if (player) {
+                  player.currentTime = 0;
                 }
                 setPlayedSeconds(0);
                 setSeekValue(0);
