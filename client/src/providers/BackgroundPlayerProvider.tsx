@@ -15,12 +15,14 @@ import { GetYoutubeVideosApiYoutubeVideosListGetApiArg as YoutubeVideosParams } 
 import { useFooter } from "./FooterProvider";
 import { YoutubeVideoResponse as YoutubeVideo } from "../api/generated/youtubeApi";
 import { useYoutubeVideosQuery } from "../api/youtube";
+import { getYoutubePlayerApi } from "../utils/youtubePlayer";
 
 interface BackgroundPlayerContextType {
   addVideoToQueue: ({ index, params }: { index: number; params: YoutubeVideosParams }) => void;
   advanceQueue: () => void;
   canAdvanceQueue: boolean;
   canRecedeQueue: boolean;
+  currentPageVideos: YoutubeVideo[];
   currentVideo?: YoutubeVideo;
   currentVideoIndex: number;
   goToVideoIndex: (index: number) => void;
@@ -45,6 +47,7 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
   const [playing, setPlaying] = useState(false);
 
   const videosStatus = useYoutubeVideosQuery(params ?? skipToken);
+  const currentPageVideos = useMemo(() => videosStatus.currentData?.videos ?? [], [videosStatus.currentData]);
 
   const addVideoToQueue = useCallback(({ index, params }: { index: number; params: YoutubeVideosParams }) => {
     setCurrentVideoIndex(index);
@@ -56,34 +59,40 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
     setCurrentVideoIndex(index);
   }, []);
 
-  const currentVideo = useMemo(
-    () => videosStatus.currentData?.videos[currentVideoIndex],
-    [currentVideoIndex, videosStatus.currentData?.videos]
-  );
+  const currentVideo = useMemo(() => currentPageVideos[currentVideoIndex], [currentPageVideos, currentVideoIndex]);
 
   const canAdvanceQueue = useMemo(() => {
     if (videosStatus.currentData && params) {
-      return (
-        currentVideoIndex + 1 < videosStatus.currentData?.videos.length ||
-        params.page + 1 <= videosStatus.currentData.totalPages
-      );
+      return currentVideoIndex + 1 < currentPageVideos.length || params.page + 1 <= videosStatus.currentData.totalPages;
     }
     return false;
-  }, [currentVideoIndex, params, videosStatus.currentData]);
+  }, [currentPageVideos.length, currentVideoIndex, params, videosStatus.currentData]);
 
+  // The single place that decides whether "next"/"previous" should skip within the
+  // current page's YouTube playlist (via the player's own API) or roll over to an
+  // adjacent page. Keeping this decision here (instead of duplicating it wherever a
+  // skip button lives) is what keeps the player's index and this queue's index in sync.
   const advanceQueue = useCallback(() => {
-    if (canAdvanceQueue && videosStatus.currentData && params) {
-      if (currentVideoIndex + 1 < videosStatus.currentData?.videos.length) {
-        setCurrentVideoIndex(currentVideoIndex + 1);
-      } else if (params.page <= videosStatus.currentData.totalPages) {
-        setParams({ ...params, page: params.page + 1 });
-        setCurrentVideoIndex(0);
-      }
-      // Restore playback after advancing. react-player fires onPause before onEnded
-      // when a video finishes, which clears playing before we load the next track.
-      setPlaying(true);
+    if (!canAdvanceQueue || !videosStatus.currentData || !params) {
+      return;
     }
-  }, [canAdvanceQueue, currentVideoIndex, params, videosStatus.currentData]);
+
+    if (currentVideoIndex + 1 < currentPageVideos.length) {
+      const api = getYoutubePlayerApi(playerRef.current);
+      if (api) {
+        api.nextVideo();
+      } else {
+        setCurrentVideoIndex(currentVideoIndex + 1);
+      }
+    } else if (params.page + 1 <= videosStatus.currentData.totalPages) {
+      setParams({ ...params, page: params.page + 1 });
+      setCurrentVideoIndex(0);
+    }
+
+    // Restore playback after advancing. react-player fires onPause before onEnded
+    // when a video finishes, which clears playing before we load the next track.
+    setPlaying(true);
+  }, [canAdvanceQueue, currentPageVideos.length, currentVideoIndex, params, videosStatus.currentData]);
 
   const canRecedeQueue = useMemo(() => {
     if (params) {
@@ -93,13 +102,20 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
   }, [currentVideoIndex, params]);
 
   const recedeQueue = useCallback(() => {
-    if (canRecedeQueue && videosStatus.currentData && params) {
-      if (currentVideoIndex > 0) {
+    if (!canRecedeQueue || !videosStatus.currentData || !params) {
+      return;
+    }
+
+    if (currentVideoIndex > 0) {
+      const api = getYoutubePlayerApi(playerRef.current);
+      if (api) {
+        api.previousVideo();
+      } else {
         setCurrentVideoIndex(currentVideoIndex - 1);
-      } else if (params.page > 1) {
-        setParams({ ...params, page: params.page - 1 });
-        setCurrentVideoIndex(params.perPage - 1);
       }
+    } else if (params.page > 1) {
+      setParams({ ...params, page: params.page - 1 });
+      setCurrentVideoIndex(params.perPage - 1);
     }
   }, [canRecedeQueue, currentVideoIndex, params, videosStatus.currentData]);
 
@@ -114,6 +130,7 @@ export const BackgroundPlayerProvider = ({ children }: { children: ReactNode }) 
         advanceQueue,
         canAdvanceQueue,
         canRecedeQueue,
+        currentPageVideos,
         currentVideo,
         currentVideoIndex,
         goToVideoIndex,

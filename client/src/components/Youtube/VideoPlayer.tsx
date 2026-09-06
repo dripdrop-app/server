@@ -73,16 +73,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
 
         const api = getYoutubePlayerApi(player);
-        const videoId = api?.getVideoData()?.video_id;
         const index = api?.getPlaylistIndex();
-
-        if (videoId) {
-          const matchedVideo = playlistVideos.find((playlistVideo) => playlistVideo.id === videoId);
-          if (matchedVideo) {
-            activeVideoRef.current = matchedVideo;
-            return matchedVideo;
-          }
-        }
 
         if (index != null && playlistVideos[index]) {
           activeVideoRef.current = playlistVideos[index];

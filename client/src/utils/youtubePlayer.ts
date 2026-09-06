@@ -1,6 +1,5 @@
 export interface YoutubePlayerApi {
   getPlaylistIndex: () => number;
-  getVideoData: () => { video_id: string };
   nextVideo: () => void;
   previousVideo: () => void;
   playVideoAt: (index: number) => void;
