@@ -1,3 +1,9 @@
+## 0.2.1 (2026-09-06)
+
+### Fix
+
+- **client**: rename pwa manifest to lowercase dripdrop
+
 ## 0.2.0 (2026-09-06)
 
 ### Feat
