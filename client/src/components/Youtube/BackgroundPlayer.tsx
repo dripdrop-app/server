@@ -33,6 +33,9 @@ import { MdClose } from "react-icons/md";
 import { useYoutubeVideosQuery } from "../../api/youtube";
 import { skipToken } from "@reduxjs/toolkit/query";
 
+const getMediaSession = (): MediaSession | undefined =>
+  "mediaSession" in navigator ? navigator.mediaSession : undefined;
+
 const BackgroundPlayer = () => {
   const {
     addVideoToQueue,
@@ -137,11 +140,12 @@ const BackgroundPlayer = () => {
   // treating this tab as an active media session so audio can continue
   // playing while the PWA is backgrounded.
   useEffect(() => {
-    if (!currentVideo || !("mediaSession" in navigator)) {
+    const mediaSession = getMediaSession();
+    if (!mediaSession || !currentVideo) {
       return;
     }
 
-    navigator.mediaSession.metadata = new MediaMetadata({
+    mediaSession.metadata = new MediaMetadata({
       title: currentVideo.title,
       artist: currentVideo.channel.title,
       artwork: currentVideo.thumbnail ? [{ src: currentVideo.thumbnail }] : undefined,
@@ -149,21 +153,20 @@ const BackgroundPlayer = () => {
   }, [currentVideo]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator)) {
+    const mediaSession = getMediaSession();
+    if (!mediaSession) {
       return;
     }
-    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+    mediaSession.playbackState = playing ? "playing" : "paused";
   }, [playing]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !navigator.mediaSession.setPositionState) {
-      return;
-    }
-    if (!Number.isFinite(duration) || duration <= 0) {
+    const mediaSession = getMediaSession();
+    if (!mediaSession?.setPositionState || !Number.isFinite(duration) || duration <= 0) {
       return;
     }
     try {
-      navigator.mediaSession.setPositionState({
+      mediaSession.setPositionState({
         duration,
         playbackRate: 1,
         position: Math.min(playedSeconds, duration),
@@ -174,13 +177,14 @@ const BackgroundPlayer = () => {
   }, [duration, playedSeconds]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator)) {
+    const mediaSession = getMediaSession();
+    if (!mediaSession) {
       return;
     }
 
-    navigator.mediaSession.setActionHandler("play", () => setPlaying(true));
-    navigator.mediaSession.setActionHandler("pause", () => setPlaying(false));
-    navigator.mediaSession.setActionHandler("previoustrack", () => {
+    mediaSession.setActionHandler("play", () => setPlaying(true));
+    mediaSession.setActionHandler("pause", () => setPlaying(false));
+    mediaSession.setActionHandler("previoustrack", () => {
       if (playedSecondsRef.current < 5) {
         recedeQueue();
       } else if (playerRef.current) {
@@ -189,8 +193,8 @@ const BackgroundPlayer = () => {
         setSeekValue(0);
       }
     });
-    navigator.mediaSession.setActionHandler("nexttrack", () => advanceQueue());
-    navigator.mediaSession.setActionHandler("seekto", (details) => {
+    mediaSession.setActionHandler("nexttrack", () => advanceQueue());
+    mediaSession.setActionHandler("seekto", (details) => {
       if (details.seekTime === undefined) {
         return;
       }
@@ -202,11 +206,11 @@ const BackgroundPlayer = () => {
     });
 
     return () => {
-      navigator.mediaSession.setActionHandler("play", null);
-      navigator.mediaSession.setActionHandler("pause", null);
-      navigator.mediaSession.setActionHandler("previoustrack", null);
-      navigator.mediaSession.setActionHandler("nexttrack", null);
-      navigator.mediaSession.setActionHandler("seekto", null);
+      mediaSession.setActionHandler("play", null);
+      mediaSession.setActionHandler("pause", null);
+      mediaSession.setActionHandler("previoustrack", null);
+      mediaSession.setActionHandler("nexttrack", null);
+      mediaSession.setActionHandler("seekto", null);
     };
   }, [advanceQueue, playerRef, recedeQueue, setPlaying]);
 
