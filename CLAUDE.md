@@ -78,4 +78,11 @@ cd client && npm run generate   # see client/openapi-config.js
 - `server-lint`/`server-test`/`client-build` gate everything else.
 - On `main`, a `changes` job (`dorny/paths-filter`) determines whether server paths (`app/**`, `tests/**`, `Dockerfile`, `docker-compose.yml`, `pyproject.toml`, `uv.lock`, `Makefile`) or `client/**` changed; `deploy-server`/`deploy-client` only build and push their image when their own side changed.
 - Versioning is a single repo-wide semver, bumped automatically by `commitizen` from conventional commit messages (config in `pyproject.toml`: `tag_format = "$version"`, `version_provider = "uv"`, `major_version_zero = true`). The `bump-version` job commits the version bump + changelog and pushes the tag back to `main`, and publishes a GitHub Release from the changelog increment. Both images are tagged `latest` and with this shared version.
-- Commit messages must follow Conventional Commits — enforced locally by the `commitizen` pre-commit hook (`commit-msg` stage) and required for the version bump above to pick up the change.
+- `.github/workflows/commit-lint.yml` runs `cz check --rev-range <base>..<head>` on every pull request, rejecting any commit in the PR (other than merge/revert commits, which `cz check` skips automatically) that isn't a valid Conventional Commit.
+
+## Commit message convention
+
+Commits are merged into `main` as-is (no squashing), and their messages directly drive the semver bump above, so every commit must be a [Conventional Commit](https://www.conventionalcommits.org/): `<type>(<optional scope>): <description>`, e.g. `fix(youtube): retry failed subscription refresh`. This is enforced locally by the `commitizen` pre-commit hook (`commit-msg` stage, installed via `make install`) and in CI by `commit-lint.yml` above.
+
+- `feat` → minor bump, `fix`/`perf` → patch bump, `feat!`/`fix!`/a `BREAKING CHANGE:` footer → major bump (once out of `0.x`, per `major_version_zero` in `pyproject.toml`).
+- `build`, `chore`, `ci`, `docs`, `refactor`, `style`, `test` do not trigger a version bump on their own.
