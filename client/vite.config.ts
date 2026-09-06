@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "logo420.png"],
       manifest: {
-        short_name: "DripDrop",
-        name: "DripDrop",
+        short_name: "dripdrop",
+        name: "dripdrop",
         description: "Download and organize music from YouTube, and manage your YouTube subscriptions.",
         start_url: "/",
         display: "standalone",
