@@ -3,7 +3,7 @@ import ReactPlayer from "react-player";
 
 import { YoutubeVideoResponse as YoutubeVideo } from "../../api/generated/youtubeApi";
 import { useAddYoutubeVideoWatchMutation } from "../../api/youtube";
-import usePlaylistSync from "../../utils/usePlaylistSync";
+import usePlaylistSync from "../../hooks/usePlaylistSync";
 
 export interface ProgressState {
   playedSeconds: number;

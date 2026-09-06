@@ -1,7 +1,7 @@
 import { ForwardedRef, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { YoutubeVideoResponse as YoutubeVideo } from "../api/generated/youtubeApi";
-import { buildYoutubePlaylistConfig, buildYoutubeWatchUrl, getYoutubePlayerApi } from "./youtubePlayer";
+import { buildYoutubePlaylistConfig, buildYoutubeWatchUrl, getYoutubePlayerApi } from "../utils/youtubePlayer";
 
 interface UsePlaylistSyncArgs {
   ref: ForwardedRef<HTMLVideoElement>;
