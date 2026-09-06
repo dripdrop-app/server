@@ -76,7 +76,7 @@ cd client && npm run generate   # see client/openapi-config.js
 ### CI/CD (`.github/workflows/ci.yml`)
 
 - `server-lint`/`server-test`/`client-build` gate everything else.
-- On `main`, a `changes` job (`dorny/paths-filter`) determines whether server paths (`app/**`, `tests/**`, `Dockerfile`, `docker-compose.yml`, `pyproject.toml`, `uv.lock`, `Makefile`) or `client/**` changed; `deploy-server`/`deploy-client` only build and push their image when their own side changed.
+- On `main`, `deploy-server`/`deploy-client` always build and push their image after `bump-version` — there's no path filter gating them, since a push to `main` (including the version-bump commit itself) doesn't reliably signal which side actually changed.
 - Versioning is a single repo-wide semver, bumped automatically by `commitizen` from conventional commit messages (config in `pyproject.toml`: `tag_format = "$version"`, `version_provider = "uv"`, `major_version_zero = true`). The `bump-version` job commits the version bump + changelog and pushes the tag back to `main`, and publishes a GitHub Release from the changelog increment. Both images are tagged `latest` and with this shared version.
 - `.github/workflows/commit-lint.yml` runs `cz check --rev-range <base>..<head>` on every pull request, rejecting any commit in the PR (other than merge/revert commits, which `cz check` skips automatically) that isn't a valid Conventional Commit.
 
